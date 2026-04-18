@@ -22,9 +22,13 @@ struct PostgresConnectorTests {
     func plainSelect1() async throws {
         let config = try ConnectionConfig(url: Self.plainURL!)
         let connector = PostgresConnector()
-        defer { Task { try? await connector.shutdown() } }
-        let value = try await connector.runSelect1(config: config)
-        #expect(value == 1)
+        do {
+            let value = try await connector.runSelect1(config: config)
+            #expect(value == 1)
+        } catch {
+            try await connector.shutdown()
+            throw error
+        }
         try await connector.shutdown()
     }
 }
