@@ -3,22 +3,9 @@ import Foundation
 @main
 struct LithePGMain {
     static func main() async {
+        let args: Args
         do {
-            let args = try Args.parse(CommandLine.arguments)
-            let config = ConnectionConfig(
-                host: args.base.host,
-                port: args.base.port,
-                database: args.base.database,
-                username: args.base.username,
-                password: args.base.password,
-                tlsMode: args.tls ? .verifyFull : args.base.tlsMode,
-                pinnedRootCertificatePath: args.tlsCA,
-                sshConfig: args.ssh
-            )
-
-            let connector = PostgresConnector()
-            let value = try await connector.runSelect1(config: config)
-            print("SELECT 1 → \(value)")
+            args = try Args.parse(CommandLine.arguments)
         } catch Args.ParseError.help(let message) {
             print(message)
             exit(0)
@@ -26,6 +13,30 @@ struct LithePGMain {
             FileHandle.standardError.write(Data("\(message)\n".utf8))
             exit(2)
         } catch {
+            FileHandle.standardError.write(Data("error: \(error)\n".utf8))
+            exit(1)
+        }
+
+        let config = ConnectionConfig(
+            host: args.base.host,
+            port: args.base.port,
+            database: args.base.database,
+            username: args.base.username,
+            password: args.base.password,
+            tlsMode: args.tls ? .verifyFull : args.base.tlsMode,
+            pinnedRootCertificatePath: args.tlsCA,
+            sshConfig: args.ssh
+        )
+
+        // `defer` bodies can't `await`, so the event-loop-group shutdown has to ride
+        // both the success and failure paths explicitly.
+        let connector = PostgresConnector()
+        do {
+            let value = try await connector.runSelect1(config: config)
+            try await connector.shutdown()
+            print("SELECT 1 → \(value)")
+        } catch {
+            try? await connector.shutdown()
             FileHandle.standardError.write(Data("error: \(error)\n".utf8))
             exit(1)
         }
