@@ -26,9 +26,37 @@ struct LithePGMain {
             FileHandle.standardError.write(Data("\(message)\n".utf8))
             exit(2)
         } catch {
-            FileHandle.standardError.write(Data("error: \(error)\n".utf8))
+            FileHandle.standardError.write(Data("error: \(redactCredentials(in: error))\n".utf8))
             exit(1)
         }
+    }
+
+    /// Formats an error for stderr without leaking credentials.
+    ///
+    /// `\(error)` resolves to `String(describing:)`, which calls the type's
+    /// `description`. PostgresNIO ≥ 1.32 already guards `PSQLError.description`
+    /// against credential leakage, but we can't assume every future error
+    /// source does the same — any transport-layer error that happens to embed
+    /// `PostgresConnection.Configuration` via reflection would expose the
+    /// password. This scrubs `password: "…"` / `password=…` shaped substrings
+    /// as a second line of defense.
+    static func redactCredentials(in error: Error) -> String {
+        redactCredentials(in: String(describing: error))
+    }
+
+    static func redactCredentials(in raw: String) -> String {
+        // Match `password` followed by `:` or `=`, optional whitespace, then
+        // either a quoted value or an unquoted run of non-delimiter chars.
+        let pattern = #"(password\s*[:=]\s*)("[^"]*"|[^",\s)]+)"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
+            return raw
+        }
+        let range = NSRange(raw.startIndex..<raw.endIndex, in: raw)
+        return regex.stringByReplacingMatches(
+            in: raw,
+            range: range,
+            withTemplate: "$1[redacted]"
+        )
     }
 }
 
