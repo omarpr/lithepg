@@ -98,7 +98,11 @@ public actor PostgresConnector {
             return .disable
         case .verifyFull:
             var tls = TLSConfiguration.makeClientConfiguration()
-            if let path = config.tlsRootCertificatePath {
+            if let path = config.pinnedRootCertificatePath {
+                // Preflight: surface a clear error early rather than an opaque NIOSSL IOError later.
+                guard !path.isEmpty, FileManager.default.isReadableFile(atPath: path) else {
+                    throw PostgresConnectorError.pinnedRootCertificateUnreadable(path: path)
+                }
                 // REPLACE the default trust roots, not add. On Darwin, the default path
                 // runs through SecTrust, which rejects self-signed/internal-CA server certs
                 // even when added as an additional anchor. A file-based trustRoots takes
@@ -113,4 +117,5 @@ public actor PostgresConnector {
 
 public enum PostgresConnectorError: Error, Equatable {
     case emptyResult
+    case pinnedRootCertificateUnreadable(path: String)
 }
