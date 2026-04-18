@@ -13,6 +13,7 @@ struct ConnectionConfigTests {
         )
         #expect(c.port == 5432)
         #expect(c.tlsMode == .disable)
+        #expect(c.tlsRootCertificatePath == nil)
         #expect(c.sshConfig == nil)
     }
 
