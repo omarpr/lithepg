@@ -23,6 +23,23 @@ struct PostgresConnectorTests {
         try await connector.shutdown() // idempotent
     }
 
+    @Test("surfaces a typed error when the pinned root cert path is unreadable")
+    func pinnedRootUnreadable() async throws {
+        let config = ConnectionConfig(
+            host: "127.0.0.1",
+            database: "postgres",
+            username: "postgres",
+            password: "postgres",
+            tlsMode: .verifyFull,
+            pinnedRootCertificatePath: "/tmp/lithepg-does-not-exist.pem"
+        )
+        let connector = PostgresConnector()
+        await #expect(throws: PostgresConnectorError.self) {
+            _ = try await connector.runSelect1(config: config)
+        }
+        try await connector.shutdown()
+    }
+
     @Test(
         "connects over plain TCP and runs SELECT 1",
         .enabled(if: plainURL != nil)
@@ -53,7 +70,7 @@ struct PostgresConnectorTests {
             username: parsed.username,
             password: parsed.password,
             tlsMode: .verifyFull,
-            tlsRootCertificatePath: Self.tlsCAPath!
+            pinnedRootCertificatePath: Self.tlsCAPath!
         )
         let connector = PostgresConnector()
         do {
