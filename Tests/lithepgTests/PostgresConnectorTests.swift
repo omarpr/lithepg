@@ -2,10 +2,17 @@ import Testing
 import Foundation
 @testable import lithepg
 
-@Suite("PostgresConnector (integration)")
+@Suite("PostgresConnector")
 struct PostgresConnectorTests {
     static var plainURL: String? {
         ProcessInfo.processInfo.environment["POSTGRES_TEST_URL"]
+    }
+
+    @Test("construct and shutdown without connecting")
+    func lifecycleSmoke() async throws {
+        let connector = PostgresConnector()
+        try await connector.shutdown()
+        try await connector.shutdown() // idempotent
     }
 
     @Test(
@@ -15,7 +22,9 @@ struct PostgresConnectorTests {
     func plainSelect1() async throws {
         let config = try ConnectionConfig(url: Self.plainURL!)
         let connector = PostgresConnector()
+        defer { Task { try? await connector.shutdown() } }
         let value = try await connector.runSelect1(config: config)
         #expect(value == 1)
+        try await connector.shutdown()
     }
 }
