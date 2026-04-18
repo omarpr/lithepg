@@ -8,21 +8,25 @@ import Logging
 public actor PostgresConnector {
     private let eventLoopGroup: EventLoopGroup
     private let logger: Logger
+    private var isShutdown = false
 
     public init() {
         self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
         self.logger = Logger(label: "lithepg.postgres")
     }
 
-    deinit {
-        try? eventLoopGroup.syncShutdownGracefully()
+    /// Releases the event-loop group. Must be called before the connector is dropped.
+    /// Async shutdown avoids the deinit/ELG-thread deadlock that `syncShutdownGracefully` would hit.
+    public func shutdown() async throws {
+        guard !isShutdown else { return }
+        isShutdown = true
+        try await eventLoopGroup.shutdownGracefully()
     }
 
     /// Opens a connection, runs `SELECT 1`, returns the integer, closes the connection.
     /// Resolves the effective host/port (honoring any SSH tunnel) before connecting.
     public func runSelect1(config: ConnectionConfig) async throws -> Int {
         let (effectiveHost, effectivePort, tunnel) = try await resolveTransport(config: config)
-        defer { Task { await tunnel?.close() } }
 
         var pgConfig = PostgresConnection.Configuration(
             host: effectiveHost,
@@ -38,24 +42,34 @@ public actor PostgresConnector {
             pgConfig.tls = .disable
         }
 
-        let connection = try await PostgresConnection.connect(
-            on: eventLoopGroup.next(),
-            configuration: pgConfig,
-            id: 1,
-            logger: logger
-        )
+        let connection: PostgresConnection
+        do {
+            connection = try await PostgresConnection.connect(
+                on: eventLoopGroup.next(),
+                configuration: pgConfig,
+                id: 1,
+                logger: logger
+            )
+        } catch {
+            await tunnel?.close()
+            throw error
+        }
 
         do {
+            // `int4` widens to `Int` safely on the 64-bit macOS targets this project supports.
             let rows = try await connection.query("SELECT 1", logger: logger)
             for try await row in rows {
                 let value = try row.decode(Int.self)
                 try await connection.close()
+                await tunnel?.close()
                 return value
             }
             try await connection.close()
+            await tunnel?.close()
             throw PostgresConnectorError.emptyResult
         } catch {
             try? await connection.close()
+            await tunnel?.close()
             throw error
         }
     }
@@ -65,7 +79,6 @@ public actor PostgresConnector {
     private func resolveTransport(
         config: ConnectionConfig
     ) async throws -> (host: String, port: Int, tunnel: SSHTunnel?) {
-        // No SSH → direct
         guard let ssh = config.sshConfig else {
             return (config.host, config.port, nil)
         }
@@ -84,7 +97,6 @@ public actor PostgresConnector {
         case .disable:
             return .disable
         case .verifyFull:
-            // Default NIOSSL client config verifies hostname + cert chain against system trust.
             let sslContext = try NIOSSLContext(configuration: TLSConfiguration.makeClientConfiguration())
             return .require(sslContext)
         }
