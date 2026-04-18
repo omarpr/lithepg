@@ -35,4 +35,26 @@ struct ConnectionConfigTests {
             try ConnectionConfig(url: "mysql://x/y")
         }
     }
+
+    @Test("accepts mixed-case postgres scheme (RFC 3986)")
+    func acceptsMixedCaseScheme() throws {
+        let c = try ConnectionConfig(url: "PostgreSQL://alice:secret@db/shop")
+        #expect(c.host == "db")
+        #expect(c.database == "shop")
+    }
+
+    @Test("rejects ports outside 1...65535")
+    func rejectsOutOfRangePort() {
+        #expect(throws: ConnectionConfig.ParseError.portOutOfRange(70000)) {
+            try ConnectionConfig(url: "postgres://alice:secret@db:70000/shop")
+        }
+    }
+
+    @Test("percent-decodes user and password")
+    func percentDecodesCredentials() throws {
+        // p%40ss → p@ss, a%23b → a#b
+        let c = try ConnectionConfig(url: "postgres://a%23b:p%40ss@db/shop")
+        #expect(c.username == "a#b")
+        #expect(c.password == "p@ss")
+    }
 }

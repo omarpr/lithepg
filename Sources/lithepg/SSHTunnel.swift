@@ -32,6 +32,10 @@ public actor SSHTunnel {
         let process = Process()
         let stderrPipe = Pipe()
         process.executableURL = URL(fileURLWithPath: sshPath)
+        // `StrictHostKeyChecking=accept-new` trusts on first use (TOFU) — matches
+        // OpenSSH's own default since 7.6 and preserves walking-skeleton ergonomics.
+        // Strict host-key pinning is deferred to the NIOSSH port in a later milestone,
+        // where we control the policy in Swift rather than relying on ~/.ssh/known_hosts.
         process.arguments = [
             "-N",
             "-L", "\(localPort):\(remoteHost):\(remotePort)",
