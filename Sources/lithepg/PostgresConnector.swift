@@ -97,7 +97,15 @@ public actor PostgresConnector {
         case .disable:
             return .disable
         case .verifyFull:
-            let sslContext = try NIOSSLContext(configuration: TLSConfiguration.makeClientConfiguration())
+            var tls = TLSConfiguration.makeClientConfiguration()
+            if let path = config.tlsRootCertificatePath {
+                // REPLACE the default trust roots, not add. On Darwin, the default path
+                // runs through SecTrust, which rejects self-signed/internal-CA server certs
+                // even when added as an additional anchor. A file-based trustRoots takes
+                // the BoringSSL verification path and accepts the pinned CA.
+                tls.trustRoots = .file(path)
+            }
+            let sslContext = try NIOSSLContext(configuration: tls)
             return .require(sslContext)
         }
     }
