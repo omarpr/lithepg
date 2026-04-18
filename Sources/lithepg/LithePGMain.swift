@@ -19,6 +19,9 @@ struct LithePGMain {
             let connector = PostgresConnector()
             let value = try await connector.runSelect1(config: config)
             print("SELECT 1 → \(value)")
+        } catch Args.ParseError.help(let message) {
+            print(message)
+            exit(0)
         } catch Args.ParseError.usage(let message) {
             FileHandle.standardError.write(Data("\(message)\n".utf8))
             exit(2)
@@ -35,7 +38,10 @@ private struct Args {
     let tlsCA: String?
     let ssh: ConnectionConfig.SSHConfig?
 
-    enum ParseError: Error { case usage(String) }
+    enum ParseError: Error {
+        case usage(String)
+        case help(String)
+    }
 
     static func parse(_ argv: [String]) throws -> Args {
         var url: String?
@@ -56,14 +62,16 @@ private struct Args {
                 i += 1
             case "--tls-ca":
                 guard i + 1 < argv.count else { throw ParseError.usage("--tls-ca needs a value") }
-                tlsCA = argv[i + 1]
+                let value = argv[i + 1]
+                guard !value.isEmpty else { throw ParseError.usage("--tls-ca value is empty") }
+                tlsCA = value
                 i += 2
             case "--ssh":
                 guard i + 1 < argv.count else { throw ParseError.usage("--ssh needs a value") }
                 sshRaw = argv[i + 1]
                 i += 2
             case "--help", "-h":
-                throw ParseError.usage(
+                throw ParseError.help(
                     "usage: lithepg --url <postgres://...> [--tls] [--tls-ca <path>] [--ssh user@host[:port]]"
                 )
             default:
