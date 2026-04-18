@@ -30,6 +30,7 @@ public actor SSHTunnel {
         let localPort = try allocateLocalPort()
 
         let process = Process()
+        let stderrPipe = Pipe()
         process.executableURL = URL(fileURLWithPath: sshPath)
         process.arguments = [
             "-N",
@@ -41,24 +42,37 @@ public actor SSHTunnel {
             "\(sshUser)@\(sshHost)",
         ]
         process.standardOutput = Pipe()
-        process.standardError = Pipe()
+        process.standardError = stderrPipe
 
         try process.run()
+
+        // Ensure the subprocess is never leaked on a non-success exit from this function
+        // (including Task cancellation from `Task.sleep`).
+        var handedOffToTunnel = false
+        defer {
+            if !handedOffToTunnel && process.isRunning {
+                process.terminate()
+                process.waitUntilExit()
+            }
+        }
 
         let deadline = Date().addingTimeInterval(5.0)
         while Date() < deadline {
             if isPortOpen(localPort) {
+                handedOffToTunnel = true
                 return SSHTunnel(localPort: localPort, process: process)
             }
             if !process.isRunning {
-                let err = readPipe(process.standardError as! Pipe)
-                throw TunnelError.tunnelDidNotOpen(underlying: err)
+                throw TunnelError.tunnelDidNotOpen(underlying: drain(stderrPipe))
             }
             try await Task.sleep(nanoseconds: 100_000_000)
         }
 
         process.terminate()
-        throw TunnelError.tunnelDidNotOpen(underlying: "timeout after 5s")
+        process.waitUntilExit()
+        let trailingStderr = drain(stderrPipe)
+        let detail = trailingStderr.isEmpty ? "timeout after 5s" : "timeout after 5s: \(trailingStderr)"
+        throw TunnelError.tunnelDidNotOpen(underlying: detail)
     }
 
     public func close() async {
@@ -98,6 +112,7 @@ public actor SSHTunnel {
 
     private static func isPortOpen(_ port: Int) -> Bool {
         let sock = socket(AF_INET, SOCK_STREAM, 0)
+        guard sock >= 0 else { return false }
         defer { Darwin.close(sock) }
         var addr = sockaddr_in()
         addr.sin_family = sa_family_t(AF_INET)
@@ -111,8 +126,10 @@ public actor SSHTunnel {
         return result == 0
     }
 
-    private static func readPipe(_ pipe: Pipe) -> String {
-        let data = pipe.fileHandleForReading.availableData
+    /// Reads stderr until EOF. Safe to call only after the writing process has exited
+    /// (or been terminated) so the pipe's write end is closed — otherwise this would block.
+    private static func drain(_ pipe: Pipe) -> String {
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
         return String(data: data, encoding: .utf8) ?? ""
     }
 }
