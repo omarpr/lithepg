@@ -8,13 +8,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 
 - [x] **Plain loopback** — `.build/debug/lithepg --url postgres://postgres:postgres@localhost:55432/postgres` → `SELECT 1 → 1`, exit 0. Tested against `postgres:16` in Docker.
 - [x] **TLS verify-full with pinned CA** — `.build/debug/lithepg --url postgres://postgres:postgres@localhost:5433/postgres --tls --tls-ca /tmp/lithepg-tls/server.crt` → `SELECT 1 → 1`, exit 0. Self-signed cert with SAN `DNS:localhost,IP:127.0.0.1`, routed through BoringSSL via `pinnedRootCertificatePath` because Darwin's SecTrust path rejects self-signed anchors.
-- [ ] **SSH tunnel** — deferred to maintainer's environment. No SSH-reachable Postgres is available on the build machine. The path is covered by the automated `SSHTunnelTests.openAndClose` and `PostgresConnectorTests.sshTunnelSelect1` integration tests (currently skipped under Swift Testing's `.enabled(if:)` gate, to be run by the maintainer with `SSH_TEST_TARGET` / `POSTGRES_SSH_TEST_TARGET` / `POSTGRES_SSH_TEST_CREDS` exported). CLI equivalent:
+- [x] **SSH tunnel** — verified on maintainer's machine via macOS loopback (Remote Login on, authorized own key, tunneled back to local Postgres). Three-part verification all green:
+  1. `SSH_TEST_TARGET=omar@localhost:22 swift test --filter SSHTunnelTests` → `openAndClose` passed (tunnel opens, local port listens, closes cleanly).
+  2. `POSTGRES_SSH_TEST_TARGET=omar@localhost:22,127.0.0.1:5432 POSTGRES_SSH_TEST_CREDS=omar::minmaxing swift test --filter PostgresConnectorTests.sshTunnelSelect1` → `SELECT 1 → 1` through tunnel.
+  3. CLI smoke: `.build/debug/lithepg --url postgres://omar:@127.0.0.1:5432/minmaxing --ssh omar@127.0.0.1:22` → `SELECT 1 → 1`, exit 0.
 
-  ```
-  .build/debug/lithepg \
-    --url postgres://user:pass@pg-internal.example.com:5432/db \
-    --ssh user@bastion.example.com:22
-  ```
+  The tunnel is driven by `/usr/bin/ssh -N -L <local>:<remoteHost>:<remotePort>` with `ExitOnForwardFailure=yes` and `StrictHostKeyChecking=accept-new`. Proves the escape-hatch path that replaces NIOSSH until a later milestone.
 
 ### Pure-Swift verification
 
