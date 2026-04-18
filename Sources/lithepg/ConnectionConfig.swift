@@ -29,6 +29,13 @@ public struct ConnectionConfig: Sendable, Equatable {
     public let username: String
     public let password: String
     public let tlsMode: TLSMode
+    /// Path to a PEM-encoded CA certificate used to verify the server.
+    /// When set, this CA REPLACES the system default trust store (it does not add to it).
+    /// Needed for internal-CA Postgres deployments: NIOSSL's system-default path on Darwin
+    /// goes through SecTrust, which rejects self-signed server certs even when added as an
+    /// extra anchor. Providing a specific root here routes verification through BoringSSL,
+    /// which accepts the pinned CA. System-default verification (public CAs) is used when nil.
+    public let tlsRootCertificatePath: String?
     public let sshConfig: SSHConfig?
 
     public init(
@@ -38,6 +45,7 @@ public struct ConnectionConfig: Sendable, Equatable {
         username: String,
         password: String,
         tlsMode: TLSMode = .disable,
+        tlsRootCertificatePath: String? = nil,
         sshConfig: SSHConfig? = nil
     ) {
         self.host = host
@@ -46,6 +54,7 @@ public struct ConnectionConfig: Sendable, Equatable {
         self.username = username
         self.password = password
         self.tlsMode = tlsMode
+        self.tlsRootCertificatePath = tlsRootCertificatePath
         self.sshConfig = sshConfig
     }
 
