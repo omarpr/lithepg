@@ -28,12 +28,23 @@ struct SSHTunnelTests {
         await tunnel.close()
     }
 
+    /// Strict parser — a malformed SSH_TEST_TARGET should fail loudly rather than
+    /// silently falling back to port 22.
     private func parseTarget(_ s: String) throws -> (user: String, host: String, port: Int) {
         let parts = s.split(separator: "@")
         guard parts.count == 2 else { throw TestError.badTarget }
         let hostPort = parts[1].split(separator: ":")
         let host = String(hostPort[0])
-        let port = hostPort.count == 2 ? Int(hostPort[1]) ?? 22 : 22
+        let port: Int
+        switch hostPort.count {
+        case 1:
+            port = 22
+        case 2:
+            guard let p = Int(hostPort[1]) else { throw TestError.badTarget }
+            port = p
+        default:
+            throw TestError.badTarget
+        }
         return (String(parts[0]), host, port)
     }
 
