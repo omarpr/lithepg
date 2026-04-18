@@ -33,7 +33,7 @@ See `CONTRIBUTING.md` (when published) for the concrete workflow, coding convent
 
 All commits must be signed off under the [Developer Certificate of Origin](https://developercertificate.org/):
 
-```
+```sh
 git commit -s -m "your message"
 ```
 

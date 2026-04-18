@@ -28,7 +28,11 @@ public actor PostgresConnector {
     public func runSelect1(config: ConnectionConfig) async throws -> Int {
         let (effectiveHost, effectivePort, tunnel) = try await resolveTransport(config: config)
 
-        var pgConfig = PostgresConnection.Configuration(
+        // TLS-through-SSH-tunnel is rejected at the CLI boundary (Args.parse) because
+        // the tunnel terminates at 127.0.0.1 and SNI for the original hostname would
+        // mismatch. Library callers that set both will get a TLS handshake failure
+        // here — preferable to the earlier silent downgrade, which hid the conflict.
+        let pgConfig = PostgresConnection.Configuration(
             host: effectiveHost,
             port: effectivePort,
             username: config.username,
@@ -36,11 +40,6 @@ public actor PostgresConnector {
             database: config.database,
             tls: try makeTLS(for: config)
         )
-        // SSH tunnels terminate locally; they always connect to 127.0.0.1 and should not
-        // attempt TLS server-name verification against the SSH hostname.
-        if tunnel != nil {
-            pgConfig.tls = .disable
-        }
 
         let connection: PostgresConnection
         do {

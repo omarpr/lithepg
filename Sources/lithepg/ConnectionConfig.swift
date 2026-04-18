@@ -21,6 +21,7 @@ public struct ConnectionConfig: Sendable, Equatable {
         case invalidURL
         case unsupportedScheme(String)
         case missingComponent(String)
+        case portOutOfRange(Int)
     }
 
     public let host: String
@@ -60,21 +61,33 @@ public struct ConnectionConfig: Sendable, Equatable {
 
     public init(url: String) throws {
         guard let parsed = URL(string: url),
-              let scheme = parsed.scheme else {
+              let rawScheme = parsed.scheme else {
             throw ParseError.invalidURL
         }
+        // RFC 3986: URL schemes are case-insensitive.
+        let scheme = rawScheme.lowercased()
         guard scheme == "postgres" || scheme == "postgresql" else {
-            throw ParseError.unsupportedScheme(scheme)
+            throw ParseError.unsupportedScheme(rawScheme)
         }
         guard let host = parsed.host else { throw ParseError.missingComponent("host") }
-        guard let user = parsed.user else { throw ParseError.missingComponent("user") }
-        guard let password = parsed.password else { throw ParseError.missingComponent("password") }
+        // `URL.user`/`URL.password` stay percent-encoded; decode them so `%40` in a
+        // generated password becomes `@` before we hand credentials to Postgres.
+        guard let user = parsed.user?.removingPercentEncoding else {
+            throw ParseError.missingComponent("user")
+        }
+        guard let password = parsed.password?.removingPercentEncoding else {
+            throw ParseError.missingComponent("password")
+        }
         let db = parsed.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         guard !db.isEmpty else { throw ParseError.missingComponent("database") }
 
+        // `URL.port` does not range-validate; `postgres://h:70000/d` yields 70000.
+        let port = parsed.port ?? 5432
+        guard (1...65535).contains(port) else { throw ParseError.portOutOfRange(port) }
+
         self.init(
             host: host,
-            port: parsed.port ?? 5432,
+            port: port,
             database: db,
             username: user,
             password: password

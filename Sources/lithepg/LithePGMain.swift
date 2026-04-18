@@ -83,6 +83,12 @@ private struct Args {
         if tlsCA != nil && !tls {
             throw ParseError.usage("--tls-ca requires --tls")
         }
+        // v0.1 terminates SSH tunnels at 127.0.0.1, so TLS SNI for the original
+        // host no longer matches. Reject the combination explicitly rather than
+        // silently downgrading TLS. A future milestone can thread an SNI override.
+        if tls && sshRaw != nil {
+            throw ParseError.usage("--tls and --ssh together are not supported in v0.1")
+        }
 
         let base = try ConnectionConfig(url: url)
         let ssh = try sshRaw.map(Self.parseSSH)
@@ -112,6 +118,9 @@ private struct Args {
             throw ParseError.usage("--ssh format: user@host[:port]")
         }
         guard !host.isEmpty else { throw ParseError.usage("--ssh host is empty") }
+        guard (1...65535).contains(port) else {
+            throw ParseError.usage("--ssh port out of range: \(port)")
+        }
         return .init(host: host, port: port, user: parts[0])
     }
 }
