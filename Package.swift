@@ -20,9 +20,18 @@ let package = Package(
             name: "lithepg",
             dependencies: ["LithePGCore"]
         ),
+        .executableTarget(
+            name: "LithePGApp",
+            dependencies: ["LithePGCore"]
+        ),
         .testTarget(
             name: "LithePGCoreTests",
             dependencies: ["LithePGCore"],
+            swiftSettings: [.enableExperimentalFeature("Testing")]
+        ),
+        .testTarget(
+            name: "LithePGAppTests",
+            dependencies: ["LithePGApp"],
             swiftSettings: [.enableExperimentalFeature("Testing")]
         ),
     ]
