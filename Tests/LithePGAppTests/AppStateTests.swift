@@ -15,6 +15,9 @@ struct AppStateTests {
         #expect(s.editorText.isEmpty)
         #expect(s.lastResult == nil)
         #expect(s.lastError == nil)
+        #expect(s.schema == nil)
+        #expect(s.schemaError == nil)
+        #expect(s.isLoadingSchema == false)
         #expect(s.isRunning == false)
     }
 
@@ -101,6 +104,15 @@ struct AppStateTests {
         #expect(s.lastResult != nil)
     }
 
+    @Test("refresh schema without a connection records a non-fatal error")
+    func refreshSchemaRequiresConnection() async {
+        let s = AppState()
+        await s.refreshSchema()
+        #expect(s.schema == nil)
+        #expect(s.schemaError == "Not connected")
+        #expect(s.connectionState == .disconnected)
+    }
+
     @Test("connects through AppState and renders a query result", .enabled(if: appStateLivePostgresURL != nil))
     func liveConnectAndRunQuery() async throws {
         let s = AppState()
@@ -109,6 +121,8 @@ struct AppStateTests {
 
         #expect(s.isConnected == true)
         #expect(s.lastError == nil)
+        #expect(s.schema != nil)
+        #expect(s.schemaError == nil)
 
         s.editorText = "SELECT 42 AS lithepg_app_smoke"
         await s.runCurrentQuery()
@@ -143,6 +157,33 @@ struct AppStateTests {
         #expect(s.canRunQuery == false)
     }
 
+    @Test("refresh schema through AppState sees user tables", .enabled(if: appStateLivePostgresURL != nil))
+    func liveRefreshSchemaSeesUserTables() async throws {
+        let s = AppState()
+        await s.connect(url: appStateLivePostgresURL!)
+        defer { Task { await s.disconnect() } }
+
+        s.editorText = "DROP TABLE IF EXISTS lithepg_app_schema_smoke"
+        await s.runCurrentQuery()
+        s.editorText = "CREATE TABLE lithepg_app_schema_smoke (id serial PRIMARY KEY, note text)"
+        await s.runCurrentQuery()
+        defer {
+            Task {
+                s.editorText = "DROP TABLE IF EXISTS lithepg_app_schema_smoke"
+                await s.runCurrentQuery()
+            }
+        }
+
+        await s.refreshSchema()
+        let publicSchema = try #require(s.schema?.schemas.first { $0.name == "public" })
+        let smoke = try #require(publicSchema.relations.first { $0.name == "lithepg_app_schema_smoke" })
+
+        #expect(s.schemaError == nil)
+        #expect(s.isLoadingSchema == false)
+        #expect(smoke.kind == .table)
+        #expect(smoke.columns.map { $0.name } == ["id", "note"])
+    }
+
     @Test("reconnect uses the previous successful connection", .enabled(if: appStateLivePostgresURL != nil))
     func liveReconnectUsesPreviousConnection() async throws {
         let s = AppState()
@@ -156,6 +197,7 @@ struct AppStateTests {
         await s.reconnect()
         #expect(s.isConnected == true)
         #expect(s.lastError == nil)
+        #expect(s.schema != nil)
     }
 
     @Test("non-connection errors do not offer reconnect", .enabled(if: appStateLivePostgresURL != nil))
