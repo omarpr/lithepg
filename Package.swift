@@ -10,15 +10,19 @@ let package = Package(
         .package(url: "https://github.com/vapor/postgres-nio.git", from: "1.21.0"),
     ],
     targets: [
-        .executableTarget(
-            name: "lithepg",
+        .target(
+            name: "LithePGCore",
             dependencies: [
                 .product(name: "PostgresNIO", package: "postgres-nio"),
             ]
         ),
+        .executableTarget(
+            name: "lithepg",
+            dependencies: ["LithePGCore"]
+        ),
         .testTarget(
-            name: "lithepgTests",
-            dependencies: ["lithepg"],
+            name: "LithePGCoreTests",
+            dependencies: ["LithePGCore"],
             swiftSettings: [.enableExperimentalFeature("Testing")]
         ),
     ]

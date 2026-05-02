@@ -1,5 +1,5 @@
 import Testing
-@testable import lithepg
+@testable import LithePGCore
 
 @Suite("ConnectionConfig")
 struct ConnectionConfigTests {
