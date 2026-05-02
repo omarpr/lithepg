@@ -2,10 +2,12 @@ import SwiftUI
 
 @main
 struct LithePGApp: App {
+    @State private var state = AppState()
+
     var body: some Scene {
         WindowGroup("LithePG") {
-            Text("LithePG — empty shell")
-                .frame(minWidth: 640, minHeight: 480)
+            WorkspaceView(state: state)
+                .frame(minWidth: 900, minHeight: 620)
         }
     }
 }
