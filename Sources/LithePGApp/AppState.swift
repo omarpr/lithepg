@@ -19,6 +19,9 @@ public final class AppState {
     }
     public var lastResult: QueryResult?
     public var lastError: String?
+    public var schema: DatabaseSchema?
+    public var schemaError: String?
+    public var isLoadingSchema: Bool = false
     public var isRunning: Bool = false
 
     public var connectionLabel: String? {
@@ -68,6 +71,7 @@ public final class AppState {
             self.connector = connector
             lastConnectionRequest = .init(url: url, tls: tls, tlsCAPath: tlsCAPath, sshTarget: sshTarget)
             markConnected(label: Self.connectionLabel(for: config))
+            await refreshSchema()
         } catch {
             connectionState = .disconnected
             setError(ErrorRedaction.redactCredentials(in: error))
@@ -83,6 +87,22 @@ public final class AppState {
         }
         connector = nil
         markDisconnected()
+    }
+
+    public func refreshSchema() async {
+        guard let connector else {
+            schemaError = "Not connected"
+            return
+        }
+
+        isLoadingSchema = true
+        defer { isLoadingSchema = false }
+        do {
+            schema = try await SchemaIntrospector.loadSchema(using: connector)
+            schemaError = nil
+        } catch {
+            schemaError = ErrorRedaction.redactCredentials(in: error)
+        }
     }
 
     public func startQuery() {
@@ -134,6 +154,9 @@ public final class AppState {
     public func markDisconnected() {
         connectionState = .disconnected
         lastResult = nil
+        schema = nil
+        schemaError = nil
+        isLoadingSchema = false
         isRunning = false
     }
 
