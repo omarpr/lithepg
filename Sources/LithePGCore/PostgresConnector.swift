@@ -66,36 +66,37 @@ public actor PostgresConnector {
     public func execute(_ sql: String) async throws -> QueryResult {
         guard let current = held else { throw ExecuteError.notConnected }
         let start = ContinuousClock.now
-        let future: EventLoopFuture<PostgresQueryResult> = current.connection.query(
-            PostgresQuery(unsafeSQL: sql),
-            logger: logger
-        )
-        let pgResult = try await future.get()
-
         let cap = 10_000
         var columns: [QueryResult.Column] = []
         var rows: [QueryResult.Row] = []
-        rows.reserveCapacity(min(pgResult.rows.count, cap))
+        var seenRows = 0
 
-        for pgRow in pgResult.rows.prefix(cap) {
-            let cells = pgRow.map(Self.renderCell(_:))
+        let metadata = try await current.connection.query(
+            PostgresQuery(unsafeSQL: sql),
+            logger: logger
+        ) { row in
             if columns.isEmpty {
-                columns = pgRow.map { cell in
+                columns = row.map { cell in
                     QueryResult.Column(name: cell.columnName, typeName: String(describing: cell.dataType))
                 }
             }
-            rows.append(QueryResult.Row(id: rows.count, cells: cells))
-        }
+
+            if rows.count < cap {
+                let cells = row.map(Self.renderCell(_:))
+                rows.append(QueryResult.Row(id: rows.count, cells: cells))
+            }
+            seenRows += 1
+        }.get()
 
         let status: QueryResult.Status
         if !rows.isEmpty || !columns.isEmpty {
             status = .rows
-        } else if pgResult.metadata.command == "SELECT" {
+        } else if metadata.command == "SELECT" {
             status = .empty
         } else {
             status = .command(
-                tag: pgResult.metadata.command,
-                affected: pgResult.metadata.rows ?? 0
+                tag: metadata.command,
+                affected: metadata.rows ?? 0
             )
         }
 
@@ -105,7 +106,7 @@ public actor PostgresConnector {
             rowCount: rows.count,
             elapsed: ContinuousClock.now - start,
             status: status,
-            truncated: pgResult.rows.count > cap
+            truncated: seenRows > cap
         )
     }
 
