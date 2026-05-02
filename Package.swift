@@ -18,7 +18,8 @@ let package = Package(
         ),
         .testTarget(
             name: "lithepgTests",
-            dependencies: ["lithepg"]
+            dependencies: ["lithepg"],
+            swiftSettings: [.enableExperimentalFeature("Testing")]
         ),
     ]
 )
