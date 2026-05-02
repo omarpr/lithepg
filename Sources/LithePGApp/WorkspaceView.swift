@@ -20,17 +20,23 @@ struct WorkspaceView: View {
         .toolbar {
             ToolbarItemGroup {
                 Button {
-                    state.setError("Connection flow lands next — editor shell is live.")
+                    state.startQuery()
                 } label: {
-                    Label("Run", systemImage: "play.fill")
+                    Label(state.isRunning ? "Running" : "Run", systemImage: "play.fill")
                 }
                 .keyboardShortcut(.return, modifiers: [.command])
-                .disabled(state.isRunning)
+                .disabled(state.isRunning || state.connectionState != .connected(label: statusText))
+
+                Button("Cancel") {
+                    state.cancelQuery()
+                }
+                .keyboardShortcut(".", modifiers: [.command])
+                .disabled(!state.isRunning)
 
                 Button("Disconnect") {
-                    state.markDisconnected()
+                    Task { await state.disconnect() }
                 }
-                .disabled(state.connectionState == .disconnected)
+                .disabled(state.connectionState == .disconnected || state.connectionState == .connecting)
             }
         }
         .onAppear {
@@ -65,7 +71,7 @@ struct WorkspaceView: View {
 
     private var statusText: String {
         switch state.connectionState {
-        case .disconnected: "Disconnected — connect sheet next"
+        case .disconnected: "Disconnected"
         case .connecting: "Connecting…"
         case .connected(let label): label
         }
