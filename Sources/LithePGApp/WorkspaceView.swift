@@ -12,7 +12,9 @@ struct WorkspaceView: View {
                 EditorView(text: $state.editorText)
                     .frame(minHeight: 260)
                 Divider()
-                ErrorBanner(message: state.lastError)
+                ErrorBanner(message: state.lastError) {
+                    Task { await state.reconnect() }
+                }
                 ResultsTable(result: state.lastResult)
                     .frame(minHeight: 220)
             }
@@ -25,7 +27,7 @@ struct WorkspaceView: View {
                     Label(state.isRunning ? "Running" : "Run", systemImage: "play.fill")
                 }
                 .keyboardShortcut(.return, modifiers: [.command])
-                .disabled(state.isRunning || state.connectionState != .connected(label: statusText))
+                .disabled(!state.canRunQuery)
 
                 Button("Cancel") {
                     state.cancelQuery()

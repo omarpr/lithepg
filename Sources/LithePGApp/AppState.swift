@@ -21,6 +21,23 @@ public final class AppState {
     public var lastError: String?
     public var isRunning: Bool = false
 
+    public var connectionLabel: String? {
+        guard case .connected(let label) = connectionState else { return nil }
+        return label
+    }
+
+    public var isConnected: Bool {
+        connectionLabel != nil
+    }
+
+    public var canRunQuery: Bool {
+        isConnected && !isRunning && !editorText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    public var windowTitle: String {
+        connectionLabel.map { "LithePG — \($0)" } ?? "LithePG"
+    }
+
     @ObservationIgnored private var connector: PostgresConnector?
     @ObservationIgnored private var queryTask: Task<Void, Never>?
 
@@ -130,6 +147,10 @@ public final class AppState {
 
     public func setError(_ message: String) {
         lastError = message
+    }
+
+    public func reconnect() async {
+        await disconnect()
     }
 
     public func clearError() {
