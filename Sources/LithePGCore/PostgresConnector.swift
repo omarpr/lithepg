@@ -9,6 +9,12 @@ public actor PostgresConnector {
     private let eventLoopGroup: EventLoopGroup
     private let logger: Logger
     private var isShutdown = false
+    private var held: (connection: PostgresConnection, tunnel: SSHTunnel?)?
+
+    public enum ExecuteError: Error, Equatable {
+        case notConnected
+        case alreadyConnected
+    }
 
     public init() {
         self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
@@ -19,8 +25,88 @@ public actor PostgresConnector {
     /// Async shutdown avoids the deinit/ELG-thread deadlock that `syncShutdownGracefully` would hit.
     public func shutdown() async throws {
         guard !isShutdown else { return }
+        await close()
         isShutdown = true
         try await eventLoopGroup.shutdownGracefully()
+    }
+
+    public func open(config: ConnectionConfig) async throws {
+        guard held == nil else { throw ExecuteError.alreadyConnected }
+        let (effectiveHost, effectivePort, tunnel) = try await resolveTransport(config: config)
+        let pgConfig = PostgresConnection.Configuration(
+            host: effectiveHost,
+            port: effectivePort,
+            username: config.username,
+            password: config.password,
+            database: config.database,
+            tls: try makeTLS(for: config)
+        )
+
+        do {
+            let connection = try await PostgresConnection.connect(
+                on: eventLoopGroup.next(),
+                configuration: pgConfig,
+                id: 1,
+                logger: logger
+            )
+            held = (connection, tunnel)
+        } catch {
+            await tunnel?.close()
+            throw error
+        }
+    }
+
+    public func close() async {
+        guard let current = held else { return }
+        held = nil
+        try? await current.connection.close()
+        await current.tunnel?.close()
+    }
+
+    public func execute(_ sql: String) async throws -> QueryResult {
+        guard let current = held else { throw ExecuteError.notConnected }
+        let start = ContinuousClock.now
+        let future: EventLoopFuture<PostgresQueryResult> = current.connection.query(
+            PostgresQuery(unsafeSQL: sql),
+            logger: logger
+        )
+        let pgResult = try await future.get()
+
+        let cap = 10_000
+        var columns: [QueryResult.Column] = []
+        var rows: [QueryResult.Row] = []
+        rows.reserveCapacity(min(pgResult.rows.count, cap))
+
+        for pgRow in pgResult.rows.prefix(cap) {
+            let cells = pgRow.map(Self.renderCell(_:))
+            if columns.isEmpty {
+                columns = pgRow.map { cell in
+                    QueryResult.Column(name: cell.columnName, typeName: String(describing: cell.dataType))
+                }
+            }
+            rows.append(QueryResult.Row(id: rows.count, cells: cells))
+        }
+
+        let status: QueryResult.Status
+        if !rows.isEmpty || !columns.isEmpty {
+            status = .rows
+        } else if pgResult.metadata.command == "SELECT" {
+            status = .empty
+        } else {
+            status = .command(
+                tag: pgResult.metadata.command,
+                affected: pgResult.metadata.rows ?? 0
+            )
+        }
+
+        return QueryResult(
+            columns: columns,
+            rows: rows,
+            rowCount: rows.count,
+            elapsed: ContinuousClock.now - start,
+            status: status,
+            truncated: pgResult.rows.count > cap
+        )
     }
 
     /// Opens a connection, runs `SELECT 1`, returns the integer, closes the connection.
@@ -71,6 +157,32 @@ public actor PostgresConnector {
             await tunnel?.close()
             throw error
         }
+    }
+
+    static func renderCell(_ cell: PostgresCell) -> QueryResult.Cell {
+        guard cell.bytes != nil else { return .null }
+
+        switch cell.dataType {
+        case .text, .varchar, .bpchar, .name, .unknown, .json, .jsonb:
+            if let value = try? cell.decode(String.self) { return .text(value) }
+        case .int2:
+            if let value = try? cell.decode(Int16.self) { return .text(String(value)) }
+        case .int4:
+            if let value = try? cell.decode(Int32.self) { return .text(String(value)) }
+            if let value = try? cell.decode(Int.self) { return .text(String(value)) }
+        case .int8:
+            if let value = try? cell.decode(Int64.self) { return .text(String(value)) }
+        case .bool:
+            if let value = try? cell.decode(Bool.self) { return .text(value ? "true" : "false") }
+        case .float4:
+            if let value = try? cell.decode(Float.self) { return .text(String(value)) }
+        case .float8:
+            if let value = try? cell.decode(Double.self) { return .text(String(value)) }
+        default:
+            if let value = try? cell.decode(String.self) { return .text(value) }
+        }
+
+        return .text("<\(cell.bytes?.readableBytes ?? 0) bytes>")
     }
 
     // MARK: - Helpers
