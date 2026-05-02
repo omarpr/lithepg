@@ -1,6 +1,6 @@
 import Testing
 import Foundation
-@testable import lithepg
+@testable import LithePGCore
 
 @Suite("PostgresConnector")
 struct PostgresConnectorTests {
