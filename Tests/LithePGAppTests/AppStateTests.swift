@@ -98,4 +98,25 @@ struct AppStateTests {
         #expect(s.isRunning == false)
         #expect(s.lastResult != nil)
     }
+
+    @Test("computed UI state tracks connection and runnable query state")
+    func computedUIState() {
+        let s = AppState()
+        #expect(s.windowTitle == "LithePG")
+        #expect(s.connectionLabel == nil)
+        #expect(s.isConnected == false)
+        #expect(s.canRunQuery == false)
+
+        s.editorText = "SELECT 1"
+        #expect(s.canRunQuery == false)
+
+        s.markConnected(label: "alice@db:5432/shop")
+        #expect(s.windowTitle == "LithePG — alice@db:5432/shop")
+        #expect(s.connectionLabel == "alice@db:5432/shop")
+        #expect(s.isConnected == true)
+        #expect(s.canRunQuery == true)
+
+        s.markRunning()
+        #expect(s.canRunQuery == false)
+    }
 }
