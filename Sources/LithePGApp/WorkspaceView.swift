@@ -12,9 +12,9 @@ struct WorkspaceView: View {
                 EditorView(text: $state.editorText)
                     .frame(minHeight: 260)
                 Divider()
-                ErrorBanner(message: state.lastError) {
+                ErrorBanner(message: state.lastError, reconnect: state.canReconnectFromLastError ? {
                     Task { await state.reconnect() }
-                }
+                } : nil)
                 ResultsTable(result: state.lastResult)
                     .frame(minHeight: 220)
             }

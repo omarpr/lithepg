@@ -34,12 +34,18 @@ public final class AppState {
         isConnected && !isRunning && !editorText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    public var canReconnectFromLastError: Bool {
+        guard lastConnectionRequest != nil, let lastError else { return false }
+        return Self.isConnectionLevelError(lastError)
+    }
+
     public var windowTitle: String {
         connectionLabel.map { "LithePG — \($0)" } ?? "LithePG"
     }
 
     @ObservationIgnored private var connector: PostgresConnector?
     @ObservationIgnored private var queryTask: Task<Void, Never>?
+    @ObservationIgnored private var lastConnectionRequest: ConnectionRequest?
 
     public init() {}
 
@@ -60,6 +66,7 @@ public final class AppState {
             let connector = PostgresConnector()
             try await connector.open(config: config)
             self.connector = connector
+            lastConnectionRequest = .init(url: url, tls: tls, tlsCAPath: tlsCAPath, sshTarget: sshTarget)
             markConnected(label: Self.connectionLabel(for: config))
         } catch {
             connectionState = .disconnected
@@ -150,7 +157,12 @@ public final class AppState {
     }
 
     public func reconnect() async {
+        guard let request = lastConnectionRequest else {
+            setError("No previous connection is available to reconnect.")
+            return
+        }
         await disconnect()
+        await connect(url: request.url, tls: request.tls, tlsCAPath: request.tlsCAPath, sshTarget: request.sshTarget)
     }
 
     public func clearError() {
@@ -159,6 +171,21 @@ public final class AppState {
 
     private static func connectionLabel(for config: ConnectionConfig) -> String {
         "\(config.username)@\(config.host):\(config.port)/\(config.database)"
+    }
+
+    private static func isConnectionLevelError(_ message: String) -> Bool {
+        let lowercased = message.lowercased()
+        return [
+            "connection closed",
+            "connection refused",
+            "connection reset",
+            "server closed",
+            "not connected",
+            "broken pipe",
+            "network is unreachable",
+            "timed out",
+            "timeout",
+        ].contains { lowercased.contains($0) }
     }
 
     private static func parseSSH(_ raw: String) throws -> ConnectionConfig.SSHConfig {
@@ -182,6 +209,13 @@ public final class AppState {
         }
         guard !host.isEmpty else { throw ConnectParseError.invalidSSH }
         return .init(host: host, port: port, user: parts[0])
+    }
+
+    private struct ConnectionRequest {
+        let url: String
+        let tls: Bool
+        let tlsCAPath: String?
+        let sshTarget: String?
     }
 
     private enum ConnectParseError: Error, CustomStringConvertible {
