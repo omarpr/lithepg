@@ -32,14 +32,16 @@ struct ResultsTable: View {
             ScrollView([.horizontal, .vertical]) {
                 Grid(alignment: .leading, horizontalSpacing: 0, verticalSpacing: 0) {
                     GridRow {
-                        ForEach(Array(result.columns.enumerated()), id: \.offset) { _, column in
+                        ForEach(Array(result.columns.enumerated()), id: \.offset) { columnIndex, column in
                             cell(column.name, isHeader: true)
+                                .accessibilityIdentifier("result-header-\(columnIndex)")
                         }
                     }
-                    ForEach(result.rows) { row in
+                    ForEach(Array(result.rows.enumerated()), id: \.element.id) { rowIndex, row in
                         GridRow {
-                            ForEach(Array(row.cells.enumerated()), id: \.offset) { _, cellValue in
+                            ForEach(Array(row.cells.enumerated()), id: \.offset) { columnIndex, cellValue in
                                 cell(render(cellValue), isHeader: false)
+                                    .accessibilityIdentifier("result-cell-\(rowIndex)-\(columnIndex)")
                             }
                         }
                     }

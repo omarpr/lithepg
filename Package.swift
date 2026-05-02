@@ -34,5 +34,9 @@ let package = Package(
             dependencies: ["LithePGApp"],
             swiftSettings: [.enableExperimentalFeature("Testing")]
         ),
+        .testTarget(
+            name: "LithePGAppUITests",
+            dependencies: []
+        ),
     ]
 )

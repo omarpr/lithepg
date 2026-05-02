@@ -26,6 +26,7 @@ struct ConnectSheet: View {
 
             TextField("postgres://user:password@host:5432/database", text: $url)
                 .textFieldStyle(.roundedBorder)
+                .accessibilityIdentifier("postgres-url-field")
 
             Toggle("TLS verify-full", isOn: $tls)
                 .onChange(of: tls) { _, enabled in
@@ -75,6 +76,7 @@ struct ConnectSheet: View {
                         Text("Connect")
                     }
                 }
+                .accessibilityIdentifier("connect-button")
                 .keyboardShortcut(.defaultAction)
                 .disabled(url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || state.connectionState == .connecting)
             }
