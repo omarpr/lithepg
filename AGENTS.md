@@ -12,4 +12,5 @@
 
 ## Collaboration Protocol
 1. **Claude** analyzes the requirement, proposes the architecture, and implements the Swift code in a Superset worktree.
-2. **Superset** ensures the git state is clean and ready for the next iteration.
+2. **Claude** commits and pushes after completing each coherent portion of the work being done, keeping commits scoped to the completed portion and avoiding unrelated worktree changes.
+3. **Superset** ensures the git state is clean and ready for the next iteration.
