@@ -42,3 +42,11 @@ jobs:
       # Postgres service and self-signed TLS cert on the runner is a follow-up.
       - name: Test
         run: swift test
+
+      - name: Release binary size observation
+        run: |
+          swift build -c release --product LithePGApp
+          binary=.build/release/LithePGApp
+          bytes=$(stat -f%z "$binary")
+          mib=$(awk "BEGIN { printf \"%.2f\", $bytes / 1024 / 1024 }")
+          echo "LithePGApp release binary: ${bytes} bytes (${mib} MiB)"
