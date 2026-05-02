@@ -26,6 +26,7 @@ struct WorkspaceView: View {
                 } label: {
                     Label(state.isRunning ? "Running" : "Run", systemImage: "play.fill")
                 }
+                .accessibilityIdentifier("run-query-button")
                 .keyboardShortcut(.return, modifiers: [.command])
                 .disabled(!state.canRunQuery)
 
@@ -59,6 +60,7 @@ struct WorkspaceView: View {
                 Text(statusText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("connection-status")
             }
             Spacer()
             Text("v0.2a native editor shell")
