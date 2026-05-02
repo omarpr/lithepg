@@ -128,6 +128,7 @@ struct AppStateTests {
         #expect(s.connectionLabel == nil)
         #expect(s.isConnected == false)
         #expect(s.canRunQuery == false)
+        #expect(s.canReconnectFromLastError == false)
 
         s.editorText = "SELECT 1"
         #expect(s.canRunQuery == false)
@@ -140,5 +141,30 @@ struct AppStateTests {
 
         s.markRunning()
         #expect(s.canRunQuery == false)
+    }
+
+    @Test("reconnect uses the previous successful connection", .enabled(if: appStateLivePostgresURL != nil))
+    func liveReconnectUsesPreviousConnection() async throws {
+        let s = AppState()
+        await s.connect(url: appStateLivePostgresURL!)
+        defer { Task { await s.disconnect() } }
+
+        #expect(s.isConnected == true)
+        s.setError("connection closed by server")
+        #expect(s.canReconnectFromLastError == true)
+
+        await s.reconnect()
+        #expect(s.isConnected == true)
+        #expect(s.lastError == nil)
+    }
+
+    @Test("non-connection errors do not offer reconnect", .enabled(if: appStateLivePostgresURL != nil))
+    func syntaxErrorDoesNotOfferReconnect() async throws {
+        let s = AppState()
+        await s.connect(url: appStateLivePostgresURL!)
+        defer { Task { await s.disconnect() } }
+
+        s.setError("syntax error at or near SELECT")
+        #expect(s.canReconnectFromLastError == false)
     }
 }
