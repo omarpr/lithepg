@@ -3,6 +3,8 @@ import Testing
 @testable import LithePGApp
 import LithePGCore
 
+private let appStateLivePostgresURL = ProcessInfo.processInfo.environment["POSTGRES_TEST_URL"]
+
 @Suite("AppState")
 @MainActor
 struct AppStateTests {
@@ -97,6 +99,26 @@ struct AppStateTests {
         s.markIdle()
         #expect(s.isRunning == false)
         #expect(s.lastResult != nil)
+    }
+
+    @Test("connects through AppState and renders a query result", .enabled(if: appStateLivePostgresURL != nil))
+    func liveConnectAndRunQuery() async throws {
+        let s = AppState()
+        await s.connect(url: appStateLivePostgresURL!)
+        defer { Task { await s.disconnect() } }
+
+        #expect(s.isConnected == true)
+        #expect(s.lastError == nil)
+
+        s.editorText = "SELECT 42 AS lithepg_app_smoke"
+        await s.runCurrentQuery()
+
+        #expect(s.isRunning == false)
+        #expect(s.lastError == nil)
+        #expect(s.lastResult?.status == .rows)
+        #expect(s.lastResult?.rowCount == 1)
+        #expect(s.lastResult?.columns.first?.name == "lithepg_app_smoke")
+        #expect(s.lastResult?.rows.first?.cells.first == .text("42"))
     }
 
     @Test("computed UI state tracks connection and runnable query state")
