@@ -13,6 +13,7 @@
 - **PostgresNIO / PostgresClientKit:** Pure Swift implementations.
 - **Constraint:** Strictly avoid `libpq` (the legacy C library) to ensure the binary remains lean and modern.
 - **Features:** High-performance async/await support, SSL/TLS by default, and type-safe query results.
+- **Vendored C boundary:** PostgresNIO's TLS path brings BoringSSL transitively through `swift-nio-ssl`; that is an accepted security/runtime dependency, not an app-authored C shim. The v0.2a editor deliberately uses native AppKit `NSTextView` after the Runestone spike failed on native macOS SPM, so v0.2a adds no tree-sitter or editor-side C dependency. Revisit the binary-size trade-off before introducing tree-sitter in v0.2b.
 
 ## 4. AI & Intelligence Layer
 - **Local RAG (Retrieval-Augmented Generation):**
