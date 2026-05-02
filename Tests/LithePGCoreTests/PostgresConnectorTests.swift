@@ -53,6 +53,79 @@ struct PostgresConnectorTests {
         try await connector.shutdown()
     }
 
+
+    @Test("execute requires an open connection")
+    func executeRequiresOpenConnection() async throws {
+        let connector = PostgresConnector()
+        await #expect(throws: PostgresConnector.ExecuteError.notConnected) {
+            _ = try await connector.execute("SELECT 1")
+        }
+        try await connector.shutdown()
+    }
+
+    @Test(
+        "opens a persistent connection and runs two queries on it",
+        .enabled(if: plainURL != nil)
+    )
+    func persistentExecuteRunsMultipleQueries() async throws {
+        let config = try ConnectionConfig(url: Self.plainURL!)
+        let connector = PostgresConnector()
+        try await connector.open(config: config)
+        defer { Task { await connector.close() } }
+
+        let a = try await connector.execute("SELECT 1 AS n")
+        #expect(a.status == .rows)
+        #expect(a.rowCount == 1)
+        #expect(a.columns.first?.name == "n")
+        #expect(a.rows.first?.cells.first == .text("1"))
+
+        let b = try await connector.execute("SELECT 'hello' AS greeting")
+        #expect(b.status == .rows)
+        #expect(b.rowCount == 1)
+        #expect(b.rows.first?.cells.first == .text("hello"))
+
+        try await connector.shutdown()
+    }
+
+    @Test(
+        "execute surfaces a QueryResult.Status.command for non-returning SQL",
+        .enabled(if: plainURL != nil)
+    )
+    func persistentExecuteCommandStatus() async throws {
+        let config = try ConnectionConfig(url: Self.plainURL!)
+        let connector = PostgresConnector()
+        try await connector.open(config: config)
+        defer { Task { await connector.close() } }
+
+        _ = try await connector.execute("CREATE TEMP TABLE lithepg_v02a_tmp (id int)")
+        let ins = try await connector.execute("INSERT INTO lithepg_v02a_tmp VALUES (1), (2), (3)")
+        switch ins.status {
+        case .command(let tag, let affected):
+            #expect(tag == "INSERT")
+            #expect(affected == 3)
+        default:
+            Issue.record("expected .command status, got \(ins.status)")
+        }
+
+        try await connector.shutdown()
+    }
+
+    @Test(
+        "execute decodes NULL as QueryResult.Cell.null",
+        .enabled(if: plainURL != nil)
+    )
+    func persistentExecuteNullCell() async throws {
+        let config = try ConnectionConfig(url: Self.plainURL!)
+        let connector = PostgresConnector()
+        try await connector.open(config: config)
+        defer { Task { await connector.close() } }
+
+        let r = try await connector.execute("SELECT NULL::text AS maybe")
+        #expect(r.rows.first?.cells.first == .null)
+
+        try await connector.shutdown()
+    }
+
     @Test(
         "connects over plain TCP and runs SELECT 1",
         .enabled(if: plainURL != nil)
