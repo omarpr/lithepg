@@ -8,6 +8,13 @@ struct LithePGApp: App {
         WindowGroup("LithePG") {
             WorkspaceView(state: state)
                 .frame(minWidth: 900, minHeight: 620)
+                .sheet(isPresented: Binding(
+                    get: { state.connectionState == .disconnected },
+                    set: { _ in }
+                )) {
+                    ConnectSheet(state: state)
+                        .interactiveDismissDisabled(true)
+                }
         }
     }
 }
