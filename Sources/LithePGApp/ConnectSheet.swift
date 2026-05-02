@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ConnectSheet: View {
     @Bindable var state: AppState
@@ -7,6 +8,7 @@ struct ConnectSheet: View {
     @State private var tlsCAPath: String = ProcessInfo.processInfo.environment["POSTGRES_TLS_CA"] ?? ""
     @State private var useSSH = ProcessInfo.processInfo.environment["POSTGRES_SSH"] != nil
     @State private var sshTarget: String = ProcessInfo.processInfo.environment["POSTGRES_SSH"] ?? ""
+    @State private var showingCAImporter = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -26,13 +28,24 @@ struct ConnectSheet: View {
                 .textFieldStyle(.roundedBorder)
 
             Toggle("TLS verify-full", isOn: $tls)
+                .onChange(of: tls) { _, enabled in
+                    if enabled { useSSH = false }
+                }
             if tls {
-                TextField("CA certificate path", text: $tlsCAPath)
-                    .textFieldStyle(.roundedBorder)
+                HStack {
+                    TextField("CA certificate path", text: $tlsCAPath)
+                        .textFieldStyle(.roundedBorder)
+                    Button("Choose…") {
+                        showingCAImporter = true
+                    }
+                }
             }
 
             Toggle("SSH tunnel", isOn: $useSSH)
                 .disabled(tls)
+                .onChange(of: useSSH) { _, enabled in
+                    if enabled { tls = false }
+                }
             if useSSH && !tls {
                 TextField("user@host[:port]", text: $sshTarget)
                     .textFieldStyle(.roundedBorder)
@@ -68,5 +81,22 @@ struct ConnectSheet: View {
         }
         .padding(24)
         .frame(width: 520)
+        .fileImporter(
+            isPresented: $showingCAImporter,
+            allowedContentTypes: Self.certificateTypes,
+            allowsMultipleSelection: false
+        ) { result in
+            if case .success(let urls) = result, let selected = urls.first {
+                tlsCAPath = selected.path(percentEncoded: false)
+            }
+        }
+    }
+
+    private static var certificateTypes: [UTType] {
+        [
+            UTType(filenameExtension: "pem"),
+            UTType(filenameExtension: "crt"),
+            .item,
+        ].compactMap { $0 }
     }
 }
