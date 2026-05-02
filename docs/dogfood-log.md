@@ -22,3 +22,9 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 ## Switches to Other Tools
 
 *(Log entries start at v0.3.)*
+
+## v0.2a — Editor Library Spike — Blocked
+
+- [x] Runestone resolved to `0.5.2` for the planned spike, but native macOS SPM build failed before app launch.
+- Blocking error: `Runestone/Sources/Runestone/Library/Caret.swift:1:8: error: no such module 'UIKit'`.
+- Conclusion: the planned Runestone `TextView` path is iOS/UIKit-oriented for this dependency/version and is not viable for native AppKit/SwiftUI macOS via SPM as specified. Re-brainstorm editor technology before continuing v0.2a implementation tasks.
