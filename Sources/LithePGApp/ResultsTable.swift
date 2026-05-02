@@ -32,7 +32,7 @@ struct ResultsTable: View {
             ScrollView([.horizontal, .vertical]) {
                 Grid(alignment: .leading, horizontalSpacing: 0, verticalSpacing: 0) {
                     GridRow {
-                        ForEach(result.columns, id: \.name) { column in
+                        ForEach(Array(result.columns.enumerated()), id: \.offset) { _, column in
                             cell(column.name, isHeader: true)
                         }
                     }
