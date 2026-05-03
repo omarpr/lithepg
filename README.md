@@ -32,6 +32,26 @@ swift test
 
 `--tls` and `--ssh` together are rejected in v0.1 — threading an SNI override for tunneled TLS is a later milestone.
 
+
+## Dogfood Postgres + App Startup
+
+Spin up a local Docker Postgres with sample data and launch the app directly into it:
+
+```sh
+./script/dogfood_postgres.sh
+LITHEPG_STARTUP_URL="postgres://postgres:postgres@localhost:55432/postgres?sslmode=disable" \
+LITHEPG_STARTUP_QUERY="SELECT * FROM lithepg_demo.customer_revenue ORDER BY revenue_cents DESC;" \
+.build/arm64-apple-macosx/debug/LithePGApp
+```
+
+Or use the helper, which seeds Docker, builds `LithePGApp`, injects the startup URL/query, and launches the app:
+
+```sh
+./script/run_dogfood_app.sh
+```
+
+The startup env is intentionally opt-in for dogfood/smoke runs. Normal app launches still show the connection sheet.
+
 ## Project Layout
 
 - `Sources/lithepg/` — app code (CLI entry, connector, SSH tunnel, config).
