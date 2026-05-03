@@ -57,6 +57,22 @@ struct WorkspaceView: View {
                 .keyboardShortcut("w", modifiers: [.command])
                 .disabled(state.queryTabs.count <= 1)
 
+                Button {
+                    state.selectPreviousQueryTab()
+                } label: {
+                    Label("Previous Query Tab", systemImage: "chevron.left")
+                }
+                .keyboardShortcut("[", modifiers: [.command, .shift])
+                .disabled(state.queryTabs.count <= 1)
+
+                Button {
+                    state.selectNextQueryTab()
+                } label: {
+                    Label("Next Query Tab", systemImage: "chevron.right")
+                }
+                .keyboardShortcut("]", modifiers: [.command, .shift])
+                .disabled(state.queryTabs.count <= 1)
+
                 Button("Disconnect") {
                     Task { await state.disconnect() }
                 }
