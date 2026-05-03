@@ -34,32 +34,78 @@ struct SQLSyntaxHighlighter {
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
         let fullRange = NSRange(sql.startIndex..<sql.endIndex, in: sql)
         return regex.matches(in: sql, range: fullRange).compactMap { match in
-            guard !isInsideSingleQuotedString(match.range.location, in: sql),
+            guard isSQLCode(at: match.range.location, in: sql),
                   let range = Range(match.range, in: sql) else { return nil }
             let token = sql[range].lowercased()
             return keywords.contains(token) ? match.range : nil
         }
     }
 
-    private static func isInsideSingleQuotedString(_ utf16Location: Int, in sql: String) -> Bool {
-        var inString = false
+    private static func isSQLCode(at utf16Location: Int, in sql: String) -> Bool {
+        enum Mode {
+            case code
+            case singleQuotedString
+            case doubleQuotedIdentifier
+            case lineComment
+            case blockComment
+        }
+
+        var mode = Mode.code
         var index = sql.startIndex
         var currentLocation = 0
 
         while index < sql.endIndex, currentLocation < utf16Location {
-            if sql[index] == "'" {
-                let next = sql.index(after: index)
-                if inString, next < sql.endIndex, sql[next] == "'" {
-                    index = sql.index(after: next)
-                    currentLocation += 2
-                    continue
+            let character = sql[index]
+            let next = sql.index(after: index)
+            let nextCharacter = next < sql.endIndex ? sql[next] : nil
+
+            switch mode {
+            case .code:
+                if character == "'" {
+                    mode = .singleQuotedString
+                } else if character == "\"" {
+                    mode = .doubleQuotedIdentifier
+                } else if character == "-", nextCharacter == "-" {
+                    mode = .lineComment
+                    index = next
+                    currentLocation += 1
+                } else if character == "/", nextCharacter == "*" {
+                    mode = .blockComment
+                    index = next
+                    currentLocation += 1
                 }
-                inString.toggle()
+            case .singleQuotedString:
+                if character == "'" {
+                    if nextCharacter == "'" {
+                        index = next
+                        currentLocation += 1
+                    } else {
+                        mode = .code
+                    }
+                }
+            case .doubleQuotedIdentifier:
+                if character == "\"" {
+                    if nextCharacter == "\"" {
+                        index = next
+                        currentLocation += 1
+                    } else {
+                        mode = .code
+                    }
+                }
+            case .lineComment:
+                if character == "\n" { mode = .code }
+            case .blockComment:
+                if character == "*", nextCharacter == "/" {
+                    mode = .code
+                    index = next
+                    currentLocation += 1
+                }
             }
-            currentLocation += sql[index].utf16.count
+
+            currentLocation += character.utf16.count
             index = sql.index(after: index)
         }
 
-        return inString
+        return mode == .code
     }
 }
