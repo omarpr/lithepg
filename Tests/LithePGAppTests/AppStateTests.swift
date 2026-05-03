@@ -99,6 +99,29 @@ struct AppStateTests {
         #expect(s.selectedQueryTabID == secondID)
     }
 
+    @Test("query results can land in the originating tab after tab switches")
+    func queryResultsCanTargetOriginatingTab() {
+        let s = AppState()
+        let firstID = s.selectedQueryTabID!
+        s.newQueryTab()
+        let secondID = s.selectedQueryTabID!
+        let firstResult = QueryResult(
+            columns: [.init(name: "n", typeName: "int4")],
+            rows: [.init(id: 0, cells: [.text("1")])],
+            rowCount: 1,
+            elapsed: .milliseconds(1),
+            status: .rows,
+            truncated: false
+        )
+
+        s.setResult(firstResult, for: firstID)
+
+        #expect(s.selectedQueryTabID == secondID)
+        #expect(s.lastResult == nil)
+        s.selectQueryTab(id: firstID)
+        #expect(s.lastResult?.rows.first?.cells.first == .text("1"))
+    }
+
     @Test("query tabs keep separate results")
     func queryTabsKeepSeparateResults() {
         let s = AppState()

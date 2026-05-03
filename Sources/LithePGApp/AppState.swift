@@ -192,6 +192,10 @@ public final class AppState {
             setError("Not connected")
             return
         }
+        guard let queryTabID = selectedQueryTabID else {
+            setError("No query tab is selected.")
+            return
+        }
         let sql = editorText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !sql.isEmpty else {
             setError("Enter a SQL query first.")
@@ -203,7 +207,7 @@ public final class AppState {
         do {
             let result = try await connector.execute(sql)
             try Task.checkCancellation()
-            setResult(result)
+            setResult(result, for: queryTabID)
         } catch is CancellationError {
             setError("Query cancelled")
         } catch {
@@ -243,7 +247,13 @@ public final class AppState {
     }
 
     public func setResult(_ result: QueryResult) {
-        lastResult = result
+        guard let selectedQueryTabID else { return }
+        setResult(result, for: selectedQueryTabID)
+    }
+
+    public func setResult(_ result: QueryResult, for queryTabID: QueryTab.ID) {
+        guard let index = queryTabs.firstIndex(where: { $0.id == queryTabID }) else { return }
+        queryTabs[index].lastResult = result
         lastError = nil
     }
 
