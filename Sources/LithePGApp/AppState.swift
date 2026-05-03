@@ -12,8 +12,13 @@ public final class AppState {
     }
 
     public var connectionState: ConnectionState = .disconnected
-    public var editorText: String = "" {
-        didSet {
+    public var queryTabs: [QueryTab] = [.init(title: "Query 1")]
+    public var selectedQueryTabID: QueryTab.ID?
+    public var editorText: String {
+        get { selectedQueryTab?.text ?? "" }
+        set {
+            guard let index = selectedQueryTabIndex else { return }
+            queryTabs[index].text = newValue
             if lastError != nil { lastError = nil }
         }
     }
@@ -50,7 +55,22 @@ public final class AppState {
     @ObservationIgnored private var queryTask: Task<Void, Never>?
     @ObservationIgnored private var lastConnectionRequest: ConnectionRequest?
 
-    public init() {}
+    public init() {
+        selectedQueryTabID = queryTabs.first?.id
+    }
+
+    public var selectedQueryTab: QueryTab? {
+        guard let selectedQueryTabID else { return queryTabs.first }
+        return queryTabs.first { $0.id == selectedQueryTabID } ?? queryTabs.first
+    }
+
+    private var selectedQueryTabIndex: Int? {
+        guard let selectedQueryTabID,
+              let index = queryTabs.firstIndex(where: { $0.id == selectedQueryTabID }) else {
+            return queryTabs.indices.first
+        }
+        return index
+    }
 
     public func connect(url: String, tls: Bool = false, tlsCAPath: String? = nil, sshTarget: String? = nil) async {
         markConnecting()
@@ -118,6 +138,34 @@ public final class AppState {
         queryTask?.cancel()
         queryTask = nil
         markIdle()
+    }
+
+    public func newQueryTab() {
+        let nextNumber = queryTabs.count + 1
+        let tab = QueryTab(title: "Query \(nextNumber)", text: defaultEditorText)
+        queryTabs.append(tab)
+        selectedQueryTabID = tab.id
+        lastResult = nil
+        clearError()
+    }
+
+    public func selectQueryTab(id: QueryTab.ID) {
+        guard queryTabs.contains(where: { $0.id == id }) else { return }
+        selectedQueryTabID = id
+        lastResult = nil
+        clearError()
+    }
+
+    public func closeSelectedQueryTab() {
+        guard queryTabs.count > 1, let index = selectedQueryTabIndex else { return }
+        let removingSelected = queryTabs[index].id == selectedQueryTabID
+        queryTabs.remove(at: index)
+        if removingSelected {
+            let replacementIndex = min(index, queryTabs.count - 1)
+            selectedQueryTabID = queryTabs[replacementIndex].id
+        }
+        lastResult = nil
+        clearError()
     }
 
     public func runCurrentQuery() async {
@@ -196,6 +244,8 @@ public final class AppState {
     public func clearError() {
         lastError = nil
     }
+
+    public let defaultEditorText = "SELECT version();"
 
     private static func connectionLabel(for config: ConnectionConfig) -> String {
         "\(config.username)@\(config.host):\(config.port)/\(config.database)"

@@ -46,6 +46,42 @@ struct AppStateTests {
         #expect(s.lastError == nil)
     }
 
+    @Test("query tabs keep separate editor buffers")
+    func queryTabsKeepSeparateBuffers() {
+        let s = AppState()
+        let firstID = s.selectedQueryTabID
+        s.editorText = "SELECT 1"
+
+        s.newQueryTab()
+        let secondID = s.selectedQueryTabID
+        #expect(secondID != firstID)
+        #expect(s.queryTabs.count == 2)
+        #expect(s.editorText == s.defaultEditorText)
+
+        s.editorText = "SELECT 2"
+        s.selectQueryTab(id: firstID!)
+        #expect(s.editorText == "SELECT 1")
+
+        s.selectQueryTab(id: secondID!)
+        #expect(s.editorText == "SELECT 2")
+    }
+
+    @Test("closing a query tab selects a neighbor and keeps one tab open")
+    func closeQueryTabSelectsNeighbor() {
+        let s = AppState()
+        s.editorText = "SELECT first"
+        s.newQueryTab()
+        s.editorText = "SELECT second"
+
+        s.closeSelectedQueryTab()
+        #expect(s.queryTabs.count == 1)
+        #expect(s.editorText == "SELECT first")
+
+        s.closeSelectedQueryTab()
+        #expect(s.queryTabs.count == 1)
+        #expect(s.editorText == "SELECT first")
+    }
+
     @Test("setResult stores the result and clears error")
     func setResultClearsError() {
         let s = AppState()
