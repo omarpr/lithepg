@@ -5,19 +5,23 @@ struct WorkspaceView: View {
     @Bindable var state: AppState
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
-            Divider()
+        HSplitView {
+            SchemaSidebar(state: state)
             VStack(spacing: 0) {
-                EditorView(text: $state.editorText)
-                    .frame(minHeight: 260)
+                header
                 Divider()
-                ErrorBanner(message: state.lastError, reconnect: state.canReconnectFromLastError ? {
-                    Task { await state.reconnect() }
-                } : nil)
-                ResultsTable(result: state.lastResult)
-                    .frame(minHeight: 220)
+                VStack(spacing: 0) {
+                    EditorView(text: $state.editorText)
+                        .frame(minHeight: 260)
+                    Divider()
+                    ErrorBanner(message: state.lastError, reconnect: state.canReconnectFromLastError ? {
+                        Task { await state.reconnect() }
+                    } : nil)
+                    ResultsTable(result: state.lastResult)
+                        .frame(minHeight: 220)
+                }
             }
+            .frame(minWidth: 640)
         }
         .toolbar {
             ToolbarItemGroup {
@@ -63,7 +67,7 @@ struct WorkspaceView: View {
                     .accessibilityIdentifier("connection-status")
             }
             Spacer()
-            Text("v0.2a native editor shell")
+            Text("v0.2b schema sidebar")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 10)
