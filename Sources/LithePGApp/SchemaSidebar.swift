@@ -122,6 +122,14 @@ struct SchemaSidebar: View {
                 Text("\(relation.columns.count)")
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(.secondary)
+                Button {
+                    state.insertSelect(for: relation)
+                } label: {
+                    Image(systemName: "text.insert")
+                }
+                .buttonStyle(.borderless)
+                .help("Insert SELECT for \(relation.schema).\(relation.name)")
+                .accessibilityIdentifier("insert-select-\(relation.id)")
             }
             .font(.caption)
         }
