@@ -66,9 +66,17 @@ struct AppStateTests {
     @Test("connection lifecycle transitions: disconnected → connecting → connected → disconnected")
     func connectionLifecycle() {
         let s = AppState()
+        s.schema = DatabaseSchema(schemas: [.init(name: "stale", relations: [])])
+        s.schemaError = "stale schema failure"
+        s.isLoadingSchema = true
+
         #expect(s.connectionState == .disconnected)
         s.markConnecting()
         #expect(s.connectionState == .connecting)
+        #expect(s.schema == nil)
+        #expect(s.schemaError == nil)
+        #expect(s.isLoadingSchema == false)
+
         s.markConnected(label: "alice@db:5432/shop")
         if case .connected(let label) = s.connectionState {
             #expect(label == "alice@db:5432/shop")
@@ -107,7 +115,10 @@ struct AppStateTests {
     @Test("refresh schema without a connection records a non-fatal error")
     func refreshSchemaRequiresConnection() async {
         let s = AppState()
+        s.schema = DatabaseSchema(schemas: [.init(name: "stale", relations: [])])
+
         await s.refreshSchema()
+
         #expect(s.schema == nil)
         #expect(s.schemaError == "Not connected")
         #expect(s.connectionState == .disconnected)

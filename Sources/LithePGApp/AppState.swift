@@ -91,11 +91,13 @@ public final class AppState {
 
     public func refreshSchema() async {
         guard let connector else {
+            schema = nil
             schemaError = "Not connected"
             return
         }
 
         isLoadingSchema = true
+        schemaError = nil
         defer { isLoadingSchema = false }
         do {
             schema = try await SchemaIntrospector.loadSchema(using: connector)
@@ -144,6 +146,9 @@ public final class AppState {
 
     public func markConnecting() {
         connectionState = .connecting
+        schema = nil
+        schemaError = nil
+        isLoadingSchema = false
     }
 
     public func markConnected(label: String) {
