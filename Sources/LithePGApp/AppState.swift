@@ -59,6 +59,7 @@ public final class AppState {
 
     @ObservationIgnored private var connector: PostgresConnector?
     @ObservationIgnored private var queryTask: Task<Void, Never>?
+    @ObservationIgnored private var activeQueryRunID: UUID?
     @ObservationIgnored private var lastConnectionRequest: ConnectionRequest?
 
     public init() {
@@ -135,14 +136,20 @@ public final class AppState {
 
     public func startQuery() {
         queryTask?.cancel()
+        let runID = UUID()
+        activeQueryRunID = runID
         queryTask = Task { [weak self] in
-            await self?.runCurrentQuery()
+            await self?.runCurrentQuery(runID: runID)
         }
     }
 
     public func cancelQuery() {
         queryTask?.cancel()
         queryTask = nil
+        activeQueryRunID = nil
+        if isRunning {
+            setError("Query cancelled")
+        }
         markIdle()
     }
 
@@ -188,30 +195,45 @@ public final class AppState {
     }
 
     public func runCurrentQuery() async {
+        let runID = UUID()
+        activeQueryRunID = runID
+        await runCurrentQuery(runID: runID)
+    }
+
+    private func runCurrentQuery(runID: UUID) async {
         guard let connector else {
             setError("Not connected")
+            clearActiveQuery(if: runID)
             return
         }
         guard let queryTabID = selectedQueryTabID else {
             setError("No query tab is selected.")
+            clearActiveQuery(if: runID)
             return
         }
         let sql = editorText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !sql.isEmpty else {
             setError("Enter a SQL query first.")
+            clearActiveQuery(if: runID)
             return
         }
 
         markRunning()
-        defer { markIdle() }
+        defer { finishQuery(if: runID) }
         do {
             let result = try await connector.execute(sql)
             try Task.checkCancellation()
-            setResult(result, for: queryTabID)
+            if activeQueryRunID == runID {
+                setResult(result, for: queryTabID)
+            }
         } catch is CancellationError {
-            setError("Query cancelled")
+            if activeQueryRunID == runID {
+                setError("Query cancelled")
+            }
         } catch {
-            setError(ErrorRedaction.redactCredentials(in: error))
+            if activeQueryRunID == runID {
+                setError(ErrorRedaction.redactCredentials(in: error))
+            }
         }
     }
 
@@ -281,6 +303,18 @@ public final class AppState {
         let nextIndex = (index + offset + queryTabs.count) % queryTabs.count
         selectedQueryTabID = queryTabs[nextIndex].id
         clearError()
+    }
+
+    private func finishQuery(if runID: UUID) {
+        guard activeQueryRunID == runID else { return }
+        clearActiveQuery(if: runID)
+        markIdle()
+    }
+
+    private func clearActiveQuery(if runID: UUID) {
+        guard activeQueryRunID == runID else { return }
+        activeQueryRunID = nil
+        queryTask = nil
     }
 
     private static func connectionLabel(for config: ConnectionConfig) -> String {
