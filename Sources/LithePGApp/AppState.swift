@@ -108,6 +108,7 @@ public final class AppState {
     public func disconnect() async {
         queryTask?.cancel()
         queryTask = nil
+        activeQueryRunID = nil
         if let connector {
             await connector.close()
             try? await connector.shutdown()
@@ -251,6 +252,8 @@ public final class AppState {
 
     public func markDisconnected() {
         connectionState = .disconnected
+        activeQueryRunID = nil
+        queryTask = nil
         lastResult = nil
         schema = nil
         schemaError = nil
