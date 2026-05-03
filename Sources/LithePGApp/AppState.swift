@@ -171,6 +171,14 @@ public final class AppState {
         clearError()
     }
 
+    public func selectNextQueryTab() {
+        selectQueryTab(offset: 1)
+    }
+
+    public func selectPreviousQueryTab() {
+        selectQueryTab(offset: -1)
+    }
+
     public func runCurrentQuery() async {
         guard let connector else {
             setError("Not connected")
@@ -249,6 +257,13 @@ public final class AppState {
     }
 
     public let defaultEditorText = "SELECT version();"
+
+    private func selectQueryTab(offset: Int) {
+        guard queryTabs.count > 1, let index = selectedQueryTabIndex else { return }
+        let nextIndex = (index + offset + queryTabs.count) % queryTabs.count
+        selectedQueryTabID = queryTabs[nextIndex].id
+        clearError()
+    }
 
     private static func connectionLabel(for config: ConnectionConfig) -> String {
         "\(config.username)@\(config.host):\(config.port)/\(config.database)"

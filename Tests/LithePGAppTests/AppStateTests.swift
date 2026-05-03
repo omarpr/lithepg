@@ -82,6 +82,23 @@ struct AppStateTests {
         #expect(s.editorText == "SELECT first")
     }
 
+    @Test("query tab navigation wraps around")
+    func queryTabNavigationWrapsAround() {
+        let s = AppState()
+        let firstID = s.selectedQueryTabID!
+        s.newQueryTab()
+        let secondID = s.selectedQueryTabID!
+        s.newQueryTab()
+        let thirdID = s.selectedQueryTabID!
+
+        s.selectNextQueryTab()
+        #expect(s.selectedQueryTabID == firstID)
+        s.selectPreviousQueryTab()
+        #expect(s.selectedQueryTabID == thirdID)
+        s.selectPreviousQueryTab()
+        #expect(s.selectedQueryTabID == secondID)
+    }
+
     @Test("query tabs keep separate results")
     func queryTabsKeepSeparateResults() {
         let s = AppState()
