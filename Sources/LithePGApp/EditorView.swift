@@ -25,6 +25,7 @@ struct EditorView: NSViewRepresentable {
         textView.backgroundColor = .textBackgroundColor
         textView.string = text
         textView.delegate = context.coordinator
+        SQLSyntaxHighlighter.apply(to: textView)
         textView.minSize = NSSize(width: 0, height: 0)
         textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
         textView.isVerticallyResizable = true
@@ -43,6 +44,7 @@ struct EditorView: NSViewRepresentable {
         if textView.string != text {
             textView.string = text
         }
+        SQLSyntaxHighlighter.apply(to: textView)
         context.coordinator.text = $text
     }
 
@@ -56,6 +58,7 @@ struct EditorView: NSViewRepresentable {
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             text.wrappedValue = textView.string
+            SQLSyntaxHighlighter.apply(to: textView)
         }
     }
 }
