@@ -20,6 +20,10 @@ struct ResultsTable: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .onChange(of: result) { _, _ in
+            page = 1
+            copiedAtLeastOnce = false
+        }
     }
 
     @ViewBuilder
