@@ -22,7 +22,13 @@ public final class AppState {
             if lastError != nil { lastError = nil }
         }
     }
-    public var lastResult: QueryResult?
+    public var lastResult: QueryResult? {
+        get { selectedQueryTab?.lastResult }
+        set {
+            guard let index = selectedQueryTabIndex else { return }
+            queryTabs[index].lastResult = newValue
+        }
+    }
     public var lastError: String?
     public var schema: DatabaseSchema?
     public var schemaError: String?
@@ -145,14 +151,12 @@ public final class AppState {
         let tab = QueryTab(title: "Query \(nextNumber)", text: defaultEditorText)
         queryTabs.append(tab)
         selectedQueryTabID = tab.id
-        lastResult = nil
         clearError()
     }
 
     public func selectQueryTab(id: QueryTab.ID) {
         guard queryTabs.contains(where: { $0.id == id }) else { return }
         selectedQueryTabID = id
-        lastResult = nil
         clearError()
     }
 
@@ -164,7 +168,6 @@ public final class AppState {
             let replacementIndex = min(index, queryTabs.count - 1)
             selectedQueryTabID = queryTabs[replacementIndex].id
         }
-        lastResult = nil
         clearError()
     }
 

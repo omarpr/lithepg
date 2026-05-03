@@ -82,6 +82,39 @@ struct AppStateTests {
         #expect(s.editorText == "SELECT first")
     }
 
+    @Test("query tabs keep separate results")
+    func queryTabsKeepSeparateResults() {
+        let s = AppState()
+        let firstID = s.selectedQueryTabID!
+        let firstResult = QueryResult(
+            columns: [.init(name: "n", typeName: "int4")],
+            rows: [.init(id: 0, cells: [.text("1")])],
+            rowCount: 1,
+            elapsed: .milliseconds(1),
+            status: .rows,
+            truncated: false
+        )
+        s.setResult(firstResult)
+
+        s.newQueryTab()
+        #expect(s.lastResult == nil)
+        let secondID = s.selectedQueryTabID!
+        let secondResult = QueryResult(
+            columns: [.init(name: "n", typeName: "int4")],
+            rows: [.init(id: 0, cells: [.text("2")])],
+            rowCount: 1,
+            elapsed: .milliseconds(2),
+            status: .rows,
+            truncated: false
+        )
+        s.setResult(secondResult)
+
+        s.selectQueryTab(id: firstID)
+        #expect(s.lastResult?.rows.first?.cells.first == .text("1"))
+        s.selectQueryTab(id: secondID)
+        #expect(s.lastResult?.rows.first?.cells.first == .text("2"))
+    }
+
     @Test("setResult stores the result and clears error")
     func setResultClearsError() {
         let s = AppState()
