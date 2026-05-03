@@ -11,6 +11,8 @@ struct WorkspaceView: View {
                 header
                 Divider()
                 VStack(spacing: 0) {
+                    tabBar
+                    Divider()
                     EditorView(text: $state.editorText)
                         .frame(minHeight: 260)
                     Divider()
@@ -40,6 +42,21 @@ struct WorkspaceView: View {
                 .keyboardShortcut(".", modifiers: [.command])
                 .disabled(!state.isRunning)
 
+                Button {
+                    state.newQueryTab()
+                } label: {
+                    Label("New Query Tab", systemImage: "plus")
+                }
+                .keyboardShortcut("t", modifiers: [.command])
+
+                Button {
+                    state.closeSelectedQueryTab()
+                } label: {
+                    Label("Close Query Tab", systemImage: "xmark")
+                }
+                .keyboardShortcut("w", modifiers: [.command])
+                .disabled(state.queryTabs.count <= 1)
+
                 Button("Disconnect") {
                     Task { await state.disconnect() }
                 }
@@ -48,9 +65,41 @@ struct WorkspaceView: View {
         }
         .onAppear {
             if state.editorText.isEmpty {
-                state.editorText = "SELECT version();"
+                state.editorText = state.defaultEditorText
             }
         }
+    }
+
+    private var tabBar: some View {
+        HStack(spacing: 6) {
+            ForEach(state.queryTabs) { tab in
+                Button {
+                    state.selectQueryTab(id: tab.id)
+                } label: {
+                    Text(tab.title)
+                        .lineLimit(1)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .background(tab.id == state.selectedQueryTabID ? Color.accentColor.opacity(0.22) : Color.secondary.opacity(0.12), in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier(tab.id == state.selectedQueryTabID ? "selected-query-tab" : "query-tab")
+            }
+
+            Button {
+                state.newQueryTab()
+            } label: {
+                Label("New Query Tab", systemImage: "plus")
+                    .labelStyle(.iconOnly)
+            }
+            .buttonStyle(.borderless)
+            .help("New query tab")
+            .accessibilityIdentifier("new-query-tab-button")
+
+            Spacer()
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
     }
 
     private var header: some View {
