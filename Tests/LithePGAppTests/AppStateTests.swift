@@ -132,6 +132,21 @@ struct AppStateTests {
         #expect(s.lastResult?.rows.first?.cells.first == .text("2"))
     }
 
+    @Test("insert select quotes schema and relation identifiers")
+    func insertSelectQuotesIdentifiers() {
+        let s = AppState()
+        let relation = DatabaseSchema.Relation(
+            schema: "odd schema",
+            name: "order\"lines",
+            kind: .table,
+            columns: []
+        )
+
+        s.insertSelect(for: relation)
+
+        #expect(s.editorText == "SELECT * FROM \"odd schema\".\"order\"\"lines\" LIMIT 100;")
+    }
+
     @Test("setResult stores the result and clears error")
     func setResultClearsError() {
         let s = AppState()

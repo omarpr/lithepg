@@ -179,6 +179,14 @@ public final class AppState {
         selectQueryTab(offset: -1)
     }
 
+    public func insertSelect(for relation: DatabaseSchema.Relation) {
+        editorText = Self.selectSQL(for: relation)
+    }
+
+    public static func selectSQL(for relation: DatabaseSchema.Relation) -> String {
+        "SELECT * FROM \(quotedIdentifier(relation.schema)).\(quotedIdentifier(relation.name)) LIMIT 100;"
+    }
+
     public func runCurrentQuery() async {
         guard let connector else {
             setError("Not connected")
@@ -267,6 +275,10 @@ public final class AppState {
 
     private static func connectionLabel(for config: ConnectionConfig) -> String {
         "\(config.username)@\(config.host):\(config.port)/\(config.database)"
+    }
+
+    private static func quotedIdentifier(_ identifier: String) -> String {
+        "\"\(identifier.replacingOccurrences(of: "\"", with: "\"\""))\""
     }
 
     private static func isConnectionLevelError(_ message: String) -> Bool {
