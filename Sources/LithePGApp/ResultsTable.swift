@@ -1,8 +1,10 @@
+import AppKit
 import SwiftUI
 import LithePGCore
 
 struct ResultsTable: View {
     let result: QueryResult?
+    @State private var copiedAtLeastOnce = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -129,12 +131,9 @@ struct ResultsTable: View {
 
             Spacer()
 
-            Picker("Result view", selection: .constant("table")) {
-                Label("Table", systemImage: "tablecells").tag("table")
-                Label("JSON", systemImage: "curlybraces").tag("json")
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 132)
+            Label("Table", systemImage: "tablecells")
+                .font(.caption)
+                .foregroundStyle(.secondary)
 
             Button {} label: {
                 Image(systemName: "line.3.horizontal.decrease")
@@ -142,8 +141,10 @@ struct ResultsTable: View {
             .help("Filter results")
             .disabled(true)
 
-            Button {} label: {
-                Image(systemName: "doc.on.doc")
+            Button {
+                copy(result)
+            } label: {
+                Image(systemName: copiedAtLeastOnce ? "checkmark" : "doc.on.doc")
             }
             .help("Copy results")
             .disabled(result == nil)
@@ -151,8 +152,8 @@ struct ResultsTable: View {
             Button {} label: {
                 Image(systemName: "arrow.down.to.line")
             }
-            .help("Export results")
-            .disabled(result == nil)
+            .help("Export results lands in a later polish pass")
+            .disabled(true)
         }
         .buttonStyle(.borderless)
         .padding(.horizontal, 12)
@@ -214,6 +215,13 @@ struct ResultsTable: View {
                     .fill(Color.secondary.opacity(isHeader ? 0.35 : 0.2))
                     .frame(height: 1)
             }
+    }
+
+    private func copy(_ result: QueryResult?) {
+        guard let result else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(ResultsTablePresentation.copyText(for: result), forType: .string)
+        copiedAtLeastOnce = true
     }
 }
 
@@ -288,6 +296,28 @@ enum ResultsTablePresentation {
         case .null: "NULL"
         case .text(let value): value
         }
+    }
+
+    static func copyText(for result: QueryResult) -> String {
+        switch result.status {
+        case .rows:
+            let header = result.columns.map { escapeCopyField($0.name) }.joined(separator: "\t")
+            let rows = result.rows.map { row in
+                row.cells.map { escapeCopyField(render($0)) }.joined(separator: "\t")
+            }
+            return ([header] + rows).joined(separator: "\n")
+        case .empty:
+            return emptyDetail(for: result)
+        case .command:
+            return commandDetail(for: result)
+        }
+    }
+
+    private static func escapeCopyField(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "\t", with: " ")
+            .replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "\r", with: " ")
     }
 
     private static func elapsed(_ duration: Duration) -> String {

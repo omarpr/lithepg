@@ -63,4 +63,33 @@ struct ResultsTablePresentationTests {
         #expect(ResultsTablePresentation.render(.text("")) == "")
         #expect(ResultsTablePresentation.render(.text("a long value")) == "a long value")
     }
+
+    @Test("copy text exports tab-separated rows and status details")
+    func copyText() {
+        let rows = QueryResult(
+            columns: [
+                .init(name: "id", typeName: "integer"),
+                .init(name: "note", typeName: "text"),
+            ],
+            rows: [
+                .init(id: 0, cells: [.text("1"), .text("hello\nworld")]),
+                .init(id: 1, cells: [.text("2"), .null]),
+            ],
+            rowCount: 2,
+            elapsed: .milliseconds(3),
+            status: .rows,
+            truncated: false
+        )
+        let command = QueryResult(
+            columns: [],
+            rows: [],
+            rowCount: 1,
+            elapsed: .milliseconds(4),
+            status: .command(tag: "DELETE", affected: 1),
+            truncated: false
+        )
+
+        #expect(ResultsTablePresentation.copyText(for: rows) == "id\tnote\n1\thello world\n2\tNULL")
+        #expect(ResultsTablePresentation.copyText(for: command) == "1 row affected · 4 ms")
+    }
 }
