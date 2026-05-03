@@ -24,6 +24,7 @@ Carthage/Build/
 
 # Build artifacts
 DerivedData/
+dist/
 *.hmap
 *.ipa
 *.dSYM.zip
