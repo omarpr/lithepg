@@ -52,6 +52,14 @@ Or use the helper, which seeds Docker, builds `LithePGApp`, injects the startup 
 
 The startup env is intentionally opt-in for dogfood/smoke runs. Normal app launches still show the connection sheet.
 
+## App Shortcuts
+
+- `⌘↩` — run the active query tab.
+- `⌘.` — cancel the running query.
+- `⌘T` — open a new query tab.
+- `⌘W` — close the active query tab, keeping at least one tab open.
+- `⇧⌘[` / `⇧⌘]` — move to the previous / next query tab.
+
 ## Project Layout
 
 - `Sources/lithepg/` — app code (CLI entry, connector, SSH tunnel, config).
