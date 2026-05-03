@@ -36,3 +36,11 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - [x] Runestone resolved to `0.5.2` for the planned spike, but native macOS SPM build failed before app launch.
 - Blocking error: `Runestone/Sources/Runestone/Library/Caret.swift:1:8: error: no such module 'UIKit'`.
 - Conclusion: the planned Runestone `TextView` path is iOS/UIKit-oriented for this dependency/version and is not viable for native AppKit/SwiftUI macOS via SPM as specified. Re-brainstorm editor technology before continuing v0.2a implementation tasks.
+
+## v0.2b — 2026-05-03 — Results Grid + Schema Tree Progress
+
+- [x] **Schema/sidebar implementation present** — `SchemaMetadata`, `SchemaIntrospector`, `AppState.refreshSchema()`, `SchemaSidebar`, and the split workspace are on `main`.
+- [x] **Results polish present** — table status/truncation presentation is clearer, and result copying now exports tab-separated text/status details instead of exposing a no-op copy affordance.
+- [x] **Default verification** — `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 56 Swift Testing tests in 10 suites plus the gated XCTest UI smoke skipped because `LITHEPG_UI_SMOKE_URL` is unset.
+- [ ] **Live schema smoke** — pending a `POSTGRES_TEST_URL` run/receipt for the v0.2b schema path.
+- [ ] **Manual UI receipt** — pending Omar/local dogfood confirmation of sidebar refresh and results copy behavior against a real database.
