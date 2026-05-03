@@ -113,6 +113,35 @@ struct AppStateTests {
         #expect(s.connectionState == .disconnected)
     }
 
+    @Test("startup config reads dogfood and smoke launch environments")
+    func startupConfigParsesEnvironment() throws {
+        let config = try #require(StartupConnectionConfig(environment: [
+            "LITHEPG_STARTUP_URL": " postgres://user:secret@localhost:5432/app?sslmode=disable ",
+            "LITHEPG_STARTUP_QUERY": " SELECT 1 ",
+            "LITHEPG_STARTUP_TLS": "yes",
+            "LITHEPG_STARTUP_TLS_CA_PATH": " /tmp/root.pem ",
+            "LITHEPG_STARTUP_SSH_TARGET": " omar@example.com:22 ",
+        ]))
+
+        #expect(config.url == "postgres://user:secret@localhost:5432/app?sslmode=disable")
+        #expect(config.query == "SELECT 1")
+        #expect(config.tls == true)
+        #expect(config.tlsCAPath == "/tmp/root.pem")
+        #expect(config.sshTarget == "omar@example.com:22")
+
+        let smokeFallback = try #require(StartupConnectionConfig(environment: [
+            "LITHEPG_UI_SMOKE_URL": "postgres://postgres:postgres@localhost:55432/postgres?sslmode=disable",
+            "LITHEPG_UI_SMOKE_QUERY": "SELECT 42",
+        ]))
+        #expect(smokeFallback.url.contains("localhost:55432"))
+        #expect(smokeFallback.query == "SELECT 42")
+    }
+
+    @Test("startup config is disabled without a launch URL")
+    func startupConfigRequiresURL() {
+        #expect(StartupConnectionConfig(environment: ["LITHEPG_STARTUP_QUERY": "SELECT 1"]) == nil)
+    }
+
     @Test("connects through AppState and renders a query result", .enabled(if: appStateLivePostgresURL != nil))
     func liveConnectAndRunQuery() async throws {
         let s = AppState()
