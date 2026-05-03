@@ -5,6 +5,7 @@ import LithePGCore
 struct ResultsTable: View {
     let result: QueryResult?
     @State private var copiedAtLeastOnce = false
+    @State private var page = 1
 
     var body: some View {
         VStack(spacing: 0) {
@@ -12,7 +13,7 @@ struct ResultsTable: View {
             Divider()
             Group {
                 if let result {
-                    content(for: result)
+                    content(for: result, page: normalizedPage(for: result))
                 } else {
                     noResultState
                 }
@@ -22,7 +23,7 @@ struct ResultsTable: View {
     }
 
     @ViewBuilder
-    private func content(for result: QueryResult) -> some View {
+    private func content(for result: QueryResult, page: Int) -> some View {
         switch result.status {
         case .command:
             statusState(
@@ -49,7 +50,8 @@ struct ResultsTable: View {
                                 headerCell(column, columnIndex: columnIndex)
                             }
                         }
-                        ForEach(Array(result.rows.enumerated()), id: \.element.id) { rowIndex, row in
+                        ForEach(Array(ResultsTablePresentation.rows(for: result, page: page).enumerated()), id: \.element.id) { pageRowIndex, row in
+                            let rowIndex = ResultsTablePresentation.absoluteRowNumber(pageRowIndex: pageRowIndex, page: page) - 1
                             GridRow {
                                 indexCell(String(rowIndex + 1), isHeader: false)
                                     .accessibilityIdentifier("result-row-index-\(rowIndex)")
@@ -64,6 +66,8 @@ struct ResultsTable: View {
                     .padding(.horizontal, 10)
                     .padding(.bottom, 10)
                 }
+                Divider()
+                paginationBar(for: result, page: page)
                 if let status = ResultsTablePresentation.truncationStatus(for: result) {
                     Divider()
                     HStack(spacing: 6) {
@@ -112,11 +116,12 @@ struct ResultsTable: View {
     private func actionBar(for result: QueryResult?) -> some View {
         HStack(spacing: 10) {
             if let result {
+                let page = normalizedPage(for: result)
                 Text(ResultsTablePresentation.primaryCount(for: result))
                     .font(.headline.monospacedDigit())
                     .foregroundStyle(.primary)
                     .frame(minWidth: 28, alignment: .trailing)
-                Text(ResultsTablePresentation.secondaryStatus(for: result))
+                Text(ResultsTablePresentation.secondaryStatus(for: result, page: page))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Text(ResultsTablePresentation.commandStatus(for: result))
@@ -159,6 +164,42 @@ struct ResultsTable: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(.bar)
+    }
+
+    private func paginationBar(for result: QueryResult, page: Int) -> some View {
+        HStack(spacing: 10) {
+            Text(ResultsTablePresentation.pageStatus(for: result, page: page))
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+
+            Spacer()
+
+            Button {
+                self.page = max(1, page - 1)
+            } label: {
+                Label("Previous Page", systemImage: "chevron.left")
+            }
+            .labelStyle(.iconOnly)
+            .help("Previous page")
+            .disabled(!ResultsTablePresentation.canGoPrevious(page: page))
+
+            Button {
+                self.page = min(ResultsTablePresentation.pageCount(for: result), page + 1)
+            } label: {
+                Label("Next Page", systemImage: "chevron.right")
+            }
+            .labelStyle(.iconOnly)
+            .help("Next page")
+            .disabled(!ResultsTablePresentation.canGoNext(result, page: page))
+        }
+        .buttonStyle(.borderless)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(.bar)
+    }
+
+    private func normalizedPage(for result: QueryResult) -> Int {
+        min(max(page, 1), ResultsTablePresentation.pageCount(for: result))
     }
 
     private func headerCell(_ column: QueryResult.Column, columnIndex: Int) -> some View {
@@ -226,6 +267,8 @@ struct ResultsTable: View {
 }
 
 enum ResultsTablePresentation {
+    static let pageSize = 100
+
     static func primaryCount(for result: QueryResult) -> String {
         switch result.status {
         case .rows, .empty:
@@ -235,10 +278,10 @@ enum ResultsTablePresentation {
         }
     }
 
-    static func secondaryStatus(for result: QueryResult) -> String {
+    static func secondaryStatus(for result: QueryResult, page: Int = 1) -> String {
         switch result.status {
         case .rows:
-            "\(result.rowCount == 1 ? "row" : "rows") · \(elapsed(result.elapsed))"
+            "\(visibleRangeStatus(for: result, page: page)) · \(elapsed(result.elapsed))"
         case .command:
             "affected · \(elapsed(result.elapsed))"
         case .empty:
@@ -252,7 +295,51 @@ enum ResultsTablePresentation {
 
     static func truncationStatus(for result: QueryResult) -> String? {
         guard result.truncated else { return nil }
-        return "Result capped at 10,000 rows. Refine the query or add LIMIT/OFFSET paging."
+        return "Result capped at 10,000 rows. Refine the query or add SQL LIMIT/OFFSET for server-side paging."
+    }
+
+    static func pageCount(for result: QueryResult) -> Int {
+        guard result.status == .rows else { return 1 }
+        return max(1, Int(ceil(Double(result.rows.count) / Double(pageSize))))
+    }
+
+    static func rows(for result: QueryResult, page: Int) -> ArraySlice<QueryResult.Row> {
+        guard result.status == .rows, !result.rows.isEmpty else { return [] }
+        let normalizedPage = min(max(page, 1), pageCount(for: result))
+        let start = (normalizedPage - 1) * pageSize
+        let end = min(start + pageSize, result.rows.count)
+        return result.rows[start..<end]
+    }
+
+    static func absoluteRowNumber(pageRowIndex: Int, page: Int) -> Int {
+        ((max(page, 1) - 1) * pageSize) + pageRowIndex + 1
+    }
+
+    static func canGoPrevious(page: Int) -> Bool {
+        page > 1
+    }
+
+    static func canGoNext(_ result: QueryResult, page: Int) -> Bool {
+        page < pageCount(for: result)
+    }
+
+    static func pageStatus(for result: QueryResult, page: Int) -> String {
+        guard result.status == .rows, !result.rows.isEmpty else { return "Page 1 of 1" }
+        let normalizedPage = min(max(page, 1), pageCount(for: result))
+        let start = ((normalizedPage - 1) * pageSize) + 1
+        let end = min(normalizedPage * pageSize, result.rows.count)
+        return "Rows \(formattedCount(start))–\(formattedCount(end)) of \(formattedCount(result.rows.count)) · Page \(formattedCount(normalizedPage)) of \(formattedCount(pageCount(for: result)))"
+    }
+
+    static func visibleRangeStatus(for result: QueryResult, page: Int) -> String {
+        guard result.status == .rows, !result.rows.isEmpty else { return "no rows" }
+        let normalizedPage = min(max(page, 1), pageCount(for: result))
+        let start = ((normalizedPage - 1) * pageSize) + 1
+        let end = min(normalizedPage * pageSize, result.rows.count)
+        if result.rows.count <= pageSize {
+            return "\(pluralized(result.rowCount, singular: "row"))"
+        }
+        return "rows \(formattedCount(start))–\(formattedCount(end)) of \(formattedCount(result.rows.count))"
     }
 
     static func headerName(for column: QueryResult.Column) -> String {

@@ -23,9 +23,9 @@ struct ResultsTablePresentationTests {
         )
 
         #expect(ResultsTablePresentation.primaryCount(for: result) == "2")
-        #expect(ResultsTablePresentation.secondaryStatus(for: result) == "rows · 84 ms")
+        #expect(ResultsTablePresentation.secondaryStatus(for: result) == "2 rows · 84 ms")
         #expect(ResultsTablePresentation.commandStatus(for: result) == "Truncated")
-        #expect(ResultsTablePresentation.truncationStatus(for: result) == "Result capped at 10,000 rows. Refine the query or add LIMIT/OFFSET paging.")
+        #expect(ResultsTablePresentation.truncationStatus(for: result) == "Result capped at 10,000 rows. Refine the query or add SQL LIMIT/OFFSET for server-side paging.")
         #expect(ResultsTablePresentation.headerName(for: result.columns[0]) == "day")
         #expect(ResultsTablePresentation.headerType(for: result.columns[0]) == "DATE")
         #expect(ResultsTablePresentation.headerAccessibilityLabel(for: result.columns[0]) == "day")
@@ -62,6 +62,28 @@ struct ResultsTablePresentationTests {
         #expect(ResultsTablePresentation.render(.null) == "NULL")
         #expect(ResultsTablePresentation.render(.text("")) == "")
         #expect(ResultsTablePresentation.render(.text("a long value")) == "a long value")
+    }
+
+    @Test("pagination slices rows and reports visible ranges")
+    func paginationPresentation() {
+        let result = QueryResult(
+            columns: [.init(name: "n", typeName: "int4")],
+            rows: (0..<205).map { .init(id: $0, cells: [.text("\($0)")]) },
+            rowCount: 205,
+            elapsed: .milliseconds(10),
+            status: .rows,
+            truncated: false
+        )
+
+        #expect(ResultsTablePresentation.pageCount(for: result) == 3)
+        #expect(ResultsTablePresentation.rows(for: result, page: 1).count == 100)
+        #expect(ResultsTablePresentation.rows(for: result, page: 3).count == 5)
+        #expect(ResultsTablePresentation.absoluteRowNumber(pageRowIndex: 0, page: 3) == 201)
+        #expect(ResultsTablePresentation.canGoPrevious(page: 1) == false)
+        #expect(ResultsTablePresentation.canGoNext(result, page: 1) == true)
+        #expect(ResultsTablePresentation.canGoNext(result, page: 3) == false)
+        #expect(ResultsTablePresentation.pageStatus(for: result, page: 2) == "Rows 101–200 of 205 · Page 2 of 3")
+        #expect(ResultsTablePresentation.secondaryStatus(for: result, page: 2) == "rows 101–200 of 205 · 10 ms")
     }
 
     @Test("copy text exports tab-separated rows and status details")
