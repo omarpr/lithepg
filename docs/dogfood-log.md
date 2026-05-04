@@ -77,3 +77,9 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Live dogfood verification: `./script/dogfood_postgres.sh start` then `POSTGRES_TEST_URL=postgres://postgres:postgres@localhost:55432/postgres?sslmode=disable swift test --filter 'saved connection flow|query history records|connects through AppState|refresh schema|reconnect|live|Live'` passed 6 selected live tests in 2 suites.
 - Result: saved-connection persistence, connect-from-saved, production tracking, schema refresh/reconnect, and opt-in query-history capture all have automated local dogfood coverage against the seeded Postgres container.
 
+
+## 2026-05-04 04:50 EDT — v0.3 final results-pane polish
+
+- Omar caught that the bottom results table still was not using the full allocated pane vertically after the width fix.
+- Increased the results pane's layout priority/minimum height, reduced the editor minimum height so the bottom pane has room, and added viewport filler rows so sparse result sets visually occupy the full table area instead of ending early.
+- Verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 80 Swift Testing tests in 12 suites. Dogfood app relaunched against the local seeded Postgres container and a cropped window screenshot was captured at `/Users/omar/.openclaw/workspace/artifacts/lithepg-layout-fix-20260504-0451.png`.

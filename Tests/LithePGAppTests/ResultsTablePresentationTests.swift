@@ -94,6 +94,14 @@ struct ResultsTablePresentationTests {
         #expect(ResultsTablePresentation.columnWidths(availableWidth: 900, columnCount: 0) == [])
     }
 
+    @Test("filler rows keep sparse result sets visually full height")
+    func fillerRowsFillSparseViewport() {
+        let viewport: CGFloat = 320
+        #expect(ResultsTablePresentation.fillerRowCount(viewportHeight: viewport, visibleRowCount: 0) == 11)
+        #expect(ResultsTablePresentation.fillerRowCount(viewportHeight: viewport, visibleRowCount: 2) == 9)
+        #expect(ResultsTablePresentation.fillerRowCount(viewportHeight: viewport, visibleRowCount: 100) == 0)
+    }
+
     @Test("copy text exports tab-separated rows and status details")
     func copyText() {
         let rows = QueryResult(

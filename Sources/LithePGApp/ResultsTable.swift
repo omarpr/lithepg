@@ -51,6 +51,11 @@ struct ResultsTable: View {
                         columnCount: result.columns.count
                     )
                     let tableBodyWidth = ResultsTablePresentation.tableBodyWidth(for: columnWidths)
+                    let visibleRows = Array(ResultsTablePresentation.rows(for: result, page: page).enumerated())
+                    let fillerRows = ResultsTablePresentation.fillerRowCount(
+                        viewportHeight: proxy.size.height,
+                        visibleRowCount: visibleRows.count
+                    )
                     ScrollView([.horizontal, .vertical]) {
                         VStack(alignment: .leading, spacing: 0) {
                             HStack(spacing: 0) {
@@ -62,7 +67,7 @@ struct ResultsTable: View {
                             }
                             .frame(width: tableBodyWidth, alignment: .leading)
 
-                            ForEach(Array(ResultsTablePresentation.rows(for: result, page: page).enumerated()), id: \.element.id) { pageRowIndex, row in
+                            ForEach(visibleRows, id: \.element.id) { pageRowIndex, row in
                                 let rowIndex = ResultsTablePresentation.absoluteRowNumber(pageRowIndex: pageRowIndex, page: page) - 1
                                 HStack(spacing: 0) {
                                     indexCell(String(rowIndex + 1), isHeader: false)
@@ -74,6 +79,18 @@ struct ResultsTable: View {
                                 }
                                 .frame(width: tableBodyWidth, alignment: .leading)
                             }
+
+                            ForEach(0..<fillerRows, id: \.self) { fillerRow in
+                                HStack(spacing: 0) {
+                                    indexCell("", isHeader: false)
+                                    ForEach(Array(columnWidths.enumerated()), id: \.offset) { columnIndex, width in
+                                        fillerCell(width: width)
+                                            .accessibilityIdentifier("result-filler-cell-\(fillerRow)-\(columnIndex)")
+                                    }
+                                }
+                                .frame(width: tableBodyWidth, alignment: .leading)
+                                .accessibilityHidden(true)
+                            }
                         }
                         .padding(ResultsTablePresentation.tablePadding)
                         .frame(
@@ -83,7 +100,9 @@ struct ResultsTable: View {
                         )
                         .background(.background)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
+                .frame(maxHeight: .infinity)
                 Divider()
                 paginationBar(for: result, page: page)
                 if let status = ResultsTablePresentation.truncationStatus(for: result) {
@@ -102,6 +121,7 @@ struct ResultsTable: View {
                     .background(.bar)
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
@@ -235,7 +255,7 @@ struct ResultsTable: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 7)
-        .frame(width: width, alignment: .leading)
+        .frame(width: width, height: ResultsTablePresentation.headerRowHeight, alignment: .leading)
         .background(.quaternary)
         .overlay(alignment: .bottom) {
             Rectangle()
@@ -252,7 +272,7 @@ struct ResultsTable: View {
             .truncationMode(.tail)
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
-            .frame(width: width, alignment: .leading)
+            .frame(width: width, height: ResultsTablePresentation.bodyRowHeight, alignment: .leading)
             .overlay(alignment: .bottom) {
                 Rectangle()
                     .fill(Color.secondary.opacity(0.2))
@@ -267,11 +287,26 @@ struct ResultsTable: View {
             .lineLimit(1)
             .padding(.horizontal, 8)
             .padding(.vertical, isHeader ? 7 : 6)
-            .frame(width: ResultsTablePresentation.indexColumnWidth, alignment: .trailing)
+            .frame(
+                width: ResultsTablePresentation.indexColumnWidth,
+                height: isHeader ? ResultsTablePresentation.headerRowHeight : ResultsTablePresentation.bodyRowHeight,
+                alignment: .trailing
+            )
             .background(isHeader ? Color.secondary.opacity(0.12) : Color.clear)
             .overlay(alignment: .bottom) {
                 Rectangle()
                     .fill(Color.secondary.opacity(isHeader ? 0.35 : 0.2))
+                    .frame(height: 1)
+            }
+    }
+
+    private func fillerCell(width: CGFloat) -> some View {
+        Rectangle()
+            .fill(Color.clear)
+            .frame(width: width, height: ResultsTablePresentation.bodyRowHeight)
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(Color.secondary.opacity(0.2))
                     .frame(height: 1)
             }
     }
@@ -289,6 +324,8 @@ enum ResultsTablePresentation {
     static let indexColumnWidth: CGFloat = 44
     static let minimumColumnWidth: CGFloat = 126
     static let tablePadding: CGFloat = 10
+    static let headerRowHeight: CGFloat = 29
+    static let bodyRowHeight: CGFloat = 27
 
     static func columnWidths(availableWidth: CGFloat, columnCount: Int) -> [CGFloat] {
         guard columnCount > 0 else { return [] }
@@ -311,6 +348,13 @@ enum ResultsTablePresentation {
 
     static func tableTotalWidth(availableWidth: CGFloat, columnCount: Int) -> CGFloat {
         tableBodyWidth(for: columnWidths(availableWidth: availableWidth, columnCount: columnCount)) + (tablePadding * 2)
+    }
+
+    static func fillerRowCount(viewportHeight: CGFloat, visibleRowCount: Int) -> Int {
+        let occupiedHeight = (tablePadding * 2) + headerRowHeight + (CGFloat(max(visibleRowCount, 0)) * bodyRowHeight)
+        let remainingHeight = viewportHeight - occupiedHeight
+        guard remainingHeight > 0 else { return 0 }
+        return Int(ceil(remainingHeight / bodyRowHeight))
     }
 
     static func primaryCount(for result: QueryResult) -> String {

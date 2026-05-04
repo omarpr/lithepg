@@ -16,7 +16,7 @@ struct WorkspaceView: View {
           tabBar
           Divider()
           EditorView(text: $state.editorText)
-            .frame(minHeight: 260)
+            .frame(minHeight: 200)
           Divider()
           ErrorBanner(
             message: state.lastError,
@@ -25,8 +25,10 @@ struct WorkspaceView: View {
                 Task { await state.reconnect() }
               } : nil)
           ResultsTable(result: state.lastResult)
-            .frame(minHeight: 220)
+            .frame(minHeight: 320, maxHeight: .infinity)
+            .layoutPriority(1)
         }
+        .frame(maxHeight: .infinity)
       }
       .frame(minWidth: 640)
     }
