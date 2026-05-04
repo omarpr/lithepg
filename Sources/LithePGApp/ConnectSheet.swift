@@ -13,6 +13,7 @@ struct ConnectSheet: View {
   @State private var connectionName = ""
   @State private var environment: ConnectionEnvironment = .development
   @State private var showingCAImporter = false
+  @State private var pendingDelete: SavedConnectionMetadata?
 
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
@@ -87,6 +88,28 @@ struct ConnectSheet: View {
     .task {
       await state.loadSavedConnections()
     }
+    .confirmationDialog(
+      "Delete saved connection?",
+      isPresented: Binding(
+        get: { pendingDelete != nil },
+        set: { if !$0 { pendingDelete = nil } }
+      ),
+      presenting: pendingDelete
+    ) { connection in
+      Button("Delete \(connection.name)", role: .destructive) {
+        Task {
+          await state.deleteSavedConnection(id: connection.id)
+          pendingDelete = nil
+        }
+      }
+      Button("Cancel", role: .cancel) {
+        pendingDelete = nil
+      }
+    } message: { connection in
+      Text(
+        "This removes local metadata and its credential-store secret reference. It does not touch the database."
+      )
+    }
     .fileImporter(
       isPresented: $showingCAImporter,
       allowedContentTypes: Self.certificateTypes,
@@ -125,6 +148,15 @@ struct ConnectSheet: View {
                 Task { await state.connectSavedConnection(id: connection.id) }
               }
               .buttonStyle(.bordered)
+
+              Button(role: .destructive) {
+                pendingDelete = connection
+              } label: {
+                Label("Delete saved connection", systemImage: "trash")
+                  .labelStyle(.iconOnly)
+              }
+              .buttonStyle(.borderless)
+              .help("Delete saved connection")
             }
             .padding(10)
             .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 10))

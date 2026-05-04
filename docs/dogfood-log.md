@@ -64,3 +64,9 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Successful queries append SQL, connection/environment metadata, timing, summary, and success flag; result rows are not stored.
 - Added query history popover UI with enable toggle, clear action, and “Use SQL” reuse action.
 - Added AppState tests for loading/clearing/reusing history and env-gated live history capture.
+
+## 2026-05-03 23:00 EDT — saved-connection safe delete polish
+
+- Added a destructive delete affordance for saved connections in the Connect sheet.
+- Delete now requires a confirmation dialog and clarifies it only removes local metadata and credential-store secret reference, not the database.
+- Verification: targeted AppState/Persistence test suite passed.
