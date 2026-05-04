@@ -83,3 +83,9 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Omar caught that the bottom results table still was not using the full allocated pane vertically after the width fix.
 - Increased the results pane's layout priority/minimum height, reduced the editor minimum height so the bottom pane has room, and added viewport filler rows so sparse result sets visually occupy the full table area instead of ending early.
 - Verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 80 Swift Testing tests in 12 suites. Dogfood app relaunched against the local seeded Postgres container and a cropped window screenshot was captured at `/Users/omar/.openclaw/workspace/artifacts/lithepg-layout-fix-20260504-0451.png`.
+
+## 2026-05-04 04:58 EDT — v0.4 lean/fast baseline opened
+
+- Created v0.4 Lean & Fast spec/plan from the roadmap and started the measurement-first phase.
+- Release binary baseline: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -c release --product LithePGApp` produced `.build/release/LithePGApp` at 21,909,208 bytes (20.89 MiB), about 5.89 MiB over the v0.4 target.
+- Local blocker for the query-overhead gate: `psql` is not installed on this machine yet, so final overhead comparison needs either installing `psql` or documenting an agreed temporary comparator.
