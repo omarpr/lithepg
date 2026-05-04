@@ -1,7 +1,7 @@
 # LithePG Tech Stack: Lean & AI-Era Proof
 
 ## 1. Core Philosophy
-- **Zero-Bloat:** Target binary size < 15MB.
+- **Measured Lean:** Target app binary size < 50 MiB, with a 30 MiB stretch goal. AI models ship separately.
 - **Mac-First:** Native SwiftUI implementation, no Electron or heavy C-wrappers.
 - **Local-First AI:** Privacy-centric intelligence leveraging the Apple Neural Engine (ANE).
 

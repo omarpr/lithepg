@@ -47,7 +47,7 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - [x] **Schema-to-query helper** — relation rows in the schema sidebar can insert a safe quoted `SELECT * FROM "schema"."relation" LIMIT 100;` into the active query tab without auto-running it; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 62 Swift Testing tests in 10 suites.
 - [x] **Editor/tab polish** — query tabs preserve buffers/results, result state resets on new results, SQL keyword highlighting skips comments/quoted text, and async query completion is guarded against stale cancelled runs; latest `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 65 Swift Testing tests in 11 suites.
 - [x] **Visual dogfood receipt** — latest app build launched via `./script/run_dogfood_app.sh` against the local smoke database; cropped window screenshot captured at `/Users/omar/.openclaw/workspace/artifacts/lithepg-window-20260503-173416.png` (900×672).
-- [x] **Binary size observation** — `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -c release --product LithePGApp` produced `.build/release/LithePGApp` at 21,158,552 bytes (20.18 MiB) after schema/sidebar + tabs + pagination. Still above the eventual v0.4 <15 MiB target; v0.2 keeps this as measured evidence, not a fail gate.
+- [x] **Binary size observation** — `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -c release --product LithePGApp` produced `.build/release/LithePGApp` at 21,158,552 bytes (20.18 MiB) after schema/sidebar + tabs + pagination. This was above the original v0.4 <15 MiB target; that target was later raised to a 50 MiB hard cap with a 30 MiB stretch goal after the pure-Swift dependency baseline proved the original budget unrealistic.
 - [ ] **Manual UI receipt** — pending Omar/local dogfood confirmation of sidebar refresh, tab switching, pagination, schema SELECT insertion, and results copy behavior against a real database.
 
 ## 2026-05-03 21:45 EDT — v0.3 persistence/UI wiring slice
@@ -87,5 +87,11 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 ## 2026-05-04 04:58 EDT — v0.4 lean/fast baseline opened
 
 - Created v0.4 Lean & Fast spec/plan from the roadmap and started the measurement-first phase.
-- Release binary baseline: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -c release --product LithePGApp` produced `.build/release/LithePGApp` at 21,909,208 bytes (20.89 MiB), about 5.89 MiB over the v0.4 target.
+- Release binary baseline: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -c release --product LithePGApp` produced `.build/release/LithePGApp` at 21,909,208 bytes (20.89 MiB). The original 15 MiB target is unrealistic for the pure-Swift GUI + postgres-nio dependency baseline, so v0.4 now uses a 50 MiB hard cap with a 30 MiB stretch goal.
 - Local blocker for the query-overhead gate: `psql` is not installed on this machine yet, so final overhead comparison needs either installing `psql` or documenting an agreed temporary comparator.
+
+## 2026-05-04 07:50 EDT — v0.4 binary budget adjusted
+
+- Omar called out that the original bundle-size goal is now unrealistic. Agreed: the pure-Swift GUI + postgres-nio/NIO/crypto baseline already sits around 20.89 MiB before v0.4 optimization work.
+- Raised the v0.4 app binary budget to a 50 MiB hard cap with a 30 MiB stretch goal. This keeps the app lean by desktop standards while avoiding fake optimization pressure that would weaken correctness/security.
+- CI now treats binary size above 30 MiB as a warning and above 50 MiB as a failure. AI models remain separate downloads and do not count toward the app binary budget.

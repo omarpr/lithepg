@@ -3,7 +3,7 @@
 [![CI](https://github.com/omarpr/lithepg/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/omarpr/lithepg/actions/workflows/ci.yml?query=branch%3Amain)
 &nbsp;**Release:** [`v0.1`](https://github.com/omarpr/lithepg/tree/v0.1) — Walking Skeleton
 
-A lean, Mac-native PostgreSQL client with local-first AI. Pure Swift, no `libpq`, target binary under 15 MB.
+A lean, Mac-native PostgreSQL client with local-first AI. Pure Swift, no `libpq`, target app binary under 50 MiB, with a 30 MiB stretch goal.
 
 > Badges resolve against a private repository — they render for viewers signed into GitHub with access to `omarpr/lithepg`.
 

@@ -43,10 +43,19 @@ jobs:
       - name: Test
         run: swift test
 
-      - name: Release binary size observation
+      - name: Release binary size gate
         run: |
           swift build -c release --product LithePGApp
           binary=.build/release/LithePGApp
           bytes=$(stat -f%z "$binary")
           mib=$(awk "BEGIN { printf \"%.2f\", $bytes / 1024 / 1024 }")
+          warning_bytes=$((30 * 1024 * 1024))
+          hard_cap_bytes=$((50 * 1024 * 1024))
           echo "LithePGApp release binary: ${bytes} bytes (${mib} MiB)"
+          if [ "$bytes" -gt "$hard_cap_bytes" ]; then
+            echo "::error::LithePGApp release binary exceeds the 50 MiB hard cap (${mib} MiB)."
+            exit 1
+          fi
+          if [ "$bytes" -gt "$warning_bytes" ]; then
+            echo "::warning::LithePGApp release binary exceeds the 30 MiB stretch goal (${mib} MiB)."
+          fi

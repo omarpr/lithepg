@@ -29,7 +29,7 @@ LithePG is a local macOS client that connects to user-owned PostgreSQL databases
 - If a future feature requires network AI, it must be opt-in, clearly labeled, and off by default.
 
 ## Dependency Posture
-- Minimize third-party dependencies (binary-size target <15MB).
+- Minimize third-party dependencies (app binary target <50 MiB; AI models ship separately).
 - No `libpq` or other C dependencies — reduces CVE exposure surface.
 - Dependencies are pinned via `Package.resolved`; review updates before bumping.
 

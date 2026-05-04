@@ -16,7 +16,7 @@ Not primarily aimed at indie hackers, data analysts, or DBAs — though those au
 ## 3. Success Criteria
 
 - **Primary (bar A — dogfood):** The maintainer uses LithePG as the daily Postgres client for 2 consecutive weeks without reaching for another tool.
-- **Secondary (bar B — technical):** Binary <15MB, cold start <500ms, query-path overhead <5ms vs `psql` on a localhost baseline, zero crashes in 7 days of daily dogfooding.
+- **Secondary (bar B — technical):** App binary <50 MiB hard cap with <30 MiB stretch, cold start <500ms, query-path overhead <5ms vs `psql` on a localhost baseline, zero crashes in 7 days of daily dogfooding.
 - **Deferred:** Community/adoption metrics (stars, downloads) — not a v1.0 gate.
 
 ## 4. Non-Goals
@@ -71,7 +71,7 @@ Minimal, even ugly, UI — but the full risky stack works end-to-end.
 
 ### v0.4 — Lean & Fast *(hit the thesis)*
 **Exit criteria:**
-- Binary size <15MB.
+- App binary size <50 MiB hard cap, with <30 MiB as a stretch goal.
 - Cold start <500ms (measured on maintainer's primary machine).
 - Query-path overhead <5ms vs `psql` on a localhost baseline (simple `SELECT` benchmarks).
 - Zero crashes in 7 days of daily dogfooding.
@@ -113,7 +113,7 @@ Minimal, even ugly, UI — but the full risky stack works end-to-end.
 |---|------|------------------|------------|
 | 1 | `PostgresNIO` missing a feature we need (e.g., `COPY`, `LISTEN/NOTIFY`, specific auth edge case, `gssapi`). | v0.1 exit | v0.1 validates auth + TLS + basic query only. If a gap appears: contribute upstream, work around, or re-evaluate `PostgresClientKit`. |
 | 2 | SSH tunneling in pure Swift (NIOSSH) is too low-level or painful. | v0.1 exit | Escape hatch: shell out to the system `ssh` binary for tunneling in v0.1. Document as tech debt; revisit in v0.4 or v1.1. |
-| 3 | Binary size creeps past 15MB once AI ships. | v0.4 + v0.5 | Ship AI model as a separate download. Measure binary size in CI from v0.2 onward. Fail the build if >15MB. |
+| 3 | Binary size creeps past the lean desktop budget once AI ships. | v0.4 + v0.5 | Ship AI model as a separate download. Measure binary size in CI from v0.2 onward. Warn above 30 MiB and fail above 50 MiB. |
 | 4 | On-device NL2SQL quality is poor on real backend-engineer schemas (long names, unusual FK conventions). | v0.5 | v0.5 exit criteria already scope to simple queries + 2-table joins. Advanced cases explicitly deferred to v1.1+. |
 | 5 | Dogfood bar A fails — maintainer keeps reaching for another tool at v0.3. | v0.3 dogfood window | Treat it as data, not failure. Log every switch in `docs/dogfood-log.md`, fix the gap, extend v0.3. Do not skip to v0.4 with an unresolved dogfood log. |
 
