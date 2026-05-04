@@ -368,6 +368,60 @@ struct AppStateTests {
     #expect(s.persistenceError == nil)
   }
 
+  @Test("loads, clears, and reuses query history entries")
+  func queryHistoryLoadClearAndReuse() async throws {
+    let store = InMemoryQueryHistoryStore(entries: [
+      QueryHistoryEntry(
+        connectionLabel: "omar@localhost:5432/postgres",
+        sql: "SELECT newest",
+        executedAt: Date(timeIntervalSince1970: 2),
+        elapsedMilliseconds: 2,
+        summary: "1 row",
+        succeeded: true
+      ),
+      QueryHistoryEntry(
+        connectionLabel: "omar@localhost:5432/postgres",
+        sql: "SELECT oldest",
+        executedAt: Date(timeIntervalSince1970: 1),
+        elapsedMilliseconds: 1,
+        summary: "1 row",
+        succeeded: true
+      ),
+    ])
+    let s = AppState(queryHistoryStore: store)
+
+    await s.loadQueryHistory(limit: 1)
+
+    #expect(s.queryHistory.map(\.sql) == ["SELECT newest"])
+    s.useHistoryEntry(s.queryHistory[0])
+    #expect(s.editorText == "SELECT newest")
+
+    await s.clearQueryHistory()
+    #expect(s.queryHistory.isEmpty)
+    #expect(s.persistenceError == nil)
+  }
+
+  @Test(
+    "query history records successful live queries when enabled",
+    .enabled(if: appStateLivePostgresURL != nil))
+  func liveQueryHistoryRecordsSuccess() async throws {
+    let historyStore = InMemoryQueryHistoryStore()
+    let s = AppState(queryHistoryStore: historyStore)
+    s.queryHistoryEnabled = true
+    await s.connect(url: appStateLivePostgresURL!)
+    defer { Task { await s.disconnect() } }
+
+    s.editorText = "SELECT 7 AS history_smoke"
+    await s.runCurrentQuery()
+
+    let entry = try #require(s.queryHistory.first)
+    #expect(entry.sql == "SELECT 7 AS history_smoke")
+    #expect(entry.connectionLabel.contains("localhost"))
+    #expect(entry.succeeded == true)
+    #expect(entry.summary == "1 row")
+    #expect(entry.elapsedMilliseconds >= 0)
+  }
+
   @Test(
     "connects through AppState and renders a query result",
     .enabled(if: appStateLivePostgresURL != nil))

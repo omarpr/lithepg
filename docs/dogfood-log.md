@@ -57,3 +57,10 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Added Connect sheet save flow: save checkbox, name field, environment picker, saved-connection list, and environment badges.
 - Added active environment tracking and a production warning banner for production-tagged saved connections.
 - Verification in progress: targeted AppState and Persistence tests passed; full `swift test` and dogfood app launch remain next before the commit.
+
+## 2026-05-03 22:30 EDT — v0.3 query history wiring slice
+
+- Added opt-in query history AppState state and persistence wiring.
+- Successful queries append SQL, connection/environment metadata, timing, summary, and success flag; result rows are not stored.
+- Added query history popover UI with enable toggle, clear action, and “Use SQL” reuse action.
+- Added AppState tests for loading/clearing/reusing history and env-gated live history capture.

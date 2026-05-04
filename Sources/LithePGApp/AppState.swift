@@ -37,6 +37,8 @@ public final class AppState {
   public var savedConnections: [SavedConnectionMetadata] = []
   public var selectedSavedConnectionID: SavedConnectionMetadata.ID?
   public var activeSavedConnection: SavedConnectionMetadata?
+  public var queryHistoryEnabled: Bool = false
+  public var queryHistory: [QueryHistoryEntry] = []
   public var persistenceError: String?
 
   public var connectionLabel: String? {
@@ -225,6 +227,30 @@ public final class AppState {
     }
   }
 
+  public func loadQueryHistory(limit: Int? = 50) async {
+    do {
+      queryHistory = try await queryHistoryStore.list(limit: limit)
+      persistenceError = nil
+    } catch {
+      setPersistenceError(error)
+    }
+  }
+
+  public func clearQueryHistory() async {
+    do {
+      try await queryHistoryStore.clear()
+      queryHistory = []
+      persistenceError = nil
+    } catch {
+      setPersistenceError(error)
+    }
+  }
+
+  public func useHistoryEntry(_ entry: QueryHistoryEntry) {
+    editorText = entry.sql
+    clearError()
+  }
+
   public func disconnect() async {
     queryTask?.cancel()
     queryTask = nil
@@ -362,12 +388,14 @@ public final class AppState {
     }
 
     markRunning()
+    let startedAt = ContinuousClock.now
     defer { finishQuery(if: runID) }
     do {
       let result = try await connector.execute(sql)
       try Task.checkCancellation()
       if activeQueryRunID == runID {
         setResult(result, for: queryTabID)
+        await appendQueryHistory(sql: sql, result: result)
       }
     } catch is CancellationError {
       if activeQueryRunID == runID {
@@ -375,7 +403,14 @@ public final class AppState {
       }
     } catch {
       if activeQueryRunID == runID {
-        setError(ErrorRedaction.redactCredentials(in: error))
+        let message = ErrorRedaction.redactCredentials(in: error)
+        setError(message)
+        await appendQueryHistory(
+          sql: sql,
+          elapsed: startedAt.duration(to: ContinuousClock.now),
+          summary: message,
+          succeeded: false
+        )
       }
     }
   }
@@ -464,6 +499,61 @@ public final class AppState {
     guard activeQueryRunID == runID else { return }
     activeQueryRunID = nil
     queryTask = nil
+  }
+
+  private func appendQueryHistory(sql: String, result: QueryResult) async {
+    await appendQueryHistory(
+      sql: sql,
+      elapsed: result.elapsed,
+      summary: Self.historySummary(for: result),
+      succeeded: true
+    )
+  }
+
+  private func appendQueryHistory(
+    sql: String,
+    elapsed: Duration,
+    summary: String,
+    succeeded: Bool
+  ) async {
+    guard queryHistoryEnabled, let connectionLabel else { return }
+    let entry = QueryHistoryEntry(
+      connectionName: activeSavedConnection?.name,
+      connectionLabel: connectionLabel,
+      environment: activeSavedConnection?.environment,
+      sql: sql,
+      elapsedMilliseconds: Self.elapsedMilliseconds(elapsed),
+      summary: summary,
+      succeeded: succeeded
+    )
+    do {
+      try await queryHistoryStore.append(entry)
+      await loadQueryHistory()
+    } catch {
+      setPersistenceError(error)
+    }
+  }
+
+  private static func historySummary(for result: QueryResult) -> String {
+    switch result.status {
+    case .rows:
+      return "\(result.rowCount) row\(result.rowCount == 1 ? "" : "s")"
+    case .empty:
+      return "No rows"
+    case .command(let tag, let affected):
+      return "\(tag): \(affected) row\(affected == 1 ? "" : "s") affected"
+    }
+  }
+
+  private static func elapsedMilliseconds(_ duration: Duration) -> Int64 {
+    let components = duration.components
+    let seconds = Int64(clamping: components.seconds)
+    let fractionalMilliseconds = Int64(components.attoseconds / 1_000_000_000_000_000)
+    let (milliseconds, overflow) = seconds.multipliedReportingOverflow(by: 1_000)
+    if overflow { return seconds < 0 ? Int64.min : Int64.max }
+    let (total, addOverflow) = milliseconds.addingReportingOverflow(fractionalMilliseconds)
+    if addOverflow { return milliseconds < 0 ? Int64.min : Int64.max }
+    return total
   }
 
   private static func connectionLabel(for config: ConnectionConfig) -> String {

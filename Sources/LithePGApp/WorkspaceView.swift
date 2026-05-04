@@ -3,6 +3,7 @@ import SwiftUI
 
 struct WorkspaceView: View {
   @Bindable var state: AppState
+  @State private var showingQueryHistory = false
 
   var body: some View {
     HSplitView {
@@ -76,6 +77,15 @@ struct WorkspaceView: View {
         }
         .keyboardShortcut("]", modifiers: [.command, .shift])
         .disabled(state.queryTabs.count <= 1)
+
+        Button {
+          showingQueryHistory.toggle()
+        } label: {
+          Label("Query History", systemImage: "clock.arrow.circlepath")
+        }
+        .popover(isPresented: $showingQueryHistory) {
+          QueryHistoryView(state: state)
+        }
 
         Button("Disconnect") {
           Task { await state.disconnect() }
