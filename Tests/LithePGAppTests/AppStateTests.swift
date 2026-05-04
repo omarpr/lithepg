@@ -423,6 +423,47 @@ struct AppStateTests {
   }
 
   @Test(
+    "saved connection flow resolves credentials and tracks production environment",
+    .enabled(if: appStateLivePostgresURL != nil))
+  func liveSavedConnectionFlowTracksEnvironment() async throws {
+    let savedStore = InMemorySavedConnectionStore()
+    let credentialStore = InMemoryCredentialStore()
+    let historyStore = InMemoryQueryHistoryStore()
+    let s = AppState(
+      savedConnectionStore: savedStore,
+      credentialStore: credentialStore,
+      queryHistoryStore: historyStore
+    )
+
+    let metadata = try #require(
+      await s.saveConnection(
+        name: "Production smoke",
+        url: appStateLivePostgresURL!,
+        environment: .production
+      ))
+
+    await s.connectSavedConnection(id: metadata.id)
+    defer { Task { await s.disconnect() } }
+
+    #expect(s.isConnected == true)
+    #expect(s.lastError == nil)
+    #expect(s.schema != nil)
+    #expect(s.activeSavedConnection?.id == metadata.id)
+    #expect(s.activeConnectionEnvironment == .production)
+    #expect(s.windowTitle == "LithePG — Production smoke")
+
+    s.queryHistoryEnabled = true
+    s.editorText = "SELECT 9 AS saved_connection_smoke"
+    await s.runCurrentQuery()
+
+    #expect(s.lastResult?.rows.first?.cells.first == .text("9"))
+    let history = try #require(s.queryHistory.first)
+    #expect(history.connectionName == "Production smoke")
+    #expect(history.environment == .production)
+    #expect(history.sql == "SELECT 9 AS saved_connection_smoke")
+  }
+
+  @Test(
     "connects through AppState and renders a query result",
     .enabled(if: appStateLivePostgresURL != nil))
   func liveConnectAndRunQuery() async throws {
