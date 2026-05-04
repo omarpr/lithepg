@@ -46,35 +46,42 @@ struct ResultsTable: View {
         case .rows:
             VStack(spacing: 0) {
                 GeometryReader { proxy in
-                    let columnWidth = ResultsTablePresentation.columnWidth(
+                    let columnWidths = ResultsTablePresentation.columnWidths(
                         availableWidth: proxy.size.width,
                         columnCount: result.columns.count
                     )
+                    let tableBodyWidth = ResultsTablePresentation.tableBodyWidth(for: columnWidths)
                     ScrollView([.horizontal, .vertical]) {
-                        Grid(alignment: .leading, horizontalSpacing: 0, verticalSpacing: 0) {
-                            GridRow {
+                        VStack(alignment: .leading, spacing: 0) {
+                            HStack(spacing: 0) {
                                 indexCell("#", isHeader: true)
                                     .accessibilityIdentifier("result-index-header")
                                 ForEach(Array(result.columns.enumerated()), id: \.offset) { columnIndex, column in
-                                    headerCell(column, columnIndex: columnIndex, width: columnWidth)
+                                    headerCell(column, columnIndex: columnIndex, width: columnWidths[columnIndex])
                                 }
                             }
+                            .frame(width: tableBodyWidth, alignment: .leading)
+
                             ForEach(Array(ResultsTablePresentation.rows(for: result, page: page).enumerated()), id: \.element.id) { pageRowIndex, row in
                                 let rowIndex = ResultsTablePresentation.absoluteRowNumber(pageRowIndex: pageRowIndex, page: page) - 1
-                                GridRow {
+                                HStack(spacing: 0) {
                                     indexCell(String(rowIndex + 1), isHeader: false)
                                         .accessibilityIdentifier("result-row-index-\(rowIndex)")
                                     ForEach(Array(row.cells.enumerated()), id: \.offset) { columnIndex, cellValue in
-                                        dataCell(ResultsTablePresentation.render(cellValue), isNull: cellValue == .null, width: columnWidth)
+                                        dataCell(ResultsTablePresentation.render(cellValue), isNull: cellValue == .null, width: columnWidths[columnIndex])
                                             .accessibilityIdentifier("result-cell-\(rowIndex)-\(columnIndex)")
                                     }
                                 }
+                                .frame(width: tableBodyWidth, alignment: .leading)
                             }
                         }
-                        .padding(.top, ResultsTablePresentation.tablePadding)
-                        .padding(.horizontal, ResultsTablePresentation.tablePadding)
-                        .padding(.bottom, ResultsTablePresentation.tablePadding)
-                        .frame(minWidth: proxy.size.width, alignment: .leading)
+                        .padding(ResultsTablePresentation.tablePadding)
+                        .frame(
+                            minWidth: proxy.size.width,
+                            minHeight: proxy.size.height,
+                            alignment: .topLeading
+                        )
+                        .background(.background)
                     }
                 }
                 Divider()
@@ -283,10 +290,27 @@ enum ResultsTablePresentation {
     static let minimumColumnWidth: CGFloat = 126
     static let tablePadding: CGFloat = 10
 
-    static func columnWidth(availableWidth: CGFloat, columnCount: Int) -> CGFloat {
-        guard columnCount > 0 else { return minimumColumnWidth }
-        let usableWidth = availableWidth - indexColumnWidth - (tablePadding * 2)
-        return max(minimumColumnWidth, floor(usableWidth / CGFloat(columnCount)))
+    static func columnWidths(availableWidth: CGFloat, columnCount: Int) -> [CGFloat] {
+        guard columnCount > 0 else { return [] }
+        let usableWidth = max(0, availableWidth - indexColumnWidth - (tablePadding * 2))
+        let minimumContentWidth = minimumColumnWidth * CGFloat(columnCount)
+        guard usableWidth > minimumContentWidth else {
+            return Array(repeating: minimumColumnWidth, count: columnCount)
+        }
+
+        let baseWidth = floor(usableWidth / CGFloat(columnCount))
+        let remainder = usableWidth - (baseWidth * CGFloat(columnCount))
+        return (0..<columnCount).map { columnIndex in
+            columnIndex == columnCount - 1 ? baseWidth + remainder : baseWidth
+        }
+    }
+
+    static func tableBodyWidth(for columnWidths: [CGFloat]) -> CGFloat {
+        indexColumnWidth + columnWidths.reduce(0, +)
+    }
+
+    static func tableTotalWidth(availableWidth: CGFloat, columnCount: Int) -> CGFloat {
+        tableBodyWidth(for: columnWidths(availableWidth: availableWidth, columnCount: columnCount)) + (tablePadding * 2)
     }
 
     static func primaryCount(for result: QueryResult) -> String {
