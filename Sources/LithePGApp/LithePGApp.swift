@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 @main
@@ -22,6 +23,7 @@ struct RootView: View {
     var body: some View {
         WorkspaceView(state: state)
             .frame(minWidth: 900, minHeight: 620)
+            .background(WindowStartupSizer())
             .navigationTitle(state.windowTitle)
             .sheet(isPresented: Binding(
                 get: { startupConfig == nil && state.connectionState == .disconnected },
@@ -38,6 +40,30 @@ struct RootView: View {
             .onDisappear {
                 Task { await state.disconnect() }
             }
+    }
+}
+
+struct WindowStartupSizer: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            guard let window = view.window, !context.coordinator.didResize else { return }
+            context.coordinator.didResize = true
+            let visibleFrame = window.screen?.visibleFrame ?? NSScreen.main?.visibleFrame
+            guard let visibleFrame else { return }
+            window.setFrame(visibleFrame, display: true, animate: false)
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    final class Coordinator {
+        var didResize = false
     }
 }
 
