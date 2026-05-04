@@ -49,3 +49,11 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - [x] **Visual dogfood receipt** — latest app build launched via `./script/run_dogfood_app.sh` against the local smoke database; cropped window screenshot captured at `/Users/omar/.openclaw/workspace/artifacts/lithepg-window-20260503-173416.png` (900×672).
 - [x] **Binary size observation** — `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -c release --product LithePGApp` produced `.build/release/LithePGApp` at 21,158,552 bytes (20.18 MiB) after schema/sidebar + tabs + pagination. Still above the eventual v0.4 <15 MiB target; v0.2 keeps this as measured evidence, not a fail gate.
 - [ ] **Manual UI receipt** — pending Omar/local dogfood confirmation of sidebar refresh, tab switching, pagination, schema SELECT insertion, and results copy behavior against a real database.
+
+## 2026-05-03 21:45 EDT — v0.3 persistence/UI wiring slice
+
+- Added durable saved-connection metadata persistence via JSON under Application Support, with passwords routed through a Keychain-facing credential store abstraction.
+- Wired AppState saved-connection load/save/delete/connect methods with in-memory stores in tests and file/keychain defaults in the app.
+- Added Connect sheet save flow: save checkbox, name field, environment picker, saved-connection list, and environment badges.
+- Added active environment tracking and a production warning banner for production-tagged saved connections.
+- Verification in progress: targeted AppState and Persistence tests passed; full `swift test` and dogfood app launch remain next before the commit.
