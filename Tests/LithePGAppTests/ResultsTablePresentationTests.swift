@@ -86,6 +86,13 @@ struct ResultsTablePresentationTests {
         #expect(ResultsTablePresentation.secondaryStatus(for: result, page: 2) == "rows 101–200 of 205 · 10 ms")
     }
 
+    @Test("column width fills available result space until it reaches the minimum")
+    func columnWidthFillsAvailableSpace() {
+        #expect(ResultsTablePresentation.columnWidth(availableWidth: 900, columnCount: 2) == 418)
+        #expect(ResultsTablePresentation.columnWidth(availableWidth: 260, columnCount: 4) == ResultsTablePresentation.minimumColumnWidth)
+        #expect(ResultsTablePresentation.columnWidth(availableWidth: 900, columnCount: 0) == ResultsTablePresentation.minimumColumnWidth)
+    }
+
     @Test("copy text exports tab-separated rows and status details")
     func copyText() {
         let rows = QueryResult(

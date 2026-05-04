@@ -45,30 +45,37 @@ struct ResultsTable: View {
             )
         case .rows:
             VStack(spacing: 0) {
-                ScrollView([.horizontal, .vertical]) {
-                    Grid(alignment: .leading, horizontalSpacing: 0, verticalSpacing: 0) {
-                        GridRow {
-                            indexCell("#", isHeader: true)
-                                .accessibilityIdentifier("result-index-header")
-                            ForEach(Array(result.columns.enumerated()), id: \.offset) { columnIndex, column in
-                                headerCell(column, columnIndex: columnIndex)
-                            }
-                        }
-                        ForEach(Array(ResultsTablePresentation.rows(for: result, page: page).enumerated()), id: \.element.id) { pageRowIndex, row in
-                            let rowIndex = ResultsTablePresentation.absoluteRowNumber(pageRowIndex: pageRowIndex, page: page) - 1
+                GeometryReader { proxy in
+                    let columnWidth = ResultsTablePresentation.columnWidth(
+                        availableWidth: proxy.size.width,
+                        columnCount: result.columns.count
+                    )
+                    ScrollView([.horizontal, .vertical]) {
+                        Grid(alignment: .leading, horizontalSpacing: 0, verticalSpacing: 0) {
                             GridRow {
-                                indexCell(String(rowIndex + 1), isHeader: false)
-                                    .accessibilityIdentifier("result-row-index-\(rowIndex)")
-                                ForEach(Array(row.cells.enumerated()), id: \.offset) { columnIndex, cellValue in
-                                    dataCell(ResultsTablePresentation.render(cellValue), isNull: cellValue == .null)
-                                        .accessibilityIdentifier("result-cell-\(rowIndex)-\(columnIndex)")
+                                indexCell("#", isHeader: true)
+                                    .accessibilityIdentifier("result-index-header")
+                                ForEach(Array(result.columns.enumerated()), id: \.offset) { columnIndex, column in
+                                    headerCell(column, columnIndex: columnIndex, width: columnWidth)
+                                }
+                            }
+                            ForEach(Array(ResultsTablePresentation.rows(for: result, page: page).enumerated()), id: \.element.id) { pageRowIndex, row in
+                                let rowIndex = ResultsTablePresentation.absoluteRowNumber(pageRowIndex: pageRowIndex, page: page) - 1
+                                GridRow {
+                                    indexCell(String(rowIndex + 1), isHeader: false)
+                                        .accessibilityIdentifier("result-row-index-\(rowIndex)")
+                                    ForEach(Array(row.cells.enumerated()), id: \.offset) { columnIndex, cellValue in
+                                        dataCell(ResultsTablePresentation.render(cellValue), isNull: cellValue == .null, width: columnWidth)
+                                            .accessibilityIdentifier("result-cell-\(rowIndex)-\(columnIndex)")
+                                    }
                                 }
                             }
                         }
+                        .padding(.top, ResultsTablePresentation.tablePadding)
+                        .padding(.horizontal, ResultsTablePresentation.tablePadding)
+                        .padding(.bottom, ResultsTablePresentation.tablePadding)
+                        .frame(minWidth: proxy.size.width, alignment: .leading)
                     }
-                    .padding(.top, 8)
-                    .padding(.horizontal, 10)
-                    .padding(.bottom, 10)
                 }
                 Divider()
                 paginationBar(for: result, page: page)
@@ -206,7 +213,7 @@ struct ResultsTable: View {
         min(max(page, 1), ResultsTablePresentation.pageCount(for: result))
     }
 
-    private func headerCell(_ column: QueryResult.Column, columnIndex: Int) -> some View {
+    private func headerCell(_ column: QueryResult.Column, columnIndex: Int, width: CGFloat) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
             Text(ResultsTablePresentation.headerName(for: column))
                 .font(.caption.weight(.semibold))
@@ -221,7 +228,7 @@ struct ResultsTable: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 7)
-        .frame(minWidth: 126, alignment: .leading)
+        .frame(width: width, alignment: .leading)
         .background(.quaternary)
         .overlay(alignment: .bottom) {
             Rectangle()
@@ -230,7 +237,7 @@ struct ResultsTable: View {
         }
     }
 
-    private func dataCell(_ value: String, isNull: Bool) -> some View {
+    private func dataCell(_ value: String, isNull: Bool, width: CGFloat) -> some View {
         Text(value)
             .font(.caption.monospaced())
             .foregroundStyle(isNull ? .tertiary : .primary)
@@ -238,7 +245,7 @@ struct ResultsTable: View {
             .truncationMode(.tail)
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
-            .frame(minWidth: 126, maxWidth: 240, alignment: .leading)
+            .frame(width: width, alignment: .leading)
             .overlay(alignment: .bottom) {
                 Rectangle()
                     .fill(Color.secondary.opacity(0.2))
@@ -253,7 +260,7 @@ struct ResultsTable: View {
             .lineLimit(1)
             .padding(.horizontal, 8)
             .padding(.vertical, isHeader ? 7 : 6)
-            .frame(width: 44, alignment: .trailing)
+            .frame(width: ResultsTablePresentation.indexColumnWidth, alignment: .trailing)
             .background(isHeader ? Color.secondary.opacity(0.12) : Color.clear)
             .overlay(alignment: .bottom) {
                 Rectangle()
@@ -272,6 +279,15 @@ struct ResultsTable: View {
 
 enum ResultsTablePresentation {
     static let pageSize = 100
+    static let indexColumnWidth: CGFloat = 44
+    static let minimumColumnWidth: CGFloat = 126
+    static let tablePadding: CGFloat = 10
+
+    static func columnWidth(availableWidth: CGFloat, columnCount: Int) -> CGFloat {
+        guard columnCount > 0 else { return minimumColumnWidth }
+        let usableWidth = availableWidth - indexColumnWidth - (tablePadding * 2)
+        return max(minimumColumnWidth, floor(usableWidth / CGFloat(columnCount)))
+    }
 
     static func primaryCount(for result: QueryResult) -> String {
         switch result.status {
