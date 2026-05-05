@@ -1,9 +1,9 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+  # Temporarily manual-only while GitHub Actions is blocked by account billing/
+  # spending-limit settings. Re-enable push/pull_request triggers once resolved.
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
