@@ -145,3 +145,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Startup deferral receipt: saved connections are loaded by the connect sheet task, query history is loaded by the history popover task, and schema loading remains connection-scoped; none are required for first shell readiness.
 - Verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 85 tests across 12 suites.
 - v0.4 measurement re-run: `.build/v04-measurements/20260505-083711`; shell readiness 133.76 ms; connected startup + `SELECT 1` 184.91 ms; binary 21,936,264 bytes / 20.92 MiB raw, strip probe 11.75 MiB; simple query median overhead 0.040 ms vs `psql`; dogfood query median overhead 0.038 ms vs `psql`.
+
+## 2026-05-05 08:39 EDT — dogfood stability check harness
+
+- Added `script/dogfood_check.sh` as a one-command local stability gate. It starts/refreshes seeded Postgres, runs the default Swift test suite, runs the live dogfood AppState/schema/history slice with `POSTGRES_TEST_URL`, runs the v0.4 measurement gate, and writes `status.json` plus logs under `.build/dogfood-checks/<timestamp>/`.
+- First run: `.build/dogfood-checks/20260505-083839/status.json` on `main` at `deedb3b` passed default tests, live tests, and v0.4 measurements.
+- First check metrics: shell readiness 126.26 ms; connected startup + `SELECT 1` 171.37 ms; binary 20.92 MiB raw / 11.75 MiB strip-probe; simple query median overhead 0.016 ms; dogfood query median overhead 0.027 ms.
+- v0.3 dogfood triage status:
+  - Saved connections, credential split, production environment tracking, query history, schema refresh, reconnect, and AppState live query path are covered by the live dogfood test slice and currently passing.
+  - Results-pane vertical fill was fixed in the v0.3 layout polish and remains covered by presentation tests.
+  - Manual UI receipt for sidebar refresh, tab switching, pagination, schema SELECT insertion, and result-copy behavior remains pending Omar/local visual confirmation; no code blocker is currently identified.
+- Stability window status: day 0 check is green; do not tag `v0.4` until the 7-day zero-crash window is satisfied.
