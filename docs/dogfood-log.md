@@ -123,3 +123,10 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Resolved Swift concurrency warnings in the query row-collection path by moving row aggregation behind a small locked accumulator instead of mutating captured vars from the `@Sendable` PostgresNIO row callback.
 - Verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 84 tests across 12 suites.
 - v0.4 measurement re-run after hardening: `.build/v04-measurements/20260505-082920`; binary 21,923,432 bytes / 20.91 MiB raw, strip probe 11.75 MiB; cold startup 196.70 ms; simple query median overhead 0.044 ms vs `psql`; dogfood query median overhead -0.030 ms vs `psql`.
+
+## 2026-05-05 08:31 EDT — keychain hardening and security posture docs
+
+- Keychain saves now target the data-protection keychain (`kSecUseDataProtectionKeychain`) with `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, while reads retain a legacy fallback for passwords saved before the migration. Deletes remove both data-protection and legacy entries.
+- Updated `docs/SECURITY.md` to match the current pre-1.0 implementation instead of over-claiming sandbox/TLS defaults.
+- Verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 84 tests across 12 suites.
+- v0.4 measurement re-run: `.build/v04-measurements/20260505-083136`; binary 21,924,008 bytes / 20.91 MiB raw, strip probe 11.75 MiB; cold startup 188.82 ms; simple query median overhead 0.018 ms vs `psql`; dogfood query median overhead 0.033 ms vs `psql`.

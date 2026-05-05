@@ -76,8 +76,12 @@ public actor KeychainCredentialStore: CredentialStore {
 
   public func saveSecret(_ secret: String, for reference: String) async throws {
     let data = Data(secret.utf8)
-    var query = baseQuery(reference: reference)
-    SecItemDelete(query as CFDictionary)
+    // Remove any previous value from both the data-protection and legacy keychains, then
+    // write the new value to the data-protection keychain so future sandboxed/signed builds
+    // scope credentials to the app identity instead of the broad user login keychain.
+    SecItemDelete(baseQuery(reference: reference, dataProtection: true) as CFDictionary)
+    SecItemDelete(baseQuery(reference: reference, dataProtection: false) as CFDictionary)
+    var query = baseQuery(reference: reference, dataProtection: true)
     query[kSecValueData as String] = data
     query[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
     let status = SecItemAdd(query as CFDictionary, nil)
@@ -85,7 +89,22 @@ public actor KeychainCredentialStore: CredentialStore {
   }
 
   public func loadSecret(for reference: String) async throws -> String? {
-    var query = baseQuery(reference: reference)
+    if let secret = try loadSecret(for: reference, dataProtection: true) { return secret }
+    // Backward-compatible read path for secrets saved before the data-protection keychain
+    // migration. The next save writes to the hardened path.
+    return try loadSecret(for: reference, dataProtection: false)
+  }
+
+  public func deleteSecret(for reference: String) async throws {
+    let first = SecItemDelete(baseQuery(reference: reference, dataProtection: true) as CFDictionary)
+    let second = SecItemDelete(baseQuery(reference: reference, dataProtection: false) as CFDictionary)
+    for status in [first, second] where status != errSecSuccess && status != errSecItemNotFound {
+      throw KeychainError(status: status)
+    }
+  }
+
+  private func loadSecret(for reference: String, dataProtection: Bool) throws -> String? {
+    var query = baseQuery(reference: reference, dataProtection: dataProtection)
     query[kSecReturnData as String] = true
     query[kSecMatchLimit as String] = kSecMatchLimitOne
     var result: CFTypeRef?
@@ -96,19 +115,14 @@ public actor KeychainCredentialStore: CredentialStore {
     return String(data: data, encoding: .utf8)
   }
 
-  public func deleteSecret(for reference: String) async throws {
-    let status = SecItemDelete(baseQuery(reference: reference) as CFDictionary)
-    guard status == errSecSuccess || status == errSecItemNotFound else {
-      throw KeychainError(status: status)
-    }
-  }
-
-  private func baseQuery(reference: String) -> [String: Any] {
-    [
+  private func baseQuery(reference: String, dataProtection: Bool) -> [String: Any] {
+    var query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
       kSecAttrAccount as String: reference,
     ]
+    query[kSecUseDataProtectionKeychain as String] = dataProtection
+    return query
   }
 }
 

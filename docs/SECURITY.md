@@ -8,19 +8,21 @@ LithePG is a local macOS client that connects to user-owned PostgreSQL databases
 4. **User privacy** (no off-device analytics or LLM calls).
 
 ## Credential Storage
-- **All secrets live in the macOS Keychain.** Never in SwiftData, plist, or on-disk files.
-- Each connection references a Keychain item by identifier; the app never persists the password itself.
-- Client certificates and SSH keys are referenced by path or Keychain handle, never copied.
+- **All saved passwords live in the macOS Keychain.** Never in SwiftData, plist, or project-owned JSON files.
+- Keychain writes use `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` and the data-protection keychain flag when available. Reads retain a legacy fallback for pre-migration saved passwords.
+- Each saved connection references a Keychain item by identifier; the app persists connection metadata only.
+- Client certificates and SSH keys are referenced by path or by the user's system SSH/Keychain configuration; they are not copied into LithePG-owned storage.
 
 ## Transport Security
-- **TLS is required by default.** `sslmode=require` minimum; prefer `verify-full` when a root CA is configured.
-- Disabling TLS requires explicit opt-in per connection with a visible UI warning.
-- No fallback to cleartext on handshake failure.
+- Postgres URL `sslmode=` is honored. `require`, `verify-ca`, and `verify-full` map to LithePG's verified TLS path; `disable`, `allow`, and `prefer` remain cleartext until LithePG adds a distinct opportunistic/no-verify TLS mode.
+- Explicit TLS connections do not fall back to cleartext on handshake failure.
+- Current pre-1.0 builds still permit cleartext for localhost/dogfood and explicit `sslmode=disable`; remote cleartext warnings and richer TLS modes remain tracked hardening work.
 
 ## Local Data at Rest
-- SwiftData store lives under the app's sandbox container.
+- Saved connection metadata and opt-in query history are stored as local JSON files under Application Support in current pre-sandbox builds.
 - Query history is opt-in and can be cleared at any time.
-- No credentials, query results, or schema snapshots are written outside the sandbox.
+- Credentials and query results are not written to LithePG-owned JSON files.
+- Public distribution must add App Sandbox, Hardened Runtime, signing, and notarization before broad release.
 
 ## AI & Privacy
 - **All inference is on-device** (CoreML / MLX).
