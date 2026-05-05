@@ -40,14 +40,24 @@ if [[ ! -x "$BENCH_BIN" ]]; then
 fi
 
 APP_BYTES=$(stat -f%z "$APP_BIN")
+STRIP_PROBE=$(mktemp -t lithepg-strip.XXXXXX)
+cp "$APP_BIN" "$STRIP_PROBE"
+strip -x "$STRIP_PROBE" >/dev/null 2>&1 || true
+APP_STRIP_X_BYTES=$(stat -f%z "$STRIP_PROBE")
+rm -f "$STRIP_PROBE"
 python3 - <<PY > "$OUT_DIR/binary-size.json"
 import json
 bytes_ = int("$APP_BYTES")
+strip_x_bytes = int("$APP_STRIP_X_BYTES")
 print(json.dumps({
   "product": "LithePGApp",
   "path": "$APP_BIN",
   "bytes": bytes_,
   "mib": bytes_ / 1024 / 1024,
+  "stripXBytes": strip_x_bytes,
+  "stripXMiB": strip_x_bytes / 1024 / 1024,
+  "stripXSavingsBytes": bytes_ - strip_x_bytes,
+  "stripXSavingsMiB": (bytes_ - strip_x_bytes) / 1024 / 1024,
   "stretchGoalMib": 30,
   "hardCapMib": 50,
   "underStretchGoal": bytes_ <= 30 * 1024 * 1024,
