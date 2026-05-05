@@ -130,3 +130,9 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Updated `docs/SECURITY.md` to match the current pre-1.0 implementation instead of over-claiming sandbox/TLS defaults.
 - Verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 84 tests across 12 suites.
 - v0.4 measurement re-run: `.build/v04-measurements/20260505-083136`; binary 21,924,008 bytes / 20.91 MiB raw, strip probe 11.75 MiB; cold startup 188.82 ms; simple query median overhead 0.018 ms vs `psql`; dogfood query median overhead 0.033 ms vs `psql`.
+
+## 2026-05-05 08:33 EDT — remote cleartext UI warning
+
+- Connect sheet now surfaces an inline warning when a non-loopback Postgres URL would connect cleartext without TLS or SSH. Localhost dogfood remains quiet.
+- Verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 84 tests across 12 suites.
+- v0.4 measurement re-run: `.build/v04-measurements/20260505-083321`; binary 21,936,264 bytes / 20.92 MiB raw, strip probe 11.75 MiB; cold startup 181.18 ms; simple query median overhead 0.030 ms vs `psql`; dogfood query median overhead 0.026 ms vs `psql`.

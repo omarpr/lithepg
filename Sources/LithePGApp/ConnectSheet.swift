@@ -1,4 +1,5 @@
 import SwiftUI
+import LithePGCore
 import UniformTypeIdentifiers
 
 struct ConnectSheet: View {
@@ -14,6 +15,14 @@ struct ConnectSheet: View {
   @State private var environment: ConnectionEnvironment = .development
   @State private var showingCAImporter = false
   @State private var pendingDelete: SavedConnectionMetadata?
+
+  private var cleartextWarning: String? {
+    guard !tls, !useSSH, let config = try? ConnectionConfig(url: url), config.tlsMode == .disable else {
+      return nil
+    }
+    guard !Self.isLoopback(host: config.host) else { return nil }
+    return "Cleartext remote connection. Enable TLS or add ?sslmode=require before connecting outside localhost."
+  }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
@@ -39,6 +48,12 @@ struct ConnectSheet: View {
         .onChange(of: tls) { _, enabled in
           if enabled { useSSH = false }
         }
+      if let cleartextWarning {
+        Label(cleartextWarning, systemImage: "exclamationmark.triangle.fill")
+          .font(.caption)
+          .foregroundStyle(.orange)
+          .textSelection(.enabled)
+      }
       if tls {
         HStack {
           TextField("CA certificate path", text: $tlsCAPath)
@@ -215,6 +230,11 @@ struct ConnectSheet: View {
     case .production: .red
     case .custom: .blue
     }
+  }
+
+  private static func isLoopback(host: String) -> Bool {
+    let lower = host.lowercased()
+    return lower == "localhost" || lower == "::1" || lower.hasPrefix("127.")
   }
 
   private static var certificateTypes: [UTType] {
