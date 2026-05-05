@@ -88,10 +88,22 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 
 - Created v0.4 Lean & Fast spec/plan from the roadmap and started the measurement-first phase.
 - Release binary baseline: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build -c release --product LithePGApp` produced `.build/release/LithePGApp` at 21,909,208 bytes (20.89 MiB). The original 15 MiB target is unrealistic for the pure-Swift GUI + postgres-nio dependency baseline, so v0.4 now uses a 50 MiB hard cap with a 30 MiB stretch goal.
-- Local blocker for the query-overhead gate: `psql` is not installed on this machine yet, so final overhead comparison needs either installing `psql` or documenting an agreed temporary comparator.
+- Initial local blocker for the query-overhead gate: `psql` was not yet installed/available on this machine, so final overhead comparison needed either installing `psql` or documenting an agreed temporary comparator. Resolved on 2026-05-05 by using `/opt/homebrew/opt/libpq/bin/psql`.
 
 ## 2026-05-04 07:50 EDT — v0.4 binary budget adjusted
 
 - Omar called out that the original bundle-size goal is now unrealistic. Agreed: the pure-Swift GUI + postgres-nio/NIO/crypto baseline already sits around 20.89 MiB before v0.4 optimization work.
 - Raised the v0.4 app binary budget to a 50 MiB hard cap with a 30 MiB stretch goal. This keeps the app lean by desktop standards while avoiding fake optimization pressure that would weaken correctness/security.
 - CI now treats binary size above 30 MiB as a warning and above 50 MiB as a failure. AI models remain separate downloads and do not count toward the app binary budget.
+
+## 2026-05-05 08:20 EDT — v0.4 measurement harness baseline
+
+- Added a repeatable v0.4 measurement harness: `script/v04_measure.sh` builds release `LithePGApp` + `lithepg-bench`, records app binary size, measures app startup readiness through `LITHEPG_STARTUP_METRICS_PATH`, and compares persistent LithePG query execution against one-session `psql` timings.
+- Local `psql` comparator is now available at `/opt/homebrew/opt/libpq/bin/psql` and is used automatically by the harness when `psql` is not on `PATH`.
+- Baseline output directory: `.build/v04-measurements/20260505-082000`.
+- Release binary baseline: 21,923,016 bytes / 20.91 MiB, under both the 50 MiB hard cap and 30 MiB stretch goal.
+- Cold startup-to-useful-result baseline: 192.81 ms for startup URL + `SELECT 1`, below the 500 ms goal.
+- Query-path baseline, persistent connection, 30 measured iterations after 5 warmups:
+  - `SELECT 1`: LithePG median/p95 0.211/0.266 ms vs `psql` median/p95 0.183/0.251 ms; median overhead 0.028 ms.
+  - Dogfood `customer_revenue`: LithePG median/p95 0.262/0.300 ms vs `psql` median/p95 0.209/0.272 ms; median overhead 0.053 ms.
+- Current measurement result: v0.4 already clears the binary, cold-start, and simple query-overhead targets on the primary local baseline. Continue with binary contributor inspection and stability/dogfood tracking before tagging v0.4.

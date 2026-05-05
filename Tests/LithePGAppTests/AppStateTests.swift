@@ -258,6 +258,7 @@ struct AppStateTests {
         "LITHEPG_STARTUP_TLS": "yes",
         "LITHEPG_STARTUP_TLS_CA_PATH": " /tmp/root.pem ",
         "LITHEPG_STARTUP_SSH_TARGET": " omar@example.com:22 ",
+        "LITHEPG_STARTUP_METRICS_PATH": " /tmp/lithepg-startup.json ",
       ]))
 
     #expect(config.url == "postgres://user:secret@localhost:5432/app?sslmode=disable")
@@ -265,6 +266,7 @@ struct AppStateTests {
     #expect(config.tls == true)
     #expect(config.tlsCAPath == "/tmp/root.pem")
     #expect(config.sshTarget == "omar@example.com:22")
+    #expect(config.metricsPath == "/tmp/lithepg-startup.json")
 
     let smokeFallback = try #require(
       StartupConnectionConfig(environment: [

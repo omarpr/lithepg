@@ -1,0 +1,188 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+
+DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
+export DEVELOPER_DIR
+
+OUT_DIR="${LITHEPG_MEASURE_OUT_DIR:-$ROOT_DIR/.build/v04-measurements/$(date +%Y%m%d-%H%M%S)}"
+DOGFOOD_PORT="${LITHEPG_DOGFOOD_PORT:-55432}"
+DOGFOOD_PASSWORD="${LITHEPG_DOGFOOD_PASSWORD:-postgres}"
+DOGFOOD_DATABASE="${LITHEPG_DOGFOOD_DATABASE:-postgres}"
+BENCH_URL="${POSTGRES_TEST_URL:-postgres://postgres:$DOGFOOD_PASSWORD@localhost:$DOGFOOD_PORT/$DOGFOOD_DATABASE?sslmode=disable}"
+WARMUP="${LITHEPG_BENCH_WARMUP:-5}"
+ITERATIONS="${LITHEPG_BENCH_ITERATIONS:-30}"
+SIMPLE_QUERY="${LITHEPG_BENCH_QUERY:-SELECT 1 AS lithepg_v04_bench}"
+DOGFOOD_QUERY="${LITHEPG_DOGFOOD_QUERY:-SELECT * FROM lithepg_demo.customer_revenue ORDER BY revenue_cents DESC LIMIT 25}"
+PSQL_BIN="${PSQL_BIN:-}"
+
+mkdir -p "$OUT_DIR"
+
+if [[ "${LITHEPG_SKIP_DOGFOOD_DB:-0}" != "1" ]]; then
+  ./script/dogfood_postgres.sh >/tmp/lithepg-dogfood-postgres.log
+  cp /tmp/lithepg-dogfood-postgres.log "$OUT_DIR/dogfood-postgres.log"
+fi
+
+swift build -c release --product LithePGApp
+swift build -c release --product lithepg-bench
+APP_BIN="$ROOT_DIR/.build/release/LithePGApp"
+BENCH_BIN="$ROOT_DIR/.build/release/lithepg-bench"
+
+if [[ ! -x "$APP_BIN" ]]; then
+  echo "missing app binary: $APP_BIN" >&2
+  exit 1
+fi
+if [[ ! -x "$BENCH_BIN" ]]; then
+  echo "missing bench binary: $BENCH_BIN" >&2
+  exit 1
+fi
+
+APP_BYTES=$(stat -f%z "$APP_BIN")
+python3 - <<PY > "$OUT_DIR/binary-size.json"
+import json
+bytes_ = int("$APP_BYTES")
+print(json.dumps({
+  "product": "LithePGApp",
+  "path": "$APP_BIN",
+  "bytes": bytes_,
+  "mib": bytes_ / 1024 / 1024,
+  "stretchGoalMib": 30,
+  "hardCapMib": 50,
+  "underStretchGoal": bytes_ <= 30 * 1024 * 1024,
+  "underHardCap": bytes_ <= 50 * 1024 * 1024,
+}, indent=2, sort_keys=True))
+PY
+
+run_lithepg_bench() {
+  local slug="$1"
+  local query="$2"
+  "$BENCH_BIN" \
+    --url "$BENCH_URL" \
+    --query "$query" \
+    --warmup "$WARMUP" \
+    --iterations "$ITERATIONS" \
+    --json > "$OUT_DIR/lithepg-$slug.json"
+}
+
+find_psql() {
+  if [[ -n "$PSQL_BIN" && -x "$PSQL_BIN" ]]; then
+    printf '%s\n' "$PSQL_BIN"
+  elif command -v psql >/dev/null 2>&1; then
+    command -v psql
+  elif [[ -x /opt/homebrew/opt/libpq/bin/psql ]]; then
+    printf '%s\n' /opt/homebrew/opt/libpq/bin/psql
+  else
+    return 1
+  fi
+}
+
+run_psql_bench() {
+  local slug="$1"
+  local query="$2"
+  local psql
+  if ! psql="$(find_psql)"; then
+    printf '{"skipped": true, "reason": "psql not found"}\n' > "$OUT_DIR/psql-$slug.json"
+    return 0
+  fi
+  local sql_file raw_file
+  sql_file="$OUT_DIR/psql-$slug.sql"
+  raw_file="$OUT_DIR/psql-$slug.raw.txt"
+  python3 - <<PY > "$sql_file"
+warmup = int("$WARMUP")
+iterations = int("$ITERATIONS")
+query = """$query""".strip()
+if not query.endswith(';'):
+    query += ';'
+print(r'\pset pager off')
+print(r'\timing on')
+for _ in range(warmup + iterations):
+    print(query)
+PY
+  "$psql" "$BENCH_URL" -X -q -v ON_ERROR_STOP=1 -f "$sql_file" > "$raw_file" 2>&1
+  python3 - <<PY > "$OUT_DIR/psql-$slug.json"
+import json, math, re, statistics
+raw = open("$raw_file", encoding="utf-8", errors="replace").read()
+times = [float(x) for x in re.findall(r"Time:\\s+([0-9.]+)\\s+ms", raw)]
+warmup = int("$WARMUP")
+iterations = int("$ITERATIONS")
+samples = times[warmup:warmup + iterations]
+def pctl(vals, pct):
+    if not vals:
+        return 0
+    vals = sorted(vals)
+    idx = max(0, min(len(vals) - 1, math.ceil(pct * len(vals)) - 1))
+    return vals[idx]
+print(json.dumps({
+    "tool": "psql",
+    "query": """$query""",
+    "warmup": warmup,
+    "iterations": len(samples),
+    "samplesMs": samples,
+    "medianMs": statistics.median(samples) if samples else 0,
+    "p95Ms": pctl(samples, 0.95),
+    "minMs": min(samples) if samples else 0,
+    "maxMs": max(samples) if samples else 0,
+    "rawTimingCount": len(times),
+}, indent=2, sort_keys=True))
+PY
+}
+
+run_lithepg_bench simple "$SIMPLE_QUERY"
+run_lithepg_bench dogfood "$DOGFOOD_QUERY"
+run_psql_bench simple "$SIMPLE_QUERY"
+run_psql_bench dogfood "$DOGFOOD_QUERY"
+
+METRICS_PATH="$OUT_DIR/cold-start.json"
+LOG_PATH="$OUT_DIR/cold-start-app.log"
+rm -f "$METRICS_PATH"
+LITHEPG_STARTUP_URL="$BENCH_URL" \
+LITHEPG_STARTUP_QUERY="$SIMPLE_QUERY" \
+LITHEPG_STARTUP_METRICS_PATH="$METRICS_PATH" \
+"$APP_BIN" > "$LOG_PATH" 2>&1 &
+APP_PID=$!
+for _ in {1..200}; do
+  if [[ -s "$METRICS_PATH" ]]; then
+    break
+  fi
+  if ! kill -0 "$APP_PID" >/dev/null 2>&1; then
+    break
+  fi
+  sleep 0.1
+done
+if kill -0 "$APP_PID" >/dev/null 2>&1; then
+  kill "$APP_PID" >/dev/null 2>&1 || true
+  wait "$APP_PID" >/dev/null 2>&1 || true
+fi
+if [[ ! -s "$METRICS_PATH" ]]; then
+  printf '{"error":"startup metrics were not written"}\n' > "$METRICS_PATH"
+fi
+
+python3 - <<PY > "$OUT_DIR/summary.json"
+import json, pathlib
+root = pathlib.Path("$OUT_DIR")
+def load(name):
+    with open(root / name) as f:
+        return json.load(f)
+summary = {
+    "outDir": str(root),
+    "binarySize": load("binary-size.json"),
+    "coldStart": load("cold-start.json"),
+    "lithepgSimple": load("lithepg-simple.json"),
+    "psqlSimple": load("psql-simple.json"),
+    "lithepgDogfood": load("lithepg-dogfood.json"),
+    "psqlDogfood": load("psql-dogfood.json"),
+}
+for key in [("Simple", "lithepgSimple", "psqlSimple"), ("Dogfood", "lithepgDogfood", "psqlDogfood")]:
+    label, lhs, rhs = key
+    psql = summary[rhs]
+    if not psql.get("skipped") and psql.get("medianMs", 0) > 0:
+        summary[f"queryOverhead{label}MedianMs"] = summary[lhs]["medianMs"] - psql["medianMs"]
+        summary[f"queryOverhead{label}P95Ms"] = summary[lhs]["p95Ms"] - psql["p95Ms"]
+print(json.dumps(summary, indent=2, sort_keys=True))
+PY
+
+cat "$OUT_DIR/summary.json"
+echo
+echo "Measurements written to $OUT_DIR"

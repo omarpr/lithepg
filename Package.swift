@@ -6,6 +6,12 @@ let package = Package(
     platforms: [
         .macOS(.v14),
     ],
+    products: [
+        .library(name: "LithePGCore", targets: ["LithePGCore"]),
+        .executable(name: "lithepg", targets: ["lithepg"]),
+        .executable(name: "LithePGApp", targets: ["LithePGApp"]),
+        .executable(name: "lithepg-bench", targets: ["LithePGBench"]),
+    ],
     dependencies: [
         .package(url: "https://github.com/vapor/postgres-nio.git", from: "1.21.0"),
     ],
@@ -22,6 +28,10 @@ let package = Package(
         ),
         .executableTarget(
             name: "LithePGApp",
+            dependencies: ["LithePGCore"]
+        ),
+        .executableTarget(
+            name: "LithePGBench",
             dependencies: ["LithePGCore"]
         ),
         .testTarget(
