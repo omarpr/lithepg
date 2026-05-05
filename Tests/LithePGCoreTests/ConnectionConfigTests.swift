@@ -29,6 +29,29 @@ struct ConnectionConfigTests {
         #expect(c.database == "shop")
     }
 
+
+
+    @Test("parses sslmode disable as cleartext")
+    func parsesSSLModeDisable() throws {
+        let c = try ConnectionConfig(url: "postgres://alice:secret@db/shop?sslmode=disable")
+        #expect(c.tlsMode == .disable)
+    }
+
+    @Test("parses encrypted sslmode values as verifyFull")
+    func parsesEncryptedSSLModes() throws {
+        for mode in ["require", "verify-ca", "verify-full"] {
+            let c = try ConnectionConfig(url: "postgres://alice:secret@db/shop?sslmode=\(mode)")
+            #expect(c.tlsMode == .verifyFull)
+        }
+    }
+
+    @Test("rejects unsupported sslmode values")
+    func rejectsUnsupportedSSLMode() {
+        #expect(throws: ConnectionConfig.ParseError.unsupportedSSLMode("bogus")) {
+            try ConnectionConfig(url: "postgres://alice:secret@db/shop?sslmode=bogus")
+        }
+    }
+
     @Test("rejects non-postgres URL schemes")
     func rejectsBadScheme() {
         #expect(throws: ConnectionConfig.ParseError.self) {

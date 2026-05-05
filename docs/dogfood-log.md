@@ -114,3 +114,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Dynamic dependencies are system Swift/AppKit/Foundation/Security/Network/CryptoKit libraries plus Swift runtime libraries; no `libpq` is linked.
 - Segment snapshot: `__TEXT` is ~8.68 MiB and `__LINKEDIT` is ~12.63 MiB. A local-symbol strip probe reduces the binary from 21,923,016 bytes / 20.91 MiB to 12,320,608 bytes / 11.75 MiB, saving 9.16 MiB without changing source. This suggests the shipped/distribution artifact can be much smaller than the raw SwiftPM release executable if we add a packaging/signing step that strips symbols safely.
 - Added strip-probe fields to `script/v04_measure.sh` so future baselines track both raw release size and stripped distribution-size potential.
+
+## 2026-05-05 08:29 EDT — v0.4 stability/security hardening pass
+
+- Folded first-pass security-audit findings into the active workstream without expanding dependencies.
+- `ConnectionConfig(url:)` now honors `sslmode=`: `disable/allow/prefer` stay cleartext, while `require/verify-ca/verify-full` map to LithePG's verified TLS mode instead of being silently ignored. Unsupported `sslmode` values now fail parsing explicitly.
+- Credential redaction now also scrubs passwords embedded in `postgres://user:password@host/db` and `postgresql://...` URLs, not only `password=`/`password:` fields.
+- Resolved Swift concurrency warnings in the query row-collection path by moving row aggregation behind a small locked accumulator instead of mutating captured vars from the `@Sendable` PostgresNIO row callback.
+- Verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 84 tests across 12 suites.
+- v0.4 measurement re-run after hardening: `.build/v04-measurements/20260505-082920`; binary 21,923,432 bytes / 20.91 MiB raw, strip probe 11.75 MiB; cold startup 196.70 ms; simple query median overhead 0.044 ms vs `psql`; dogfood query median overhead -0.030 ms vs `psql`.

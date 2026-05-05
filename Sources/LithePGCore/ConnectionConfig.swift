@@ -22,6 +22,7 @@ public struct ConnectionConfig: Sendable, Equatable {
         case unsupportedScheme(String)
         case missingComponent(String)
         case portOutOfRange(Int)
+        case unsupportedSSLMode(String)
     }
 
     public let host: String
@@ -90,7 +91,26 @@ public struct ConnectionConfig: Sendable, Equatable {
             port: port,
             database: db,
             username: user,
-            password: password
+            password: password,
+            tlsMode: try Self.tlsMode(from: parsed)
         )
+    }
+
+    private static func tlsMode(from url: URL) throws -> TLSMode {
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let raw = components.queryItems?.first(where: { $0.name.lowercased() == "sslmode" })?.value?.lowercased()
+        else {
+            return .disable
+        }
+        switch raw {
+        case "disable", "allow", "prefer":
+            return .disable
+        case "require", "verify-ca", "verify-full":
+            // LithePG currently exposes one encrypted mode. Prefer verification over silently
+            // weakening `sslmode=require` to opportunistic/no-verify TLS.
+            return .verifyFull
+        default:
+            throw ParseError.unsupportedSSLMode(raw)
+        }
     }
 }

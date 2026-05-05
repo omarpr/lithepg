@@ -67,29 +67,18 @@ public actor PostgresConnector {
         guard let current = held else { throw ExecuteError.notConnected }
         let start = ContinuousClock.now
         let cap = 10_000
-        var columns: [QueryResult.Column] = []
-        var rows: [QueryResult.Row] = []
-        var seenRows = 0
+        let accumulator = QueryAccumulator(cap: cap)
 
         let metadata = try await current.connection.query(
             PostgresQuery(unsafeSQL: sql),
             logger: logger
         ) { row in
-            if columns.isEmpty {
-                columns = row.map { cell in
-                    QueryResult.Column(name: cell.columnName, typeName: String(describing: cell.dataType))
-                }
-            }
-
-            if rows.count < cap {
-                let cells = row.map(Self.renderCell(_:))
-                rows.append(QueryResult.Row(id: rows.count, cells: cells))
-            }
-            seenRows += 1
+            accumulator.append(row)
         }.get()
+        let snapshot = accumulator.snapshot()
 
         let status: QueryResult.Status
-        if !rows.isEmpty || !columns.isEmpty {
+        if !snapshot.rows.isEmpty || !snapshot.columns.isEmpty {
             status = .rows
         } else if metadata.command == "SELECT" {
             status = .empty
@@ -101,12 +90,12 @@ public actor PostgresConnector {
         }
 
         return QueryResult(
-            columns: columns,
-            rows: rows,
-            rowCount: rows.count,
+            columns: snapshot.columns,
+            rows: snapshot.rows,
+            rowCount: snapshot.rows.count,
             elapsed: ContinuousClock.now - start,
             status: status,
-            truncated: seenRows > cap
+            truncated: snapshot.seenRows > cap
         )
     }
 
@@ -224,6 +213,40 @@ public actor PostgresConnector {
             let sslContext = try NIOSSLContext(configuration: tls)
             return .require(sslContext)
         }
+    }
+}
+
+
+private final class QueryAccumulator: @unchecked Sendable {
+    private let cap: Int
+    private let lock = NSLock()
+    private var columns: [QueryResult.Column] = []
+    private var rows: [QueryResult.Row] = []
+    private var seenRows = 0
+
+    init(cap: Int) {
+        self.cap = cap
+    }
+
+    func append(_ row: PostgresRow) {
+        lock.lock()
+        defer { lock.unlock() }
+        if columns.isEmpty {
+            columns = row.map { cell in
+                QueryResult.Column(name: cell.columnName, typeName: String(describing: cell.dataType))
+            }
+        }
+        if rows.count < cap {
+            let cells = row.map(PostgresConnector.renderCell(_:))
+            rows.append(QueryResult.Row(id: rows.count, cells: cells))
+        }
+        seenRows += 1
+    }
+
+    func snapshot() -> (columns: [QueryResult.Column], rows: [QueryResult.Row], seenRows: Int) {
+        lock.lock()
+        defer { lock.unlock() }
+        return (columns, rows, seenRows)
     }
 }
 
