@@ -21,15 +21,33 @@ fi
 
 cd "$ROOT_DIR"
 
-pkill -x "$APP_NAME" >/dev/null 2>&1 || true
+case "$MODE" in
+  --package|package|release)
+    BUILD_CONFIG="release"
+    ;;
+  *)
+    BUILD_CONFIG="debug"
+    pkill -x "$APP_NAME" >/dev/null 2>&1 || true
+    ;;
+esac
 
-swift build --product "$APP_NAME"
-BUILD_BINARY="$(swift build --show-bin-path)/$APP_NAME"
+if [[ "$BUILD_CONFIG" == "release" ]]; then
+  swift build -c release --product "$APP_NAME"
+  BUILD_BINARY="$(swift build -c release --show-bin-path)/$APP_NAME"
+else
+  swift build --product "$APP_NAME"
+  BUILD_BINARY="$(swift build --show-bin-path)/$APP_NAME"
+fi
 
 rm -rf "$APP_BUNDLE"
 mkdir -p "$APP_MACOS"
 cp "$BUILD_BINARY" "$APP_BINARY"
 chmod +x "$APP_BINARY"
+if [[ "$BUILD_CONFIG" == "release" ]]; then
+  BEFORE_BYTES=$(stat -f%z "$APP_BINARY")
+  strip -x "$APP_BINARY" >/dev/null 2>&1 || true
+  AFTER_BYTES=$(stat -f%z "$APP_BINARY")
+fi
 
 cat >"$INFO_PLIST" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -79,8 +97,13 @@ case "$MODE" in
   --print-bundle-path|print-bundle-path)
     printf '%s\n' "$APP_BUNDLE"
     ;;
+  --package|package|release)
+    BEFORE_MIB=$(awk "BEGIN { printf \"%.2f\", $BEFORE_BYTES / 1024 / 1024 }")
+    AFTER_MIB=$(awk "BEGIN { printf \"%.2f\", $AFTER_BYTES / 1024 / 1024 }")
+    printf 'Built %s (%s -> %s MiB after strip -x)\n' "$APP_BUNDLE" "$BEFORE_MIB" "$AFTER_MIB"
+    ;;
   *)
-    echo "usage: $0 [run|--debug|--logs|--telemetry|--verify|--print-bundle-path]" >&2
+    echo "usage: $0 [run|--debug|--logs|--telemetry|--verify|--print-bundle-path|--package]" >&2
     exit 2
     ;;
 esac

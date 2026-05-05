@@ -156,3 +156,9 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
   - Results-pane vertical fill was fixed in the v0.3 layout polish and remains covered by presentation tests.
   - Manual UI receipt for sidebar refresh, tab switching, pagination, schema SELECT insertion, and result-copy behavior remains pending Omar/local visual confirmation; no code blocker is currently identified.
 - Stability window status: day 0 check is green; do not tag `v0.4` until the 7-day zero-crash window is satisfied.
+
+## 2026-05-05 08:40 EDT — stripped release app bundle packaging
+
+- Extended `script/build_and_run.sh --package` to build a release `.app` bundle under `dist/LithePG.app` and apply `strip -x` to the copied app executable.
+- Local package smoke: `./script/build_and_run.sh --package` produced `dist/LithePG.app` and reduced the bundled executable from 20.92 MiB to 11.75 MiB, matching the v0.4 strip-probe measurement while leaving the raw SwiftPM build untouched.
+- Verification: `bash -n script/build_and_run.sh script/dogfood_check.sh script/v04_measure.sh` passed.
