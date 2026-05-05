@@ -3,8 +3,8 @@ import Testing
 
 @Suite("ConnectionConfig")
 struct ConnectionConfigTests {
-    @Test("defaults to port 5432 and tlsMode .disable when not specified")
-    func defaults() {
+    @Test("defaults localhost to port 5432 and tlsMode .disable when not specified")
+    func defaultsLocalhost() {
         let c = ConnectionConfig(
             host: "localhost",
             database: "postgres",
@@ -17,6 +17,17 @@ struct ConnectionConfigTests {
         #expect(c.sshConfig == nil)
     }
 
+    @Test("defaults non-loopback hosts to verified TLS")
+    func defaultsRemoteHostsToVerifiedTLS() {
+        let c = ConnectionConfig(
+            host: "db.example.com",
+            database: "postgres",
+            username: "postgres",
+            password: "postgres"
+        )
+        #expect(c.tlsMode == .verifyFull)
+    }
+
     @Test("parses a postgres:// URL")
     func parseURL() throws {
         let c = try ConnectionConfig(
@@ -27,6 +38,19 @@ struct ConnectionConfigTests {
         #expect(c.username == "alice")
         #expect(c.password == "secret")
         #expect(c.database == "shop")
+        #expect(c.tlsMode == .verifyFull)
+    }
+
+    @Test("keeps loopback URLs cleartext by default")
+    func parsesLoopbackURLAsCleartextByDefault() throws {
+        let c = try ConnectionConfig(url: "postgres://alice:secret@localhost/shop")
+        #expect(c.tlsMode == .disable)
+    }
+
+    @Test("recognizes IPv4 loopback aliases")
+    func recognizesIPv4LoopbackAliases() throws {
+        let c = try ConnectionConfig(url: "postgres://alice:secret@127.0.0.2/shop")
+        #expect(c.tlsMode == .disable)
     }
 
 

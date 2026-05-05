@@ -4,8 +4,9 @@ import UniformTypeIdentifiers
 
 struct ConnectSheet: View {
   @Bindable var state: AppState
-  @State private var url: String = ProcessInfo.processInfo.environment["POSTGRES_URL"] ?? ""
-  @State private var tls = ProcessInfo.processInfo.environment["POSTGRES_TLS_CA"] != nil
+  @State private var url: String = Self.initialDisplayURL()
+  @State private var sensitivePrefilledURL: String? = Self.initialSensitiveURL()
+  @State private var tls = Self.initialTLSPreference()
   @State private var tlsCAPath: String =
     ProcessInfo.processInfo.environment["POSTGRES_TLS_CA"] ?? ""
   @State private var useSSH = ProcessInfo.processInfo.environment["POSTGRES_SSH"] != nil
@@ -17,7 +18,7 @@ struct ConnectSheet: View {
   @State private var pendingDelete: SavedConnectionMetadata?
 
   private var cleartextWarning: String? {
-    guard !tls, !useSSH, let config = try? ConnectionConfig(url: url), config.tlsMode == .disable else {
+    guard !tls, !useSSH, let config = try? ConnectionConfig(url: effectiveURL), config.tlsMode == .disable else {
       return nil
     }
     guard !Self.isLoopback(host: config.host) else { return nil }
@@ -43,6 +44,12 @@ struct ConnectSheet: View {
       TextField("postgres://user:password@host:5432/database", text: $url)
         .textFieldStyle(.roundedBorder)
         .accessibilityIdentifier("postgres-url-field")
+        .onChange(of: url) { _, newValue in
+          if newValue != Self.redactedURLForDisplay(sensitivePrefilledURL) {
+            sensitivePrefilledURL = nil
+          }
+          tls = Self.defaultTLSPreference(for: effectiveURL)
+        }
 
       Toggle("TLS verify-full", isOn: $tls)
         .onChange(of: tls) { _, enabled in
@@ -198,14 +205,21 @@ struct ConnectSheet: View {
   }
 
   private var connectDisabled: Bool {
-    url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    effectiveURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
       || state.connectionState == .connecting
       || (saveConnection && connectionName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
   }
 
+  private var effectiveURL: String {
+    if let sensitivePrefilledURL, url == Self.redactedURLForDisplay(sensitivePrefilledURL) {
+      return sensitivePrefilledURL
+    }
+    return url
+  }
+
   private func connectAndMaybeSave() async {
     await state.connect(
-      url: url,
+      url: effectiveURL,
       tls: tls,
       tlsCAPath: tls ? tlsCAPath : nil,
       sshTarget: useSSH && !tls ? sshTarget : nil
@@ -213,7 +227,7 @@ struct ConnectSheet: View {
     guard saveConnection, state.isConnected else { return }
     if let metadata = await state.saveConnection(
       name: connectionName,
-      url: url,
+      url: effectiveURL,
       tls: tls,
       tlsCAPath: tls ? tlsCAPath : nil,
       sshTarget: useSSH && !tls ? sshTarget : nil,
@@ -232,9 +246,33 @@ struct ConnectSheet: View {
     }
   }
 
+  private static func initialTLSPreference() -> Bool {
+    if ProcessInfo.processInfo.environment["POSTGRES_TLS_CA"] != nil { return true }
+    return defaultTLSPreference(for: ProcessInfo.processInfo.environment["POSTGRES_URL"] ?? "")
+  }
+
+  private static func initialSensitiveURL() -> String? {
+    let raw = ProcessInfo.processInfo.environment["POSTGRES_URL"] ?? ""
+    guard redactedURLForDisplay(raw) != raw else { return nil }
+    return raw
+  }
+
+  private static func initialDisplayURL() -> String {
+    redactedURLForDisplay(ProcessInfo.processInfo.environment["POSTGRES_URL"] ?? "")
+  }
+
+  static func redactedURLForDisplay(_ raw: String?) -> String {
+    guard let raw else { return "" }
+    return ErrorRedaction.redactCredentials(in: raw)
+  }
+
+  private static func defaultTLSPreference(for url: String) -> Bool {
+    guard let config = try? ConnectionConfig(url: url) else { return false }
+    return config.tlsMode == .verifyFull
+  }
+
   private static func isLoopback(host: String) -> Bool {
-    let lower = host.lowercased()
-    return lower == "localhost" || lower == "::1" || lower.hasPrefix("127.")
+    ConnectionConfig.isLoopbackHost(host)
   }
 
   private static var certificateTypes: [UTType] {

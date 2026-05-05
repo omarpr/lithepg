@@ -588,7 +588,7 @@ public final class AppState {
       database: metadata.database,
       username: metadata.username,
       password: password,
-      tlsMode: metadata.tlsMode == "verify-full" ? .verifyFull : .disable,
+      tlsMode: try tlsMode(fromSavedLabel: metadata.tlsMode),
       pinnedRootCertificatePath: metadata.pinnedRootCertificatePath,
       sshConfig: try metadata.sshTarget?.nilIfBlank.map(Self.parseSSH)
     )
@@ -605,6 +605,14 @@ public final class AppState {
     }
   }
 
+  private static func tlsMode(fromSavedLabel label: String) throws -> ConnectionConfig.TLSMode {
+    switch label {
+    case "disable": .disable
+    case "verify-full": .verifyFull
+    default: throw PersistenceError.unsupportedTLSMode(label)
+    }
+  }
+
   private static func sshTargetLabel(for ssh: ConnectionConfig.SSHConfig) -> String {
     "\(ssh.user)@\(ssh.host):\(ssh.port)"
   }
@@ -614,7 +622,11 @@ public final class AppState {
   }
 
   private static func quotedIdentifier(_ identifier: String) -> String {
-    "\"\(identifier.replacingOccurrences(of: "\"", with: "\"\""))\""
+    let normalized = identifier.precomposedStringWithCanonicalMapping
+    let safe = normalized.unicodeScalars.filter { scalar in
+      scalar.value >= 0x20 && scalar.value != 0x7F
+    }
+    return "\"\(String(String.UnicodeScalarView(safe)).replacingOccurrences(of: "\"", with: "\"\""))\""
   }
 
   private static func isConnectionLevelError(_ message: String) -> Bool {
@@ -669,7 +681,16 @@ public final class AppState {
 
   private enum PersistenceError: Error, CustomStringConvertible {
     case missingSecret
-    var description: String { "Saved connection password is missing from credential storage." }
+    case unsupportedTLSMode(String)
+
+    var description: String {
+      switch self {
+      case .missingSecret:
+        "Saved connection password is missing from credential storage."
+      case .unsupportedTLSMode(let label):
+        "Saved connection has unsupported TLS mode: \(label)"
+      }
+    }
   }
 }
 

@@ -32,19 +32,15 @@ public actor SSHTunnel {
         let process = Process()
         let stderrPipe = Pipe()
         process.executableURL = URL(fileURLWithPath: sshPath)
-        // `StrictHostKeyChecking=accept-new` trusts on first use (TOFU) — matches
-        // OpenSSH's own default since 7.6 and preserves walking-skeleton ergonomics.
-        // Strict host-key pinning is deferred to the NIOSSH port in a later milestone,
-        // where we control the policy in Swift rather than relying on ~/.ssh/known_hosts.
-        process.arguments = [
-            "-N",
-            "-L", "\(localPort):\(remoteHost):\(remotePort)",
-            "-p", String(sshPort),
-            "-o", "ExitOnForwardFailure=yes",
-            "-o", "StrictHostKeyChecking=accept-new",
-            "-o", "ServerAliveInterval=30",
-            "\(sshUser)@\(sshHost)",
-        ]
+        process.arguments = sshArguments(
+            localPort: localPort,
+            remoteHost: remoteHost,
+            remotePort: remotePort,
+            sshHost: sshHost,
+            sshPort: sshPort,
+            sshUser: sshUser
+        )
+        process.qualityOfService = .userInitiated
         process.standardOutput = Pipe()
         process.standardError = stderrPipe
 
@@ -77,6 +73,25 @@ public actor SSHTunnel {
         let trailingStderr = drain(stderrPipe)
         let detail = trailingStderr.isEmpty ? "timeout after 5s" : "timeout after 5s: \(trailingStderr)"
         throw TunnelError.tunnelDidNotOpen(underlying: detail)
+    }
+
+    static func sshArguments(
+        localPort: Int,
+        remoteHost: String,
+        remotePort: Int,
+        sshHost: String,
+        sshPort: Int,
+        sshUser: String
+    ) -> [String] {
+        [
+            "-N",
+            "-L", "\(localPort):\(remoteHost):\(remotePort)",
+            "-p", String(sshPort),
+            "-o", "ExitOnForwardFailure=yes",
+            "-o", "StrictHostKeyChecking=yes",
+            "-o", "ServerAliveInterval=30",
+            "\(sshUser)@\(sshHost)",
+        ]
     }
 
     public func close() async {

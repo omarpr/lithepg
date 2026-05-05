@@ -14,6 +14,8 @@ APP_CONTENTS="$APP_BUNDLE/Contents"
 APP_MACOS="$APP_CONTENTS/MacOS"
 APP_BINARY="$APP_MACOS/$APP_NAME"
 INFO_PLIST="$APP_CONTENTS/Info.plist"
+ENTITLEMENTS="$ROOT_DIR/Sources/LithePGApp/LithePGApp.entitlements"
+NOTARY_ZIP="$DIST_DIR/$BUNDLE_NAME-notary.zip"
 
 if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode.app/Contents/Developer ]]; then
   export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
@@ -69,6 +71,33 @@ cat >"$INFO_PLIST" <<PLIST
 </dict>
 </plist>
 PLIST
+
+sign_release_bundle() {
+  local identity="${LITHEPG_CODESIGN_IDENTITY:--}"
+  local -a sign_args=(
+    --force
+    --options runtime
+    --entitlements "$ENTITLEMENTS"
+    --sign "$identity"
+  )
+  if [[ "$identity" != "-" ]]; then
+    sign_args+=(--timestamp)
+  fi
+  codesign "${sign_args[@]}" "$APP_BUNDLE"
+  codesign --verify --strict --deep "$APP_BUNDLE"
+}
+
+notarize_release_bundle() {
+  [[ -n "${LITHEPG_NOTARY_PROFILE:-}" ]] || return 0
+  ditto -c -k --keepParent "$APP_BUNDLE" "$NOTARY_ZIP"
+  xcrun notarytool submit "$NOTARY_ZIP" --keychain-profile "$LITHEPG_NOTARY_PROFILE" --wait
+  xcrun stapler staple "$APP_BUNDLE"
+}
+
+if [[ "$BUILD_CONFIG" == "release" ]]; then
+  sign_release_bundle
+  notarize_release_bundle
+fi
 
 open_app() {
   /usr/bin/open -n "$APP_BUNDLE"

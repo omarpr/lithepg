@@ -115,6 +115,8 @@ struct PersistenceModelTests {
     #expect(json.contains("Disk Local"))
     #expect(!json.lowercased().contains("password"))
     #expect(!json.contains("super-secret"))
+    #expect(try Self.octalPermissions(for: directory) == 0o700)
+    #expect(try Self.octalPermissions(for: fileURL) == 0o600)
   }
 
   @Test("JSON file query history store persists newest-first entries and clears")
@@ -144,8 +146,28 @@ struct PersistenceModelTests {
     let reloaded = JSONFileQueryHistoryStore(fileURL: fileURL)
 
     #expect(try await reloaded.list(limit: nil).map(\.sql) == ["SELECT 2", "SELECT 1"])
+    #expect(try Self.octalPermissions(for: directory) == 0o700)
+    #expect(try Self.octalPermissions(for: fileURL) == 0o600)
     try await reloaded.clear()
     #expect(try await store.list(limit: nil).isEmpty)
   }
 
+  @Test("keychain base query uses data protection and disables synchronization")
+  func keychainBaseQueryIsHardened() {
+    let query = KeychainCredentialStore.baseQuery(
+      service: "com.example.test",
+      reference: "ref",
+      dataProtection: true
+    )
+
+    #expect(query[kSecUseDataProtectionKeychain as String] as? Bool == true)
+    #expect(query[kSecAttrSynchronizable as String] as? Bool == false)
+    #expect(query[kSecAttrService as String] as? String == "com.example.test")
+    #expect(query[kSecAttrAccount as String] as? String == "ref")
+  }
+
+  private static func octalPermissions(for url: URL) throws -> Int {
+    let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+    return ((attributes[.posixPermissions] as? NSNumber)?.intValue ?? -1) & 0o777
+  }
 }

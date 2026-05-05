@@ -29,6 +29,14 @@ struct ErrorRedactionTests {
         #expect(out.contains("postgres://alice:[redacted]@db.example.com:5432/app"))
     }
 
+    @Test("scrubs postgresql URLs and percent-encoded passwords")
+    func scrubsPostgresqlURLPassword() {
+        let raw = "failed to connect to postgresql://alice:p%40ss%2Fword@db.example.com/app"
+        let out = ErrorRedaction.redactCredentials(in: raw)
+        #expect(!out.contains("p%40ss%2Fword"))
+        #expect(out.contains("postgresql://alice:[redacted]@db.example.com/app"))
+    }
+
     @Test("matches case-insensitively")
     func caseInsensitive() {
         let raw = #"Config(Password: "LOUD")"#

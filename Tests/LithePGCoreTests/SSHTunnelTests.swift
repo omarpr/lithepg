@@ -28,6 +28,21 @@ struct SSHTunnelTests {
         await tunnel.close()
     }
 
+    @Test("ssh arguments require pre-trusted host keys")
+    func argumentsRequireKnownHostKey() {
+        let arguments = SSHTunnel.sshArguments(
+            localPort: 15432,
+            remoteHost: "db.internal",
+            remotePort: 5432,
+            sshHost: "bastion.example.com",
+            sshPort: 22,
+            sshUser: "omar"
+        )
+
+        #expect(arguments.contains("StrictHostKeyChecking=yes"))
+        #expect(!arguments.contains("StrictHostKeyChecking=accept-new"))
+    }
+
     /// Strict parser — a malformed SSH_TEST_TARGET should fail loudly rather than
     /// silently falling back to port 22.
     private func parseTarget(_ s: String) throws -> (user: String, host: String, port: Int) {

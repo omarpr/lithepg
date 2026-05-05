@@ -60,10 +60,10 @@ public actor JSONFileSavedConnectionStore: SavedConnectionStore {
   }
 
   private func writeAll(_ connections: [SavedConnectionMetadata]) throws {
-    try FileManager.default.createDirectory(
-      at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try PersistenceFileProtection.prepareSecureJSONFile(at: fileURL)
     let data = try encoder.encode(connections)
     try data.write(to: fileURL, options: [.atomic, .completeFileProtectionUnlessOpen])
+    try PersistenceFileProtection.applyJSONFilePermissions(to: fileURL)
   }
 }
 
@@ -116,10 +116,15 @@ public actor KeychainCredentialStore: CredentialStore {
   }
 
   private func baseQuery(reference: String, dataProtection: Bool) -> [String: Any] {
+    Self.baseQuery(service: service, reference: reference, dataProtection: dataProtection)
+  }
+
+  static func baseQuery(service: String, reference: String, dataProtection: Bool) -> [String: Any] {
     var query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
       kSecAttrAccount as String: reference,
+      kSecAttrSynchronizable as String: false,
     ]
     query[kSecUseDataProtectionKeychain as String] = dataProtection
     return query
@@ -161,10 +166,22 @@ public actor JSONFileQueryHistoryStore: QueryHistoryStore {
   }
 
   private func writeAll(_ entries: [QueryHistoryEntry]) throws {
-    try FileManager.default.createDirectory(
-      at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try PersistenceFileProtection.prepareSecureJSONFile(at: fileURL)
     let data = try encoder.encode(entries)
     try data.write(to: fileURL, options: [.atomic, .completeFileProtectionUnlessOpen])
+    try PersistenceFileProtection.applyJSONFilePermissions(to: fileURL)
+  }
+}
+
+enum PersistenceFileProtection {
+  static func prepareSecureJSONFile(at fileURL: URL) throws {
+    let directory = fileURL.deletingLastPathComponent()
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
+  }
+
+  static func applyJSONFilePermissions(to fileURL: URL) throws {
+    try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
   }
 }
 

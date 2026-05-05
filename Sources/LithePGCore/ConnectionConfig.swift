@@ -46,7 +46,7 @@ public struct ConnectionConfig: Sendable, Equatable {
         database: String,
         username: String,
         password: String,
-        tlsMode: TLSMode = .disable,
+        tlsMode: TLSMode? = nil,
         pinnedRootCertificatePath: String? = nil,
         sshConfig: SSHConfig? = nil
     ) {
@@ -55,7 +55,7 @@ public struct ConnectionConfig: Sendable, Equatable {
         self.database = database
         self.username = username
         self.password = password
-        self.tlsMode = tlsMode
+        self.tlsMode = tlsMode ?? Self.defaultTLSMode(forHost: host)
         self.pinnedRootCertificatePath = pinnedRootCertificatePath
         self.sshConfig = sshConfig
     }
@@ -92,15 +92,28 @@ public struct ConnectionConfig: Sendable, Equatable {
             database: db,
             username: user,
             password: password,
-            tlsMode: try Self.tlsMode(from: parsed)
+            tlsMode: try Self.tlsMode(from: parsed, host: host)
         )
     }
 
-    private static func tlsMode(from url: URL) throws -> TLSMode {
+    public static func isLoopbackHost(_ host: String) -> Bool {
+        let normalized = host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return normalized == "localhost"
+            || normalized == "127.0.0.1"
+            || normalized.hasPrefix("127.")
+            || normalized == "::1"
+            || normalized.hasSuffix(".localhost")
+    }
+
+    private static func defaultTLSMode(forHost host: String) -> TLSMode {
+        isLoopbackHost(host) ? .disable : .verifyFull
+    }
+
+    private static func tlsMode(from url: URL, host: String) throws -> TLSMode {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
               let raw = components.queryItems?.first(where: { $0.name.lowercased() == "sslmode" })?.value?.lowercased()
         else {
-            return .disable
+            return defaultTLSMode(forHost: host)
         }
         switch raw {
         case "disable", "allow", "prefer":

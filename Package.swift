@@ -28,7 +28,8 @@ let package = Package(
         ),
         .executableTarget(
             name: "LithePGApp",
-            dependencies: ["LithePGCore"]
+            dependencies: ["LithePGCore"],
+            exclude: ["LithePGApp.entitlements"]
         ),
         .executableTarget(
             name: "LithePGBench",

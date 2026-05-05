@@ -171,6 +171,21 @@ struct AppStateTests {
     #expect(s.editorText == "SELECT * FROM \"odd schema\".\"order\"\"lines\" LIMIT 100;")
   }
 
+  @Test("insert select strips control characters from identifiers")
+  func insertSelectStripsControlCharacters() {
+    let s = AppState()
+    let relation = DatabaseSchema.Relation(
+      schema: "public\u{0000}",
+      name: "users\u{0008}",
+      kind: .table,
+      columns: []
+    )
+
+    s.insertSelect(for: relation)
+
+    #expect(s.editorText == "SELECT * FROM \"public\".\"users\" LIMIT 100;")
+  }
+
   @Test("setResult stores the result and clears error")
   func setResultClearsError() {
     let s = AppState()
@@ -283,6 +298,15 @@ struct AppStateTests {
     #expect(StartupConnectionConfig(environment: ["LITHEPG_STARTUP_QUERY": "SELECT 1"]) == nil)
   }
 
+  @Test("connect sheet display redacts prefilled URL credentials")
+  func connectSheetRedactsPrefilledCredentials() {
+    let displayed = ConnectSheet.redactedURLForDisplay(
+      "postgres://omar:screen-share-secret@db.example.com/postgres")
+
+    #expect(!displayed.contains("screen-share-secret"))
+    #expect(displayed == "postgres://omar:[redacted]@db.example.com/postgres")
+  }
+
   @Test("startup metrics path can be provided without auto-connecting")
   func startupMetricsPathCanStandAlone() {
     #expect(
@@ -357,6 +381,32 @@ struct AppStateTests {
     #expect(metadata == nil)
     #expect(s.persistenceError != nil)
     #expect(s.persistenceError?.contains("super-secret") == false)
+  }
+
+  @Test("connecting a saved connection rejects unknown TLS labels")
+  func savedConnectionRejectsUnknownTLSLabel() async throws {
+    let id = UUID()
+    let metadata = SavedConnectionMetadata(
+      id: id,
+      name: "Tampered",
+      host: "db.example.com",
+      port: 5432,
+      database: "postgres",
+      username: "omar",
+      tlsMode: "prefer",
+      environment: .development,
+      secretReference: "ref"
+    )
+    let s = AppState(
+      savedConnectionStore: InMemorySavedConnectionStore(connections: [metadata]),
+      credentialStore: InMemoryCredentialStore(secrets: ["ref": "secret"])
+    )
+    await s.loadSavedConnections()
+
+    await s.connectSavedConnection(id: id)
+
+    #expect(s.connectionState == .disconnected)
+    #expect(s.lastError?.contains("unsupported TLS mode") == true)
   }
 
   @Test("deleting a saved connection removes its credential")

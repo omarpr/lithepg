@@ -42,9 +42,11 @@ struct SchemaIntrospectorTests {
             rows: [
                 Self.row(schema: "pg_catalog", relation: "pg_class", type: "BASE TABLE", column: "oid", dataType: "oid", nullable: "NO", ordinal: 1),
                 Self.row(schema: "information_schema", relation: "tables", type: "VIEW", column: "table_name", dataType: "name", nullable: "YES", ordinal: 1),
+                Self.row(schema: "pg_temp_5", relation: "temp_table", type: "BASE TABLE", column: "id", dataType: "integer", nullable: "NO", ordinal: 1),
+                Self.row(schema: "pg_toast_temp_5", relation: "toast_table", type: "BASE TABLE", column: "id", dataType: "integer", nullable: "NO", ordinal: 1),
                 Self.row(schema: "public", relation: "visible", type: "BASE TABLE", column: "id", dataType: "integer", nullable: "NO", ordinal: 1),
             ],
-            rowCount: 3,
+            rowCount: 5,
             elapsed: .zero,
             status: .rows,
             truncated: false
@@ -54,6 +56,26 @@ struct SchemaIntrospectorTests {
 
         #expect(metadata.schemas.map { $0.name } == ["public"])
         #expect(metadata.schemas.first?.relations.map { $0.name } == ["visible"])
+    }
+
+    @Test("maps zero-column relations")
+    func mapsZeroColumnRelations() throws {
+        let result = QueryResult(
+            columns: [],
+            rows: [
+                Self.zeroColumnRow(schema: "public", relation: "empty_table", type: "BASE TABLE")
+            ],
+            rowCount: 1,
+            elapsed: .zero,
+            status: .rows,
+            truncated: false
+        )
+
+        let metadata = try SchemaIntrospector.map(result: result)
+
+        let relation = try #require(metadata.schemas.first?.relations.first)
+        #expect(relation.name == "empty_table")
+        #expect(relation.columns.isEmpty)
     }
 
     @Test("throws on malformed rows")
@@ -118,6 +140,23 @@ struct SchemaIntrospectorTests {
             .text(nullable),
             defaultValue.map(QueryResult.Cell.text) ?? .null,
             .text(String(ordinal)),
+        ])
+    }
+
+    private static func zeroColumnRow(
+        schema: String,
+        relation: String,
+        type: String
+    ) -> QueryResult.Row {
+        .init(id: 0, cells: [
+            .text(schema),
+            .text(relation),
+            .text(type),
+            .null,
+            .null,
+            .null,
+            .null,
+            .null,
         ])
     }
 }

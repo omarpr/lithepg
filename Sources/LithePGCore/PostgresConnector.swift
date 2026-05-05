@@ -64,13 +64,23 @@ public actor PostgresConnector {
     }
 
     public func execute(_ sql: String) async throws -> QueryResult {
+        try await execute(PostgresQuery(unsafeSQL: sql))
+    }
+
+    /// Executes a pre-built Postgres query so internal features can use PostgresNIO's
+    /// parameterized query APIs instead of interpolating values into raw SQL strings.
+    public func executeBound(_ query: PostgresQuery) async throws -> QueryResult {
+        try await execute(query)
+    }
+
+    public func execute(_ query: PostgresQuery) async throws -> QueryResult {
         guard let current = held else { throw ExecuteError.notConnected }
         let start = ContinuousClock.now
         let cap = 10_000
         let accumulator = QueryAccumulator(cap: cap)
 
         let metadata = try await current.connection.query(
-            PostgresQuery(unsafeSQL: sql),
+            query,
             logger: logger
         ) { row in
             accumulator.append(row)
