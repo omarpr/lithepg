@@ -11,12 +11,14 @@ LithePG is a local macOS client that connects to user-owned PostgreSQL databases
 - **All saved passwords live in the macOS Keychain.** Never in SwiftData, plist, or project-owned JSON files.
 - Keychain writes use `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` and the data-protection keychain flag when available. Reads retain a legacy fallback for pre-migration saved passwords.
 - Each saved connection references a Keychain item by identifier; the app persists connection metadata only.
+- Saved-connection metadata is HMAC-signed with a per-connection key stored in the credential store. LithePG refuses to load unsigned or tampered saved-connection metadata so a local file edit cannot silently redirect a saved password to another host.
 - Client certificates and SSH keys are referenced by path or by the user's system SSH/Keychain configuration; they are not copied into LithePG-owned storage.
 - `POSTGRES_URL` and `LITHEPG_STARTUP_URL` are intended for CI and dogfood automation. Environment variables can be visible to same-user processes and terminal logs; saved connections are the recommended path for regular use.
 
 ## Transport Security
 - Postgres URL `sslmode=` is honored. `require`, `verify-ca`, and `verify-full` map to LithePG's verified TLS path; `disable`, `allow`, and `prefer` remain cleartext until LithePG adds a distinct opportunistic/no-verify TLS mode.
 - Explicit TLS connections do not fall back to cleartext on handshake failure.
+- SSH tunnels use OpenSSH with `StrictHostKeyChecking=yes`; users must pre-trust bastion host keys in `known_hosts` instead of relying on trust-on-first-use.
 - Current pre-1.0 builds still permit cleartext for localhost/dogfood and explicit `sslmode=disable`; remote cleartext warnings and richer TLS modes remain tracked hardening work.
 
 ## Local Data at Rest

@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import Security
 
 public protocol SavedConnectionStore: Sendable {
@@ -21,42 +22,54 @@ public protocol QueryHistoryStore: Sendable {
 
 public actor JSONFileSavedConnectionStore: SavedConnectionStore {
   private let fileURL: URL
+  private let integrityStore: any CredentialStore
   private let encoder: JSONEncoder
   private let decoder: JSONDecoder
 
-  public init(fileURL: URL = PersistenceFileLocations.savedConnectionsURL) {
+  public init(
+    fileURL: URL = PersistenceFileLocations.savedConnectionsURL,
+    integrityStore: any CredentialStore = KeychainCredentialStore(service: "com.omarpr.lithepg.integrity")
+  ) {
     self.fileURL = fileURL
+    self.integrityStore = integrityStore
     self.encoder = JSONEncoder()
     self.encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
     self.decoder = JSONDecoder()
   }
 
   public func list() async throws -> [SavedConnectionMetadata] {
-    try readAll().sorted { lhs, rhs in
+    try await readAll().sorted { lhs, rhs in
       lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
     }
   }
 
   public func save(_ connection: SavedConnectionMetadata) async throws {
-    var connections = try readAll()
-    if let index = connections.firstIndex(where: { $0.id == connection.id }) {
-      connections[index] = connection
+    var connections = try await readAll()
+    let signed = try await signedConnection(connection)
+    if let index = connections.firstIndex(where: { $0.id == signed.id }) {
+      connections[index] = signed
     } else {
-      connections.append(connection)
+      connections.append(signed)
     }
     try writeAll(connections)
   }
 
   public func delete(id: SavedConnectionMetadata.ID) async throws {
-    var connections = try readAll()
+    var connections = try await readAll()
+    let removed = connections.first { $0.id == id }
     connections.removeAll { $0.id == id }
     try writeAll(connections)
+    if let reference = removed?.integrityKeyReference {
+      try await integrityStore.deleteSecret(for: reference)
+    }
   }
 
-  private func readAll() throws -> [SavedConnectionMetadata] {
+  private func readAll() async throws -> [SavedConnectionMetadata] {
     guard FileManager.default.fileExists(atPath: fileURL.path) else { return [] }
     let data = try Data(contentsOf: fileURL)
-    return try decoder.decode([SavedConnectionMetadata].self, from: data)
+    let connections = try decoder.decode([SavedConnectionMetadata].self, from: data)
+    try await verify(connections)
+    return connections
   }
 
   private func writeAll(_ connections: [SavedConnectionMetadata]) throws {
@@ -64,6 +77,100 @@ public actor JSONFileSavedConnectionStore: SavedConnectionStore {
     let data = try encoder.encode(connections)
     try data.write(to: fileURL, options: [.atomic, .completeFileProtectionUnlessOpen])
     try PersistenceFileProtection.applyJSONFilePermissions(to: fileURL)
+  }
+
+  private func signedConnection(_ connection: SavedConnectionMetadata) async throws -> SavedConnectionMetadata {
+    var signed = connection
+    let reference = signed.integrityKeyReference ?? Self.integrityKeyReference(for: signed.id)
+    signed.integrityKeyReference = reference
+    let keyBase64: String
+    if let existing = try await integrityStore.loadSecret(for: reference) {
+      keyBase64 = existing
+    } else {
+      keyBase64 = Self.newIntegrityKeyBase64()
+      try await integrityStore.saveSecret(keyBase64, for: reference)
+    }
+    signed.integrityTag = try Self.integrityTag(for: signed, keyBase64: keyBase64)
+    return signed
+  }
+
+  private func verify(_ connections: [SavedConnectionMetadata]) async throws {
+    for connection in connections {
+      guard let reference = connection.integrityKeyReference,
+        let tag = connection.integrityTag
+      else {
+        throw PersistenceIntegrityError.missingSignature
+      }
+      guard let keyBase64 = try await integrityStore.loadSecret(for: reference) else {
+        throw PersistenceIntegrityError.missingIntegrityKey
+      }
+      guard try Self.isValidIntegrityTag(tag, for: connection, keyBase64: keyBase64) else {
+        throw PersistenceIntegrityError.invalidSignature
+      }
+    }
+  }
+
+  private static func integrityKeyReference(for id: SavedConnectionMetadata.ID) -> String {
+    "lithepg.connection.\(id.uuidString.lowercased()).integrity"
+  }
+
+  private static func newIntegrityKeyBase64() -> String {
+    SymmetricKey(size: .bits256).withUnsafeBytes { bytes in
+      Data(bytes).base64EncodedString()
+    }
+  }
+
+  private static func integrityTag(
+    for connection: SavedConnectionMetadata,
+    keyBase64: String
+  ) throws -> String {
+    let key = try integrityKey(from: keyBase64)
+    let data = try canonicalIntegrityData(for: connection)
+    let code = HMAC<SHA256>.authenticationCode(for: data, using: key)
+    return Data(code).base64EncodedString()
+  }
+
+  private static func isValidIntegrityTag(
+    _ tag: String,
+    for connection: SavedConnectionMetadata,
+    keyBase64: String
+  ) throws -> Bool {
+    guard let code = Data(base64Encoded: tag) else { return false }
+    let key = try integrityKey(from: keyBase64)
+    let data = try canonicalIntegrityData(for: connection)
+    return HMAC<SHA256>.isValidAuthenticationCode(code, authenticating: data, using: key)
+  }
+
+  private static func integrityKey(from keyBase64: String) throws -> SymmetricKey {
+    guard let data = Data(base64Encoded: keyBase64) else {
+      throw PersistenceIntegrityError.missingIntegrityKey
+    }
+    return SymmetricKey(data: data)
+  }
+
+  private static func canonicalIntegrityData(for connection: SavedConnectionMetadata) throws -> Data {
+    var payload = connection
+    payload.integrityTag = nil
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.sortedKeys]
+    return try encoder.encode(payload)
+  }
+}
+
+public enum PersistenceIntegrityError: Error, Equatable, CustomStringConvertible {
+  case missingSignature
+  case missingIntegrityKey
+  case invalidSignature
+
+  public var description: String {
+    switch self {
+    case .missingSignature:
+      "Saved connection metadata is missing its integrity signature."
+    case .missingIntegrityKey:
+      "Saved connection metadata integrity key is missing from credential storage."
+    case .invalidSignature:
+      "Saved connection metadata integrity check failed."
+    }
   }
 }
 

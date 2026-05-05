@@ -32,6 +32,8 @@ public struct SavedConnectionMetadata: Identifiable, Sendable, Codable, Equatabl
     public var sshTarget: String?
     public var environment: ConnectionEnvironment
     public var secretReference: String?
+    public var integrityKeyReference: String?
+    public var integrityTag: String?
     public var createdAt: Date
     public var updatedAt: Date
 
@@ -47,6 +49,8 @@ public struct SavedConnectionMetadata: Identifiable, Sendable, Codable, Equatabl
         sshTarget: String? = nil,
         environment: ConnectionEnvironment,
         secretReference: String? = nil,
+        integrityKeyReference: String? = nil,
+        integrityTag: String? = nil,
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
@@ -61,6 +65,8 @@ public struct SavedConnectionMetadata: Identifiable, Sendable, Codable, Equatabl
         self.sshTarget = sshTarget
         self.environment = environment
         self.secretReference = secretReference
+        self.integrityKeyReference = integrityKeyReference
+        self.integrityTag = integrityTag
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }

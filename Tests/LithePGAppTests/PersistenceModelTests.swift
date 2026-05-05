@@ -95,7 +95,8 @@ struct PersistenceModelTests {
     let directory = FileManager.default.temporaryDirectory.appendingPathComponent(
       UUID().uuidString, isDirectory: true)
     let fileURL = directory.appendingPathComponent("saved-connections.json")
-    let store = JSONFileSavedConnectionStore(fileURL: fileURL)
+    let integrityStore = InMemoryCredentialStore()
+    let store = JSONFileSavedConnectionStore(fileURL: fileURL, integrityStore: integrityStore)
     let connection = SavedConnectionMetadata(
       name: "Disk Local",
       host: "localhost",
@@ -108,15 +109,79 @@ struct PersistenceModelTests {
     )
 
     try await store.save(connection)
-    let reloaded = JSONFileSavedConnectionStore(fileURL: fileURL)
+    let reloaded = JSONFileSavedConnectionStore(fileURL: fileURL, integrityStore: integrityStore)
+    let persisted = try #require(try await reloaded.list().first)
 
-    #expect(try await reloaded.list() == [connection])
+    #expect(persisted.name == connection.name)
+    #expect(persisted.connectionLabel == connection.connectionLabel)
+    #expect(persisted.integrityKeyReference != nil)
+    #expect(persisted.integrityTag != nil)
     let json = try String(contentsOf: fileURL, encoding: .utf8)
     #expect(json.contains("Disk Local"))
     #expect(!json.lowercased().contains("password"))
     #expect(!json.contains("super-secret"))
     #expect(try Self.octalPermissions(for: directory) == 0o700)
     #expect(try Self.octalPermissions(for: fileURL) == 0o600)
+  }
+
+  @Test("JSON file saved connection store rejects tampered metadata")
+  func jsonFileSavedConnectionStoreRejectsTampering() async throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(
+      UUID().uuidString, isDirectory: true)
+    let fileURL = directory.appendingPathComponent("saved-connections.json")
+    let integrityStore = InMemoryCredentialStore()
+    let store = JSONFileSavedConnectionStore(fileURL: fileURL, integrityStore: integrityStore)
+    let connection = SavedConnectionMetadata(
+      name: "Production",
+      host: "db.internal.example.com",
+      port: 5432,
+      database: "postgres",
+      username: "omar",
+      tlsMode: "verify-full",
+      environment: .production,
+      secretReference: "password-ref"
+    )
+
+    try await store.save(connection)
+    var json = try String(contentsOf: fileURL, encoding: .utf8)
+    json = json.replacingOccurrences(
+      of: "db.internal.example.com",
+      with: "attacker.example.com"
+    )
+    try json.write(to: fileURL, atomically: true, encoding: .utf8)
+
+    await #expect(throws: PersistenceIntegrityError.invalidSignature) {
+      _ = try await store.list()
+    }
+  }
+
+  @Test("JSON file saved connection store rejects unsigned metadata")
+  func jsonFileSavedConnectionStoreRejectsUnsignedMetadata() async throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(
+      UUID().uuidString, isDirectory: true)
+    let fileURL = directory.appendingPathComponent("saved-connections.json")
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    let connection = SavedConnectionMetadata(
+      name: "Unsigned",
+      host: "db.internal.example.com",
+      port: 5432,
+      database: "postgres",
+      username: "omar",
+      tlsMode: "verify-full",
+      environment: .production,
+      secretReference: "password-ref"
+    )
+    let data = try JSONEncoder().encode([connection])
+    try data.write(to: fileURL)
+
+    let store = JSONFileSavedConnectionStore(
+      fileURL: fileURL,
+      integrityStore: InMemoryCredentialStore()
+    )
+
+    await #expect(throws: PersistenceIntegrityError.missingSignature) {
+      _ = try await store.list()
+    }
   }
 
   @Test("JSON file query history store persists newest-first entries and clears")
