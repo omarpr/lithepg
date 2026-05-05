@@ -34,10 +34,19 @@ struct RootView: View {
                     .interactiveDismissDisabled(true)
             }
             .task {
-                guard !didRunStartup, let startupConfig else { return }
+                guard !didRunStartup else { return }
                 didRunStartup = true
-                await state.runStartupConnection(startupConfig)
-                writeStartupMetricsIfRequested(startupConfig, startedAt: launchStartedAt, state: state)
+                if let startupConfig {
+                    await state.runStartupConnection(startupConfig)
+                    writeStartupMetricsIfRequested(startupConfig, startedAt: launchStartedAt, state: state)
+                } else if let metricsPath = StartupMetricsConfig.metricsPath(environment: ProcessInfo.processInfo.environment) {
+                    writeStartupMetrics(
+                        metricsPath: metricsPath,
+                        startedAt: launchStartedAt,
+                        state: state,
+                        queryRequested: false
+                    )
+                }
             }
             .onDisappear {
                 Task { await state.disconnect() }
@@ -98,6 +107,12 @@ struct StartupConnectionConfig: Equatable {
 }
 
 
+enum StartupMetricsConfig {
+    static func metricsPath(environment: [String: String]) -> String? {
+        (environment["LITHEPG_STARTUP_METRICS_PATH"] ?? environment["LITHEPG_UI_SMOKE_METRICS_PATH"])?.nilIfBlank
+    }
+}
+
 private struct StartupMetrics: Codable, Equatable {
     let elapsedMs: Double
     let connected: Bool
@@ -113,10 +128,25 @@ private func writeStartupMetricsIfRequested(
     state: AppState
 ) {
     guard let metricsPath = config.metricsPath else { return }
+    writeStartupMetrics(
+        metricsPath: metricsPath,
+        startedAt: startedAt,
+        state: state,
+        queryRequested: config.query != nil
+    )
+}
+
+@MainActor
+private func writeStartupMetrics(
+    metricsPath: String,
+    startedAt: Date,
+    state: AppState,
+    queryRequested: Bool
+) {
     let metrics = StartupMetrics(
         elapsedMs: Date().timeIntervalSince(startedAt) * 1_000,
         connected: state.isConnected,
-        queryRequested: config.query != nil,
+        queryRequested: queryRequested,
         resultRows: state.lastResult?.rowCount,
         error: state.lastError
     )

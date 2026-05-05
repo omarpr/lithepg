@@ -144,30 +144,57 @@ run_lithepg_bench dogfood "$DOGFOOD_QUERY"
 run_psql_bench simple "$SIMPLE_QUERY"
 run_psql_bench dogfood "$DOGFOOD_QUERY"
 
+capture_app_metrics() {
+  local metrics_path="$1"
+  local log_path="$2"
+  shift 2
+  rm -f "$metrics_path"
+  env \
+    -u LITHEPG_STARTUP_URL \
+    -u LITHEPG_UI_SMOKE_URL \
+    -u LITHEPG_STARTUP_QUERY \
+    -u LITHEPG_UI_SMOKE_QUERY \
+    -u LITHEPG_STARTUP_TLS \
+    -u LITHEPG_UI_SMOKE_TLS \
+    -u LITHEPG_STARTUP_TLS_CA_PATH \
+    -u LITHEPG_UI_SMOKE_TLS_CA_PATH \
+    -u LITHEPG_STARTUP_SSH_TARGET \
+    -u LITHEPG_UI_SMOKE_SSH_TARGET \
+    -u LITHEPG_STARTUP_METRICS_PATH \
+    -u LITHEPG_UI_SMOKE_METRICS_PATH \
+    "$@" "$APP_BIN" > "$log_path" 2>&1 &
+  local app_pid=$!
+  for _ in {1..200}; do
+    if [[ -s "$metrics_path" ]]; then
+      break
+    fi
+    if ! kill -0 "$app_pid" >/dev/null 2>&1; then
+      break
+    fi
+    sleep 0.1
+  done
+  if kill -0 "$app_pid" >/dev/null 2>&1; then
+    kill "$app_pid" >/dev/null 2>&1 || true
+    wait "$app_pid" >/dev/null 2>&1 || true
+  fi
+  if [[ ! -s "$metrics_path" ]]; then
+    printf '{"error":"startup metrics were not written"}\n' > "$metrics_path"
+  fi
+}
+
+SHELL_METRICS_PATH="$OUT_DIR/shell-start.json"
+capture_app_metrics \
+  "$SHELL_METRICS_PATH" \
+  "$OUT_DIR/shell-start-app.log" \
+  LITHEPG_STARTUP_METRICS_PATH="$SHELL_METRICS_PATH"
+
 METRICS_PATH="$OUT_DIR/cold-start.json"
-LOG_PATH="$OUT_DIR/cold-start-app.log"
-rm -f "$METRICS_PATH"
-LITHEPG_STARTUP_URL="$BENCH_URL" \
-LITHEPG_STARTUP_QUERY="$SIMPLE_QUERY" \
-LITHEPG_STARTUP_METRICS_PATH="$METRICS_PATH" \
-"$APP_BIN" > "$LOG_PATH" 2>&1 &
-APP_PID=$!
-for _ in {1..200}; do
-  if [[ -s "$METRICS_PATH" ]]; then
-    break
-  fi
-  if ! kill -0 "$APP_PID" >/dev/null 2>&1; then
-    break
-  fi
-  sleep 0.1
-done
-if kill -0 "$APP_PID" >/dev/null 2>&1; then
-  kill "$APP_PID" >/dev/null 2>&1 || true
-  wait "$APP_PID" >/dev/null 2>&1 || true
-fi
-if [[ ! -s "$METRICS_PATH" ]]; then
-  printf '{"error":"startup metrics were not written"}\n' > "$METRICS_PATH"
-fi
+capture_app_metrics \
+  "$METRICS_PATH" \
+  "$OUT_DIR/cold-start-app.log" \
+  LITHEPG_STARTUP_URL="$BENCH_URL" \
+  LITHEPG_STARTUP_QUERY="$SIMPLE_QUERY" \
+  LITHEPG_STARTUP_METRICS_PATH="$METRICS_PATH"
 
 python3 - <<PY > "$OUT_DIR/summary.json"
 import json, pathlib
@@ -178,6 +205,7 @@ def load(name):
 summary = {
     "outDir": str(root),
     "binarySize": load("binary-size.json"),
+    "shellStart": load("shell-start.json"),
     "coldStart": load("cold-start.json"),
     "lithepgSimple": load("lithepg-simple.json"),
     "psqlSimple": load("psql-simple.json"),

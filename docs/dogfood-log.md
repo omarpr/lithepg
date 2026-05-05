@@ -136,3 +136,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Connect sheet now surfaces an inline warning when a non-loopback Postgres URL would connect cleartext without TLS or SSH. Localhost dogfood remains quiet.
 - Verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 84 tests across 12 suites.
 - v0.4 measurement re-run: `.build/v04-measurements/20260505-083321`; binary 21,936,264 bytes / 20.92 MiB raw, strip probe 11.75 MiB; cold startup 181.18 ms; simple query median overhead 0.030 ms vs `psql`; dogfood query median overhead 0.026 ms vs `psql`.
+
+
+## 2026-05-05 08:37 EDT — shell-start metric and startup deferral receipt
+
+- Added a standalone shell-start metric path: `LITHEPG_STARTUP_METRICS_PATH` can now be provided without `LITHEPG_STARTUP_URL`, so the app records first-shell readiness without auto-connecting.
+- Updated `script/v04_measure.sh` to capture both `shell-start.json` and the existing connected/query `cold-start.json`. The script now scrubs inherited startup/smoke env vars for each app launch so shell and connected measurements are isolated.
+- Startup deferral receipt: saved connections are loaded by the connect sheet task, query history is loaded by the history popover task, and schema loading remains connection-scoped; none are required for first shell readiness.
+- Verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 85 tests across 12 suites.
+- v0.4 measurement re-run: `.build/v04-measurements/20260505-083711`; shell readiness 133.76 ms; connected startup + `SELECT 1` 184.91 ms; binary 21,936,264 bytes / 20.92 MiB raw, strip probe 11.75 MiB; simple query median overhead 0.040 ms vs `psql`; dogfood query median overhead 0.038 ms vs `psql`.

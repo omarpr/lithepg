@@ -283,6 +283,16 @@ struct AppStateTests {
     #expect(StartupConnectionConfig(environment: ["LITHEPG_STARTUP_QUERY": "SELECT 1"]) == nil)
   }
 
+  @Test("startup metrics path can be provided without auto-connecting")
+  func startupMetricsPathCanStandAlone() {
+    #expect(
+      StartupMetricsConfig.metricsPath(environment: ["LITHEPG_STARTUP_METRICS_PATH": " /tmp/shell.json "])
+        == "/tmp/shell.json")
+    #expect(
+      StartupConnectionConfig(environment: ["LITHEPG_STARTUP_METRICS_PATH": " /tmp/shell.json "])
+        == nil)
+  }
+
   @Test("loads saved connections and keeps selection stable")
   func loadsSavedConnections() async throws {
     let betaID = UUID()
