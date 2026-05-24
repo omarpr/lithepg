@@ -2,9 +2,11 @@ import Foundation
 
 public struct DatabaseSchema: Sendable, Equatable {
     public let schemas: [Schema]
+    public let foreignKeys: [ForeignKey]
 
-    public init(schemas: [Schema]) {
+    public init(schemas: [Schema], foreignKeys: [ForeignKey] = []) {
         self.schemas = schemas.sortedForDisplay()
+        self.foreignKeys = foreignKeys.sortedForDisplay()
     }
 
     public struct Schema: Sendable, Equatable, Identifiable {
@@ -45,19 +47,51 @@ public struct DatabaseSchema: Sendable, Equatable {
         public let isNullable: Bool
         public let defaultValue: String?
         public let ordinalPosition: Int
+        public let isPrimaryKey: Bool
 
         public init(
             name: String,
             typeName: String,
             isNullable: Bool,
             defaultValue: String? = nil,
-            ordinalPosition: Int
+            ordinalPosition: Int,
+            isPrimaryKey: Bool = false
         ) {
             self.name = name
             self.typeName = typeName
             self.isNullable = isNullable
             self.defaultValue = defaultValue
             self.ordinalPosition = ordinalPosition
+            self.isPrimaryKey = isPrimaryKey
+        }
+    }
+
+    public struct ForeignKey: Sendable, Equatable, Identifiable {
+        public var id: String { "\(childSchema).\(childRelation).\(name)" }
+        public let name: String
+        public let childSchema: String
+        public let childRelation: String
+        public let childColumns: [String]
+        public let parentSchema: String
+        public let parentRelation: String
+        public let parentColumns: [String]
+
+        public init(
+            name: String,
+            childSchema: String,
+            childRelation: String,
+            childColumns: [String],
+            parentSchema: String,
+            parentRelation: String,
+            parentColumns: [String]
+        ) {
+            self.name = name
+            self.childSchema = childSchema
+            self.childRelation = childRelation
+            self.childColumns = childColumns
+            self.parentSchema = parentSchema
+            self.parentRelation = parentRelation
+            self.parentColumns = parentColumns
         }
     }
 }
@@ -84,6 +118,16 @@ private extension Array where Element == DatabaseSchema.Column {
         sorted { lhs, rhs in
             if lhs.ordinalPosition != rhs.ordinalPosition { return lhs.ordinalPosition < rhs.ordinalPosition }
             return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
+        }
+    }
+}
+
+private extension Array where Element == DatabaseSchema.ForeignKey {
+    func sortedForDisplay() -> [Element] {
+        sorted { lhs, rhs in
+            let lhsKey = [lhs.childSchema, lhs.childRelation, lhs.name].joined(separator: ".")
+            let rhsKey = [rhs.childSchema, rhs.childRelation, rhs.name].joined(separator: ".")
+            return lhsKey.localizedStandardCompare(rhsKey) == .orderedAscending
         }
     }
 }

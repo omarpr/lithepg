@@ -14,7 +14,7 @@ struct SchemaIntrospectorTests {
             columns: [],
             rows: [
                 Self.row(schema: "public", relation: "orders", type: "BASE TABLE", column: "customer_id", dataType: "integer", nullable: "YES", ordinal: 2),
-                Self.row(schema: "public", relation: "orders", type: "BASE TABLE", column: "id", dataType: "integer", nullable: "NO", defaultValue: "nextval('orders_id_seq'::regclass)", ordinal: 1),
+                Self.row(schema: "public", relation: "orders", type: "BASE TABLE", column: "id", dataType: "integer", nullable: "NO", defaultValue: "nextval('orders_id_seq'::regclass)", ordinal: 1, primaryKey: true),
                 Self.row(schema: "public", relation: "active_orders", type: "VIEW", column: "id", dataType: "integer", nullable: "YES", ordinal: 1),
                 Self.row(schema: "analytics", relation: "rollups", type: "BASE TABLE", column: "bucket", dataType: "text", nullable: "NO", ordinal: 1),
             ],
@@ -32,7 +32,49 @@ struct SchemaIntrospectorTests {
         #expect(publicRelations.map { $0.kind } == [.table, .view])
         #expect(publicRelations.first?.columns.map { $0.name } == ["id", "customer_id"])
         #expect(publicRelations.first?.columns.first?.isNullable == false)
+        #expect(publicRelations.first?.columns.first?.isPrimaryKey == true)
         #expect(publicRelations.first?.columns.first?.defaultValue == "nextval('orders_id_seq'::regclass)")
+    }
+
+    @Test("maps foreign keys from extended introspection rows")
+    func mapsForeignKeys() throws {
+        let result = QueryResult(
+            columns: [],
+            rows: [
+                Self.row(schema: "public", relation: "customers", type: "BASE TABLE", column: "id", dataType: "integer", nullable: "NO", ordinal: 1, primaryKey: true),
+                Self.row(schema: "public", relation: "orders", type: "BASE TABLE", column: "id", dataType: "integer", nullable: "NO", ordinal: 1, primaryKey: true),
+                Self.row(
+                    schema: "public",
+                    relation: "orders",
+                    type: "BASE TABLE",
+                    column: "customer_id",
+                    dataType: "integer",
+                    nullable: "NO",
+                    ordinal: 2,
+                    foreignKey: .init(
+                        name: "orders_customer_id_fkey",
+                        position: 1,
+                        parentSchema: "public",
+                        parentRelation: "customers",
+                        parentColumn: "id"
+                    )
+                ),
+            ],
+            rowCount: 3,
+            elapsed: .zero,
+            status: .rows,
+            truncated: false
+        )
+
+        let metadata = try SchemaIntrospector.map(result: result)
+
+        let orders = try #require(metadata.schemas.first?.relations.first { $0.name == "orders" })
+        #expect(orders.columns.first { $0.name == "id" }?.isPrimaryKey == true)
+        #expect(metadata.foreignKeys.count == 1)
+        #expect(metadata.foreignKeys.first?.name == "orders_customer_id_fkey")
+        #expect(metadata.foreignKeys.first?.childColumns == ["customer_id"])
+        #expect(metadata.foreignKeys.first?.parentRelation == "customers")
+        #expect(metadata.foreignKeys.first?.parentColumns == ["id"])
     }
 
     @Test("filters system schemas")
@@ -101,6 +143,8 @@ struct SchemaIntrospectorTests {
         try await connector.open(config: config)
         defer { Task { try? await connector.shutdown() } }
 
+        _ = try await connector.execute("DROP TABLE IF EXISTS lithepg_schema_fk_child")
+        _ = try await connector.execute("DROP TABLE IF EXISTS lithepg_schema_fk_parent")
         _ = try await connector.execute("DROP TABLE IF EXISTS lithepg_schema_smoke")
         _ = try await connector.execute("""
             CREATE TABLE lithepg_schema_smoke (
@@ -109,16 +153,49 @@ struct SchemaIntrospectorTests {
                 created_at timestamptz DEFAULT now()
             )
             """)
-        defer { Task { _ = try? await connector.execute("DROP TABLE IF EXISTS lithepg_schema_smoke") } }
+        _ = try await connector.execute("""
+            CREATE TABLE lithepg_schema_fk_parent (
+                id serial PRIMARY KEY,
+                label text NOT NULL
+            )
+            """)
+        _ = try await connector.execute("""
+            CREATE TABLE lithepg_schema_fk_child (
+                id serial PRIMARY KEY,
+                parent_id integer NOT NULL REFERENCES lithepg_schema_fk_parent(id)
+            )
+            """)
+        defer {
+            Task {
+                _ = try? await connector.execute("DROP TABLE IF EXISTS lithepg_schema_fk_child")
+                _ = try? await connector.execute("DROP TABLE IF EXISTS lithepg_schema_fk_parent")
+                _ = try? await connector.execute("DROP TABLE IF EXISTS lithepg_schema_smoke")
+            }
+        }
 
         let metadata = try await SchemaIntrospector.loadSchema(using: connector)
         let publicSchema = try #require(metadata.schemas.first { $0.name == "public" })
         let smoke = try #require(publicSchema.relations.first { $0.name == "lithepg_schema_smoke" })
+        let fkChild = try #require(publicSchema.relations.first { $0.name == "lithepg_schema_fk_child" })
+        let fk = try #require(metadata.foreignKeys.first { $0.childRelation == "lithepg_schema_fk_child" })
 
         #expect(metadata.schemas.contains { $0.name == "pg_catalog" } == false)
         #expect(smoke.kind == .table)
         #expect(smoke.columns.map { $0.name } == ["id", "note", "created_at"])
         #expect(smoke.columns.first?.isNullable == false)
+        #expect(smoke.columns.first?.isPrimaryKey == true)
+        #expect(fkChild.columns.first { $0.name == "id" }?.isPrimaryKey == true)
+        #expect(fk.childColumns == ["parent_id"])
+        #expect(fk.parentRelation == "lithepg_schema_fk_parent")
+        #expect(fk.parentColumns == ["id"])
+    }
+
+    private struct ForeignKeyFixture {
+        let name: String
+        let position: Int
+        let parentSchema: String
+        let parentRelation: String
+        let parentColumn: String
     }
 
     private static func row(
@@ -129,7 +206,9 @@ struct SchemaIntrospectorTests {
         dataType: String,
         nullable: String,
         defaultValue: String? = nil,
-        ordinal: Int
+        ordinal: Int,
+        primaryKey: Bool = false,
+        foreignKey: ForeignKeyFixture? = nil
     ) -> QueryResult.Row {
         .init(id: ordinal, cells: [
             .text(schema),
@@ -140,6 +219,12 @@ struct SchemaIntrospectorTests {
             .text(nullable),
             defaultValue.map(QueryResult.Cell.text) ?? .null,
             .text(String(ordinal)),
+            .text(primaryKey ? "YES" : "NO"),
+            foreignKey.map { .text($0.name) } ?? .null,
+            foreignKey.map { .text(String($0.position)) } ?? .null,
+            foreignKey.map { .text($0.parentSchema) } ?? .null,
+            foreignKey.map { .text($0.parentRelation) } ?? .null,
+            foreignKey.map { .text($0.parentColumn) } ?? .null,
         ])
     }
 

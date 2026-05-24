@@ -39,14 +39,67 @@ struct SchemaMetadataTests {
         #expect(relation.columns.first?.defaultValue == "nextval('people_id_seq'::regclass)")
     }
 
+    @Test("columns can mark primary keys")
+    func columnsMarkPrimaryKeys() {
+        let column = DatabaseSchema.Column(
+            name: "id",
+            typeName: "int4",
+            isNullable: false,
+            ordinalPosition: 1,
+            isPrimaryKey: true
+        )
+
+        #expect(column.isPrimaryKey)
+    }
+
+    @Test("foreign keys sort deterministically by child path and name")
+    func foreignKeysSortDeterministically() {
+        let metadata = DatabaseSchema(
+            schemas: [],
+            foreignKeys: [
+                .init(
+                    name: "orders_customer_id_fkey",
+                    childSchema: "public",
+                    childRelation: "orders",
+                    childColumns: ["customer_id"],
+                    parentSchema: "public",
+                    parentRelation: "customers",
+                    parentColumns: ["id"]
+                ),
+                .init(
+                    name: "line_items_order_id_fkey",
+                    childSchema: "public",
+                    childRelation: "line_items",
+                    childColumns: ["order_id"],
+                    parentSchema: "public",
+                    parentRelation: "orders",
+                    parentColumns: ["id"]
+                ),
+            ]
+        )
+
+        #expect(metadata.foreignKeys.map(\.name) == ["line_items_order_id_fkey", "orders_customer_id_fkey"])
+        #expect(metadata.foreignKeys.first?.id == "public.line_items.line_items_order_id_fkey")
+    }
+
     @Test("identifiers are stable for SwiftUI tree rendering")
     func identifiersAreStable() {
         let schema = DatabaseSchema.Schema(name: "public", relations: [])
         let relation = DatabaseSchema.Relation(schema: "public", name: "orders", kind: .table, columns: [])
         let column = DatabaseSchema.Column(name: "id", typeName: "int4", isNullable: false, ordinalPosition: 1)
+        let foreignKey = DatabaseSchema.ForeignKey(
+            name: "orders_customer_id_fkey",
+            childSchema: "public",
+            childRelation: "orders",
+            childColumns: ["customer_id"],
+            parentSchema: "public",
+            parentRelation: "customers",
+            parentColumns: ["id"]
+        )
 
         #expect(schema.id == "public")
         #expect(relation.id == "public.orders")
         #expect(column.id == "1:id")
+        #expect(foreignKey.id == "public.orders.orders_customer_id_fkey")
     }
 }
