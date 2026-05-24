@@ -186,6 +186,52 @@ struct AppStateTests {
     #expect(s.editorText == "SELECT * FROM \"public\".\"users\" LIMIT 100;")
   }
 
+  @Test("ask in English without schema records an AI error and preserves editor text")
+  func askInEnglishRequiresSchema() async {
+    let s = AppState()
+    s.editorText = "SELECT existing"
+
+    await s.askInEnglish("show customers")
+
+    #expect(s.editorText == "SELECT existing")
+    #expect(s.aiError == "Refresh schema before asking in English.")
+    #expect(s.lastAIDraft == nil)
+    #expect(s.isDraftingSQL == false)
+  }
+
+  @Test("ask in English inserts deterministic draft SQL into the active query tab")
+  func askInEnglishInsertsDraftIntoActiveTab() async throws {
+    let s = AppState(aiQueryService: FixtureAIQueryService())
+    s.schema = dogfoodSchema
+    let firstID = s.selectedQueryTabID!
+    s.newQueryTab()
+    let secondID = s.selectedQueryTabID!
+    s.editorText = "SELECT old"
+
+    await s.askInEnglish("show customers")
+
+    #expect(s.selectedQueryTabID == secondID)
+    #expect(s.editorText == "SELECT * FROM \"lithepg_demo\".\"customers\" LIMIT 100;")
+    #expect(s.lastAIDraft?.referencedObjects == ["lithepg_demo.customers"])
+    #expect(s.lastAIDraft?.status == .ready)
+    #expect(s.aiError == nil)
+    #expect(s.isDraftingSQL == false)
+    s.selectQueryTab(id: firstID)
+    #expect(s.editorText.isEmpty)
+  }
+
+  @Test("ask in English never auto-runs generated SQL")
+  func askInEnglishDoesNotAutoRunDraftSQL() async {
+    let s = AppState(aiQueryService: FixtureAIQueryService())
+    s.schema = dogfoodSchema
+
+    await s.askInEnglish("show customers")
+
+    #expect(s.isRunning == false)
+    #expect(s.lastResult == nil)
+    #expect(s.lastError == nil)
+  }
+
   @Test("setResult stores the result and clears error")
   func setResultClearsError() {
     let s = AppState()
@@ -627,5 +673,28 @@ struct AppStateTests {
 
     s.setError("syntax error at or near SELECT")
     #expect(s.canReconnectFromLastError == false)
+  }
+
+  private var dogfoodSchema: DatabaseSchema {
+    DatabaseSchema(schemas: [
+      .init(name: "lithepg_demo", relations: [
+        .init(schema: "lithepg_demo", name: "customers", kind: .table, columns: [
+          .init(name: "id", typeName: "uuid", isNullable: false, ordinalPosition: 1, isPrimaryKey: true),
+          .init(name: "name", typeName: "text", isNullable: false, ordinalPosition: 2),
+        ]),
+      ]),
+    ])
+  }
+
+  private struct FixtureAIQueryService: AIQueryService {
+    func draftSQL(for request: AIQueryRequest) async throws -> AIQueryDraft {
+      AIQueryDraft(
+        sql: "SELECT * FROM \"lithepg_demo\".\"customers\" LIMIT 100;",
+        explanation: "Fixture draft for \(request.prompt).",
+        referencedObjects: ["lithepg_demo.customers"],
+        status: .ready,
+        confidence: 1
+      )
+    }
   }
 }

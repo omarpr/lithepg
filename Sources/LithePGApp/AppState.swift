@@ -40,6 +40,9 @@ public final class AppState {
   public var queryHistoryEnabled: Bool = false
   public var queryHistory: [QueryHistoryEntry] = []
   public var persistenceError: String?
+  public var isDraftingSQL: Bool = false
+  public var lastAIDraft: AIQueryDraft?
+  public var aiError: String?
 
   public var connectionLabel: String? {
     guard case .connected(let label) = connectionState else { return nil }
@@ -77,15 +80,18 @@ public final class AppState {
   @ObservationIgnored private let savedConnectionStore: any SavedConnectionStore
   @ObservationIgnored private let credentialStore: any CredentialStore
   @ObservationIgnored private let queryHistoryStore: any QueryHistoryStore
+  @ObservationIgnored private let aiQueryService: any AIQueryService
 
   public init(
     savedConnectionStore: any SavedConnectionStore = JSONFileSavedConnectionStore(),
     credentialStore: any CredentialStore = KeychainCredentialStore(),
-    queryHistoryStore: any QueryHistoryStore = JSONFileQueryHistoryStore()
+    queryHistoryStore: any QueryHistoryStore = JSONFileQueryHistoryStore(),
+    aiQueryService: any AIQueryService = DeterministicAIQueryService()
   ) {
     self.savedConnectionStore = savedConnectionStore
     self.credentialStore = credentialStore
     self.queryHistoryStore = queryHistoryStore
+    self.aiQueryService = aiQueryService
     selectedQueryTabID = queryTabs.first?.id
   }
 
@@ -249,6 +255,45 @@ public final class AppState {
   public func useHistoryEntry(_ entry: QueryHistoryEntry) {
     editorText = entry.sql
     clearError()
+  }
+
+  public func askInEnglish(_ prompt: String) async {
+    guard let schema else {
+      lastAIDraft = nil
+      aiError = "Refresh schema before asking in English."
+      return
+    }
+
+    isDraftingSQL = true
+    aiError = nil
+    defer { isDraftingSQL = false }
+
+    do {
+      let request = try AIQueryRequest(prompt: prompt, schemaIndex: SchemaIndex(schema: schema))
+      let draft = try await aiQueryService.draftSQL(for: request)
+      lastAIDraft = draft
+
+      switch draft.status {
+      case .ready:
+        let sql = draft.sql.trimmingCharacters(in: .whitespacesAndNewlines)
+        if sql.isEmpty {
+          aiError = "The draft service returned an empty SQL draft."
+        } else {
+          editorText = draft.sql
+        }
+      case .needsModel, .rejected:
+        aiError = draft.explanation
+      }
+    } catch AIQueryValidationError.emptyPrompt {
+      lastAIDraft = nil
+      aiError = "Enter a question first."
+    } catch AIQueryValidationError.missingSchema {
+      lastAIDraft = nil
+      aiError = "Refresh schema before asking in English."
+    } catch {
+      lastAIDraft = nil
+      aiError = ErrorRedaction.redactCredentials(in: error)
+    }
   }
 
   public func disconnect() async {
