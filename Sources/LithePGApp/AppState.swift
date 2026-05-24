@@ -275,12 +275,7 @@ public final class AppState {
 
       switch draft.status {
       case .ready:
-        let sql = draft.sql.trimmingCharacters(in: .whitespacesAndNewlines)
-        if sql.isEmpty {
-          aiError = "The draft service returned an empty SQL draft."
-        } else {
-          editorText = draft.sql
-        }
+        insertLastAIDraftIntoEditor()
       case .needsModel, .rejected:
         aiError = draft.explanation
       }
@@ -293,6 +288,16 @@ public final class AppState {
     } catch {
       lastAIDraft = nil
       aiError = ErrorRedaction.redactCredentials(in: error)
+    }
+  }
+
+  public func insertLastAIDraftIntoEditor() {
+    guard lastAIDraft?.status == .ready else { return }
+    let sql = lastAIDraft?.sql.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    if sql.isEmpty {
+      aiError = "The draft service returned an empty SQL draft."
+    } else {
+      editorText = sql
     }
   }
 

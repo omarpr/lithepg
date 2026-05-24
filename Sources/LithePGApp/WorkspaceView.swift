@@ -4,6 +4,7 @@ import SwiftUI
 struct WorkspaceView: View {
   @Bindable var state: AppState
   @State private var showingQueryHistory = false
+  @State private var showingAskQuery = false
 
   var body: some View {
     HSplitView {
@@ -79,6 +80,18 @@ struct WorkspaceView: View {
         }
         .keyboardShortcut("]", modifiers: [.command, .shift])
         .disabled(state.queryTabs.count <= 1)
+
+        Button {
+          showingAskQuery.toggle()
+        } label: {
+          Label("Ask", systemImage: "wand.and.stars")
+        }
+        .keyboardShortcut("k", modifiers: [.command, .shift])
+        .disabled(state.schema == nil || state.isDraftingSQL)
+        .accessibilityIdentifier("ask-query-button")
+        .popover(isPresented: $showingAskQuery) {
+          AskQueryView(state: state)
+        }
 
         Button {
           showingQueryHistory.toggle()
