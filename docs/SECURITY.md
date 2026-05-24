@@ -31,6 +31,8 @@ LithePG is a local macOS client that connects to user-owned PostgreSQL databases
 - **All inference is intended to run on-device** (CoreML / MLX) once a real model adapter lands.
 - v0.5 ships only deterministic/local NL2SQL scaffolding and a `LocalModelRegistry` placeholder. Model artifacts are separate from the app binary, are expected under LithePG's Application Support model directory by default, and are never downloaded by the app.
 - No prompts, schemas, query text, or results are transmitted to any external service.
+- AI context construction is intentionally narrow: it may include the natural-language request and schema metadata, but it excludes raw connection URLs and query result rows and redacts credential-shaped substrings before any model adapter receives context.
+- Generated SQL is a draft for user review. LithePG inserts drafts into the editor but does not execute them automatically.
 - No telemetry. No crash reporting without explicit user opt-in.
 - If a future feature requires network AI, it must be opt-in, clearly labeled, and off by default.
 

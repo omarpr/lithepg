@@ -19,6 +19,7 @@
 - **Local RAG (Retrieval-Augmented Generation):**
     - Local schema indexing powers lexical retrieval today; vector storage remains a future optimization.
 - **Inference:** CoreML / MLX are the intended runtime paths for quantized NL2SQL models, but model artifacts are not bundled in the app binary. `LocalModelRegistry` only locates user-provided artifacts under Application Support (or explicit test/config overrides) and reports unavailable/missing states; it does not download models or add inference dependencies yet.
+- **Privacy receipts:** AI context construction is test-covered to include only the user request and schema metadata, with credentials/raw connection URLs redacted or omitted and result rows excluded. Drafted SQL is inserted for human review and is never run automatically.
 - **Schema Awareness:** Automatic "semantic mapping" of tables to allow natural language joins (e.g., "Join users to their latest invoices").
 
 ## 5. Build System
