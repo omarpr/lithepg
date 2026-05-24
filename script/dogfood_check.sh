@@ -40,7 +40,7 @@ import json, pathlib, datetime
 root = pathlib.Path("$OUT_DIR")
 summary = json.loads((root / "v04-measure" / "summary.json").read_text())
 status = {
-    "timestampUtc": datetime.datetime.now(datetime.UTC).isoformat(),
+    "timestampUtc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
     "branch": "$BRANCH",
     "commit": "$COMMIT",
     "postgresTestURLLabel": "postgres@localhost:$DOGFOOD_PORT/$DOGFOOD_DATABASE",
