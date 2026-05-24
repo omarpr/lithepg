@@ -17,8 +17,8 @@
 
 ## 4. AI & Intelligence Layer
 - **Local RAG (Retrieval-Augmented Generation):**
-    - Local vector storage for schema indexing (using `pgvector` on the server or a local SQLite/vector shim).
-- **Inference:** - **CoreML / MLX:** Running quantized models (like Llama 3 or Phi-3) directly on the Mac's GPU/ANE for NL2SQL tasks.
+    - Local schema indexing powers lexical retrieval today; vector storage remains a future optimization.
+- **Inference:** CoreML / MLX are the intended runtime paths for quantized NL2SQL models, but model artifacts are not bundled in the app binary. `LocalModelRegistry` only locates user-provided artifacts under Application Support (or explicit test/config overrides) and reports unavailable/missing states; it does not download models or add inference dependencies yet.
 - **Schema Awareness:** Automatic "semantic mapping" of tables to allow natural language joins (e.g., "Join users to their latest invoices").
 
 ## 5. Build System
