@@ -162,3 +162,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Extended `script/build_and_run.sh --package` to build a release `.app` bundle under `dist/LithePG.app` and apply `strip -x` to the copied app executable.
 - Local package smoke: `./script/build_and_run.sh --package` produced `dist/LithePG.app` and reduced the bundled executable from 20.92 MiB to 11.75 MiB, matching the v0.4 strip-probe measurement while leaving the raw SwiftPM build untouched.
 - Verification: `bash -n script/build_and_run.sh script/dogfood_check.sh script/v04_measure.sh` passed.
+
+## 2026-05-24 17:14 EDT — v0.4 stability window release receipt
+
+- The v0.4 seven-day zero-crash window has elapsed since the green day-0 stability check on 2026-05-05, with no crash entries added to this log.
+- Re-ran the local stability gate after restarting Colima/Docker: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` passed on `main` at `85d5ad3`.
+- Check artifacts: `.build/dogfood-checks/20260524-171411/`.
+- Verification summary: default Swift tests passed, live dogfood AppState/schema/history slice passed, and v0.4 measurement gate passed.
+- Current metrics: shell readiness 125.67 ms; connected startup + `SELECT 1` 158.86 ms; release binary 20.98 MiB raw / 11.79 MiB stripped; simple query median overhead 0.042 ms; dogfood query median overhead 0.080 ms.
+- Result: v0.4 exit criteria are satisfied; ready to tag `v0.4`.

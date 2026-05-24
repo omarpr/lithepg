@@ -1,15 +1,22 @@
 # LithePG
 
 [![CI](https://github.com/omarpr/lithepg/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/omarpr/lithepg/actions/workflows/ci.yml?query=branch%3Amain)
-&nbsp;**Release:** [`v0.1`](https://github.com/omarpr/lithepg/tree/v0.1) — Walking Skeleton
+&nbsp;**Release:** [`v0.4`](https://github.com/omarpr/lithepg/tree/v0.4) — Lean & Fast
 
 A lean, Mac-native PostgreSQL client with local-first AI. Pure Swift, no `libpq`, target app binary under 50 MiB, with a 30 MiB stretch goal.
 
 > Badges resolve against a private repository — they render for viewers signed into GitHub with access to `omarpr/lithepg`.
 
-## Status: v0.1 Walking Skeleton
+## Status: v0.4 Lean & Fast
 
-End-to-end proof that the stack is real. Ships as a CLI that runs `SELECT 1` across three connection modes:
+Dogfood-ready app with saved connections, query history, schema sidebar, tabbed query workspace, results pagination, and a v0.4 stability/performance gate. The current local release receipt clears:
+
+- **Binary budget:** 20.98 MiB raw release executable / 11.79 MiB stripped packaged executable, under the 50 MiB hard cap and 30 MiB stretch goal.
+- **Startup:** 125.67 ms shell readiness; 158.86 ms connected startup through seeded dogfood Postgres.
+- **Query overhead:** 0.042 ms median overhead versus `psql` for `SELECT 1`; 0.080 ms for the dogfood query.
+- **Stability:** seven-day zero-crash dogfood window satisfied.
+
+The original v0.1 CLI remains as a smoke utility and still covers three connection modes:
 
 - **Plain TCP** against local Postgres.
 - **TLS verify-full** with a pinned self-signed CA (routed through BoringSSL via `NIOSSL`).
