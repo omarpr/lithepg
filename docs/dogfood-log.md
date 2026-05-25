@@ -171,3 +171,28 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Verification summary: default Swift tests passed, live dogfood AppState/schema/history slice passed, and v0.4 measurement gate passed.
 - Current metrics: shell readiness 125.67 ms; connected startup + `SELECT 1` 158.86 ms; release binary 20.98 MiB raw / 11.79 MiB stripped; simple query median overhead 0.042 ms; dogfood query median overhead 0.080 ms.
 - Result: v0.4 exit criteria are satisfied; ready to tag `v0.4`.
+
+## 2026-05-25 06:55 EDT — v0.5 AI-Ready pre-tag dogfood receipt
+
+- [x] **Fresh default test gate** — `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed on `main` at `a6719e6` with 125 Swift Testing tests across 19 suites. Integration/model-artifact tests that require explicit env vars skipped as designed.
+- [x] **Seeded live dogfood slice** — `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` passed after refreshing Docker Postgres `lithepg-smoke` from `script/dogfood_seed.sql`. Check artifacts: `.build/dogfood-checks/20260525-065045/`; live AppState/schema/history slice passed with `POSTGRES_TEST_URL=postgres://postgres:***@localhost:55432/postgres?sslmode=disable`.
+- [x] **v0.4/v0.5 measurement gate** — the dogfood check's `script/v04_measure.sh` run passed and the v0.5 AI scaffold remains under the existing lean/fast budgets: release `LithePGApp` 21.338 MiB raw / 11.959 MiB strip-probe, shell readiness 138.14 ms, connected cold start through seeded Postgres 222.00 ms, `SELECT 1` median overhead -0.032 ms vs `psql`, dogfood query median overhead -0.004 ms vs `psql`.
+- [x] **Ask example — simple single-table prompt** — deterministic Ask prompt `show customers` produced and the generated SQL executed successfully against the seeded database, returning the 4 seeded customers:
+
+  ```sql
+  SELECT * FROM "lithepg_demo"."customers" LIMIT 100;
+  ```
+
+- [x] **Ask example — 2-table join prompt** — deterministic Ask prompt `show orders with customer names` produced and the generated SQL executed successfully against the seeded database, returning the 6 seeded orders joined through `orders.customer_id -> customers.id`:
+
+  ```sql
+  SELECT
+    o.*,
+    c."name" AS "customer_name"
+  FROM "lithepg_demo"."orders" o
+  JOIN "lithepg_demo"."customers" c ON o."customer_id" = c."id"
+  LIMIT 100;
+  ```
+
+- **Model/runtime caveat:** no real model artifact was supplied, downloaded, or bundled for this receipt. The CoreML `LocalModelAIQueryService` remains gated by `LITHEPG_ENABLE_LOCAL_MODEL=1` plus `LITHEPG_LOCAL_MODEL_PATH`; the production/default dogfood path uses the deterministic local Ask service. Generated SQL is inserted for review and is not auto-run by the app.
+- **Tag gate:** `v0.5` was not tagged and `README.md` was not advanced to v0.5 because Omar/local dogfood confirmation of Ask usefulness is still required before the release tag.
