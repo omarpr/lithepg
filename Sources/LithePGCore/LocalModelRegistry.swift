@@ -1,6 +1,6 @@
 import Foundation
 
-public struct LocalModelRegistry {
+public struct LocalModelRegistry: @unchecked Sendable {
   public enum Availability: Sendable, Equatable {
     case unavailable(expectedDirectory: URL)
     case available(URL)
