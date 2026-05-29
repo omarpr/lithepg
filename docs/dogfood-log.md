@@ -195,4 +195,9 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
   ```
 
 - **Model/runtime caveat:** no real model artifact was supplied, downloaded, or bundled for this receipt. The CoreML `LocalModelAIQueryService` remains gated by `LITHEPG_ENABLE_LOCAL_MODEL=1` plus `LITHEPG_LOCAL_MODEL_PATH`; the production/default dogfood path uses the deterministic local Ask service. Generated SQL is inserted for review and is not auto-run by the app.
-- **Tag gate:** `v0.5` was not tagged and `README.md` was not advanced to v0.5 because Omar/local dogfood confirmation of Ask usefulness is still required before the release tag.
+
+## 2026-05-28 20:24 EDT — v0.5 release tag approved
+
+- Omar confirmed to continue the LithePG workstream and get it done, clearing the previous tag gate.
+- Advanced README release/status text from v0.4 Lean & Fast to v0.5 AI-Ready using the 2026-05-25 pre-tag dogfood receipt metrics.
+- Marked the v0.5 Task 10 plan checklist complete; `v0.5` is the release tag for the local-first Ask-in-English milestone.

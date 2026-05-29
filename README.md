@@ -1,20 +1,22 @@
 # LithePG
 
 [![CI](https://github.com/omarpr/lithepg/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/omarpr/lithepg/actions/workflows/ci.yml?query=branch%3Amain)
-&nbsp;**Release:** [`v0.4`](https://github.com/omarpr/lithepg/tree/v0.4) — Lean & Fast
+&nbsp;**Release:** [`v0.5`](https://github.com/omarpr/lithepg/tree/v0.5) — AI-Ready
 
 A lean, Mac-native PostgreSQL client with local-first AI. Pure Swift, no `libpq`, target app binary under 50 MiB, with a 30 MiB stretch goal.
 
 > Badges resolve against a private repository — they render for viewers signed into GitHub with access to `omarpr/lithepg`.
 
-## Status: v0.4 Lean & Fast
+## Status: v0.5 AI-Ready
 
-Dogfood-ready app with saved connections, query history, schema sidebar, tabbed query workspace, results pagination, and a v0.4 stability/performance gate. The current local release receipt clears:
+Dogfood-ready app with saved connections, query history, schema sidebar, tabbed query workspace, results pagination, and a local-first Ask-in-English SQL drafting path. The current local release receipt clears:
 
-- **Binary budget:** 20.98 MiB raw release executable / 11.79 MiB stripped packaged executable, under the 50 MiB hard cap and 30 MiB stretch goal.
-- **Startup:** 125.67 ms shell readiness; 158.86 ms connected startup through seeded dogfood Postgres.
-- **Query overhead:** 0.042 ms median overhead versus `psql` for `SELECT 1`; 0.080 ms for the dogfood query.
-- **Stability:** seven-day zero-crash dogfood window satisfied.
+- **AI drafting:** deterministic local Ask flow drafts runnable SQL for simple single-table prompts and 2-table joins using schema/foreign-key metadata; drafts are inserted for human review and never auto-run.
+- **Model posture:** CoreML adapter scaffold is disabled by default, requires a user-provided external model artifact, and keeps prompts/schemas/results/credentials on-device.
+- **Binary budget:** 21.338 MiB raw release executable / 11.959 MiB stripped packaged executable, under the 50 MiB hard cap and 30 MiB stretch goal.
+- **Startup:** 138.14 ms shell readiness; 222.00 ms connected startup through seeded dogfood Postgres.
+- **Query overhead:** -0.032 ms median overhead versus `psql` for `SELECT 1`; -0.004 ms for the dogfood query.
+- **Stability:** v0.4 seven-day zero-crash dogfood window satisfied; v0.5 dogfood/test/measurement gates passed.
 
 The original v0.1 CLI remains as a smoke utility and still covers three connection modes:
 
@@ -66,6 +68,7 @@ The startup env is intentionally opt-in for dogfood/smoke runs. Normal app launc
 - `⌘T` — open a new query tab.
 - `⌘W` — close the active query tab, keeping at least one tab open.
 - `⇧⌘[` / `⇧⌘]` — move to the previous / next query tab.
+- `⇧⌘K` — open Ask in English for local SQL drafting.
 
 ## Project Layout
 
