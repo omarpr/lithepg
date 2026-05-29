@@ -201,3 +201,9 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Omar confirmed to continue the LithePG workstream and get it done, clearing the previous tag gate.
 - Advanced README release/status text from v0.4 Lean & Fast to v0.5 AI-Ready using the 2026-05-25 pre-tag dogfood receipt metrics.
 - Marked the v0.5 Task 10 plan checklist complete; `v0.5` is the release tag for the local-first Ask-in-English milestone.
+
+## 2026-05-28 20:27 EDT — v1.0 public launch phase opened
+
+- Opened the v1.0 design spec and implementation plan from the roadmap's public-launch exit criteria: notarized macOS build, GitHub/Homebrew distribution, public docs, security reporting, light/dark theme support, and governance templates.
+- External blockers to clear before a true public `v1.0` tag: Apple Developer signing/notary credentials, Homebrew cask tap target, and GitHub Actions push/PR trigger account settings.
+- Work can continue safely before those blockers by hardening package verification, release docs, contribution templates, and appearance preference tests.
