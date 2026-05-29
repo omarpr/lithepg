@@ -23,6 +23,11 @@ fi
 
 cd "$ROOT_DIR"
 
+LATEST_TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+MARKETING_VERSION="${LITHEPG_MARKETING_VERSION:-${LATEST_TAG#v}}"
+MARKETING_VERSION="${MARKETING_VERSION:-0.0}"
+BUILD_VERSION="${LITHEPG_BUILD_VERSION:-$(git rev-list --count HEAD 2>/dev/null || printf '0')}"
+
 case "$MODE" in
   --package|package|release)
     BUILD_CONFIG="release"
@@ -62,6 +67,10 @@ cat >"$INFO_PLIST" <<PLIST
   <string>$BUNDLE_ID</string>
   <key>CFBundleName</key>
   <string>$BUNDLE_NAME</string>
+  <key>CFBundleShortVersionString</key>
+  <string>$MARKETING_VERSION</string>
+  <key>CFBundleVersion</key>
+  <string>$BUILD_VERSION</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>LSMinimumSystemVersion</key>
@@ -129,6 +138,7 @@ case "$MODE" in
   --package|package|release)
     BEFORE_MIB=$(awk "BEGIN { printf \"%.2f\", $BEFORE_BYTES / 1024 / 1024 }")
     AFTER_MIB=$(awk "BEGIN { printf \"%.2f\", $AFTER_BYTES / 1024 / 1024 }")
+    "$ROOT_DIR/script/package_verify.sh" "$APP_BUNDLE"
     printf 'Built %s (%s -> %s MiB after strip -x)\n' "$APP_BUNDLE" "$BEFORE_MIB" "$AFTER_MIB"
     ;;
   *)

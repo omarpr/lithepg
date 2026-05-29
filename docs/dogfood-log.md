@@ -207,3 +207,20 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Opened the v1.0 design spec and implementation plan from the roadmap's public-launch exit criteria: notarized macOS build, GitHub/Homebrew distribution, public docs, security reporting, light/dark theme support, and governance templates.
 - External blockers to clear before a true public `v1.0` tag: Apple Developer signing/notary credentials, Homebrew cask tap target, and GitHub Actions push/PR trigger account settings.
 - Work can continue safely before those blockers by hardening package verification, release docs, contribution templates, and appearance preference tests.
+
+## 2026-05-28 20:35 EDT — v1.0 package verification slice
+
+- Added `script/package_verify.sh` as the release-bundle structure gate for `dist/LithePG.app`.
+- Verification checks `Contents/MacOS/LithePGApp`, `Contents/Info.plist`, executable permissions, bundle identifier/name/package/version metadata, minimum macOS version, and the 50 MiB executable hard cap.
+- Wired `script/build_and_run.sh --package` to run the verifier after the stripped release bundle is produced.
+- RED check: `./script/package_verify.sh /tmp/lithepg-missing.app` failed as expected with `package verification failed: app bundle not found`.
+- GREEN checks: `bash -n script/build_and_run.sh script/package_verify.sh script/sign_and_notarize.sh`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/build_and_run.sh --package`, and `./script/package_verify.sh dist/LithePG.app` all passed. Packaged executable: 12,486,016 bytes / 11.91 MiB; package metadata version: 0.5 (build 121).
+
+## 2026-05-28 20:35 EDT — v1.0 signing/notarization wrapper slice
+
+- Added `script/sign_and_notarize.sh`, a credential-gated public distribution wrapper for the packaged macOS app bundle.
+- Added `docs/RELEASING.md` with the local package gate, signing/notary env inputs, dry-run command, real notarization flow, and v1.0 release gate reminders.
+- RED check: with `LITHEPG_CODESIGN_IDENTITY` and `LITHEPG_NOTARY_PROFILE` unset, `./script/sign_and_notarize.sh --dry-run dist/LithePG.app` failed as expected after package verification with `missing LITHEPG_CODESIGN_IDENTITY`.
+- GREEN check: dummy dry run with placeholder `LITHEPG_CODESIGN_IDENTITY` and `LITHEPG_NOTARY_PROFILE` passed and printed only planned local commands; no signing, notary submission, or credential write occurred.
+- Real signed/notarized smoke remains externally blocked until Omar supplies Apple Developer signing identity and notarytool keychain profile on this machine.
+- Additional release-impact gate: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` passed with Docker available. Artifacts: `.build/dogfood-checks/20260528-205026/`; default Swift tests passed, live dogfood slice passed, v0.4 measurement passed. Metrics: shell readiness 130.75 ms; connected cold start 227.65 ms; raw release binary 21.338 MiB; strip probe 11.959 MiB; `SELECT 1` median overhead 0.070 ms; dogfood query median overhead 0.029 ms.

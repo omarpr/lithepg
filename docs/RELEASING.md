@@ -1,0 +1,60 @@
+# Releasing LithePG
+
+LithePG release artifacts are local-first macOS app bundles. Signing and notarization require Omar-controlled Apple Developer credentials; those credentials must stay in the local keychain or environment and must never be committed.
+
+## Local unsigned package verification
+
+Build and verify the stripped app bundle:
+
+```sh
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/build_and_run.sh --package
+./script/package_verify.sh dist/LithePG.app
+```
+
+The verifier checks:
+
+- `Contents/MacOS/LithePGApp` exists and is executable.
+- `Contents/Info.plist` has the expected executable, bundle identifier, bundle name, package type, numeric release/build version fields, minimum system version, and principal class.
+- The packaged executable stays below the 50 MiB hard cap.
+
+An unsigned/ad-hoc-signed local bundle is only a development artifact. Do not publish it as a public v1.0 release.
+
+## Signed + notarized release path
+
+`script/sign_and_notarize.sh` is the credential-gated wrapper for public macOS distribution. It expects a package produced by `script/build_and_run.sh --package` and reads configuration from environment variables only:
+
+| Variable | Purpose |
+| --- | --- |
+| `LITHEPG_CODESIGN_IDENTITY` | Apple Developer Application signing identity for `codesign`. |
+| `LITHEPG_NOTARY_PROFILE` | `xcrun notarytool` keychain profile name. |
+| `LITHEPG_ENTITLEMENTS` | Optional entitlements override; defaults to `Sources/LithePGApp/LithePGApp.entitlements`. |
+| `LITHEPG_NOTARY_ZIP` | Optional zip output path; defaults to `dist/LithePG-notary.zip`. |
+
+Check the configuration without signing or submitting anything:
+
+```sh
+LITHEPG_CODESIGN_IDENTITY="Developer ID Application: Example" \
+LITHEPG_NOTARY_PROFILE="lithepg-notary" \
+./script/sign_and_notarize.sh --dry-run dist/LithePG.app
+```
+
+Real signing/notarization runs:
+
+1. `script/package_verify.sh` on the app bundle.
+2. `codesign --deep --force --options runtime --timestamp` with the configured identity and entitlements.
+3. `ditto` zip packaging for notary submission.
+4. `xcrun notarytool submit --wait` using the configured keychain profile.
+5. `xcrun stapler staple` and `xcrun stapler validate`.
+6. `spctl --assess --type execute --verbose=4`.
+
+If `LITHEPG_CODESIGN_IDENTITY` or `LITHEPG_NOTARY_PROFILE` is missing, the wrapper exits non-zero with a clear message. That is expected on machines without Apple Developer credentials.
+
+## v1.0 gate
+
+Do not tag `v1.0` or publish a GitHub Release until all non-external gates pass and Omar approves the public release copy:
+
+- Full `swift test`.
+- Seeded dogfood check when Docker is available.
+- Package verification.
+- Signed/notarized validation when credentials are available.
+- Release notes/README/security/contribution docs reviewed for public users and no secrets.
