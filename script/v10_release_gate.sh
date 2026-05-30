@@ -50,13 +50,35 @@ mark_blocker() {
   BLOCKERS=$((BLOCKERS + 1))
 }
 
+is_placeholder_value() {
+  local value="${1:-}"
+
+  case "$value" in
+    *[Rr][Ee][Pp][Ll][Aa][Cc][Ee]_[Ww][Ii][Tt][Hh]_*|\
+    *[Pp][Ll][Aa][Cc][Ee][Hh][Oo][Ll][Dd][Ee][Rr]*|\
+    *[Tt][Oo][Dd][Oo]*|\
+    *[Tt][Bb][Dd]*|\
+    *[Pp][Ee][Nn][Dd][Ii][Nn][Gg]*)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
 print_config_status() {
   local name="$1"
-  if [[ -n "${!name:-}" ]]; then
-    printf '%s: configured\n' "$name"
-  else
+  local value="${!name:-}"
+
+  if [[ -z "$value" ]]; then
     printf '%s: missing\n' "$name"
     mark_blocker
+  elif is_placeholder_value "$value"; then
+    printf '%s: placeholder\n' "$name"
+    mark_blocker
+  else
+    printf '%s: configured\n' "$name"
   fi
 }
 

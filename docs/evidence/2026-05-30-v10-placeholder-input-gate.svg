@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="520" viewBox="0 0 1120 520" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 placeholder external input release-gate evidence</title>
+  <desc id="desc">Shell test and syntax verification receipt for the v1.0 fast preflight placeholder-input hardening slice.</desc>
+  <rect width="1120" height="520" fill="#0f172a"/>
+  <rect x="32" y="32" width="1056" height="456" rx="18" fill="#111827" stroke="#38bdf8" stroke-width="2"/>
+  <text x="64" y="78" fill="#e5e7eb" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="24" font-weight="700">LithePG v1.0 fast preflight: placeholder external input gate</text>
+  <text x="64" y="116" fill="#93c5fd" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Receipt: 2026-05-30 15:46 EDT · shell-only TDD hardening · no secrets emitted</text>
+
+  <text x="64" y="170" fill="#fca5a5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" font-weight="700">RED (before production change)</text>
+  <text x="90" y="202" fill="#e5e7eb" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15">$ bash script/test_v10_release_gate.sh</text>
+  <text x="90" y="228" fill="#fecaca" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15">exit 1 — gate unexpectedly passed with placeholder external security contact</text>
+
+  <text x="64" y="286" fill="#86efac" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" font-weight="700">GREEN (after minimal script change)</text>
+  <text x="90" y="318" fill="#e5e7eb" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15">$ bash script/test_v10_release_gate.sh</text>
+  <text x="90" y="344" fill="#bbf7d0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15">test_v10_release_gate passed</text>
+  <text x="90" y="376" fill="#e5e7eb" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15">$ bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh</text>
+  <text x="90" y="402" fill="#bbf7d0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15">exit 0 — syntax check passed</text>
+
+  <text x="64" y="452" fill="#cbd5e1" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15">Result: required external publication placeholders now report only a redacted status label and block the fast preflight.</text>
+</svg>

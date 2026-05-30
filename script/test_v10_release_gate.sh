@@ -38,6 +38,7 @@ missing_output="$(mktemp)"
 redaction_output="$(mktemp)"
 placeholder_output="$(mktemp)"
 missing_copy_output="$(mktemp)"
+external_placeholder_output="$(mktemp)"
 no_remote_lookup_output="$(mktemp)"
 remote_opt_in_output="$(mktemp)"
 status_failure_output="$(mktemp)"
@@ -49,7 +50,7 @@ missing_release_copy="$(mktemp)"
 rm -f "$missing_release_copy"
 fake_git_dir="$(mktemp -d)"
 fake_git_marker="$fake_git_dir/ls-remote-called"
-trap 'rm -f "$missing_output" "$redaction_output" "$placeholder_output" "$missing_copy_output" "$no_remote_lookup_output" "$remote_opt_in_output" "$status_failure_output" "$grep_error_output" "$placeholder_release_copy" "$placeholder_free_release_copy" "$grep_error_release_copy" "$missing_release_copy"; rm -rf "$fake_git_dir"' EXIT
+trap 'rm -f "$missing_output" "$redaction_output" "$placeholder_output" "$missing_copy_output" "$external_placeholder_output" "$no_remote_lookup_output" "$remote_opt_in_output" "$status_failure_output" "$grep_error_output" "$placeholder_release_copy" "$placeholder_free_release_copy" "$grep_error_release_copy" "$missing_release_copy"; rm -rf "$fake_git_dir"' EXIT
 
 cat >"$fake_git_dir/git" <<'FAKE_GIT'
 #!/usr/bin/env bash
@@ -230,6 +231,29 @@ assert_contains "$grep_error_text" "Release copy placeholders: could not scan $g
 assert_contains "$grep_error_text" "v1.0 publication blocked"
 assert_not_contains "$grep_error_text" "Release copy placeholders: none found"
 assert_not_contains "$grep_error_text" "fast preflight is clear"
+
+if run_gate_capture "$external_placeholder_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="[security contact pending]" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  fail "gate unexpectedly passed with placeholder external security contact"
+fi
+external_placeholder_text="$(<"$external_placeholder_output")"
+assert_contains "$external_placeholder_text" "Release copy placeholders: none found"
+assert_contains "$external_placeholder_text" "LITHEPG_CODESIGN_IDENTITY: configured"
+assert_contains "$external_placeholder_text" "LITHEPG_NOTARY_PROFILE: configured"
+assert_contains "$external_placeholder_text" "LITHEPG_SECURITY_CONTACT: placeholder"
+assert_contains "$external_placeholder_text" "LITHEPG_HOMEBREW_TAP: configured"
+assert_contains "$external_placeholder_text" "v1.0 publication blocked"
+assert_not_contains "$external_placeholder_text" "[security contact pending]"
+assert_not_contains "$external_placeholder_text" "fast preflight is clear"
 
 rm -f "$fake_git_marker"
 if ! run_gate_capture "$no_remote_lookup_output" env -i \

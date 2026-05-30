@@ -326,3 +326,10 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - TDD receipt: `bash script/test_v10_release_gate.sh` failed first when the new expected `LITHEPG_GITHUB_ACTIONS_READY: not approved` output was absent, then passed after the minimal script change and fixture updates.
 - Verification: `bash script/test_v10_release_gate.sh` passed, `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed, `./script/v10_release_gate.sh --check-remote` remained safely blocked while showing `LITHEPG_GITHUB_ACTIONS_READY: not approved`, and `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed.
 - Evidence artifact: `docs/evidence/2026-05-30-v10-github-actions-ready-gate.svg`.
+
+## 2026-05-30 15:46 EDT — v1.0 placeholder external-input gate
+
+- Hardened `script/v10_release_gate.sh` so required external publication inputs reject obvious placeholder/sentinel values instead of treating any non-empty value as configured; approval variables keep the existing boolean-style approval behavior.
+- TDD receipt: `bash script/test_v10_release_gate.sh` failed first with `gate unexpectedly passed with placeholder external security contact`, then passed after the minimal redacted-status blocker change.
+- Verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed. No signing, notarization, upload, Homebrew publication, or cron changes were run.
+- Evidence artifact: `docs/evidence/2026-05-30-v10-placeholder-input-gate.svg`.
