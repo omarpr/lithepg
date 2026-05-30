@@ -396,3 +396,11 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - TDD receipt: `bash script/test_v10_release_gate.sh` failed first with `gate unexpectedly passed with mismatched Homebrew cask app stanza`, then passed after the minimal parser/readiness check was added.
 - Verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed; `./script/v10_release_gate.sh --check-remote` confirmed origin still has `v0.5` and does not have `v1.0`, then remained blocked on expected local/publication blockers. No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-30-v10-homebrew-cask-app-stanza-gate.svg`.
+
+## 2026-05-30 19:23 EDT — v1.0 Homebrew cask macOS requirement gate
+
+- Hardened `script/v10_release_gate.sh` so placeholder-free Homebrew casks must declare `depends_on macos: ">= :sonoma"` before the fast publication preflight can pass.
+- Added redacted shell TDD coverage for mismatched and missing macOS requirement stanzas, the valid `Homebrew cask macOS requirement: matches` pass path, and placeholder-cask no-noise behavior.
+- TDD receipt: `bash script/test_v10_release_gate.sh` failed first with `gate unexpectedly passed with mismatched Homebrew cask macOS requirement`, then passed after the minimal parser/readiness check was added.
+- Verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed. No signing, notarization, upload, Homebrew publication, tag, push, commit, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-30-v10-homebrew-cask-macos-requirement-gate.svg`.

@@ -209,6 +209,24 @@ extract_homebrew_cask_app_stanza() {
   return 1
 }
 
+extract_homebrew_cask_macos_requirement() {
+  local cask_file="$1"
+  local line=""
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" =~ ^[[:space:]]*depends_on[[:space:]]+macos:[[:space:]]*\"([^\"]+)\" ]]; then
+      printf '%s\n' "${BASH_REMATCH[1]}"
+      return 0
+    fi
+    if [[ "$line" =~ ^[[:space:]]*depends_on[[:space:]]+macos:[[:space:]]*([^[:space:]#]+) ]]; then
+      printf '%s\n' "${BASH_REMATCH[1]}"
+      return 0
+    fi
+  done <"$cask_file"
+
+  return 1
+}
+
 security_doc_full_path() {
   local security_doc_path="$1"
   case "$security_doc_path" in
@@ -426,6 +444,20 @@ if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
     fi
   else
     printf 'Homebrew cask app stanza: missing\n'
+    mark_blocker
+  fi
+fi
+
+if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
+  if cask_macos_requirement="$(extract_homebrew_cask_macos_requirement "$homebrew_cask_file")"; then
+    if [[ "$cask_macos_requirement" == ">= :sonoma" ]]; then
+      printf 'Homebrew cask macOS requirement: matches\n'
+    else
+      printf 'Homebrew cask macOS requirement: mismatch\n'
+      mark_blocker
+    fi
+  else
+    printf 'Homebrew cask macOS requirement: missing\n'
     mark_blocker
   fi
 fi

@@ -64,6 +64,8 @@ missing_homebrew_cask_version_output="$(mktemp)"
 missing_homebrew_cask_sha_output="$(mktemp)"
 homebrew_cask_app_mismatch_output="$(mktemp)"
 missing_homebrew_cask_app_output="$(mktemp)"
+homebrew_cask_macos_mismatch_output="$(mktemp)"
+missing_homebrew_cask_macos_output="$(mktemp)"
 placeholder_output="$(mktemp)"
 homebrew_cask_placeholder_output="$(mktemp)"
 security_doc_placeholder_output="$(mktemp)"
@@ -88,6 +90,8 @@ missing_version_homebrew_cask="$(mktemp)"
 missing_sha_homebrew_cask="$(mktemp)"
 app_mismatch_homebrew_cask="$(mktemp)"
 missing_app_homebrew_cask="$(mktemp)"
+macos_mismatch_homebrew_cask="$(mktemp)"
+missing_macos_homebrew_cask="$(mktemp)"
 placeholder_security_doc="$(mktemp)"
 placeholder_free_security_doc="$(mktemp)"
 release_zip_fixture="$(mktemp)"
@@ -116,6 +120,8 @@ cleanup() {
     "$missing_homebrew_cask_sha_output" \
     "$homebrew_cask_app_mismatch_output" \
     "$missing_homebrew_cask_app_output" \
+    "$homebrew_cask_macos_mismatch_output" \
+    "$missing_homebrew_cask_macos_output" \
     "$placeholder_output" \
     "$homebrew_cask_placeholder_output" \
     "$security_doc_placeholder_output" \
@@ -140,6 +146,8 @@ cleanup() {
     "$missing_sha_homebrew_cask" \
     "$app_mismatch_homebrew_cask" \
     "$missing_app_homebrew_cask" \
+    "$macos_mismatch_homebrew_cask" \
+    "$missing_macos_homebrew_cask" \
     "$placeholder_security_doc" \
     "$placeholder_free_security_doc" \
     "$release_zip_fixture" \
@@ -247,6 +255,8 @@ cask "lithepg" do
   desc "Lean PostgreSQL client with local-first AI"
   homepage "https://github.com/omarpr/lithepg"
 
+  depends_on macos: ">= :sonoma"
+
   app "LithePG.app"
 end
 CASK
@@ -261,6 +271,8 @@ cask "lithepg" do
   desc "Lean PostgreSQL client with local-first AI"
   homepage "https://github.com/omarpr/lithepg"
 
+  depends_on macos: ">= :sonoma"
+
   app "LithePG.app"
 end
 CASK
@@ -274,6 +286,8 @@ cask "lithepg" do
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
   homepage "https://github.com/omarpr/lithepg"
+
+  depends_on macos: ">= :sonoma"
 
   app "LithePG.app"
 end
@@ -290,6 +304,8 @@ cask "lithepg" do
   desc "Lean PostgreSQL client with local-first AI"
   homepage "https://github.com/omarpr/lithepg"
 
+  depends_on macos: ">= :sonoma"
+
   app "LithePG.app"
 end
 CASK
@@ -305,6 +321,8 @@ cask "lithepg" do
   desc "Lean PostgreSQL client with local-first AI"
   homepage "https://github.com/omarpr/lithepg"
 
+  depends_on macos: ">= :sonoma"
+
   app "LithePG.app"
 end
 CASK
@@ -317,6 +335,8 @@ cask "lithepg" do
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
   homepage "https://github.com/omarpr/lithepg"
+
+  depends_on macos: ">= :sonoma"
 
   app "LithePG.app"
 end
@@ -332,6 +352,8 @@ cask "lithepg" do
   desc "Lean PostgreSQL client with local-first AI"
   homepage "https://github.com/omarpr/lithepg"
 
+  depends_on macos: ">= :sonoma"
+
   app "LithePG.app"
 end
 CASK
@@ -345,6 +367,8 @@ cask "lithepg" do
   desc "Lean PostgreSQL client with local-first AI"
   homepage "https://github.com/omarpr/lithepg"
 
+  depends_on macos: ">= :sonoma"
+
   app "LithePG.app"
 end
 CASK
@@ -357,6 +381,8 @@ cask "lithepg" do
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
   homepage "https://github.com/omarpr/lithepg"
+
+  depends_on macos: ">= :sonoma"
 
   app "LithePG.app"
 end
@@ -373,6 +399,8 @@ cask "lithepg" do
   desc "Lean PostgreSQL client with local-first AI"
   homepage "https://github.com/omarpr/lithepg"
 
+  depends_on macos: ">= :sonoma"
+
   app "$wrong_homebrew_cask_app"
 end
 CASK
@@ -386,6 +414,38 @@ cask "lithepg" do
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
   homepage "https://github.com/omarpr/lithepg"
+
+  depends_on macos: ">= :sonoma"
+end
+CASK
+cat >"$macos_mismatch_homebrew_cask" <<CASK
+cask "lithepg" do
+  version "1.0"
+  sha256 "$release_zip_sha"
+
+  url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
+      verified: "github.com/omarpr/lithepg/"
+  name "LithePG"
+  desc "Lean PostgreSQL client with local-first AI"
+  homepage "https://github.com/omarpr/lithepg"
+
+  depends_on macos: ">= :ventura"
+
+  app "LithePG.app"
+end
+CASK
+cat >"$missing_macos_homebrew_cask" <<CASK
+cask "lithepg" do
+  version "1.0"
+  sha256 "$release_zip_sha"
+
+  url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
+      verified: "github.com/omarpr/lithepg/"
+  name "LithePG"
+  desc "Lean PostgreSQL client with local-first AI"
+  homepage "https://github.com/omarpr/lithepg"
+
+  app "LithePG.app"
 end
 CASK
 printf 'Report vulnerabilities to [security contact pending].\n' >"$placeholder_security_doc"
@@ -780,6 +840,63 @@ assert_contains "$missing_homebrew_cask_app_text" "Homebrew cask SHA-256: matche
 assert_not_contains "$missing_homebrew_cask_app_text" "$release_zip_sha"
 assert_contains "$missing_homebrew_cask_app_text" "v1.0 publication blocked"
 
+if run_gate_capture "$homebrew_cask_macos_mismatch_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$macos_mismatch_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  fail "gate unexpectedly passed with mismatched Homebrew cask macOS requirement"
+fi
+homebrew_cask_macos_mismatch_text="$(<"$homebrew_cask_macos_mismatch_output")"
+assert_contains "$homebrew_cask_macos_mismatch_text" "Homebrew cask placeholders: none found"
+assert_contains "$homebrew_cask_macos_mismatch_text" "Homebrew cask version: matches"
+assert_contains "$homebrew_cask_macos_mismatch_text" "Homebrew cask URL: matches"
+assert_contains "$homebrew_cask_macos_mismatch_text" "Homebrew cask verified URL: matches"
+assert_contains "$homebrew_cask_macos_mismatch_text" "Homebrew cask app stanza: matches"
+assert_contains "$homebrew_cask_macos_mismatch_text" "Homebrew cask macOS requirement: mismatch"
+assert_contains "$homebrew_cask_macos_mismatch_text" "Homebrew cask SHA-256: matches"
+assert_not_contains "$homebrew_cask_macos_mismatch_text" "ventura"
+assert_not_contains "$homebrew_cask_macos_mismatch_text" "$release_zip_sha"
+assert_contains "$homebrew_cask_macos_mismatch_text" "v1.0 publication blocked"
+
+if run_gate_capture "$missing_homebrew_cask_macos_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$missing_macos_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  fail "gate unexpectedly passed with missing Homebrew cask macOS requirement"
+fi
+missing_homebrew_cask_macos_text="$(<"$missing_homebrew_cask_macos_output")"
+assert_contains "$missing_homebrew_cask_macos_text" "Homebrew cask placeholders: none found"
+assert_contains "$missing_homebrew_cask_macos_text" "Homebrew cask version: matches"
+assert_contains "$missing_homebrew_cask_macos_text" "Homebrew cask URL: matches"
+assert_contains "$missing_homebrew_cask_macos_text" "Homebrew cask verified URL: matches"
+assert_contains "$missing_homebrew_cask_macos_text" "Homebrew cask app stanza: matches"
+assert_contains "$missing_homebrew_cask_macos_text" "Homebrew cask macOS requirement: missing"
+assert_contains "$missing_homebrew_cask_macos_text" "Homebrew cask SHA-256: matches"
+assert_not_contains "$missing_homebrew_cask_macos_text" "$release_zip_sha"
+assert_contains "$missing_homebrew_cask_macos_text" "v1.0 publication blocked"
+
 if run_gate_capture "$placeholder_output" env -i \
   PATH="$fake_path" \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
@@ -827,6 +944,7 @@ assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask version: mi
 assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask URL: mismatch"
 assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask verified URL:"
 assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask app stanza:"
+assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask macOS requirement:"
 assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask SHA-256: mismatch"
 assert_contains "$homebrew_cask_placeholder_text" "v1.0 publication blocked"
 assert_not_contains "$homebrew_cask_placeholder_text" "fast preflight is clear"
@@ -980,6 +1098,7 @@ assert_contains "$no_remote_lookup_text" "Homebrew cask version: matches"
 assert_contains "$no_remote_lookup_text" "Homebrew cask URL: matches"
 assert_contains "$no_remote_lookup_text" "Homebrew cask verified URL: matches"
 assert_contains "$no_remote_lookup_text" "Homebrew cask app stanza: matches"
+assert_contains "$no_remote_lookup_text" "Homebrew cask macOS requirement: matches"
 assert_contains "$no_remote_lookup_text" "Homebrew cask SHA-256: matches"
 assert_contains "$no_remote_lookup_text" "Release artifact zip: present"
 assert_contains "$no_remote_lookup_text" "Release artifact SHA-256: matches"
