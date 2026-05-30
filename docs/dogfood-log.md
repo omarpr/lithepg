@@ -258,3 +258,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Documented the release artifact URL shape, SHA-256 workflow, placeholder replacement steps, and local/tap Homebrew checks in `docs/RELEASING.md` and `packaging/homebrew/README.md`.
 - External publication remains blocked by design: stop before creating or pushing to any Homebrew tap until Omar provides the tap target and publication instructions.
 - Verification: Ruby template syntax, Markdown link/reference sanity checks, and focused secret-pattern scans passed; Swift tests were not required for this docs/template-only slice.
+
+## 2026-05-30 11:04 EDT — v1.0 local release gate receipt
+
+- Ran the final local v1.0 release gates on `main` at `1682a2d` before any public tag/release publication.
+- Full test gate: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 127 Swift Testing tests across 20 suites; gated live/model-artifact tests skipped as designed.
+- Seeded Docker dogfood gate: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` passed. Artifacts: `.build/dogfood-checks/20260530-110419/`; default Swift tests passed, live dogfood slice passed, and v0.4/v1.0 measurement gate passed.
+- Current local metrics: shell readiness 259.24 ms; connected cold start 250.97 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead -0.125 ms; dogfood query median overhead 0.035 ms.
+- Package gate: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/build_and_run.sh --package && ./script/package_verify.sh dist/LithePG.app` passed. Packaged executable: 12,507,504 bytes / 11.93 MiB; bundle ID `dev.omarpr.lithepg`; version `0.5` build `129`; minimum macOS `14.0`.
+- Signing/notarization gate remains externally blocked: `./script/sign_and_notarize.sh --dry-run dist/LithePG.app` verified the package, then failed clearly with missing `LITHEPG_CODESIGN_IDENTITY` because Apple Developer signing identity and notarytool profile are not configured in this cron environment. No signing, notarization, release upload, or Homebrew tap publication was attempted.

@@ -17,7 +17,8 @@ LithePG follows outcome-named milestones with semantic-version tags. v1.0 remain
 
 - Real codesigning and notarization require Omar-controlled Apple Developer signing identity and notarytool keychain profile on the release machine.
 - Homebrew publication needs an approved tap target.
-- The final v1.0 release remains gated on the remaining public-launch tasks: contribution/governance templates, vulnerability-reporting path, light/dark appearance preference, full public README/install refresh, Homebrew cask metadata, and final dogfood/release receipts.
+- GitHub Release artifact creation, release-copy approval, and the `v1.0` tag remain gated on Omar's explicit public publication approval.
+- Push/PR-triggered GitHub Actions may still require Omar-side account settings; local release receipts remain the fallback gate until CI triggers are confirmed.
 
 ## [v0.5] — 2026-05-28 — AI-Ready
 
