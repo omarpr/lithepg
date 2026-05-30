@@ -5,6 +5,7 @@ VERSION="1.0"
 CHECK_REMOTE_TAGS="${LITHEPG_CHECK_REMOTE_TAGS:-0}"
 RELEASE_COPY_PATH="${LITHEPG_RELEASE_COPY_PATH:-docs/releases/v1.0-draft.md}"
 HOMEBREW_CASK_PATH="${LITHEPG_HOMEBREW_CASK_PATH:-packaging/homebrew/lithepg.rb}"
+SECURITY_DOC_PATH="${LITHEPG_SECURITY_DOC_PATH:-}"
 
 usage() {
   cat <<'USAGE'
@@ -16,7 +17,9 @@ origin by default, or printing secret/contact/tap environment values.
 
 Pass --check-remote or set LITHEPG_CHECK_REMOTE_TAGS=1 to opt into a non-fatal
 origin tag lookup. Set LITHEPG_RELEASE_COPY_PATH or LITHEPG_HOMEBREW_CASK_PATH
-to scan a non-default release copy or Homebrew cask file (relative to the
+to scan non-default release copy or Homebrew cask files. Set
+LITHEPG_SECURITY_DOC_PATH to scan one alternate security policy file instead of
+the default SECURITY.md and docs/SECURITY.md files (paths may be relative to the
 repository root or absolute).
 USAGE
 }
@@ -45,6 +48,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ -n "$SECURITY_DOC_PATH" ]]; then
+  SECURITY_DOC_PATHS=("$SECURITY_DOC_PATH")
+else
+  SECURITY_DOC_PATHS=("SECURITY.md" "docs/SECURITY.md")
+fi
 TAG="v$VERSION"
 BLOCKERS=0
 
@@ -123,6 +131,18 @@ homebrew_cask_full_path() {
       ;;
     *)
       printf '%s/%s\n' "$ROOT_DIR" "$HOMEBREW_CASK_PATH"
+      ;;
+  esac
+}
+
+security_doc_full_path() {
+  local security_doc_path="$1"
+  case "$security_doc_path" in
+    /*)
+      printf '%s\n' "$security_doc_path"
+      ;;
+    *)
+      printf '%s/%s\n' "$ROOT_DIR" "$security_doc_path"
       ;;
   esac
 }
@@ -246,6 +266,33 @@ else
   esac
 fi
 
+printf '\nSecurity policy readiness:\n'
+for security_doc_path in "${SECURITY_DOC_PATHS[@]}"; do
+  security_doc_file="$(security_doc_full_path "$security_doc_path")"
+  if [[ ! -f "$security_doc_file" ]]; then
+    printf 'Security policy placeholders: missing policy at %s\n' "$security_doc_path"
+    mark_blocker
+  else
+    set +e
+    grep -Eiq '\[security contact pending\]|REPLACE_WITH_|PLACEHOLDER|TODO|TBD' "$security_doc_file"
+    grep_status=$?
+    set -e
+    case "$grep_status" in
+      0)
+        printf 'Security policy placeholders: present in %s\n' "$security_doc_path"
+        mark_blocker
+        ;;
+      1)
+        printf 'Security policy placeholders: none found in %s\n' "$security_doc_path"
+        ;;
+      *)
+        printf 'Security policy placeholders: could not scan %s\n' "$security_doc_path"
+        mark_blocker
+        ;;
+    esac
+  fi
+done
+
 printf '\nExternal publication inputs (values redacted):\n'
 print_config_status LITHEPG_CODESIGN_IDENTITY
 print_config_status LITHEPG_NOTARY_PROFILE
@@ -263,5 +310,5 @@ if [[ "$BLOCKERS" -eq 0 ]]; then
 fi
 
 printf '%s publication blocked: %s blocker(s) found.\n' "$TAG" "$BLOCKERS"
-printf 'Resolve the release copy, Homebrew cask placeholders, missing/false external inputs, and any tag-readiness blockers before tagging or publishing.\n'
+printf 'Resolve the release copy, Homebrew cask, security policy placeholders, missing/false external inputs, and any tag-readiness blockers before tagging or publishing.\n'
 exit 1

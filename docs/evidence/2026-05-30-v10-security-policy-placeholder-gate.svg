@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 security policy placeholder gate evidence</title>
+  <desc id="desc">Visual evidence that the v1.0 fast release preflight blocks unresolved security policy placeholders in both SECURITY.md and docs/SECURITY.md.</desc>
+  <rect width="1280" height="720" fill="#0b1020"/>
+  <rect x="40" y="40" width="1200" height="640" rx="18" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="72" y="92" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="28" font-weight="700">v1.0 security policy placeholder gate</text>
+  <text x="72" y="132" fill="#93c5fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">2026-05-30 16:41 EDT • docs/evidence/2026-05-30-v10-security-policy-placeholder-gate.svg</text>
+
+  <rect x="72" y="166" width="1136" height="170" rx="12" fill="#020617" stroke="#1e293b"/>
+  <text x="96" y="205" fill="#a7f3d0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20">$ bash script/test_v10_release_gate.sh</text>
+  <text x="96" y="242" fill="#d1fae5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20">test_v10_release_gate passed</text>
+  <text x="96" y="286" fill="#a7f3d0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20">$ bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh</text>
+  <text x="96" y="323" fill="#d1fae5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20">passed with no output</text>
+
+  <rect x="72" y="366" width="1136" height="226" rx="12" fill="#020617" stroke="#1e293b"/>
+  <text x="96" y="405" fill="#fde68a" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20">$ ./script/v10_release_gate.sh --check-remote</text>
+  <text x="96" y="445" fill="#fecaca" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20">Security policy placeholders: present in SECURITY.md</text>
+  <text x="96" y="482" fill="#fecaca" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20">Security policy placeholders: present in docs/SECURITY.md</text>
+  <text x="96" y="526" fill="#fecaca" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20">v1.0 publication blocked: unresolved public-release inputs remain</text>
+  <text x="96" y="563" fill="#cbd5e1" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">No secrets/contact values printed; no signing, notarization, upload, tag, or Homebrew publication attempted.</text>
+
+  <rect x="72" y="620" width="1136" height="32" rx="8" fill="#172554"/>
+  <text x="96" y="642" fill="#bfdbfe" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Commit evidence for build(release): gate security policy placeholders</text>
+</svg>

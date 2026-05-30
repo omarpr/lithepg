@@ -34,10 +34,26 @@ run_gate_capture() {
   return "$status"
 }
 
+run_specific_gate_capture() {
+  local output_file="$1"
+  local helper="$2"
+  shift 2
+  set +e
+  (
+    cd "$(cd "$(dirname "$helper")/.." && pwd)"
+    "$@" "$helper"
+  ) >"$output_file" 2>&1
+  local status=$?
+  set -e
+  return "$status"
+}
+
 missing_output="$(mktemp)"
 redaction_output="$(mktemp)"
 placeholder_output="$(mktemp)"
 homebrew_cask_placeholder_output="$(mktemp)"
+security_doc_placeholder_output="$(mktemp)"
+default_security_docs_output="$(mktemp)"
 missing_copy_output="$(mktemp)"
 external_placeholder_output="$(mktemp)"
 no_remote_lookup_output="$(mktemp)"
@@ -48,12 +64,15 @@ placeholder_release_copy="$(mktemp)"
 placeholder_free_release_copy="$(mktemp)"
 placeholder_homebrew_cask="$(mktemp)"
 placeholder_free_homebrew_cask="$(mktemp)"
+placeholder_security_doc="$(mktemp)"
+placeholder_free_security_doc="$(mktemp)"
 grep_error_release_copy="$(mktemp)"
 missing_release_copy="$(mktemp)"
 rm -f "$missing_release_copy"
 fake_git_dir="$(mktemp -d)"
 fake_git_marker="$fake_git_dir/ls-remote-called"
-trap 'rm -f "$missing_output" "$redaction_output" "$placeholder_output" "$homebrew_cask_placeholder_output" "$missing_copy_output" "$external_placeholder_output" "$no_remote_lookup_output" "$remote_opt_in_output" "$status_failure_output" "$grep_error_output" "$placeholder_release_copy" "$placeholder_free_release_copy" "$placeholder_homebrew_cask" "$placeholder_free_homebrew_cask" "$grep_error_release_copy" "$missing_release_copy"; rm -rf "$fake_git_dir"' EXIT
+default_security_docs_repo="$(mktemp -d)"
+trap 'rm -f "$missing_output" "$redaction_output" "$placeholder_output" "$homebrew_cask_placeholder_output" "$security_doc_placeholder_output" "$default_security_docs_output" "$missing_copy_output" "$external_placeholder_output" "$no_remote_lookup_output" "$remote_opt_in_output" "$status_failure_output" "$grep_error_output" "$placeholder_release_copy" "$placeholder_free_release_copy" "$placeholder_homebrew_cask" "$placeholder_free_homebrew_cask" "$placeholder_security_doc" "$placeholder_free_security_doc" "$grep_error_release_copy" "$missing_release_copy"; rm -rf "$fake_git_dir" "$default_security_docs_repo"' EXIT
 
 cat >"$fake_git_dir/git" <<'FAKE_GIT'
 #!/usr/bin/env bash
@@ -160,7 +179,16 @@ cask "lithepg" do
   app "LithePG.app"
 end
 CASK
+printf 'Report vulnerabilities to [security contact pending].\n' >"$placeholder_security_doc"
+printf 'Report vulnerabilities using the configured private security advisory flow.\n' >"$placeholder_free_security_doc"
 printf 'LithePG v1.0 release copy that cannot be scanned by fake grep.\n' >"$grep_error_release_copy"
+
+mkdir -p "$default_security_docs_repo/script" "$default_security_docs_repo/docs"
+default_security_docs_helper="$default_security_docs_repo/script/v10_release_gate.sh"
+cp "$HELPER" "$default_security_docs_helper"
+chmod +x "$default_security_docs_helper"
+printf 'Report vulnerabilities using the configured private security advisory flow.\n' >"$default_security_docs_repo/SECURITY.md"
+printf 'Report vulnerabilities to [security contact pending].\n' >"$default_security_docs_repo/docs/SECURITY.md"
 
 if run_gate_capture "$missing_output" env -i PATH="$fake_path" FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker"; then
   fail "gate unexpectedly passed with all required external inputs missing"
@@ -185,6 +213,7 @@ if run_gate_capture "$redaction_output" env -i \
   PATH="$fake_path" \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
   LITHEPG_CODESIGN_IDENTITY="$secret_identity" \
   LITHEPG_NOTARY_PROFILE="$secret_notary" \
   LITHEPG_SECURITY_CONTACT="$secret_contact" \
@@ -213,6 +242,7 @@ if run_gate_capture "$placeholder_output" env -i \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
   LITHEPG_RELEASE_COPY_PATH="$placeholder_release_copy" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -232,6 +262,7 @@ if run_gate_capture "$homebrew_cask_placeholder_output" env -i \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
   LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -247,11 +278,58 @@ assert_contains "$homebrew_cask_placeholder_text" "Homebrew cask placeholders: p
 assert_contains "$homebrew_cask_placeholder_text" "v1.0 publication blocked"
 assert_not_contains "$homebrew_cask_placeholder_text" "fast preflight is clear"
 
+if run_specific_gate_capture "$default_security_docs_output" "$default_security_docs_helper" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  fail "gate unexpectedly passed when default docs/SECURITY.md contained a security-contact placeholder"
+fi
+default_security_docs_text="$(<"$default_security_docs_output")"
+assert_contains "$default_security_docs_text" "Release copy placeholders: none found"
+assert_contains "$default_security_docs_text" "Homebrew cask placeholders: none found"
+assert_contains "$default_security_docs_text" "Security policy placeholders: none found in SECURITY.md"
+assert_contains "$default_security_docs_text" "Security policy placeholders: present in docs/SECURITY.md"
+assert_contains "$default_security_docs_text" "v1.0 publication blocked"
+assert_not_contains "$default_security_docs_text" "[security contact pending]"
+assert_not_contains "$default_security_docs_text" "fast preflight is clear"
+
+if run_gate_capture "$security_doc_placeholder_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_security_doc" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  fail "gate unexpectedly passed with placeholders in security policy fixture"
+fi
+security_doc_placeholder_text="$(<"$security_doc_placeholder_output")"
+assert_contains "$security_doc_placeholder_text" "Release copy placeholders: none found"
+assert_contains "$security_doc_placeholder_text" "Homebrew cask placeholders: none found"
+assert_contains "$security_doc_placeholder_text" "Security policy placeholders: present in $placeholder_security_doc"
+assert_contains "$security_doc_placeholder_text" "v1.0 publication blocked"
+assert_not_contains "$security_doc_placeholder_text" "[security contact pending]"
+assert_not_contains "$security_doc_placeholder_text" "fast preflight is clear"
+
 if run_gate_capture "$missing_copy_output" env -i \
   PATH="$fake_path" \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
   LITHEPG_RELEASE_COPY_PATH="$missing_release_copy" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -272,6 +350,7 @@ if run_gate_capture "$grep_error_output" env -i \
   FAKE_GREP_ERROR_PATH="$grep_error_release_copy" \
   LITHEPG_RELEASE_COPY_PATH="$grep_error_release_copy" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -292,6 +371,7 @@ if run_gate_capture "$external_placeholder_output" env -i \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
   LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="[security contact pending]" \
@@ -318,6 +398,7 @@ if ! run_gate_capture "$no_remote_lookup_output" env -i \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
   LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -342,6 +423,7 @@ if ! run_gate_capture "$remote_opt_in_output" env -i \
   LITHEPG_CHECK_REMOTE_TAGS="1" \
   LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -365,6 +447,7 @@ if run_gate_capture "$status_failure_output" env -i \
   FAKE_GIT_STATUS_FAIL="1" \
   LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \

@@ -341,3 +341,11 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - TDD receipt: `bash script/test_v10_release_gate.sh` failed first with `gate unexpectedly passed with placeholders in Homebrew cask template`, then passed after the minimal cask scan implementation.
 - Verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed. Swift tests were not required for this shell/docs-only slice.
 - Evidence artifact: `docs/evidence/2026-05-30-v10-homebrew-cask-placeholder-gate.svg`.
+
+## 2026-05-30 16:41 EDT — v1.0 security policy placeholder gate
+
+- Hardened `script/v10_release_gate.sh` so the fast publication preflight scans public security policies before `v1.0` publication can pass.
+- Default security-policy scan now checks both root `SECURITY.md` and `docs/SECURITY.md`; `LITHEPG_SECURITY_DOC_PATH` remains available for focused alternate-file tests.
+- TDD receipt: the focused shell test failed first when a default `docs/SECURITY.md` fixture with `[security contact pending]` was not blocked, then passed after the minimal default-scan expansion.
+- Verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `./script/v10_release_gate.sh --check-remote` remained safely blocked and now reports placeholders in both `SECURITY.md` and `docs/SECURITY.md`. Swift tests were not required for this shell/docs-only slice.
+- Evidence artifact: `docs/evidence/2026-05-30-v10-security-policy-placeholder-gate.svg`.
