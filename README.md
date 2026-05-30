@@ -24,7 +24,7 @@ The original v0.1 CLI remains as a smoke utility and still covers three connecti
 - **TLS verify-full** with a pinned self-signed CA (routed through BoringSSL via `NIOSSL`).
 - **SSH tunnel** to a bastion via an `/usr/bin/ssh -L` subprocess, Postgres loopback on the far side.
 
-Exit-criteria evidence: [`docs/dogfood-log.md`](docs/dogfood-log.md). Release history: [`CHANGELOG.md`](CHANGELOG.md).
+Exit-criteria evidence: [`docs/dogfood-log.md`](docs/dogfood-log.md). Release history: [`CHANGELOG.md`](CHANGELOG.md). Security policy/posture: [`SECURITY.md`](SECURITY.md).
 
 ## Quickstart
 

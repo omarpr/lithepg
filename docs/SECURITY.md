@@ -43,7 +43,20 @@ LithePG is a local macOS client that connects to user-owned PostgreSQL databases
 - Dependencies are pinned via `Package.resolved`; review updates before bumping.
 
 ## Reporting Vulnerabilities
-Email security reports to the maintainer listed in `AGENTS.md`. Please do not open public issues for security-sensitive findings. Expect acknowledgement within 72 hours.
+
+Please do **not** open public GitHub issues, discussions, PR comments, or pastebin-style links for security-sensitive findings.
+
+The public vulnerability-reporting contact is **pending Omar approval**. Until an approved contact is published, use `[security contact pending]` as the documented placeholder and treat the missing public contact as a release blocker for public v1.0 distribution. Do not invent or scrape a maintainer email address.
+
+Once the public security contact is published, LithePG's target is to acknowledge vulnerability reports within **72 hours** and to follow up with triage status, remediation expectations, or a request for safely redacted reproduction details.
+
+Safe-reporting guidance:
+
+- Redact credentials, tokens, certificates, cookies, private keys, and any password-bearing connection strings.
+- Use synthetic schemas, synthetic table names, and minimal repro steps instead of production schemas or customer data.
+- Do not include full database URLs, bastion hostnames, internal IP ranges, raw query-result dumps, logs with secrets, or screenshots that reveal private data.
+- Describe impact, affected version/commit, platform, and sanitized steps to reproduce.
+- If a finding involves AI context construction, include only synthetic prompts/schema snippets. LithePG's privacy invariant remains: no telemetry, no cloud AI calls, and no prompt/schema/query/result transmission off-device.
 
 ## Out of Scope
 - Protection against a compromised macOS host (root-level malware).

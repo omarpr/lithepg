@@ -231,3 +231,10 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Governance now links the concrete contribution guide, code of conduct, and DCO sign-off workflow instead of referring to unpublished v1.0 materials.
 - Templates explicitly require redacted/synthetic examples and forbid credentials, full connection URLs, private schemas, certificates, and real query-result dumps in public reports.
 - Verification: docs/template reference checks and focused secret-pattern scans passed; Swift tests were not required for this docs/GitHub metadata-only slice.
+
+## 2026-05-30 09:20 EDT — v1.0 security reporting policy slice
+
+- Added a GitHub-visible root `SECURITY.md` that points to the detailed security posture in `docs/SECURITY.md`.
+- Replaced the ambiguous maintainer-contact language with explicit pending-contact blocker language: the public security contact is pending Omar approval, `[security contact pending]` is the temporary placeholder, and no email address was invented.
+- Documented safe vulnerability-reporting guidance: avoid public issues for sensitive findings, redact credentials/full URLs/private schemas/result dumps/internal hosts, use synthetic data, and preserve the local-first no-telemetry/no-cloud-AI privacy invariant.
+- Verification: Markdown link/reference checks and focused secret-pattern scans passed; Swift tests were not required for this docs-only slice.
