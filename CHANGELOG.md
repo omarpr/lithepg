@@ -18,7 +18,7 @@ LithePG follows outcome-named milestones with semantic-version tags. v1.0 remain
 - [`docs/RELEASING.md`](docs/RELEASING.md) documents the local package gate, required signing/notary inputs, dry-run flow, release artifact SHA workflow, and final v1.0 tag gate.
 - [`script/v10_release_gate.sh`](script/v10_release_gate.sh) provides a fast v1.0 publication preflight for local branch/status/tag readiness, release-copy placeholder checks, and required external publication inputs without printing secret/contact/tap values.
 - Review-only release copy lives in [`docs/releases/v1.0-draft.md`](docs/releases/v1.0-draft.md) with unresolved `REPLACE_WITH_*` placeholders that must be resolved before publication.
-- [`script/create_release_zip.sh`](script/create_release_zip.sh) creates `LithePG.app.zip` from an existing verified `LithePG.app` using `ditto --keepParent`, refuses unsafe overwrites and outputs inside the app bundle, and prints the SHA-256 digest without uploading, tagging, signing, notarizing, or contacting the network.
+- [`script/create_release_zip.sh`](script/create_release_zip.sh) creates `LithePG.app.zip` from an existing verified `LithePG.app` using `ditto --keepParent`, refuses unsafe overwrites and outputs inside the app bundle, and prints the SHA-256 digest plus byte size without uploading, tagging, signing, notarizing, or contacting the network.
 - A repository-local Homebrew cask template and README live under [`packaging/homebrew/`](packaging/homebrew/) for the planned `LithePG.app.zip` artifact; external tap publication remains approval-gated.
 
 ### Verified

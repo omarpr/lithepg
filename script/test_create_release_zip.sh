@@ -26,6 +26,14 @@ assert_matches_sha_line() {
   [[ "$haystack" =~ SHA-256:\ [0-9a-f]{64} ]] || fail "expected output to contain a SHA-256 digest"
 }
 
+assert_size_line_for_zip() {
+  local haystack="$1"
+  local zip_path="$2"
+  local expected_size
+  expected_size="$(/usr/bin/stat -f%z "$zip_path")"
+  assert_contains "$haystack" "Size bytes: $expected_size"
+}
+
 assert_file_contains() {
   local path="$1"
   local needle="$2"
@@ -149,6 +157,7 @@ fi
 overwrite_text="$(<"$overwrite_output")"
 assert_contains "$overwrite_text" "Created release zip: dist/LithePG.app.zip"
 assert_matches_sha_line "$overwrite_text"
+assert_size_line_for_zip "$overwrite_text" "$overwrite_fixture/dist/LithePG.app.zip"
 assert_zip_contains_app_wrapper "$overwrite_fixture/dist/LithePG.app.zip" "$overwrite_fixture/extracted-overwrite"
 
 # Output paths inside the app bundle are refused to avoid recursive/self-embedding artifacts.
@@ -191,6 +200,7 @@ fi
 success_text="$(<"$success_output")"
 assert_contains "$success_text" "Created release zip: artifacts/public/LithePG.app.zip"
 assert_matches_sha_line "$success_text"
+assert_size_line_for_zip "$success_text" "$success_fixture/artifacts/public/LithePG.app.zip"
 assert_not_contains "$success_text" "$sensitive_identity"
 assert_not_contains "$success_text" "$sensitive_notary"
 assert_not_contains "$success_text" "$sensitive_release_marker"
@@ -211,6 +221,7 @@ fi
 outside_cwd_text="$(<"$outside_cwd_output")"
 assert_contains "$outside_cwd_text" "Created release zip: dist/LithePG.app.zip"
 assert_matches_sha_line "$outside_cwd_text"
+assert_size_line_for_zip "$outside_cwd_text" "$outside_fixture/dist/LithePG.app.zip"
 [[ -f "$outside_fixture/dist/LithePG.app.zip" ]] || fail "default output zip was not created under helper repository root"
 [[ ! -e "$outside_cwd/dist/LithePG.app.zip" ]] || fail "default output zip was created under caller cwd"
 assert_zip_contains_app_wrapper "$outside_fixture/dist/LithePG.app.zip" "$outside_fixture/extracted-default"

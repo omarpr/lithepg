@@ -10,7 +10,7 @@ usage() {
 Usage: create_release_zip.sh [app-bundle] [output-zip]
 
 Create the public LithePG.app.zip from an already-built app bundle and print
-its SHA-256 digest. This local helper verifies the app bundle first; it does
+its SHA-256 digest and byte size. This local helper verifies the app bundle first; it does
 not upload, tag, sign, notarize, push, or contact the network.
 
 Arguments:
@@ -80,5 +80,11 @@ sha_line="$(/usr/bin/shasum -a 256 "$OUTPUT_ZIP")"
 sha_digest="${sha_line%%[[:space:]]*}"
 [[ -n "$sha_digest" ]] || fail "could not compute SHA-256 for $OUTPUT_ZIP"
 
+if ! zip_size_bytes="$(/usr/bin/stat -f%z "$OUTPUT_ZIP" 2>/dev/null)"; then
+  fail "could not compute byte size for $OUTPUT_ZIP"
+fi
+[[ "$zip_size_bytes" =~ ^[0-9]+$ ]] || fail "computed byte size for $OUTPUT_ZIP was empty or non-numeric"
+
 printf 'Created release zip: %s\n' "$OUTPUT_ZIP"
 printf 'SHA-256: %s\n' "$sha_digest"
+printf 'Size bytes: %s\n' "$zip_size_bytes"
