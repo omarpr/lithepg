@@ -43,6 +43,12 @@ public final class AppState {
   public var isDraftingSQL: Bool = false
   public var lastAIDraft: AIQueryDraft?
   public var aiError: String?
+  public var appearancePreference: AppearancePreference = .dark {
+    didSet {
+      guard !isRestoringAppearancePreference else { return }
+      appearanceDefaults.set(appearancePreference.rawValue, forKey: AppearancePreference.storageKey)
+    }
+  }
 
   public var connectionLabel: String? {
     guard case .connected(let label) = connectionState else { return nil }
@@ -81,17 +87,24 @@ public final class AppState {
   @ObservationIgnored private let credentialStore: any CredentialStore
   @ObservationIgnored private let queryHistoryStore: any QueryHistoryStore
   @ObservationIgnored private let aiQueryService: any AIQueryService
+  @ObservationIgnored private let appearanceDefaults: UserDefaults
+  @ObservationIgnored private var isRestoringAppearancePreference = false
 
   public init(
     savedConnectionStore: any SavedConnectionStore = JSONFileSavedConnectionStore(),
     credentialStore: any CredentialStore = KeychainCredentialStore(),
     queryHistoryStore: any QueryHistoryStore = JSONFileQueryHistoryStore(),
-    aiQueryService: any AIQueryService = DeterministicAIQueryService()
+    aiQueryService: any AIQueryService = DeterministicAIQueryService(),
+    appearanceDefaults: UserDefaults = .standard
   ) {
     self.savedConnectionStore = savedConnectionStore
     self.credentialStore = credentialStore
     self.queryHistoryStore = queryHistoryStore
     self.aiQueryService = aiQueryService
+    self.appearanceDefaults = appearanceDefaults
+    isRestoringAppearancePreference = true
+    appearancePreference = AppearancePreference(defaults: appearanceDefaults)
+    isRestoringAppearancePreference = false
     selectedQueryTabID = queryTabs.first?.id
   }
 

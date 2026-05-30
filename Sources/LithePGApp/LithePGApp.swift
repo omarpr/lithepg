@@ -9,6 +9,19 @@ struct LithePGApp: App {
         WindowGroup {
             RootView(state: state)
         }
+        .commands {
+            CommandMenu("Appearance") {
+                Picker("Appearance", selection: Binding(
+                    get: { state.appearancePreference },
+                    set: { state.appearancePreference = $0 }
+                )) {
+                    ForEach(AppearancePreference.allCases) { preference in
+                        Text(preference.displayName).tag(preference)
+                    }
+                }
+                .pickerStyle(.inline)
+            }
+        }
     }
 }
 
@@ -26,6 +39,7 @@ struct RootView: View {
             .frame(minWidth: 900, minHeight: 620)
             .background(WindowStartupSizer())
             .navigationTitle(state.windowTitle)
+            .preferredColorScheme(state.appearancePreference.colorScheme)
             .sheet(isPresented: Binding(
                 get: { startupConfig == nil && state.connectionState == .disconnected },
                 set: { _ in }

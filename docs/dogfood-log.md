@@ -238,3 +238,10 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Replaced the ambiguous maintainer-contact language with explicit pending-contact blocker language: the public security contact is pending Omar approval, `[security contact pending]` is the temporary placeholder, and no email address was invented.
 - Documented safe vulnerability-reporting guidance: avoid public issues for sensitive findings, redact credentials/full URLs/private schemas/result dumps/internal hosts, use synthetic data, and preserve the local-first no-telemetry/no-cloud-AI privacy invariant.
 - Verification: Markdown link/reference checks and focused secret-pattern scans passed; Swift tests were not required for this docs-only slice.
+
+## 2026-05-30 09:49 EDT — v1.0 appearance preference slice
+
+- Added a persisted light/dark/system appearance preference with dark as the default and injected `UserDefaults` coverage for tests.
+- Wired the SwiftUI root scene through `preferredColorScheme` and added an `Appearance` commands-menu picker for choosing Light, Dark, or System.
+- RED check: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter AppearanceSettingsTests` failed before implementation because `AppState(appearanceDefaults:)`, `AppearancePreference`, and `appearancePreference` did not exist.
+- GREEN checks: targeted `AppearanceSettingsTests` passed with 2 tests, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 127 tests across 20 suites; gated live/integration tests skipped as designed.
