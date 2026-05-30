@@ -293,3 +293,10 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Rechecked release state before any publication: origin has `v0.5`; origin does not have `v1.0`.
 - Rechecked GitHub Actions status: the latest manual `workflow_dispatch` run is still `failure` at https://github.com/omarpr/lithepg/actions/runs/26688293183, matching the existing external account/settings blocker because it failed before job logs were available.
 - Synced the v1.0 implementation plan checklist with completed local-gate bookkeeping while keeping GitHub Release creation, Homebrew publication, signing/notarization, and `v1.0` tagging blocked until Omar supplies credentials/contact/tap/approval.
+
+## 2026-05-30 12:39 EDT — v1.0 fast release preflight helper
+
+- Added a fast `script/v10_release_gate.sh` preflight that reports local branch/status and tag readiness, checks external publication inputs without printing their values, and blocks until signing/notary/security-contact/Homebrew tap/copy/publication approvals are configured.
+- Kept the helper fast by default: `origin` tag lookup is opt-in with `--check-remote` or `LITHEPG_CHECK_REMOTE_TAGS=1`, and remote/network failures remain non-blocking.
+- Added focused shell TDD tests for missing-input failure, secret/contact/tap redaction behavior, and default no-network remote tag handling.
+- Updated release docs with the helper usage and the non-secret environment contract. No Swift code was touched.

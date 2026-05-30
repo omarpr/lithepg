@@ -113,10 +113,34 @@ Then update the repository-local draft cask template at `packaging/homebrew/lith
 
 Stop before pushing to or creating any external Homebrew tap. Omar must explicitly provide the tap target and publication instructions; do not infer them from the main repository or from the cask token.
 
+## Fast v1.0 publication preflight
+
+Before attempting the external publication steps, run the fast release blocker summary:
+
+```sh
+./script/v10_release_gate.sh
+```
+
+The helper defaults to version `1.0`; pass `--version <version>` only when checking a different public version. It is intentionally fast: it reports the current git branch/status, verifies local tag readiness (`v0.5` present and `v<version>` absent), blocks on a dirty working tree, and does not contact `origin` by default. If a remote tag check is desired, opt in with `--check-remote` or `LITHEPG_CHECK_REMOTE_TAGS=1`; remote/network failures are reported as unknown and do not block the fast check. It does **not** run the full Swift test, dogfood, package, signing, or notarization gates.
+
+The helper also checks these external inputs without printing their values:
+
+| Variable | Expected state |
+| --- | --- |
+| `LITHEPG_CODESIGN_IDENTITY` | Set to the Apple Developer Application signing identity. |
+| `LITHEPG_NOTARY_PROFILE` | Set to the `notarytool` keychain profile name. |
+| `LITHEPG_SECURITY_CONTACT` | Set to the approved public security-contact destination. |
+| `LITHEPG_HOMEBREW_TAP` | Set to the approved external Homebrew tap target. |
+| `LITHEPG_RELEASE_COPY_APPROVED` | Boolean-style approval (`true`, `yes`, `1`, or `approved`). |
+| `LITHEPG_PUBLICATION_APPROVED` | Boolean-style explicit publication approval (`true`, `yes`, `1`, or `approved`). |
+
+Missing or false inputs make the helper exit non-zero with a `v1.0 publication blocked` summary. A passing fast preflight only means the quick local/tag facts and external approvals are present; still run the full local gate commands below before tagging or publishing.
+
 ## v1.0 gate
 
 Do not tag `v1.0` or publish a GitHub Release until all non-external gates pass and Omar approves the public release copy:
 
+- `script/v10_release_gate.sh` reports the fast preflight is clear.
 - Full `swift test`.
 - Seeded dogfood check when Docker is available.
 - Package verification.
