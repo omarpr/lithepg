@@ -49,6 +49,40 @@ Real signing/notarization runs:
 
 If `LITHEPG_CODESIGN_IDENTITY` or `LITHEPG_NOTARY_PROFILE` is missing, the wrapper exits non-zero with a clear message. That is expected on machines without Apple Developer credentials.
 
+## GitHub Release artifact and Homebrew cask metadata
+
+The public Homebrew cask must point at the final signed/notarized GitHub Release artifact, not an unsigned local development bundle. The intended artifact shape is:
+
+```text
+https://github.com/omarpr/lithepg/releases/download/v<VERSION>/LithePG.app.zip
+```
+
+Use `LithePG.app.zip` as the public zip name for the release attachment. If the notarization wrapper produced an intermediate zip before stapling, rebuild the public zip from the signed, notarized, stapled, and validated `dist/LithePG.app` before upload:
+
+```sh
+rm -f dist/LithePG.app.zip
+ditto -c -k --keepParent dist/LithePG.app dist/LithePG.app.zip
+```
+
+After Omar approves the release copy and the final `LithePG.app.zip` is attached to the GitHub Release, compute the cask SHA-256 from the exact artifact users will download. Prefer hashing a fresh download from GitHub so the local value matches the public URL:
+
+```sh
+VERSION=1.0
+curl -L -o /tmp/LithePG.app.zip \
+  "https://github.com/omarpr/lithepg/releases/download/v${VERSION}/LithePG.app.zip"
+shasum -a 256 /tmp/LithePG.app.zip
+```
+
+Then update the repository-local draft cask template at `packaging/homebrew/lithepg.rb`:
+
+1. Replace `version "REPLACE_WITH_VERSION"` with the release version, for example `version "1.0"` unless Omar chooses a different public version.
+2. Replace `sha256 "REPLACE_WITH_SHA256"` with the `shasum -a 256` digest.
+3. Confirm the `url` still matches the GitHub Release artifact path.
+4. Run `ruby -c packaging/homebrew/lithepg.rb` for template syntax.
+5. If Omar has provided the external tap target, copy the cask into that tap and run Homebrew checks there, for example `brew style --cask Casks/lithepg.rb` and `brew audit --cask --new --strict Casks/lithepg.rb`.
+
+Stop before pushing to or creating any external Homebrew tap. Omar must explicitly provide the tap target and publication instructions; do not infer them from the main repository or from the cask token.
+
 ## v1.0 gate
 
 Do not tag `v1.0` or publish a GitHub Release until all non-external gates pass and Omar approves the public release copy:

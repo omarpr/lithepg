@@ -251,3 +251,10 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Refreshed the README for first-time public readers with GitHub Release zip install steps, planned Homebrew cask wording, source build/test/package quickstart commands, a seeded app screenshot, and a plain-language local-first AI/model-artifact explanation.
 - Reused `docs/assets/lithepg-app-snapshot.png`, which is documented as seeded dogfood data only; no new screenshot binary was created for this slice.
 - Verification: README local link checks and focused secret-pattern scans passed; Swift tests were not required for this docs-only slice.
+
+## 2026-05-30 10:34 EDT — v1.0 Homebrew cask template slice
+
+- Added a repository-local Homebrew cask template under `packaging/homebrew/` for the planned `LithePG.app.zip` GitHub Release artifact.
+- Documented the release artifact URL shape, SHA-256 workflow, placeholder replacement steps, and local/tap Homebrew checks in `docs/RELEASING.md` and `packaging/homebrew/README.md`.
+- External publication remains blocked by design: stop before creating or pushing to any Homebrew tap until Omar provides the tap target and publication instructions.
+- Verification: Ruby template syntax, Markdown link/reference sanity checks, and focused secret-pattern scans passed; Swift tests were not required for this docs/template-only slice.
