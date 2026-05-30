@@ -124,7 +124,9 @@ Before attempting the external publication steps, run the fast release blocker s
 ./script/v10_release_gate.sh
 ```
 
-The helper defaults to version `1.0`; pass `--version <version>` only when checking a different public version. It is intentionally fast: it reports the current git branch/status, verifies local tag readiness (`v0.5` present and `v<version>` absent), blocks on a dirty working tree, and does not contact `origin` by default. If a remote tag check is desired, opt in with `--check-remote` or `LITHEPG_CHECK_REMOTE_TAGS=1`; remote/network failures are reported as unknown and do not block the fast check. It does **not** run the full Swift test, dogfood, package, signing, or notarization gates.
+The helper defaults to version `1.0`; pass `--version <version>` only when checking a different public version. It is intentionally fast: it reports the current git branch/status, verifies local tag readiness (`v0.5` present and `v<version>` absent), blocks on a dirty working tree, scans release-publication text/templates for unresolved `REPLACE_WITH_*` placeholders, and does not contact `origin` by default. If a remote tag check is desired, opt in with `--check-remote` or `LITHEPG_CHECK_REMOTE_TAGS=1`; remote/network failures are reported as unknown and do not block the fast check. It does **not** run the full Swift test, dogfood, package, signing, or notarization gates.
+
+By default, the placeholder scan checks `docs/releases/v1.0-draft.md` and `packaging/homebrew/lithepg.rb`. To test alternate files, set `LITHEPG_RELEASE_COPY_PATH` or `LITHEPG_HOMEBREW_CASK_PATH`; each path may be relative to the repository root or absolute. The helper may print the configured paths, but it does not print secret/contact/tap environment values.
 
 The helper also checks these external inputs without printing their values:
 

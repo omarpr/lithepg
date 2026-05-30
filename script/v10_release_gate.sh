@@ -4,6 +4,7 @@ set -euo pipefail
 VERSION="1.0"
 CHECK_REMOTE_TAGS="${LITHEPG_CHECK_REMOTE_TAGS:-0}"
 RELEASE_COPY_PATH="${LITHEPG_RELEASE_COPY_PATH:-docs/releases/v1.0-draft.md}"
+HOMEBREW_CASK_PATH="${LITHEPG_HOMEBREW_CASK_PATH:-packaging/homebrew/lithepg.rb}"
 
 usage() {
   cat <<'USAGE'
@@ -14,8 +15,9 @@ external release inputs without running long build/test/dogfood gates, contactin
 origin by default, or printing secret/contact/tap environment values.
 
 Pass --check-remote or set LITHEPG_CHECK_REMOTE_TAGS=1 to opt into a non-fatal
-origin tag lookup. Set LITHEPG_RELEASE_COPY_PATH to scan a non-default release
-copy file (relative to the repository root or absolute).
+origin tag lookup. Set LITHEPG_RELEASE_COPY_PATH or LITHEPG_HOMEBREW_CASK_PATH
+to scan a non-default release copy or Homebrew cask file (relative to the
+repository root or absolute).
 USAGE
 }
 
@@ -114,6 +116,17 @@ release_copy_full_path() {
   esac
 }
 
+homebrew_cask_full_path() {
+  case "$HOMEBREW_CASK_PATH" in
+    /*)
+      printf '%s\n' "$HOMEBREW_CASK_PATH"
+      ;;
+    *)
+      printf '%s/%s\n' "$ROOT_DIR" "$HOMEBREW_CASK_PATH"
+      ;;
+  esac
+}
+
 cd "$ROOT_DIR"
 
 printf 'LithePG %s fast publication preflight\n' "$TAG"
@@ -208,6 +221,31 @@ else
   esac
 fi
 
+printf '\nHomebrew cask readiness:\n'
+homebrew_cask_file="$(homebrew_cask_full_path)"
+if [[ ! -f "$homebrew_cask_file" ]]; then
+  printf 'Homebrew cask placeholders: missing cask at %s\n' "$HOMEBREW_CASK_PATH"
+  mark_blocker
+else
+  set +e
+  grep -q 'REPLACE_WITH_' "$homebrew_cask_file"
+  grep_status=$?
+  set -e
+  case "$grep_status" in
+    0)
+      printf 'Homebrew cask placeholders: present in %s\n' "$HOMEBREW_CASK_PATH"
+      mark_blocker
+      ;;
+    1)
+      printf 'Homebrew cask placeholders: none found\n'
+      ;;
+    *)
+      printf 'Homebrew cask placeholders: could not scan %s\n' "$HOMEBREW_CASK_PATH"
+      mark_blocker
+      ;;
+  esac
+fi
+
 printf '\nExternal publication inputs (values redacted):\n'
 print_config_status LITHEPG_CODESIGN_IDENTITY
 print_config_status LITHEPG_NOTARY_PROFILE
@@ -225,5 +263,5 @@ if [[ "$BLOCKERS" -eq 0 ]]; then
 fi
 
 printf '%s publication blocked: %s blocker(s) found.\n' "$TAG" "$BLOCKERS"
-printf 'Resolve the release copy, missing/false external inputs, and any tag-readiness blockers before tagging or publishing.\n'
+printf 'Resolve the release copy, Homebrew cask placeholders, missing/false external inputs, and any tag-readiness blockers before tagging or publishing.\n'
 exit 1

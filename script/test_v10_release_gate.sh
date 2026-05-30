@@ -37,6 +37,7 @@ run_gate_capture() {
 missing_output="$(mktemp)"
 redaction_output="$(mktemp)"
 placeholder_output="$(mktemp)"
+homebrew_cask_placeholder_output="$(mktemp)"
 missing_copy_output="$(mktemp)"
 external_placeholder_output="$(mktemp)"
 no_remote_lookup_output="$(mktemp)"
@@ -45,12 +46,14 @@ status_failure_output="$(mktemp)"
 grep_error_output="$(mktemp)"
 placeholder_release_copy="$(mktemp)"
 placeholder_free_release_copy="$(mktemp)"
+placeholder_homebrew_cask="$(mktemp)"
+placeholder_free_homebrew_cask="$(mktemp)"
 grep_error_release_copy="$(mktemp)"
 missing_release_copy="$(mktemp)"
 rm -f "$missing_release_copy"
 fake_git_dir="$(mktemp -d)"
 fake_git_marker="$fake_git_dir/ls-remote-called"
-trap 'rm -f "$missing_output" "$redaction_output" "$placeholder_output" "$missing_copy_output" "$external_placeholder_output" "$no_remote_lookup_output" "$remote_opt_in_output" "$status_failure_output" "$grep_error_output" "$placeholder_release_copy" "$placeholder_free_release_copy" "$grep_error_release_copy" "$missing_release_copy"; rm -rf "$fake_git_dir"' EXIT
+trap 'rm -f "$missing_output" "$redaction_output" "$placeholder_output" "$homebrew_cask_placeholder_output" "$missing_copy_output" "$external_placeholder_output" "$no_remote_lookup_output" "$remote_opt_in_output" "$status_failure_output" "$grep_error_output" "$placeholder_release_copy" "$placeholder_free_release_copy" "$placeholder_homebrew_cask" "$placeholder_free_homebrew_cask" "$grep_error_release_copy" "$missing_release_copy"; rm -rf "$fake_git_dir"' EXIT
 
 cat >"$fake_git_dir/git" <<'FAKE_GIT'
 #!/usr/bin/env bash
@@ -129,6 +132,34 @@ chmod +x "$fake_git_dir/grep"
 fake_path="$fake_git_dir:${PATH:-/usr/bin:/bin}"
 printf 'LithePG v1.0 release copy with REPLACE_WITH_FINAL_VALUE placeholder.\n' >"$placeholder_release_copy"
 printf 'LithePG v1.0 release copy with final values only.\n' >"$placeholder_free_release_copy"
+cat >"$placeholder_homebrew_cask" <<'CASK'
+cask "lithepg" do
+  version "REPLACE_WITH_VERSION"
+  sha256 "REPLACE_WITH_SHA256"
+
+  url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
+      verified: "github.com/omarpr/lithepg/"
+  name "LithePG"
+  desc "Lean PostgreSQL client with local-first AI"
+  homepage "https://github.com/omarpr/lithepg"
+
+  app "LithePG.app"
+end
+CASK
+cat >"$placeholder_free_homebrew_cask" <<'CASK'
+cask "lithepg" do
+  version "1.0"
+  sha256 "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+
+  url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
+      verified: "github.com/omarpr/lithepg/"
+  name "LithePG"
+  desc "Lean PostgreSQL client with local-first AI"
+  homepage "https://github.com/omarpr/lithepg"
+
+  app "LithePG.app"
+end
+CASK
 printf 'LithePG v1.0 release copy that cannot be scanned by fake grep.\n' >"$grep_error_release_copy"
 
 if run_gate_capture "$missing_output" env -i PATH="$fake_path" FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker"; then
@@ -153,6 +184,7 @@ secret_tap="SECRET_HOMEBREW_TAP_DO_NOT_PRINT"
 if run_gate_capture "$redaction_output" env -i \
   PATH="$fake_path" \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
   LITHEPG_CODESIGN_IDENTITY="$secret_identity" \
   LITHEPG_NOTARY_PROFILE="$secret_notary" \
   LITHEPG_SECURITY_CONTACT="$secret_contact" \
@@ -180,6 +212,7 @@ if run_gate_capture "$placeholder_output" env -i \
   PATH="$fake_path" \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
   LITHEPG_RELEASE_COPY_PATH="$placeholder_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -194,10 +227,31 @@ assert_contains "$placeholder_text" "Release copy placeholders: present in $plac
 assert_contains "$placeholder_text" "v1.0 publication blocked"
 assert_not_contains "$placeholder_text" "fast preflight is clear"
 
+if run_gate_capture "$homebrew_cask_placeholder_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_homebrew_cask" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  fail "gate unexpectedly passed with placeholders in Homebrew cask template"
+fi
+homebrew_cask_placeholder_text="$(<"$homebrew_cask_placeholder_output")"
+assert_contains "$homebrew_cask_placeholder_text" "Release copy placeholders: none found"
+assert_contains "$homebrew_cask_placeholder_text" "Homebrew cask placeholders: present in $placeholder_homebrew_cask"
+assert_contains "$homebrew_cask_placeholder_text" "v1.0 publication blocked"
+assert_not_contains "$homebrew_cask_placeholder_text" "fast preflight is clear"
+
 if run_gate_capture "$missing_copy_output" env -i \
   PATH="$fake_path" \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
   LITHEPG_RELEASE_COPY_PATH="$missing_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -217,6 +271,7 @@ if run_gate_capture "$grep_error_output" env -i \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
   FAKE_GREP_ERROR_PATH="$grep_error_release_copy" \
   LITHEPG_RELEASE_COPY_PATH="$grep_error_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -236,6 +291,7 @@ if run_gate_capture "$external_placeholder_output" env -i \
   PATH="$fake_path" \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
   LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="[security contact pending]" \
@@ -247,6 +303,7 @@ if run_gate_capture "$external_placeholder_output" env -i \
 fi
 external_placeholder_text="$(<"$external_placeholder_output")"
 assert_contains "$external_placeholder_text" "Release copy placeholders: none found"
+assert_contains "$external_placeholder_text" "Homebrew cask placeholders: none found"
 assert_contains "$external_placeholder_text" "LITHEPG_CODESIGN_IDENTITY: configured"
 assert_contains "$external_placeholder_text" "LITHEPG_NOTARY_PROFILE: configured"
 assert_contains "$external_placeholder_text" "LITHEPG_SECURITY_CONTACT: placeholder"
@@ -260,6 +317,7 @@ if ! run_gate_capture "$no_remote_lookup_output" env -i \
   PATH="$fake_path" \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
   LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -271,6 +329,7 @@ if ! run_gate_capture "$no_remote_lookup_output" env -i \
 fi
 no_remote_lookup_text="$(<"$no_remote_lookup_output")"
 assert_contains "$no_remote_lookup_text" "Release copy placeholders: none found"
+assert_contains "$no_remote_lookup_text" "Homebrew cask placeholders: none found"
 assert_contains "$no_remote_lookup_text" "Remote origin tag v1.0: not checked (set LITHEPG_CHECK_REMOTE_TAGS=1 or pass --check-remote)"
 if [[ -e "$fake_git_marker" ]]; then
   fail "default gate invoked git ls-remote despite remote lookup not being requested"
@@ -282,6 +341,7 @@ if ! run_gate_capture "$remote_opt_in_output" env -i \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
   LITHEPG_CHECK_REMOTE_TAGS="1" \
   LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -293,6 +353,7 @@ if ! run_gate_capture "$remote_opt_in_output" env -i \
 fi
 remote_opt_in_text="$(<"$remote_opt_in_output")"
 assert_contains "$remote_opt_in_text" "Release copy placeholders: none found"
+assert_contains "$remote_opt_in_text" "Homebrew cask placeholders: none found"
 assert_contains "$remote_opt_in_text" "Remote origin tag v1.0: unknown (remote/network unavailable; not blocking this fast check)"
 if [[ ! -e "$fake_git_marker" ]]; then
   fail "opt-in remote lookup did not invoke git ls-remote"
@@ -302,6 +363,8 @@ if run_gate_capture "$status_failure_output" env -i \
   PATH="$fake_path" \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
   FAKE_GIT_STATUS_FAIL="1" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \

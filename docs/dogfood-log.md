@@ -333,3 +333,11 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - TDD receipt: `bash script/test_v10_release_gate.sh` failed first with `gate unexpectedly passed with placeholder external security contact`, then passed after the minimal redacted-status blocker change.
 - Verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed. No signing, notarization, upload, Homebrew publication, or cron changes were run.
 - Evidence artifact: `docs/evidence/2026-05-30-v10-placeholder-input-gate.svg`.
+
+## 2026-05-30 16:08 EDT — v1.0 Homebrew cask placeholder gate
+
+- Hardened `script/v10_release_gate.sh` so the fast publication preflight also scans the repository-local Homebrew cask template for unresolved `REPLACE_WITH_*` placeholders before publication can pass.
+- Added `LITHEPG_HOMEBREW_CASK_PATH` for testing alternate cask files; paths may be repository-relative or absolute, matching the release-copy override behavior.
+- TDD receipt: `bash script/test_v10_release_gate.sh` failed first with `gate unexpectedly passed with placeholders in Homebrew cask template`, then passed after the minimal cask scan implementation.
+- Verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed. Swift tests were not required for this shell/docs-only slice.
+- Evidence artifact: `docs/evidence/2026-05-30-v10-homebrew-cask-placeholder-gate.svg`.
