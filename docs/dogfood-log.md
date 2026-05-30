@@ -245,3 +245,9 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Wired the SwiftUI root scene through `preferredColorScheme` and added an `Appearance` commands-menu picker for choosing Light, Dark, or System.
 - RED check: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter AppearanceSettingsTests` failed before implementation because `AppState(appearanceDefaults:)`, `AppearancePreference`, and `appearancePreference` did not exist.
 - GREEN checks: targeted `AppearanceSettingsTests` passed with 2 tests, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 127 tests across 20 suites; gated live/integration tests skipped as designed.
+
+## 2026-05-30 10:08 EDT — v1.0 README public install guide slice
+
+- Refreshed the README for first-time public readers with GitHub Release zip install steps, planned Homebrew cask wording, source build/test/package quickstart commands, a seeded app screenshot, and a plain-language local-first AI/model-artifact explanation.
+- Reused `docs/assets/lithepg-app-snapshot.png`, which is documented as seeded dogfood data only; no new screenshot binary was created for this slice.
+- Verification: README local link checks and focused secret-pattern scans passed; Swift tests were not required for this docs-only slice.
