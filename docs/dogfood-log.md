@@ -224,3 +224,10 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN check: dummy dry run with placeholder `LITHEPG_CODESIGN_IDENTITY` and `LITHEPG_NOTARY_PROFILE` passed and printed only planned local commands; no signing, notary submission, or credential write occurred.
 - Real signed/notarized smoke remains externally blocked until Omar supplies Apple Developer signing identity and notarytool keychain profile on this machine.
 - Additional release-impact gate: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` passed with Docker available. Artifacts: `.build/dogfood-checks/20260528-205026/`; default Swift tests passed, live dogfood slice passed, v0.4 measurement passed. Metrics: shell readiness 130.75 ms; connected cold start 227.65 ms; raw release binary 21.338 MiB; strip probe 11.959 MiB; `SELECT 1` median overhead 0.070 ms; dogfood query median overhead 0.029 ms.
+
+## 2026-05-30 09:07 EDT — v1.0 public contribution template slice
+
+- Added public collaboration artifacts: contribution guide, Contributor Covenant-style code of conduct, PR template, and GitHub issue templates for bug reports and feature requests.
+- Governance now links the concrete contribution guide, code of conduct, and DCO sign-off workflow instead of referring to unpublished v1.0 materials.
+- Templates explicitly require redacted/synthetic examples and forbid credentials, full connection URLs, private schemas, certificates, and real query-result dumps in public reports.
+- Verification: docs/template reference checks and focused secret-pattern scans passed; Swift tests were not required for this docs/GitHub metadata-only slice.
