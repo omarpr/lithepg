@@ -274,3 +274,10 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - RED check before implementation: `LITHEPG_EXPECTED_MARKETING_VERSION=1.0 ./script/package_verify.sh dist/LithePG.app` exited 0 against the existing `dist/LithePG.app` with `Version: 0.5 (129)`, confirming the verifier did not yet enforce the expected marketing-version mismatch.
 - GREEN mismatch checks after implementation: `LITHEPG_EXPECTED_MARKETING_VERSION=1.0 ./script/package_verify.sh dist/LithePG.app` failed clearly with `package verification failed: CFBundleShortVersionString is '0.5', expected '1.0' from LITHEPG_EXPECTED_MARKETING_VERSION`; after rebuilding the candidate, `LITHEPG_EXPECTED_BUILD_VERSION=998 ./script/package_verify.sh dist/LithePG.app` failed clearly with `package verification failed: CFBundleVersion is '999', expected '998' from LITHEPG_EXPECTED_BUILD_VERSION`.
 - GREEN matching candidate check: `LITHEPG_MARKETING_VERSION=1.0 LITHEPG_BUILD_VERSION=999 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/build_and_run.sh --package` produced `dist/LithePG.app` with `Version: 1.0 (999)`, and `LITHEPG_EXPECTED_MARKETING_VERSION=1.0 LITHEPG_EXPECTED_BUILD_VERSION=999 ./script/package_verify.sh dist/LithePG.app` passed. This is only a local release-candidate metadata gate; no `v1.0` tag, signing/notarization, upload, or external publication was attempted.
+
+## 2026-05-30 11:58 EDT — v1.0 manual CI recheck
+
+- Dispatched the manual GitHub Actions CI workflow on `main` at `c2510ec` to see whether remote verification could be restored for the v1.0 gate.
+- Run: https://github.com/omarpr/lithepg/actions/runs/26688293183 (`workflow_dispatch`).
+- Result: failed in ~6 seconds before either job produced steps or logs (`Build & test (macOS)` and `Security scans` both completed with failure and empty step lists). `gh run view --log-failed` returned `log not found`.
+- Interpretation: this still looks like the external GitHub Actions account/settings blocker rather than a source/test failure. Local receipts remain the active release gate until Omar clears the Actions setting.

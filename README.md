@@ -146,4 +146,4 @@ Docs-only changes can skip Swift tests, but release-impacting changes should als
 
 ## CI
 
-`.github/workflows/ci.yml` currently exists as a manual workflow because account billing/spending-limit settings previously blocked push/PR-triggered Actions. Local verification receipts remain the release gate until that external GitHub Actions setting is cleared.
+`.github/workflows/ci.yml` currently exists as a manual workflow because account billing/spending-limit settings previously blocked push/PR-triggered Actions. The latest manual dispatch also failed before any job steps or logs were produced, so local verification receipts remain the release gate until the external GitHub Actions account setting is cleared.
