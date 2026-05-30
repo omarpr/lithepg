@@ -372,3 +372,11 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - TDD receipt: `bash script/test_v10_release_gate.sh` failed first with `gate unexpectedly passed with mismatched Homebrew cask version`, then passed after the minimal parser/readiness check was added.
 - Verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `./script/v10_release_gate.sh --check-remote` remained safely blocked on the expected dirty-tree, placeholder, missing artifact/SHA, and external approval blockers. No signing, notarization, upload, Homebrew publication, tag, or cron changes were attempted.
 - Evidence artifact: `docs/evidence/2026-05-30-v10-homebrew-cask-version-gate.svg`.
+
+## 2026-05-30 18:18 EDT — v1.0 Homebrew cask URL gate
+
+- Hardened `script/v10_release_gate.sh` so a placeholder-free Homebrew cask must point at the exact LithePG GitHub Release `LithePG.app.zip` artifact URL shape for the requested version before the fast publication preflight can pass.
+- Added redacted shell TDD coverage for a cask with the correct `version` and `sha256` but the wrong URL host/path, plus a valid cask fixture that reports `Homebrew cask URL: matches`.
+- TDD receipt: `bash script/test_v10_release_gate.sh` failed first with `gate unexpectedly passed with mismatched Homebrew cask URL`, then passed after the minimal URL parser/readiness check was added.
+- Verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed. `./script/v10_release_gate.sh --check-remote` remained safely blocked on the expected dirty-tree, placeholder, missing artifact/SHA, and external approval blockers while confirming `origin` has `v0.5` and does not have `v1.0`. No signing, notarization, upload, Homebrew publication, tag, push, commit, or cron changes were attempted.
+- Evidence artifact: `docs/evidence/2026-05-30-v10-homebrew-cask-url-gate.svg`.

@@ -167,6 +167,20 @@ extract_homebrew_cask_version() {
   return 1
 }
 
+extract_homebrew_cask_url() {
+  local cask_file="$1"
+  local line=""
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" =~ ^[[:space:]]*url[[:space:]]+\"([^\"]+)\" ]]; then
+      printf '%s\n' "${BASH_REMATCH[1]}"
+      return 0
+    fi
+  done <"$cask_file"
+
+  return 1
+}
+
 security_doc_full_path() {
   local security_doc_path="$1"
   case "$security_doc_path" in
@@ -305,7 +319,7 @@ fi
 
 printf '\nHomebrew cask readiness:\n'
 homebrew_cask_file="$(homebrew_cask_full_path)"
-homebrew_cask_sha_check_ready=0
+homebrew_cask_check_ready=0
 if [[ ! -f "$homebrew_cask_file" ]]; then
   printf 'Homebrew cask placeholders: missing cask at %s\n' "$HOMEBREW_CASK_PATH"
   mark_blocker
@@ -321,7 +335,7 @@ else
       ;;
     1)
       printf 'Homebrew cask placeholders: none found\n'
-      homebrew_cask_sha_check_ready=1
+      homebrew_cask_check_ready=1
       ;;
     *)
       printf 'Homebrew cask placeholders: could not scan %s\n' "$HOMEBREW_CASK_PATH"
@@ -330,7 +344,7 @@ else
   esac
 fi
 
-if [[ "$homebrew_cask_sha_check_ready" -eq 1 ]]; then
+if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
   if cask_version="$(extract_homebrew_cask_version "$homebrew_cask_file")"; then
     if [[ "$cask_version" == "$VERSION" ]]; then
       printf 'Homebrew cask version: matches\n'
@@ -344,7 +358,23 @@ if [[ "$homebrew_cask_sha_check_ready" -eq 1 ]]; then
   fi
 fi
 
-if [[ "$homebrew_cask_sha_check_ready" -eq 1 && "$RELEASE_ZIP_SHA256" =~ ^[[:xdigit:]]{64}$ ]]; then
+if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
+  if cask_url="$(extract_homebrew_cask_url "$homebrew_cask_file")"; then
+    expected_cask_url_template='https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip'
+    expected_cask_url_concrete="https://github.com/omarpr/lithepg/releases/download/v${VERSION}/LithePG.app.zip"
+    if [[ "$cask_url" == "$expected_cask_url_template" || "$cask_url" == "$expected_cask_url_concrete" ]]; then
+      printf 'Homebrew cask URL: matches\n'
+    else
+      printf 'Homebrew cask URL: mismatch\n'
+      mark_blocker
+    fi
+  else
+    printf 'Homebrew cask URL: missing\n'
+    mark_blocker
+  fi
+fi
+
+if [[ "$homebrew_cask_check_ready" -eq 1 && "$RELEASE_ZIP_SHA256" =~ ^[[:xdigit:]]{64}$ ]]; then
   if cask_sha="$(extract_homebrew_cask_sha256 "$homebrew_cask_file")"; then
     expected_sha="$(printf '%s' "$RELEASE_ZIP_SHA256" | /usr/bin/tr '[:upper:]' '[:lower:]')"
     cask_sha="$(printf '%s' "$cask_sha" | /usr/bin/tr '[:upper:]' '[:lower:]')"
