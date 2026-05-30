@@ -364,3 +364,11 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - TDD receipt: `bash script/test_v10_release_gate.sh` failed first with `expected output to contain: Release artifact zip: missing at dist/LithePG.app.zip`, then passed after the minimal script implementation.
 - Verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `./script/v10_release_gate.sh --check-remote` remained safely blocked without printing digest values. No signing, notarization, upload, Homebrew publication, tag, commit, push, or cron changes were attempted.
 - Evidence artifact: `docs/evidence/2026-05-30-v10-release-artifact-sha-gate.svg`.
+
+## 2026-05-30 17:52 EDT — v1.0 Homebrew cask version gate
+
+- Hardened `script/v10_release_gate.sh` so placeholder-free Homebrew casks must contain a parseable `version "..."` line that exactly matches the requested release version before the fast publication preflight can pass.
+- Added shell TDD coverage for a cask with `version "0.9"` plus the correct fixture SHA-256, a missing-version cask, the matching-version pass path, and placeholder casks that stay blocked by the existing placeholder gate without extra version mismatch/missing noise.
+- TDD receipt: `bash script/test_v10_release_gate.sh` failed first with `gate unexpectedly passed with mismatched Homebrew cask version`, then passed after the minimal parser/readiness check was added.
+- Verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `./script/v10_release_gate.sh --check-remote` remained safely blocked on the expected dirty-tree, placeholder, missing artifact/SHA, and external approval blockers. No signing, notarization, upload, Homebrew publication, tag, or cron changes were attempted.
+- Evidence artifact: `docs/evidence/2026-05-30-v10-homebrew-cask-version-gate.svg`.

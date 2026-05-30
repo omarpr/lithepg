@@ -153,6 +153,20 @@ extract_homebrew_cask_sha256() {
   return 1
 }
 
+extract_homebrew_cask_version() {
+  local cask_file="$1"
+  local line=""
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" =~ ^[[:space:]]*version[[:space:]]+\"([^\"]+)\" ]]; then
+      printf '%s\n' "${BASH_REMATCH[1]}"
+      return 0
+    fi
+  done <"$cask_file"
+
+  return 1
+}
+
 security_doc_full_path() {
   local security_doc_path="$1"
   case "$security_doc_path" in
@@ -314,6 +328,20 @@ else
       mark_blocker
       ;;
   esac
+fi
+
+if [[ "$homebrew_cask_sha_check_ready" -eq 1 ]]; then
+  if cask_version="$(extract_homebrew_cask_version "$homebrew_cask_file")"; then
+    if [[ "$cask_version" == "$VERSION" ]]; then
+      printf 'Homebrew cask version: matches\n'
+    else
+      printf 'Homebrew cask version: mismatch\n'
+      mark_blocker
+    fi
+  else
+    printf 'Homebrew cask version: missing\n'
+    mark_blocker
+  fi
 fi
 
 if [[ "$homebrew_cask_sha_check_ready" -eq 1 && "$RELEASE_ZIP_SHA256" =~ ^[[:xdigit:]]{64}$ ]]; then
