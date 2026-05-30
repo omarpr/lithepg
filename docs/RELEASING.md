@@ -11,10 +11,40 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/build_and_run.
 ./script/package_verify.sh dist/LithePG.app
 ```
 
+For the final v1.0 candidate, do not rely on the current latest git tag to fill
+`CFBundleShortVersionString`: the package builder derives that field from the
+latest tag unless `LITHEPG_MARKETING_VERSION` is set. Build the candidate with
+the intended marketing version, then verify the app bundle metadata with the
+expected-version gate before any signing or notarization step:
+
+```sh
+LITHEPG_MARKETING_VERSION=1.0 \
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
+./script/build_and_run.sh --package
+
+LITHEPG_EXPECTED_MARKETING_VERSION=1.0 \
+./script/package_verify.sh dist/LithePG.app
+```
+
+If Omar chooses an explicit release build number for the candidate, set and
+verify that number the same way:
+
+```sh
+LITHEPG_MARKETING_VERSION=1.0 \
+LITHEPG_BUILD_VERSION=<build-number> \
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
+./script/build_and_run.sh --package
+
+LITHEPG_EXPECTED_MARKETING_VERSION=1.0 \
+LITHEPG_EXPECTED_BUILD_VERSION=<build-number> \
+./script/package_verify.sh dist/LithePG.app
+```
+
 The verifier checks:
 
 - `Contents/MacOS/LithePGApp` exists and is executable.
 - `Contents/Info.plist` has the expected executable, bundle identifier, bundle name, package type, numeric release/build version fields, minimum system version, and principal class.
+- If `LITHEPG_EXPECTED_MARKETING_VERSION` or `LITHEPG_EXPECTED_BUILD_VERSION` is set, the corresponding bundle metadata exactly matches the expected value.
 - The packaged executable stays below the 50 MiB hard cap.
 
 An unsigned/ad-hoc-signed local bundle is only a development artifact. Do not publish it as a public v1.0 release.

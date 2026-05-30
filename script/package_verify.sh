@@ -54,6 +54,14 @@ build_version="$(plist_value CFBundleVersion)"
 [[ "$marketing_version" =~ ^[0-9]+(\.[0-9]+){1,2}$ ]] || fail "CFBundleShortVersionString is '$marketing_version', expected numeric release version"
 [[ "$build_version" =~ ^[0-9]+$ ]] || fail "CFBundleVersion is '$build_version', expected numeric build version"
 
+if [[ -n "${LITHEPG_EXPECTED_MARKETING_VERSION:-}" ]]; then
+  [[ "$marketing_version" == "$LITHEPG_EXPECTED_MARKETING_VERSION" ]] || fail "CFBundleShortVersionString is '$marketing_version', expected '$LITHEPG_EXPECTED_MARKETING_VERSION' from LITHEPG_EXPECTED_MARKETING_VERSION"
+fi
+
+if [[ -n "${LITHEPG_EXPECTED_BUILD_VERSION:-}" ]]; then
+  [[ "$build_version" == "$LITHEPG_EXPECTED_BUILD_VERSION" ]] || fail "CFBundleVersion is '$build_version', expected '$LITHEPG_EXPECTED_BUILD_VERSION' from LITHEPG_EXPECTED_BUILD_VERSION"
+fi
+
 bytes=$(stat -f%z "$APP_BINARY")
 if [[ "$bytes" -gt "$HARD_CAP_BYTES" ]]; then
   mib=$(awk "BEGIN { printf \"%.2f\", $bytes / 1024 / 1024 }")
@@ -65,4 +73,10 @@ printf 'Package verified: %s\n' "$APP_BUNDLE"
 printf 'Executable: Contents/MacOS/%s (%s bytes / %s MiB)\n' "$APP_NAME" "$bytes" "$mib"
 printf 'Bundle ID: %s\n' "$bundle_id"
 printf 'Version: %s (%s)\n' "$marketing_version" "$build_version"
+if [[ -n "${LITHEPG_EXPECTED_MARKETING_VERSION:-}" ]]; then
+  printf 'Expected marketing version: %s\n' "$LITHEPG_EXPECTED_MARKETING_VERSION"
+fi
+if [[ -n "${LITHEPG_EXPECTED_BUILD_VERSION:-}" ]]; then
+  printf 'Expected build version: %s\n' "$LITHEPG_EXPECTED_BUILD_VERSION"
+fi
 printf 'Minimum system: %s\n' "$minimum_system"
