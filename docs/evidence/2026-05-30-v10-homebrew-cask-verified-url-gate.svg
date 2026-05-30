@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="1180" viewBox="0 0 1180 1180">
+<rect width="100%" height="100%" fill="#0b1020"/>
+<style>text { font-family: SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; fill: #d8e2ff; } .title { fill: #8bd5ff; font-weight: 700; } .ok { fill: #a6e3a1; } .warn { fill: #f9e2af; }</style>
+<text x="24" y="26" class="title">LithePG v1.0 Homebrew cask verified URL gate evidence</text>
+<text x="24" y="46">Captured: 2026-05-30 18:46 EDT</text>
+<text x="24" y="66"></text>
+<text x="24" y="86">== TDD receipt ==</text>
+<text x="24" y="106" class="warn">RED: bash script/test_v10_release_gate.sh failed before implementation:</text>
+<text x="24" y="126" class="warn">test_v10_release_gate failed: gate unexpectedly passed with mismatched Homebrew cask verified URL</text>
+<text x="24" y="146"></text>
+<text x="24" y="166">== Final focused verification ==</text>
+<text x="24" y="186">bash script/test_v10_release_gate.sh</text>
+<text x="24" y="206" class="ok">test_v10_release_gate passed</text>
+<text x="24" y="226"></text>
+<text x="24" y="246">bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh</text>
+<text x="24" y="266" class="ok">bash -n passed</text>
+<text x="24" y="286"></text>
+<text x="24" y="306">git diff --check</text>
+<text x="24" y="326" class="ok">git diff --check passed</text>
+<text x="24" y="346"></text>
+<text x="24" y="366" class="warn">== Fast preflight (--check-remote), expected blocked before publication ==</text>
+<text x="24" y="386">LithePG v1.0 fast publication preflight</text>
+<text x="24" y="406">Repository: /Users/omar/projects/lithepg</text>
+<text x="24" y="426"></text>
+<text x="24" y="446">Local git/tag readiness:</text>
+<text x="24" y="466">Git branch: main</text>
+<text x="24" y="486" class="warn">Git status: changes present (expected clean before tagging/publishing)</text>
+<text x="24" y="506" class="ok">Local tag v0.5: present</text>
+<text x="24" y="526" class="ok">Local tag v1.0: absent</text>
+<text x="24" y="546" class="ok">Remote origin tag v0.5: present</text>
+<text x="24" y="566" class="ok">Remote origin tag v1.0: absent</text>
+<text x="24" y="586"></text>
+<text x="24" y="606">Release copy readiness:</text>
+<text x="24" y="626" class="warn">Release copy placeholders: present in docs/releases/v1.0-draft.md</text>
+<text x="24" y="646"></text>
+<text x="24" y="666">Homebrew cask readiness:</text>
+<text x="24" y="686" class="warn">Homebrew cask placeholders: present in packaging/homebrew/lithepg.rb</text>
+<text x="24" y="706"></text>
+<text x="24" y="726">Security policy readiness:</text>
+<text x="24" y="746" class="warn">Security policy placeholders: present in SECURITY.md</text>
+<text x="24" y="766" class="warn">Security policy placeholders: present in docs/SECURITY.md</text>
+<text x="24" y="786"></text>
+<text x="24" y="806">Release artifact readiness:</text>
+<text x="24" y="826" class="warn">Release artifact zip: missing at dist/LithePG.app.zip</text>
+<text x="24" y="846" class="warn">Release artifact SHA-256: missing</text>
+<text x="24" y="866"></text>
+<text x="24" y="886">External publication inputs (values redacted):</text>
+<text x="24" y="906" class="warn">LITHEPG_CODESIGN_IDENTITY: missing</text>
+<text x="24" y="926" class="warn">LITHEPG_NOTARY_PROFILE: missing</text>
+<text x="24" y="946" class="warn">LITHEPG_SECURITY_CONTACT: missing</text>
+<text x="24" y="966" class="warn">LITHEPG_HOMEBREW_TAP: missing</text>
+<text x="24" y="986" class="warn">LITHEPG_GITHUB_ACTIONS_READY: not approved</text>
+<text x="24" y="1006" class="warn">LITHEPG_RELEASE_COPY_APPROVED: not approved</text>
+<text x="24" y="1026" class="warn">LITHEPG_PUBLICATION_APPROVED: not approved</text>
+<text x="24" y="1046"></text>
+<text x="24" y="1066" class="warn">v1.0 publication blocked: 14 blocker(s) found.</text>
+<text x="24" y="1086" class="warn">No signing, notarization, upload, Homebrew publication, or v1.0 tag was attempted.</text>
+</svg>

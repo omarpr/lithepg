@@ -181,6 +181,20 @@ extract_homebrew_cask_url() {
   return 1
 }
 
+extract_homebrew_cask_verified_url() {
+  local cask_file="$1"
+  local line=""
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" =~ ^[[:space:]]*verified:[[:space:]]+\"([^\"]+)\" ]]; then
+      printf '%s\n' "${BASH_REMATCH[1]}"
+      return 0
+    fi
+  done <"$cask_file"
+
+  return 1
+}
+
 security_doc_full_path() {
   local security_doc_path="$1"
   case "$security_doc_path" in
@@ -370,6 +384,20 @@ if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
     fi
   else
     printf 'Homebrew cask URL: missing\n'
+    mark_blocker
+  fi
+fi
+
+if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
+  if cask_verified_url="$(extract_homebrew_cask_verified_url "$homebrew_cask_file")"; then
+    if [[ "$cask_verified_url" == "github.com/omarpr/lithepg/" ]]; then
+      printf 'Homebrew cask verified URL: matches\n'
+    else
+      printf 'Homebrew cask verified URL: mismatch\n'
+      mark_blocker
+    fi
+  else
+    printf 'Homebrew cask verified URL: missing\n'
     mark_blocker
   fi
 fi

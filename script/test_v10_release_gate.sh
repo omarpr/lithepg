@@ -57,6 +57,8 @@ invalid_artifact_sha_output="$(mktemp)"
 mismatched_artifact_sha_output="$(mktemp)"
 mismatched_homebrew_cask_sha_output="$(mktemp)"
 homebrew_cask_url_mismatch_output="$(mktemp)"
+homebrew_cask_verified_mismatch_output="$(mktemp)"
+missing_homebrew_cask_verified_output="$(mktemp)"
 homebrew_cask_version_mismatch_output="$(mktemp)"
 missing_homebrew_cask_version_output="$(mktemp)"
 missing_homebrew_cask_sha_output="$(mktemp)"
@@ -77,6 +79,8 @@ placeholder_homebrew_cask="$(mktemp)"
 placeholder_free_homebrew_cask="$(mktemp)"
 mismatched_homebrew_cask="$(mktemp)"
 url_mismatch_homebrew_cask="$(mktemp)"
+verified_mismatch_homebrew_cask="$(mktemp)"
+missing_verified_homebrew_cask="$(mktemp)"
 version_mismatch_homebrew_cask="$(mktemp)"
 missing_version_homebrew_cask="$(mktemp)"
 missing_sha_homebrew_cask="$(mktemp)"
@@ -101,6 +105,8 @@ cleanup() {
     "$mismatched_artifact_sha_output" \
     "$mismatched_homebrew_cask_sha_output" \
     "$homebrew_cask_url_mismatch_output" \
+    "$homebrew_cask_verified_mismatch_output" \
+    "$missing_homebrew_cask_verified_output" \
     "$homebrew_cask_version_mismatch_output" \
     "$missing_homebrew_cask_version_output" \
     "$missing_homebrew_cask_sha_output" \
@@ -121,6 +127,8 @@ cleanup() {
     "$placeholder_free_homebrew_cask" \
     "$mismatched_homebrew_cask" \
     "$url_mismatch_homebrew_cask" \
+    "$verified_mismatch_homebrew_cask" \
+    "$missing_verified_homebrew_cask" \
     "$version_mismatch_homebrew_cask" \
     "$missing_version_homebrew_cask" \
     "$missing_sha_homebrew_cask" \
@@ -270,6 +278,34 @@ cask "lithepg" do
 
   url "$wrong_homebrew_cask_url",
       verified: "github.com/omarpr/lithepg/"
+  name "LithePG"
+  desc "Lean PostgreSQL client with local-first AI"
+  homepage "https://github.com/omarpr/lithepg"
+
+  app "LithePG.app"
+end
+CASK
+wrong_homebrew_cask_verified="github.com/example/not-lithepg/"
+cat >"$verified_mismatch_homebrew_cask" <<CASK
+cask "lithepg" do
+  version "1.0"
+  sha256 "$release_zip_sha"
+
+  url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
+      verified: "$wrong_homebrew_cask_verified"
+  name "LithePG"
+  desc "Lean PostgreSQL client with local-first AI"
+  homepage "https://github.com/omarpr/lithepg"
+
+  app "LithePG.app"
+end
+CASK
+cat >"$missing_verified_homebrew_cask" <<CASK
+cask "lithepg" do
+  version "1.0"
+  sha256 "$release_zip_sha"
+
+  url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
   homepage "https://github.com/omarpr/lithepg"
@@ -525,6 +561,61 @@ assert_not_contains "$homebrew_cask_url_mismatch_text" "$wrong_homebrew_cask_url
 assert_not_contains "$homebrew_cask_url_mismatch_text" "$release_zip_sha"
 assert_contains "$homebrew_cask_url_mismatch_text" "v1.0 publication blocked"
 
+if run_gate_capture "$homebrew_cask_verified_mismatch_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$verified_mismatch_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  homebrew_cask_verified_mismatch_text="$(<"$homebrew_cask_verified_mismatch_output")"
+  assert_not_contains "$homebrew_cask_verified_mismatch_text" "$wrong_homebrew_cask_verified"
+  fail "gate unexpectedly passed with mismatched Homebrew cask verified URL"
+fi
+homebrew_cask_verified_mismatch_text="$(<"$homebrew_cask_verified_mismatch_output")"
+assert_contains "$homebrew_cask_verified_mismatch_text" "Homebrew cask placeholders: none found"
+assert_contains "$homebrew_cask_verified_mismatch_text" "Homebrew cask version: matches"
+assert_contains "$homebrew_cask_verified_mismatch_text" "Homebrew cask URL: matches"
+assert_contains "$homebrew_cask_verified_mismatch_text" "Homebrew cask verified URL: mismatch"
+assert_contains "$homebrew_cask_verified_mismatch_text" "Homebrew cask SHA-256: matches"
+assert_not_contains "$homebrew_cask_verified_mismatch_text" "$wrong_homebrew_cask_verified"
+assert_not_contains "$homebrew_cask_verified_mismatch_text" "$release_zip_sha"
+assert_contains "$homebrew_cask_verified_mismatch_text" "v1.0 publication blocked"
+
+if run_gate_capture "$missing_homebrew_cask_verified_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$missing_verified_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  fail "gate unexpectedly passed with missing Homebrew cask verified URL"
+fi
+missing_homebrew_cask_verified_text="$(<"$missing_homebrew_cask_verified_output")"
+assert_contains "$missing_homebrew_cask_verified_text" "Homebrew cask placeholders: none found"
+assert_contains "$missing_homebrew_cask_verified_text" "Homebrew cask version: matches"
+assert_contains "$missing_homebrew_cask_verified_text" "Homebrew cask URL: matches"
+assert_contains "$missing_homebrew_cask_verified_text" "Homebrew cask verified URL: missing"
+assert_contains "$missing_homebrew_cask_verified_text" "Homebrew cask SHA-256: matches"
+assert_not_contains "$missing_homebrew_cask_verified_text" "$release_zip_sha"
+assert_contains "$missing_homebrew_cask_verified_text" "v1.0 publication blocked"
+
 if run_gate_capture "$homebrew_cask_version_mismatch_output" env -i \
   PATH="$fake_path" \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
@@ -641,6 +732,8 @@ assert_contains "$homebrew_cask_placeholder_text" "Release copy placeholders: no
 assert_contains "$homebrew_cask_placeholder_text" "Homebrew cask placeholders: present in $placeholder_homebrew_cask"
 assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask version: mismatch"
 assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask version: missing"
+assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask URL: mismatch"
+assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask verified URL:"
 assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask SHA-256: mismatch"
 assert_contains "$homebrew_cask_placeholder_text" "v1.0 publication blocked"
 assert_not_contains "$homebrew_cask_placeholder_text" "fast preflight is clear"
@@ -792,6 +885,7 @@ assert_contains "$no_remote_lookup_text" "Release copy placeholders: none found"
 assert_contains "$no_remote_lookup_text" "Homebrew cask placeholders: none found"
 assert_contains "$no_remote_lookup_text" "Homebrew cask version: matches"
 assert_contains "$no_remote_lookup_text" "Homebrew cask URL: matches"
+assert_contains "$no_remote_lookup_text" "Homebrew cask verified URL: matches"
 assert_contains "$no_remote_lookup_text" "Homebrew cask SHA-256: matches"
 assert_contains "$no_remote_lookup_text" "Release artifact zip: present"
 assert_contains "$no_remote_lookup_text" "Release artifact SHA-256: matches"

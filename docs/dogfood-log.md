@@ -380,3 +380,11 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - TDD receipt: `bash script/test_v10_release_gate.sh` failed first with `gate unexpectedly passed with mismatched Homebrew cask URL`, then passed after the minimal URL parser/readiness check was added.
 - Verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed. `./script/v10_release_gate.sh --check-remote` remained safely blocked on the expected dirty-tree, placeholder, missing artifact/SHA, and external approval blockers while confirming `origin` has `v0.5` and does not have `v1.0`. No signing, notarization, upload, Homebrew publication, tag, push, commit, or cron changes were attempted.
 - Evidence artifact: `docs/evidence/2026-05-30-v10-homebrew-cask-url-gate.svg`.
+
+## 2026-05-30 18:42 EDT — v1.0 Homebrew cask verified URL gate
+
+- Hardened `script/v10_release_gate.sh` so placeholder-free Homebrew casks must include a `verified:` stanza exactly matching `github.com/omarpr/lithepg/` before the fast publication preflight can pass.
+- Added redacted shell TDD coverage for mismatched and missing `verified:` values, plus the valid `Homebrew cask verified URL: matches` pass path and placeholder-cask no-noise behavior.
+- TDD receipt: `bash script/test_v10_release_gate.sh` failed first with `gate unexpectedly passed with mismatched Homebrew cask verified URL`, then passed after the minimal parser/readiness check was added.
+- Verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed. `./script/v10_release_gate.sh --check-remote` remained safely blocked on existing local/publication blockers. No signing, notarization, upload, Homebrew publication, tag, push, commit, or cron changes were attempted.
+- Evidence artifact: `docs/evidence/2026-05-30-v10-homebrew-cask-verified-url-gate.svg`.
