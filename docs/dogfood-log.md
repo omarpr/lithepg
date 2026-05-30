@@ -388,3 +388,11 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - TDD receipt: `bash script/test_v10_release_gate.sh` failed first with `gate unexpectedly passed with mismatched Homebrew cask verified URL`, then passed after the minimal parser/readiness check was added.
 - Verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed. `./script/v10_release_gate.sh --check-remote` remained safely blocked on existing local/publication blockers. No signing, notarization, upload, Homebrew publication, tag, push, commit, or cron changes were attempted.
 - Evidence artifact: `docs/evidence/2026-05-30-v10-homebrew-cask-verified-url-gate.svg`.
+
+## 2026-05-30 19:03 EDT — v1.0 Homebrew cask app stanza gate
+
+- Hardened `script/v10_release_gate.sh` so placeholder-free Homebrew casks must install `app "LithePG.app"` before the fast publication preflight can pass.
+- Added redacted shell TDD coverage for `app "NotLithePG.app"`, a missing app stanza, the valid `Homebrew cask app stanza: matches` pass path, and placeholder-cask no-noise behavior.
+- TDD receipt: `bash script/test_v10_release_gate.sh` failed first with `gate unexpectedly passed with mismatched Homebrew cask app stanza`, then passed after the minimal parser/readiness check was added.
+- Verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed; `./script/v10_release_gate.sh --check-remote` confirmed origin still has `v0.5` and does not have `v1.0`, then remained blocked on expected local/publication blockers. No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-30-v10-homebrew-cask-app-stanza-gate.svg`.
