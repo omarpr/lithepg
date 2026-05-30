@@ -58,6 +58,7 @@ missing_copy_output="$(mktemp)"
 external_placeholder_output="$(mktemp)"
 no_remote_lookup_output="$(mktemp)"
 remote_opt_in_output="$(mktemp)"
+remote_v05_missing_output="$(mktemp)"
 status_failure_output="$(mktemp)"
 grep_error_output="$(mktemp)"
 placeholder_release_copy="$(mktemp)"
@@ -72,7 +73,7 @@ rm -f "$missing_release_copy"
 fake_git_dir="$(mktemp -d)"
 fake_git_marker="$fake_git_dir/ls-remote-called"
 default_security_docs_repo="$(mktemp -d)"
-trap 'rm -f "$missing_output" "$redaction_output" "$placeholder_output" "$homebrew_cask_placeholder_output" "$security_doc_placeholder_output" "$default_security_docs_output" "$missing_copy_output" "$external_placeholder_output" "$no_remote_lookup_output" "$remote_opt_in_output" "$status_failure_output" "$grep_error_output" "$placeholder_release_copy" "$placeholder_free_release_copy" "$placeholder_homebrew_cask" "$placeholder_free_homebrew_cask" "$placeholder_security_doc" "$placeholder_free_security_doc" "$grep_error_release_copy" "$missing_release_copy"; rm -rf "$fake_git_dir" "$default_security_docs_repo"' EXIT
+trap 'rm -f "$missing_output" "$redaction_output" "$placeholder_output" "$homebrew_cask_placeholder_output" "$security_doc_placeholder_output" "$default_security_docs_output" "$missing_copy_output" "$external_placeholder_output" "$no_remote_lookup_output" "$remote_opt_in_output" "$remote_v05_missing_output" "$status_failure_output" "$grep_error_output" "$placeholder_release_copy" "$placeholder_free_release_copy" "$placeholder_homebrew_cask" "$placeholder_free_homebrew_cask" "$placeholder_security_doc" "$placeholder_free_security_doc" "$grep_error_release_copy" "$missing_release_copy"; rm -rf "$fake_git_dir" "$default_security_docs_repo"' EXIT
 
 cat >"$fake_git_dir/git" <<'FAKE_GIT'
 #!/usr/bin/env bash
@@ -122,6 +123,13 @@ case "${1:-}" in
     ;;
   ls-remote)
     printf 'git ls-remote was invoked\n' >>"${FAKE_GIT_LS_REMOTE_MARKER:?}"
+    tag_ref="${5:-}"
+    if [[ "${FAKE_GIT_REMOTE_V05_MISSING:-}" == "1" && "$tag_ref" == "refs/tags/v0.5" ]]; then
+      exit 2
+    fi
+    if [[ "${FAKE_GIT_REMOTE_V10_ABSENT:-}" == "1" && "$tag_ref" == "refs/tags/v1.0" ]]; then
+      exit 2
+    fi
     exit 99
     ;;
 esac
@@ -439,6 +447,34 @@ assert_contains "$remote_opt_in_text" "Homebrew cask placeholders: none found"
 assert_contains "$remote_opt_in_text" "Remote origin tag v1.0: unknown (remote/network unavailable; not blocking this fast check)"
 if [[ ! -e "$fake_git_marker" ]]; then
   fail "opt-in remote lookup did not invoke git ls-remote"
+fi
+
+rm -f "$fake_git_marker"
+if run_gate_capture "$remote_v05_missing_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  FAKE_GIT_REMOTE_V05_MISSING="1" \
+  FAKE_GIT_REMOTE_V10_ABSENT="1" \
+  LITHEPG_CHECK_REMOTE_TAGS="1" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  fail "gate unexpectedly passed when remote origin v0.5 was missing"
+fi
+remote_v05_missing_text="$(<"$remote_v05_missing_output")"
+assert_contains "$remote_v05_missing_text" "Remote origin tag v0.5: missing"
+assert_contains "$remote_v05_missing_text" "Remote origin tag v1.0: absent"
+assert_contains "$remote_v05_missing_text" "v1.0 publication blocked"
+assert_not_contains "$remote_v05_missing_text" "fast preflight is clear"
+if [[ ! -e "$fake_git_marker" ]]; then
+  fail "opt-in remote v0.5 readiness check did not invoke git ls-remote"
 fi
 
 if run_gate_capture "$status_failure_output" env -i \

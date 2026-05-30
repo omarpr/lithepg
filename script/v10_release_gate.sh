@@ -190,6 +190,23 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   if git remote get-url origin >/dev/null 2>&1; then
     if is_approved_value "$CHECK_REMOTE_TAGS"; then
       set +e
+      GIT_TERMINAL_PROMPT=0 git ls-remote --exit-code --tags origin refs/tags/v0.5 >/dev/null 2>&1
+      remote_v05_status=$?
+      set -e
+      case "$remote_v05_status" in
+        0)
+          printf 'Remote origin tag v0.5: present\n'
+          ;;
+        2)
+          printf 'Remote origin tag v0.5: missing\n'
+          mark_blocker
+          ;;
+        *)
+          printf 'Remote origin tag v0.5: unknown (remote/network unavailable; not blocking this fast check)\n'
+          ;;
+      esac
+
+      set +e
       GIT_TERMINAL_PROMPT=0 git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1
       remote_status=$?
       set -e
@@ -206,9 +223,11 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
           ;;
       esac
     else
+      printf 'Remote origin tag v0.5: not checked (set LITHEPG_CHECK_REMOTE_TAGS=1 or pass --check-remote)\n'
       printf 'Remote origin tag %s: not checked (set LITHEPG_CHECK_REMOTE_TAGS=1 or pass --check-remote)\n' "$TAG"
     fi
   else
+    printf 'Remote origin tag v0.5: unknown (no origin remote; not blocking this fast check)\n'
     printf 'Remote origin tag %s: unknown (no origin remote; not blocking this fast check)\n' "$TAG"
   fi
 else
