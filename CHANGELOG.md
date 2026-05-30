@@ -13,9 +13,12 @@ LithePG follows outcome-named milestones with semantic-version tags. v1.0 remain
 - Root [`SECURITY.md`](SECURITY.md) now points to [`docs/SECURITY.md`](docs/SECURITY.md) for the current reporting-policy placeholder, private-reporting expectations, and sanitized/no-secrets disclosure guidance.
 - The app supports light, dark, and system appearance preferences, with dark as the default.
 - [`README.md`](README.md) was refreshed for public readers with GitHub Release install guidance, source build/test/package quickstart commands, a seeded screenshot, and plain-language local-first AI/model-artifact notes.
-- Local package verification now checks the generated `dist/LithePG.app` bundle structure, executable permissions, bundle metadata, minimum macOS version, and the 50 MiB executable hard cap.
+- Local package verification now checks the generated `dist/LithePG.app` bundle structure, executable permissions, bundle metadata, minimum macOS version, the 50 MiB executable hard cap, and optional `LITHEPG_EXPECTED_MARKETING_VERSION` / `LITHEPG_EXPECTED_BUILD_VERSION` assertions.
 - A credential-gated signing/notarization wrapper is available for dry-run validation and future real distribution signing.
 - [`docs/RELEASING.md`](docs/RELEASING.md) documents the local package gate, required signing/notary inputs, dry-run flow, release artifact SHA workflow, and final v1.0 tag gate.
+- [`script/v10_release_gate.sh`](script/v10_release_gate.sh) provides a fast v1.0 publication preflight for local branch/status/tag readiness, release-copy placeholder checks, and required external publication inputs without printing secret/contact/tap values.
+- Review-only release copy lives in [`docs/releases/v1.0-draft.md`](docs/releases/v1.0-draft.md) with unresolved `REPLACE_WITH_*` placeholders that must be resolved before publication.
+- [`script/create_release_zip.sh`](script/create_release_zip.sh) creates `LithePG.app.zip` from an existing verified `LithePG.app` using `ditto --keepParent`, refuses unsafe overwrites and outputs inside the app bundle, and prints the SHA-256 digest without uploading, tagging, signing, notarizing, or contacting the network.
 - A repository-local Homebrew cask template and README live under [`packaging/homebrew/`](packaging/homebrew/) for the planned `LithePG.app.zip` artifact; external tap publication remains approval-gated.
 
 ### Verified
@@ -27,9 +30,10 @@ LithePG follows outcome-named milestones with semantic-version tags. v1.0 remain
 ### Still blocked before release
 
 - Real codesigning and notarization require Omar-controlled Apple Developer signing identity and notarytool keychain profile on the release machine.
+- Security reporting needs an approved public contact before the current placeholder policy can be published as final.
 - Homebrew publication needs an approved tap target.
-- GitHub Release artifact creation, release-copy approval, and the `v1.0` tag remain gated on Omar's explicit public publication approval.
-- GitHub Actions still requires Omar-side account settings: the latest manual `workflow_dispatch` failed before any job steps or logs were produced, so local release receipts remain the fallback gate until Actions can actually run.
+- GitHub Release artifact creation, release-copy approval, unresolved draft placeholders, and the `v1.0` tag remain gated on Omar's explicit public publication approval.
+- GitHub Actions still requires Omar-side account/settings: the latest manual `workflow_dispatch` failed before any job steps or logs were produced, so local release receipts remain the fallback gate until Actions can actually run.
 
 ## [v0.5] — 2026-05-28 — AI-Ready
 
