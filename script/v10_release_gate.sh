@@ -3,6 +3,7 @@ set -euo pipefail
 
 VERSION="1.0"
 CHECK_REMOTE_TAGS="${LITHEPG_CHECK_REMOTE_TAGS:-0}"
+RELEASE_COPY_PATH="${LITHEPG_RELEASE_COPY_PATH:-docs/releases/v1.0-draft.md}"
 
 usage() {
   cat <<'USAGE'
@@ -13,7 +14,8 @@ external release inputs without running long build/test/dogfood gates, contactin
 origin by default, or printing secret/contact/tap environment values.
 
 Pass --check-remote or set LITHEPG_CHECK_REMOTE_TAGS=1 to opt into a non-fatal
-origin tag lookup.
+origin tag lookup. Set LITHEPG_RELEASE_COPY_PATH to scan a non-default release
+copy file (relative to the repository root or absolute).
 USAGE
 }
 
@@ -77,6 +79,17 @@ print_approval_status() {
     printf '%s: not approved\n' "$name"
     mark_blocker
   fi
+}
+
+release_copy_full_path() {
+  case "$RELEASE_COPY_PATH" in
+    /*)
+      printf '%s\n' "$RELEASE_COPY_PATH"
+      ;;
+    *)
+      printf '%s/%s\n' "$ROOT_DIR" "$RELEASE_COPY_PATH"
+      ;;
+  esac
 }
 
 cd "$ROOT_DIR"
@@ -148,6 +161,31 @@ else
   mark_blocker
 fi
 
+printf '\nRelease copy readiness:\n'
+release_copy_file="$(release_copy_full_path)"
+if [[ ! -f "$release_copy_file" ]]; then
+  printf 'Release copy placeholders: missing release copy at %s\n' "$RELEASE_COPY_PATH"
+  mark_blocker
+else
+  set +e
+  grep -q 'REPLACE_WITH_' "$release_copy_file"
+  grep_status=$?
+  set -e
+  case "$grep_status" in
+    0)
+      printf 'Release copy placeholders: present in %s\n' "$RELEASE_COPY_PATH"
+      mark_blocker
+      ;;
+    1)
+      printf 'Release copy placeholders: none found\n'
+      ;;
+    *)
+      printf 'Release copy placeholders: could not scan %s\n' "$RELEASE_COPY_PATH"
+      mark_blocker
+      ;;
+  esac
+fi
+
 printf '\nExternal publication inputs (values redacted):\n'
 print_config_status LITHEPG_CODESIGN_IDENTITY
 print_config_status LITHEPG_NOTARY_PROFILE
@@ -164,5 +202,5 @@ if [[ "$BLOCKERS" -eq 0 ]]; then
 fi
 
 printf '%s publication blocked: %s blocker(s) found.\n' "$TAG" "$BLOCKERS"
-printf 'Resolve the missing/false external inputs and any tag-readiness blockers before tagging or publishing.\n'
+printf 'Resolve the release copy, missing/false external inputs, and any tag-readiness blockers before tagging or publishing.\n'
 exit 1

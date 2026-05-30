@@ -36,12 +36,20 @@ run_gate_capture() {
 
 missing_output="$(mktemp)"
 redaction_output="$(mktemp)"
+placeholder_output="$(mktemp)"
+missing_copy_output="$(mktemp)"
 no_remote_lookup_output="$(mktemp)"
 remote_opt_in_output="$(mktemp)"
 status_failure_output="$(mktemp)"
+grep_error_output="$(mktemp)"
+placeholder_release_copy="$(mktemp)"
+placeholder_free_release_copy="$(mktemp)"
+grep_error_release_copy="$(mktemp)"
+missing_release_copy="$(mktemp)"
+rm -f "$missing_release_copy"
 fake_git_dir="$(mktemp -d)"
 fake_git_marker="$fake_git_dir/ls-remote-called"
-trap 'rm -f "$missing_output" "$redaction_output" "$no_remote_lookup_output" "$remote_opt_in_output" "$status_failure_output"; rm -rf "$fake_git_dir"' EXIT
+trap 'rm -f "$missing_output" "$redaction_output" "$placeholder_output" "$missing_copy_output" "$no_remote_lookup_output" "$remote_opt_in_output" "$status_failure_output" "$grep_error_output" "$placeholder_release_copy" "$placeholder_free_release_copy" "$grep_error_release_copy" "$missing_release_copy"; rm -rf "$fake_git_dir"' EXIT
 
 cat >"$fake_git_dir/git" <<'FAKE_GIT'
 #!/usr/bin/env bash
@@ -101,7 +109,26 @@ printf '\n' >&2
 exit 98
 FAKE_GIT
 chmod +x "$fake_git_dir/git"
+cat >"$fake_git_dir/grep" <<'FAKE_GREP'
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ -n "${FAKE_GREP_ERROR_PATH:-}" ]]; then
+  for arg in "$@"; do
+    if [[ "$arg" == "$FAKE_GREP_ERROR_PATH" ]]; then
+      printf 'grep: %s: fake read error\n' "$arg" >&2
+      exit 2
+    fi
+  done
+fi
+
+exec /usr/bin/grep "$@"
+FAKE_GREP
+chmod +x "$fake_git_dir/grep"
 fake_path="$fake_git_dir:${PATH:-/usr/bin:/bin}"
+printf 'LithePG v1.0 release copy with REPLACE_WITH_FINAL_VALUE placeholder.\n' >"$placeholder_release_copy"
+printf 'LithePG v1.0 release copy with final values only.\n' >"$placeholder_free_release_copy"
+printf 'LithePG v1.0 release copy that cannot be scanned by fake grep.\n' >"$grep_error_release_copy"
 
 if run_gate_capture "$missing_output" env -i PATH="$fake_path" FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker"; then
   fail "gate unexpectedly passed with all required external inputs missing"
@@ -145,10 +172,64 @@ assert_not_contains "$redaction_text" "$secret_notary"
 assert_not_contains "$redaction_text" "$secret_contact"
 assert_not_contains "$redaction_text" "$secret_tap"
 
+if run_gate_capture "$placeholder_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_release_copy" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  fail "gate unexpectedly passed with placeholders in release copy fixture"
+fi
+placeholder_text="$(<"$placeholder_output")"
+assert_contains "$placeholder_text" "Release copy placeholders: present in $placeholder_release_copy"
+assert_contains "$placeholder_text" "v1.0 publication blocked"
+assert_not_contains "$placeholder_text" "fast preflight is clear"
+
+if run_gate_capture "$missing_copy_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$missing_release_copy" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  fail "gate unexpectedly passed with missing release copy"
+fi
+missing_copy_text="$(<"$missing_copy_output")"
+assert_contains "$missing_copy_text" "Release copy placeholders: missing release copy at $missing_release_copy"
+assert_contains "$missing_copy_text" "v1.0 publication blocked"
+assert_not_contains "$missing_copy_text" "fast preflight is clear"
+
+if run_gate_capture "$grep_error_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  FAKE_GREP_ERROR_PATH="$grep_error_release_copy" \
+  LITHEPG_RELEASE_COPY_PATH="$grep_error_release_copy" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  fail "gate unexpectedly passed when release copy grep scan failed"
+fi
+grep_error_text="$(<"$grep_error_output")"
+assert_contains "$grep_error_text" "Release copy placeholders: could not scan $grep_error_release_copy"
+assert_contains "$grep_error_text" "v1.0 publication blocked"
+assert_not_contains "$grep_error_text" "Release copy placeholders: none found"
+assert_not_contains "$grep_error_text" "fast preflight is clear"
+
 rm -f "$fake_git_marker"
 if ! run_gate_capture "$no_remote_lookup_output" env -i \
   PATH="$fake_path" \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -158,6 +239,7 @@ if ! run_gate_capture "$no_remote_lookup_output" env -i \
   fail "gate unexpectedly failed with all required external inputs configured"
 fi
 no_remote_lookup_text="$(<"$no_remote_lookup_output")"
+assert_contains "$no_remote_lookup_text" "Release copy placeholders: none found"
 assert_contains "$no_remote_lookup_text" "Remote origin tag v1.0: not checked (set LITHEPG_CHECK_REMOTE_TAGS=1 or pass --check-remote)"
 if [[ -e "$fake_git_marker" ]]; then
   fail "default gate invoked git ls-remote despite remote lookup not being requested"
@@ -168,6 +250,7 @@ if ! run_gate_capture "$remote_opt_in_output" env -i \
   PATH="$fake_path" \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
   LITHEPG_CHECK_REMOTE_TAGS="1" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -177,6 +260,7 @@ if ! run_gate_capture "$remote_opt_in_output" env -i \
   fail "gate unexpectedly failed when opt-in remote lookup returned unknown"
 fi
 remote_opt_in_text="$(<"$remote_opt_in_output")"
+assert_contains "$remote_opt_in_text" "Release copy placeholders: none found"
 assert_contains "$remote_opt_in_text" "Remote origin tag v1.0: unknown (remote/network unavailable; not blocking this fast check)"
 if [[ ! -e "$fake_git_marker" ]]; then
   fail "opt-in remote lookup did not invoke git ls-remote"
