@@ -300,3 +300,9 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Kept the helper fast by default: `origin` tag lookup is opt-in with `--check-remote` or `LITHEPG_CHECK_REMOTE_TAGS=1`, and remote/network failures remain non-blocking.
 - Added focused shell TDD tests for missing-input failure, secret/contact/tap redaction behavior, and default no-network remote tag handling.
 - Updated release docs with the helper usage and the non-secret environment contract. No Swift code was touched.
+
+## 2026-05-30 13:09 EDT — v1.0 GitHub Release copy draft
+
+- Added `docs/releases/v1.0-draft.md` as a non-published GitHub Release body draft for Omar's release-copy review.
+- The draft includes install text, local-first AI/privacy posture, local gate metrics, and explicit `REPLACE_WITH_*` placeholders for the final signed/notarized receipt, artifact SHA-256, Homebrew status, and approved security contact.
+- Linked the draft from `docs/RELEASING.md` so publication steps resolve the copy placeholders before creating a GitHub Release, tag, or Homebrew cask update.

@@ -81,6 +81,8 @@ If `LITHEPG_CODESIGN_IDENTITY` or `LITHEPG_NOTARY_PROFILE` is missing, the wrapp
 
 ## GitHub Release artifact and Homebrew cask metadata
 
+The draft GitHub Release copy lives at [`docs/releases/v1.0-draft.md`](releases/v1.0-draft.md). Treat it as review material only until Omar approves the release text, all `REPLACE_WITH_*` placeholders are resolved, and the signed/notarized artifact is ready to attach.
+
 The public Homebrew cask must point at the final signed/notarized GitHub Release artifact, not an unsigned local development bundle. The intended artifact shape is:
 
 ```text
