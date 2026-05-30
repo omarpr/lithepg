@@ -306,3 +306,9 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Added `docs/releases/v1.0-draft.md` as a non-published GitHub Release body draft for Omar's release-copy review.
 - The draft includes install text, local-first AI/privacy posture, local gate metrics, and explicit `REPLACE_WITH_*` placeholders for the final signed/notarized receipt, artifact SHA-256, Homebrew status, and approved security contact.
 - Linked the draft from `docs/RELEASING.md` so publication steps resolve the copy placeholders before creating a GitHub Release, tag, or Homebrew cask update.
+
+## 2026-05-30 13:54 EDT — v1.0 public release zip helper slice
+
+- Added `script/create_release_zip.sh`, a local-only helper that verifies an already-built `LithePG.app`, creates the public `LithePG.app.zip` with `ditto --keepParent`, refuses accidental overwrites unless explicitly approved, and prints a SHA-256 digest without uploading, tagging, signing, notarizing, pushing, or contacting the network.
+- Added focused shell TDD coverage using fake `package_verify.sh` fixtures plus real `/usr/bin/ditto`/`/usr/bin/shasum` checks for verification failure, default overwrite refusal, explicit overwrite approval, inside-bundle output refusal, successful SHA output/redaction behavior, repo-root default path handling, preserved `.app` wrapper output, and help output.
+- Updated `docs/RELEASING.md` to use the helper instead of raw `ditto`/`shasum` for public zip creation.

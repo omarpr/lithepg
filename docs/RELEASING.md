@@ -89,12 +89,13 @@ The public Homebrew cask must point at the final signed/notarized GitHub Release
 https://github.com/omarpr/lithepg/releases/download/v<VERSION>/LithePG.app.zip
 ```
 
-Use `LithePG.app.zip` as the public zip name for the release attachment. If the notarization wrapper produced an intermediate zip before stapling, rebuild the public zip from the signed, notarized, stapled, and validated `dist/LithePG.app` before upload:
+Use `LithePG.app.zip` as the public zip name for the release attachment. If the notarization wrapper produced an intermediate zip before stapling, rebuild the public zip from the signed, notarized, stapled, and validated `dist/LithePG.app` before upload with the safe local helper:
 
 ```sh
-rm -f dist/LithePG.app.zip
-ditto -c -k --keepParent dist/LithePG.app dist/LithePG.app.zip
+./script/create_release_zip.sh dist/LithePG.app dist/LithePG.app.zip
 ```
+
+The helper re-runs `script/package_verify.sh`, uses `ditto --keepParent` so the `.app` wrapper is preserved, rejects output paths inside the `.app` bundle, refuses to overwrite an existing zip unless `LITHEPG_RELEASE_ZIP_OVERWRITE=1` (or `true`/`yes`/`approved`) is set, and prints the local SHA-256 for review. It does not upload, tag, sign, notarize, push, or contact the network.
 
 After Omar approves the release copy and the final `LithePG.app.zip` is attached to the GitHub Release, compute the cask SHA-256 from the exact artifact users will download. Prefer hashing a fresh download from GitHub so the local value matches the public URL:
 
