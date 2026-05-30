@@ -9,9 +9,20 @@ LithePG follows outcome-named milestones with semantic-version tags. v1.0 remain
 ### Added
 
 - Public-launch planning opened from the roadmap's v1.0 exit criteria: notarized macOS distribution, GitHub/Homebrew release path, public docs, governance templates, security reporting, and light/dark appearance support.
+- Public collaboration entry points were added: [`CONTRIBUTING.md`](CONTRIBUTING.md), [`GOVERNANCE.md`](GOVERNANCE.md), [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md), DCO sign-off guidance, issue templates, and a PR template with local-test and no-secrets reminders.
+- Root [`SECURITY.md`](SECURITY.md) now points to [`docs/SECURITY.md`](docs/SECURITY.md) for the current reporting-policy placeholder, private-reporting expectations, and sanitized/no-secrets disclosure guidance.
+- The app supports light, dark, and system appearance preferences, with dark as the default.
+- [`README.md`](README.md) was refreshed for public readers with GitHub Release install guidance, source build/test/package quickstart commands, a seeded screenshot, and plain-language local-first AI/model-artifact notes.
 - Local package verification now checks the generated `dist/LithePG.app` bundle structure, executable permissions, bundle metadata, minimum macOS version, and the 50 MiB executable hard cap.
 - A credential-gated signing/notarization wrapper is available for dry-run validation and future real distribution signing.
-- [`docs/RELEASING.md`](docs/RELEASING.md) documents the local package gate, required signing/notary inputs, dry-run flow, and final v1.0 tag gate.
+- [`docs/RELEASING.md`](docs/RELEASING.md) documents the local package gate, required signing/notary inputs, dry-run flow, release artifact SHA workflow, and final v1.0 tag gate.
+- A repository-local Homebrew cask template and README live under [`packaging/homebrew/`](packaging/homebrew/) for the planned `LithePG.app.zip` artifact; external tap publication remains approval-gated.
+
+### Verified
+
+- Local v1.0 release gates passed on `main` before any public tag/release publication: `swift test`, `script/dogfood_check.sh`, `script/build_and_run.sh --package`, and `script/package_verify.sh dist/LithePG.app`.
+- The local gate receipt stayed within the lean/fast budgets: 259.24 ms shell readiness, 250.97 ms connected cold start, 21.379 MiB raw release executable, 11.980 MiB stripped executable, and a 12,507,504-byte / 11.93 MiB packaged executable.
+- Signing/notarization dry-run reached the expected external credential gate after package verification; real signing/notarization remains blocked by missing Apple Developer signing/notary environment credentials.
 
 ### Still blocked before release
 
