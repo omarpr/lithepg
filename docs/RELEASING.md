@@ -97,7 +97,23 @@ Use `LithePG.app.zip` as the public zip name for the release attachment. If the 
 
 The helper re-runs `script/package_verify.sh`, uses `ditto --keepParent` so the `.app` wrapper is preserved, rejects output paths inside the `.app` bundle, refuses to overwrite an existing zip unless `LITHEPG_RELEASE_ZIP_OVERWRITE=1` (or `true`/`yes`/`approved`) is set, and prints the local SHA-256 plus byte size for review. It does not upload, tag, sign, notarize, push, or contact the network.
 
-After Omar approves the release copy and the final `LithePG.app.zip` is attached to the GitHub Release, compute the cask SHA-256 from the exact artifact users will download. Prefer hashing a fresh download from GitHub so the local value matches the public URL:
+Before upload, compute and approve the SHA-256 from the local final `LithePG.app.zip` that will be attached to the GitHub Release:
+
+```sh
+shasum -a 256 dist/LithePG.app.zip
+```
+
+Use that approved local digest for `LITHEPG_RELEASE_ZIP_SHA256` and for the repository-local draft cask template at `packaging/homebrew/lithepg.rb`:
+
+1. Replace `version "REPLACE_WITH_VERSION"` with the release version, for example `version "1.0"` unless Omar chooses a different public version.
+2. Replace `sha256 "REPLACE_WITH_SHA256"` with the approved local `shasum -a 256` digest.
+3. Confirm the `url` still matches the GitHub Release artifact path.
+4. Run `ruby -c packaging/homebrew/lithepg.rb` for template syntax.
+5. If Omar has provided the external tap target, copy the cask into that tap and run Homebrew checks there, for example `brew style --cask Casks/lithepg.rb` and `brew audit --cask --new --strict Casks/lithepg.rb`.
+
+Stop before pushing to or creating any external Homebrew tap. Omar must explicitly provide the tap target and publication instructions; do not infer them from the main repository or from the cask token.
+
+After the final `LithePG.app.zip` is uploaded, hash a fresh download from GitHub as a separate final confirmation that the public URL serves the approved bytes:
 
 ```sh
 VERSION=1.0
@@ -106,15 +122,7 @@ curl -L -o /tmp/LithePG.app.zip \
 shasum -a 256 /tmp/LithePG.app.zip
 ```
 
-Then update the repository-local draft cask template at `packaging/homebrew/lithepg.rb`:
-
-1. Replace `version "REPLACE_WITH_VERSION"` with the release version, for example `version "1.0"` unless Omar chooses a different public version.
-2. Replace `sha256 "REPLACE_WITH_SHA256"` with the `shasum -a 256` digest.
-3. Confirm the `url` still matches the GitHub Release artifact path.
-4. Run `ruby -c packaging/homebrew/lithepg.rb` for template syntax.
-5. If Omar has provided the external tap target, copy the cask into that tap and run Homebrew checks there, for example `brew style --cask Casks/lithepg.rb` and `brew audit --cask --new --strict Casks/lithepg.rb`.
-
-Stop before pushing to or creating any external Homebrew tap. Omar must explicitly provide the tap target and publication instructions; do not infer them from the main repository or from the cask token.
+If the fresh-download hash differs from the approved local digest already used by `LITHEPG_RELEASE_ZIP_SHA256` and the cask, stop and resolve the uploaded artifact before publishing the tap update.
 
 ## Fast v1.0 publication preflight
 
@@ -124,9 +132,18 @@ Before attempting the external publication steps, run the fast release blocker s
 ./script/v10_release_gate.sh
 ```
 
-The helper defaults to version `1.0`; pass `--version <version>` only when checking a different public version. It is intentionally fast: it reports the current git branch/status, verifies local tag readiness (`v0.5` present and `v<version>` absent), blocks on a dirty working tree, scans release-publication text/templates for unresolved `REPLACE_WITH_*` placeholders, and does not contact `origin` by default. If a remote tag check is desired, opt in with `--check-remote` or `LITHEPG_CHECK_REMOTE_TAGS=1`; the remote tag check verifies `origin` still has the last public milestone tag (`v0.5`) and does not yet have `v<version>`. Remote/network failures are reported as unknown and do not block the fast check, but a confirmed missing `origin` `v0.5` tag blocks publication. It does **not** run the full Swift test, dogfood, package, signing, or notarization gates.
+The helper defaults to version `1.0`; pass `--version <version>` only when checking a different public version. It is intentionally fast: it reports the current git branch/status, verifies local tag readiness (`v0.5` present and `v<version>` absent), blocks on a dirty working tree, scans release-publication text/templates for unresolved `REPLACE_WITH_*` placeholders, verifies the local final public zip artifact exists and matches the approved SHA-256, verifies the placeholder-free Homebrew cask `sha256` matches that same approved digest, and does not contact `origin` by default. If a remote tag check is desired, opt in with `--check-remote` or `LITHEPG_CHECK_REMOTE_TAGS=1`; the remote tag check verifies `origin` still has the last public milestone tag (`v0.5`) and does not yet have `v<version>`. Remote/network failures are reported as unknown and do not block the fast check, but a confirmed missing `origin` `v0.5` tag blocks publication. It does **not** run the full Swift test, dogfood, package, signing, or notarization gates.
 
-By default, the placeholder scan checks `docs/releases/v1.0-draft.md`, `packaging/homebrew/lithepg.rb`, root `SECURITY.md`, and `docs/SECURITY.md`. To test alternate release/cask files, set `LITHEPG_RELEASE_COPY_PATH` or `LITHEPG_HOMEBREW_CASK_PATH`; to focus the security-policy scan on one alternate file, set `LITHEPG_SECURITY_DOC_PATH`. Each path may be relative to the repository root or absolute. The helper may print the configured paths, but it does not print secret/contact/tap environment values.
+By default, the placeholder scan checks `docs/releases/v1.0-draft.md`, `packaging/homebrew/lithepg.rb`, root `SECURITY.md`, and `docs/SECURITY.md`. To test alternate release/cask files, set `LITHEPG_RELEASE_COPY_PATH` or `LITHEPG_HOMEBREW_CASK_PATH`; to focus the security-policy scan on one alternate file, set `LITHEPG_SECURITY_DOC_PATH`. Each path may be relative to the repository root or absolute. The helper may print the configured paths, but it does not print secret/contact/tap environment values or SHA-256 digest values.
+
+The helper also blocks publication until the final public release zip is present and its digest matches the approved value:
+
+| Variable | Expected state |
+| --- | --- |
+| `LITHEPG_RELEASE_ZIP_PATH` | Path to the final public `LithePG.app.zip` artifact; defaults to `dist/LithePG.app.zip`. |
+| `LITHEPG_RELEASE_ZIP_SHA256` | Approved expected 64-hex SHA-256 digest for the exact public zip artifact. |
+
+If the zip path is missing, the SHA-256 is missing/invalid, the computed `/usr/bin/shasum -a 256` value does not match, or a placeholder-free cask has a missing/mismatched `sha256`, the fast preflight exits non-zero. Mismatch/invalid output is redacted and does not print the provided, expected, actual, or cask digest.
 
 The helper also checks these external inputs without printing their values:
 

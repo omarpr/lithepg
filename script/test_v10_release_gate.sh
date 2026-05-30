@@ -50,6 +50,13 @@ run_specific_gate_capture() {
 
 missing_output="$(mktemp)"
 redaction_output="$(mktemp)"
+missing_artifact_output="$(mktemp)"
+missing_artifact_zip="$(mktemp)"
+missing_artifact_sha_output="$(mktemp)"
+invalid_artifact_sha_output="$(mktemp)"
+mismatched_artifact_sha_output="$(mktemp)"
+mismatched_homebrew_cask_sha_output="$(mktemp)"
+missing_homebrew_cask_sha_output="$(mktemp)"
 placeholder_output="$(mktemp)"
 homebrew_cask_placeholder_output="$(mktemp)"
 security_doc_placeholder_output="$(mktemp)"
@@ -65,15 +72,19 @@ placeholder_release_copy="$(mktemp)"
 placeholder_free_release_copy="$(mktemp)"
 placeholder_homebrew_cask="$(mktemp)"
 placeholder_free_homebrew_cask="$(mktemp)"
+mismatched_homebrew_cask="$(mktemp)"
+missing_sha_homebrew_cask="$(mktemp)"
 placeholder_security_doc="$(mktemp)"
 placeholder_free_security_doc="$(mktemp)"
+release_zip_fixture="$(mktemp)"
 grep_error_release_copy="$(mktemp)"
 missing_release_copy="$(mktemp)"
 rm -f "$missing_release_copy"
+rm -f "$missing_artifact_zip"
 fake_git_dir="$(mktemp -d)"
 fake_git_marker="$fake_git_dir/ls-remote-called"
 default_security_docs_repo="$(mktemp -d)"
-trap 'rm -f "$missing_output" "$redaction_output" "$placeholder_output" "$homebrew_cask_placeholder_output" "$security_doc_placeholder_output" "$default_security_docs_output" "$missing_copy_output" "$external_placeholder_output" "$no_remote_lookup_output" "$remote_opt_in_output" "$remote_v05_missing_output" "$status_failure_output" "$grep_error_output" "$placeholder_release_copy" "$placeholder_free_release_copy" "$placeholder_homebrew_cask" "$placeholder_free_homebrew_cask" "$placeholder_security_doc" "$placeholder_free_security_doc" "$grep_error_release_copy" "$missing_release_copy"; rm -rf "$fake_git_dir" "$default_security_docs_repo"' EXIT
+trap 'rm -f "$missing_output" "$redaction_output" "$missing_artifact_output" "$missing_artifact_zip" "$missing_artifact_sha_output" "$invalid_artifact_sha_output" "$mismatched_artifact_sha_output" "$mismatched_homebrew_cask_sha_output" "$missing_homebrew_cask_sha_output" "$placeholder_output" "$homebrew_cask_placeholder_output" "$security_doc_placeholder_output" "$default_security_docs_output" "$missing_copy_output" "$external_placeholder_output" "$no_remote_lookup_output" "$remote_opt_in_output" "$remote_v05_missing_output" "$status_failure_output" "$grep_error_output" "$placeholder_release_copy" "$placeholder_free_release_copy" "$placeholder_homebrew_cask" "$placeholder_free_homebrew_cask" "$mismatched_homebrew_cask" "$missing_sha_homebrew_cask" "$placeholder_security_doc" "$placeholder_free_security_doc" "$release_zip_fixture" "$grep_error_release_copy" "$missing_release_copy"; rm -rf "$fake_git_dir" "$default_security_docs_repo"' EXIT
 
 cat >"$fake_git_dir/git" <<'FAKE_GIT'
 #!/usr/bin/env bash
@@ -157,6 +168,9 @@ exec /usr/bin/grep "$@"
 FAKE_GREP
 chmod +x "$fake_git_dir/grep"
 fake_path="$fake_git_dir:${PATH:-/usr/bin:/bin}"
+printf 'fake public release zip fixture\n' >"$release_zip_fixture"
+release_zip_sha="$(/usr/bin/shasum -a 256 "$release_zip_fixture" | /usr/bin/cut -d ' ' -f 1)"
+release_zip_sha_upper="$(printf '%s' "$release_zip_sha" | /usr/bin/tr '[:lower:]' '[:upper:]')"
 printf 'LithePG v1.0 release copy with REPLACE_WITH_FINAL_VALUE placeholder.\n' >"$placeholder_release_copy"
 printf 'LithePG v1.0 release copy with final values only.\n' >"$placeholder_free_release_copy"
 cat >"$placeholder_homebrew_cask" <<'CASK'
@@ -173,10 +187,37 @@ cask "lithepg" do
   app "LithePG.app"
 end
 CASK
-cat >"$placeholder_free_homebrew_cask" <<'CASK'
+cat >"$placeholder_free_homebrew_cask" <<CASK
 cask "lithepg" do
   version "1.0"
-  sha256 "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  sha256 "$release_zip_sha"
+
+  url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
+      verified: "github.com/omarpr/lithepg/"
+  name "LithePG"
+  desc "Lean PostgreSQL client with local-first AI"
+  homepage "https://github.com/omarpr/lithepg"
+
+  app "LithePG.app"
+end
+CASK
+cat >"$mismatched_homebrew_cask" <<'CASK'
+cask "lithepg" do
+  version "1.0"
+  sha256 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+  url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
+      verified: "github.com/omarpr/lithepg/"
+  name "LithePG"
+  desc "Lean PostgreSQL client with local-first AI"
+  homepage "https://github.com/omarpr/lithepg"
+
+  app "LithePG.app"
+end
+CASK
+cat >"$missing_sha_homebrew_cask" <<'CASK'
+cask "lithepg" do
+  version "1.0"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
@@ -210,6 +251,8 @@ assert_contains "$missing_text" "LITHEPG_HOMEBREW_TAP: missing"
 assert_contains "$missing_text" "LITHEPG_GITHUB_ACTIONS_READY: not approved"
 assert_contains "$missing_text" "LITHEPG_RELEASE_COPY_APPROVED: not approved"
 assert_contains "$missing_text" "LITHEPG_PUBLICATION_APPROVED: not approved"
+assert_contains "$missing_text" "Release artifact zip: missing at dist/LithePG.app.zip"
+assert_contains "$missing_text" "Release artifact SHA-256: missing"
 assert_not_contains "$missing_text" "fast preflight is clear"
 
 secret_identity="SECRET_CODESIGN_IDENTITY_DO_NOT_PRINT"
@@ -222,6 +265,8 @@ if run_gate_capture "$redaction_output" env -i \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
   LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
   LITHEPG_CODESIGN_IDENTITY="$secret_identity" \
   LITHEPG_NOTARY_PROFILE="$secret_notary" \
   LITHEPG_SECURITY_CONTACT="$secret_contact" \
@@ -245,12 +290,155 @@ assert_not_contains "$redaction_text" "$secret_notary"
 assert_not_contains "$redaction_text" "$secret_contact"
 assert_not_contains "$redaction_text" "$secret_tap"
 
+if run_gate_capture "$missing_artifact_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$missing_artifact_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  fail "gate unexpectedly passed with missing release artifact zip"
+fi
+missing_artifact_text="$(<"$missing_artifact_output")"
+assert_contains "$missing_artifact_text" "Release artifact zip: missing at $missing_artifact_zip"
+assert_contains "$missing_artifact_text" "v1.0 publication blocked"
+assert_not_contains "$missing_artifact_text" "fast preflight is clear"
+
+if run_gate_capture "$missing_artifact_sha_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  fail "gate unexpectedly passed with missing release artifact SHA-256"
+fi
+missing_artifact_sha_text="$(<"$missing_artifact_sha_output")"
+assert_contains "$missing_artifact_sha_text" "Release artifact zip: present"
+assert_contains "$missing_artifact_sha_text" "Release artifact SHA-256: missing"
+assert_contains "$missing_artifact_sha_text" "v1.0 publication blocked"
+assert_not_contains "$missing_artifact_sha_text" "fast preflight is clear"
+
+invalid_sha_marker="INVALID_SHA_VALUE_DO_NOT_PRINT"
+if run_gate_capture "$invalid_artifact_sha_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$invalid_sha_marker" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  fail "gate unexpectedly passed with invalid release artifact SHA-256"
+fi
+invalid_artifact_sha_text="$(<"$invalid_artifact_sha_output")"
+assert_contains "$invalid_artifact_sha_text" "Release artifact zip: present"
+assert_contains "$invalid_artifact_sha_text" "Release artifact SHA-256: invalid format"
+assert_not_contains "$invalid_artifact_sha_text" "$invalid_sha_marker"
+assert_contains "$invalid_artifact_sha_text" "v1.0 publication blocked"
+
+mismatched_sha_marker="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+if run_gate_capture "$mismatched_artifact_sha_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$mismatched_sha_marker" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  fail "gate unexpectedly passed with mismatched release artifact SHA-256"
+fi
+mismatched_artifact_sha_text="$(<"$mismatched_artifact_sha_output")"
+assert_contains "$mismatched_artifact_sha_text" "Release artifact zip: present"
+assert_contains "$mismatched_artifact_sha_text" "Release artifact SHA-256: mismatch"
+assert_not_contains "$mismatched_artifact_sha_text" "$mismatched_sha_marker"
+assert_not_contains "$mismatched_artifact_sha_text" "$release_zip_sha"
+assert_contains "$mismatched_artifact_sha_text" "v1.0 publication blocked"
+
+mismatched_cask_sha_marker="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+if run_gate_capture "$mismatched_homebrew_cask_sha_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$mismatched_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  fail "gate unexpectedly passed with mismatched Homebrew cask SHA-256"
+fi
+mismatched_homebrew_cask_sha_text="$(<"$mismatched_homebrew_cask_sha_output")"
+assert_contains "$mismatched_homebrew_cask_sha_text" "Homebrew cask placeholders: none found"
+assert_contains "$mismatched_homebrew_cask_sha_text" "Homebrew cask SHA-256: mismatch"
+assert_not_contains "$mismatched_homebrew_cask_sha_text" "$mismatched_cask_sha_marker"
+assert_not_contains "$mismatched_homebrew_cask_sha_text" "$release_zip_sha"
+assert_contains "$mismatched_homebrew_cask_sha_text" "v1.0 publication blocked"
+
+if run_gate_capture "$missing_homebrew_cask_sha_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$missing_sha_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  fail "gate unexpectedly passed with missing Homebrew cask SHA-256"
+fi
+missing_homebrew_cask_sha_text="$(<"$missing_homebrew_cask_sha_output")"
+assert_contains "$missing_homebrew_cask_sha_text" "Homebrew cask placeholders: none found"
+assert_contains "$missing_homebrew_cask_sha_text" "Homebrew cask SHA-256: missing"
+assert_not_contains "$missing_homebrew_cask_sha_text" "$release_zip_sha"
+assert_contains "$missing_homebrew_cask_sha_text" "v1.0 publication blocked"
+
 if run_gate_capture "$placeholder_output" env -i \
   PATH="$fake_path" \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
   LITHEPG_RELEASE_COPY_PATH="$placeholder_release_copy" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
   LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -271,6 +459,8 @@ if run_gate_capture "$homebrew_cask_placeholder_output" env -i \
   LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_homebrew_cask" \
   LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -283,6 +473,7 @@ fi
 homebrew_cask_placeholder_text="$(<"$homebrew_cask_placeholder_output")"
 assert_contains "$homebrew_cask_placeholder_text" "Release copy placeholders: none found"
 assert_contains "$homebrew_cask_placeholder_text" "Homebrew cask placeholders: present in $placeholder_homebrew_cask"
+assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask SHA-256: mismatch"
 assert_contains "$homebrew_cask_placeholder_text" "v1.0 publication blocked"
 assert_not_contains "$homebrew_cask_placeholder_text" "fast preflight is clear"
 
@@ -291,6 +482,8 @@ if run_specific_gate_capture "$default_security_docs_output" "$default_security_
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
   LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -315,6 +508,8 @@ if run_gate_capture "$security_doc_placeholder_output" env -i \
   LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
   LITHEPG_SECURITY_DOC_PATH="$placeholder_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -338,6 +533,8 @@ if run_gate_capture "$missing_copy_output" env -i \
   LITHEPG_RELEASE_COPY_PATH="$missing_release_copy" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
   LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -359,6 +556,8 @@ if run_gate_capture "$grep_error_output" env -i \
   LITHEPG_RELEASE_COPY_PATH="$grep_error_release_copy" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
   LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -380,6 +579,8 @@ if run_gate_capture "$external_placeholder_output" env -i \
   LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
   LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="[security contact pending]" \
@@ -407,6 +608,8 @@ if ! run_gate_capture "$no_remote_lookup_output" env -i \
   LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
   LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha_upper" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -419,6 +622,9 @@ fi
 no_remote_lookup_text="$(<"$no_remote_lookup_output")"
 assert_contains "$no_remote_lookup_text" "Release copy placeholders: none found"
 assert_contains "$no_remote_lookup_text" "Homebrew cask placeholders: none found"
+assert_contains "$no_remote_lookup_text" "Homebrew cask SHA-256: matches"
+assert_contains "$no_remote_lookup_text" "Release artifact zip: present"
+assert_contains "$no_remote_lookup_text" "Release artifact SHA-256: matches"
 assert_contains "$no_remote_lookup_text" "Remote origin tag v1.0: not checked (set LITHEPG_CHECK_REMOTE_TAGS=1 or pass --check-remote)"
 if [[ -e "$fake_git_marker" ]]; then
   fail "default gate invoked git ls-remote despite remote lookup not being requested"
@@ -432,6 +638,8 @@ if ! run_gate_capture "$remote_opt_in_output" env -i \
   LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
   LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -459,6 +667,8 @@ if run_gate_capture "$remote_v05_missing_output" env -i \
   LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
   LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
@@ -484,6 +694,8 @@ if run_gate_capture "$status_failure_output" env -i \
   LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
   LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
   LITHEPG_CODESIGN_IDENTITY="configured" \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \

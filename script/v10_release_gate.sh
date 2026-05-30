@@ -6,6 +6,8 @@ CHECK_REMOTE_TAGS="${LITHEPG_CHECK_REMOTE_TAGS:-0}"
 RELEASE_COPY_PATH="${LITHEPG_RELEASE_COPY_PATH:-docs/releases/v1.0-draft.md}"
 HOMEBREW_CASK_PATH="${LITHEPG_HOMEBREW_CASK_PATH:-packaging/homebrew/lithepg.rb}"
 SECURITY_DOC_PATH="${LITHEPG_SECURITY_DOC_PATH:-}"
+RELEASE_ZIP_PATH="${LITHEPG_RELEASE_ZIP_PATH:-dist/LithePG.app.zip}"
+RELEASE_ZIP_SHA256="${LITHEPG_RELEASE_ZIP_SHA256:-}"
 
 usage() {
   cat <<'USAGE'
@@ -20,7 +22,9 @@ origin tag lookup. Set LITHEPG_RELEASE_COPY_PATH or LITHEPG_HOMEBREW_CASK_PATH
 to scan non-default release copy or Homebrew cask files. Set
 LITHEPG_SECURITY_DOC_PATH to scan one alternate security policy file instead of
 the default SECURITY.md and docs/SECURITY.md files (paths may be relative to the
-repository root or absolute).
+repository root or absolute). Set LITHEPG_RELEASE_ZIP_PATH to the final public
+release zip artifact path (default: dist/LithePG.app.zip) and
+LITHEPG_RELEASE_ZIP_SHA256 to the approved expected 64-hex SHA-256 digest.
 USAGE
 }
 
@@ -135,6 +139,20 @@ homebrew_cask_full_path() {
   esac
 }
 
+extract_homebrew_cask_sha256() {
+  local cask_file="$1"
+  local line=""
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" =~ ^[[:space:]]*sha256[[:space:]]+\"([[:xdigit:]]{64})\" ]]; then
+      printf '%s\n' "${BASH_REMATCH[1]}"
+      return 0
+    fi
+  done <"$cask_file"
+
+  return 1
+}
+
 security_doc_full_path() {
   local security_doc_path="$1"
   case "$security_doc_path" in
@@ -143,6 +161,17 @@ security_doc_full_path() {
       ;;
     *)
       printf '%s/%s\n' "$ROOT_DIR" "$security_doc_path"
+      ;;
+  esac
+}
+
+release_zip_full_path() {
+  case "$RELEASE_ZIP_PATH" in
+    /*)
+      printf '%s\n' "$RELEASE_ZIP_PATH"
+      ;;
+    *)
+      printf '%s/%s\n' "$ROOT_DIR" "$RELEASE_ZIP_PATH"
       ;;
   esac
 }
@@ -262,6 +291,7 @@ fi
 
 printf '\nHomebrew cask readiness:\n'
 homebrew_cask_file="$(homebrew_cask_full_path)"
+homebrew_cask_sha_check_ready=0
 if [[ ! -f "$homebrew_cask_file" ]]; then
   printf 'Homebrew cask placeholders: missing cask at %s\n' "$HOMEBREW_CASK_PATH"
   mark_blocker
@@ -277,12 +307,29 @@ else
       ;;
     1)
       printf 'Homebrew cask placeholders: none found\n'
+      homebrew_cask_sha_check_ready=1
       ;;
     *)
       printf 'Homebrew cask placeholders: could not scan %s\n' "$HOMEBREW_CASK_PATH"
       mark_blocker
       ;;
   esac
+fi
+
+if [[ "$homebrew_cask_sha_check_ready" -eq 1 && "$RELEASE_ZIP_SHA256" =~ ^[[:xdigit:]]{64}$ ]]; then
+  if cask_sha="$(extract_homebrew_cask_sha256 "$homebrew_cask_file")"; then
+    expected_sha="$(printf '%s' "$RELEASE_ZIP_SHA256" | /usr/bin/tr '[:upper:]' '[:lower:]')"
+    cask_sha="$(printf '%s' "$cask_sha" | /usr/bin/tr '[:upper:]' '[:lower:]')"
+    if [[ "$cask_sha" == "$expected_sha" ]]; then
+      printf 'Homebrew cask SHA-256: matches\n'
+    else
+      printf 'Homebrew cask SHA-256: mismatch\n'
+      mark_blocker
+    fi
+  else
+    printf 'Homebrew cask SHA-256: missing\n'
+    mark_blocker
+  fi
 fi
 
 printf '\nSecurity policy readiness:\n'
@@ -312,6 +359,43 @@ for security_doc_path in "${SECURITY_DOC_PATHS[@]}"; do
   fi
 done
 
+printf '\nRelease artifact readiness:\n'
+release_zip_file="$(release_zip_full_path)"
+release_zip_present=0
+if [[ ! -f "$release_zip_file" ]]; then
+  printf 'Release artifact zip: missing at %s\n' "$RELEASE_ZIP_PATH"
+  mark_blocker
+else
+  printf 'Release artifact zip: present\n'
+  release_zip_present=1
+fi
+
+if [[ -z "$RELEASE_ZIP_SHA256" ]]; then
+  printf 'Release artifact SHA-256: missing\n'
+  mark_blocker
+elif [[ ! "$RELEASE_ZIP_SHA256" =~ ^[[:xdigit:]]{64}$ ]]; then
+  printf 'Release artifact SHA-256: invalid format\n'
+  mark_blocker
+elif [[ "$release_zip_present" -eq 1 ]]; then
+  set +e
+  shasum_output="$(/usr/bin/shasum -a 256 "$release_zip_file" 2>/dev/null)"
+  shasum_status=$?
+  set -e
+  actual_sha="${shasum_output%% *}"
+  if [[ "$shasum_status" -ne 0 || -z "$actual_sha" ]]; then
+    printf 'Release artifact SHA-256: could not compute\n'
+    mark_blocker
+  else
+    expected_sha="$(printf '%s' "$RELEASE_ZIP_SHA256" | /usr/bin/tr '[:upper:]' '[:lower:]')"
+    if [[ "$actual_sha" == "$expected_sha" ]]; then
+      printf 'Release artifact SHA-256: matches\n'
+    else
+      printf 'Release artifact SHA-256: mismatch\n'
+      mark_blocker
+    fi
+  fi
+fi
+
 printf '\nExternal publication inputs (values redacted):\n'
 print_config_status LITHEPG_CODESIGN_IDENTITY
 print_config_status LITHEPG_NOTARY_PROFILE
@@ -329,5 +413,5 @@ if [[ "$BLOCKERS" -eq 0 ]]; then
 fi
 
 printf '%s publication blocked: %s blocker(s) found.\n' "$TAG" "$BLOCKERS"
-printf 'Resolve the release copy, Homebrew cask, security policy placeholders, missing/false external inputs, and any tag-readiness blockers before tagging or publishing.\n'
+printf 'Resolve the release copy, Homebrew cask, security policy placeholders, release artifact zip/SHA-256 issues, missing/false external inputs, and any tag-readiness blockers before tagging or publishing.\n'
 exit 1

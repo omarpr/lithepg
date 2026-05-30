@@ -356,3 +356,11 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - TDD receipt: `bash script/test_v10_release_gate.sh` failed first with `gate unexpectedly passed when remote origin v0.5 was missing`, then passed after the minimal remote-baseline tag check was added.
 - Verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `./script/v10_release_gate.sh --check-remote` confirmed `origin` has `v0.5` and does not have `v1.0`, then remained safely blocked on the expected dirty-tree/external publication gates during this local edit.
 - Evidence artifact: `docs/evidence/2026-05-30-v10-remote-baseline-tag-gate.svg`.
+
+## 2026-05-30 17:17 EDT — v1.0 release artifact SHA gate
+
+- Hardened `script/v10_release_gate.sh` so the fast publication preflight now blocks until the final public `LithePG.app.zip` exists and its `/usr/bin/shasum -a 256` digest matches the approved `LITHEPG_RELEASE_ZIP_SHA256` value.
+- Added redacted status coverage for missing artifact path, missing SHA-256, invalid SHA-256 format, SHA mismatch without printing actual/expected digest values, and the matching SHA pass path.
+- TDD receipt: `bash script/test_v10_release_gate.sh` failed first with `expected output to contain: Release artifact zip: missing at dist/LithePG.app.zip`, then passed after the minimal script implementation.
+- Verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `./script/v10_release_gate.sh --check-remote` remained safely blocked without printing digest values. No signing, notarization, upload, Homebrew publication, tag, commit, push, or cron changes were attempted.
+- Evidence artifact: `docs/evidence/2026-05-30-v10-release-artifact-sha-gate.svg`.

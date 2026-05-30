@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release artifact SHA gate evidence</title>
+  <desc id="desc">Visual evidence for the v1.0 fast publication preflight hardening slice: release zip SHA and Homebrew cask SHA checks.</desc>
+  <rect width="1200" height="720" fill="#0f172a"/>
+  <rect x="36" y="34" width="1128" height="652" rx="28" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="72" y="92" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="30" font-weight="700">LithePG v1.0 release artifact SHA gate</text>
+  <text x="72" y="132" fill="#94a3b8" font-family="Menlo, Consolas, monospace" font-size="17">Evidence generated 2026-05-30 17:34 EDT on main @ 27dd8b3 before commit</text>
+
+  <rect x="72" y="170" width="1056" height="112" rx="16" fill="#062f2f" stroke="#14b8a6" stroke-width="2"/>
+  <text x="104" y="210" fill="#99f6e4" font-family="Menlo, Consolas, monospace" font-size="20" font-weight="700">TDD receipt</text>
+  <text x="104" y="244" fill="#ccfbf1" font-family="Menlo, Consolas, monospace" font-size="17">RED: test_v10_release_gate failed before implementation for missing release artifact SHA gate.</text>
+  <text x="104" y="268" fill="#ccfbf1" font-family="Menlo, Consolas, monospace" font-size="17">FIX LOOP: Homebrew cask SHA mismatch test failed first, then passed after matching gate was added.</text>
+
+  <rect x="72" y="310" width="1056" height="158" rx="16" fill="#102a43" stroke="#38bdf8" stroke-width="2"/>
+  <text x="104" y="350" fill="#bae6fd" font-family="Menlo, Consolas, monospace" font-size="20" font-weight="700">Verified commands</text>
+  <text x="104" y="384" fill="#dbeafe" font-family="Menlo, Consolas, monospace" font-size="17">✓ bash script/test_v10_release_gate.sh</text>
+  <text x="104" y="412" fill="#dbeafe" font-family="Menlo, Consolas, monospace" font-size="17">✓ bash script/test_create_release_zip.sh</text>
+  <text x="104" y="440" fill="#dbeafe" font-family="Menlo, Consolas, monospace" font-size="17">✓ bash -n release gate / zip helper scripts</text>
+  <text x="104" y="468" fill="#dbeafe" font-family="Menlo, Consolas, monospace" font-size="17">✓ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build</text>
+
+  <rect x="72" y="496" width="1056" height="118" rx="16" fill="#3b2506" stroke="#f59e0b" stroke-width="2"/>
+  <text x="104" y="536" fill="#fde68a" font-family="Menlo, Consolas, monospace" font-size="20" font-weight="700">Safe publication preflight result</text>
+  <text x="104" y="570" fill="#fef3c7" font-family="Menlo, Consolas, monospace" font-size="17">✓ ./script/v10_release_gate.sh --check-remote confirmed origin v0.5 present and v1.0 absent.</text>
+  <text x="104" y="596" fill="#fef3c7" font-family="Menlo, Consolas, monospace" font-size="17">✓ Gate remained blocked on expected external/publication inputs and missing final zip/SHA.</text>
+
+  <rect x="72" y="636" width="1056" height="30" rx="10" fill="#1e293b"/>
+  <text x="104" y="657" fill="#cbd5e1" font-family="Menlo, Consolas, monospace" font-size="15">No signing, notarization, upload, Homebrew tap publication, tag creation, push side effects, or cron changes were performed by the gate.</text>
+</svg>
