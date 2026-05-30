@@ -134,6 +134,7 @@ The helper also checks these external inputs without printing their values:
 | `LITHEPG_NOTARY_PROFILE` | Set to the `notarytool` keychain profile name. |
 | `LITHEPG_SECURITY_CONTACT` | Set to the approved public security-contact destination. |
 | `LITHEPG_HOMEBREW_TAP` | Set to the approved external Homebrew tap target. |
+| `LITHEPG_GITHUB_ACTIONS_READY` | Boolean-style approval that GitHub Actions push/PR/manual workflow status and required account settings are ready for public launch (`true`, `yes`, `1`, or `approved`). |
 | `LITHEPG_RELEASE_COPY_APPROVED` | Boolean-style approval (`true`, `yes`, `1`, or `approved`). |
 | `LITHEPG_PUBLICATION_APPROVED` | Boolean-style explicit publication approval (`true`, `yes`, `1`, or `approved`). |
 

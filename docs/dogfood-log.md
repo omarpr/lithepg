@@ -319,3 +319,10 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Local/tag readiness remains good: working tree clean, `v0.5` present locally/remotely, and `v1.0` absent locally/remotely.
 - Publication remains blocked by the expected seven external/publication gates: release-copy placeholders are still present, Apple codesigning identity is missing, notary profile is missing, approved public security contact is missing, Homebrew tap target is missing, release-copy approval is not approved, and explicit publication approval is not approved. Values stayed redacted, and no signing, notarization, GitHub Release upload, Homebrew publication, or `v1.0` tag was attempted.
 - Evidence artifact: `docs/evidence/2026-05-30-v10-fast-preflight-blockers.svg`.
+
+## 2026-05-30 15:30 EDT — v1.0 GitHub Actions readiness gate
+
+- Hardened `script/v10_release_gate.sh` so public-launch preflight now blocks on explicit `LITHEPG_GITHUB_ACTIONS_READY` approval, matching the existing GitHub Actions account/settings blocker tracked in the v1.0 spec and release docs.
+- TDD receipt: `bash script/test_v10_release_gate.sh` failed first when the new expected `LITHEPG_GITHUB_ACTIONS_READY: not approved` output was absent, then passed after the minimal script change and fixture updates.
+- Verification: `bash script/test_v10_release_gate.sh` passed, `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed, `./script/v10_release_gate.sh --check-remote` remained safely blocked while showing `LITHEPG_GITHUB_ACTIONS_READY: not approved`, and `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed.
+- Evidence artifact: `docs/evidence/2026-05-30-v10-github-actions-ready-gate.svg`.

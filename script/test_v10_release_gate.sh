@@ -139,6 +139,7 @@ assert_contains "$missing_text" "LITHEPG_CODESIGN_IDENTITY: missing"
 assert_contains "$missing_text" "LITHEPG_NOTARY_PROFILE: missing"
 assert_contains "$missing_text" "LITHEPG_SECURITY_CONTACT: missing"
 assert_contains "$missing_text" "LITHEPG_HOMEBREW_TAP: missing"
+assert_contains "$missing_text" "LITHEPG_GITHUB_ACTIONS_READY: not approved"
 assert_contains "$missing_text" "LITHEPG_RELEASE_COPY_APPROVED: not approved"
 assert_contains "$missing_text" "LITHEPG_PUBLICATION_APPROVED: not approved"
 assert_not_contains "$missing_text" "fast preflight is clear"
@@ -155,6 +156,7 @@ if run_gate_capture "$redaction_output" env -i \
   LITHEPG_NOTARY_PROFILE="$secret_notary" \
   LITHEPG_SECURITY_CONTACT="$secret_contact" \
   LITHEPG_HOMEBREW_TAP="$secret_tap" \
+  LITHEPG_GITHUB_ACTIONS_READY="no" \
   LITHEPG_RELEASE_COPY_APPROVED="false" \
   LITHEPG_PUBLICATION_APPROVED="no"; then
   fail "gate unexpectedly passed with release/publication approvals false"
@@ -165,6 +167,7 @@ assert_contains "$redaction_text" "LITHEPG_CODESIGN_IDENTITY: configured"
 assert_contains "$redaction_text" "LITHEPG_NOTARY_PROFILE: configured"
 assert_contains "$redaction_text" "LITHEPG_SECURITY_CONTACT: configured"
 assert_contains "$redaction_text" "LITHEPG_HOMEBREW_TAP: configured"
+assert_contains "$redaction_text" "LITHEPG_GITHUB_ACTIONS_READY: not approved"
 assert_contains "$redaction_text" "LITHEPG_RELEASE_COPY_APPROVED: not approved"
 assert_contains "$redaction_text" "LITHEPG_PUBLICATION_APPROVED: not approved"
 assert_not_contains "$redaction_text" "$secret_identity"
@@ -180,6 +183,7 @@ if run_gate_capture "$placeholder_output" env -i \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
   LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
   LITHEPG_RELEASE_COPY_APPROVED="approved" \
   LITHEPG_PUBLICATION_APPROVED="approved"; then
   fail "gate unexpectedly passed with placeholders in release copy fixture"
@@ -197,6 +201,7 @@ if run_gate_capture "$missing_copy_output" env -i \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
   LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
   LITHEPG_RELEASE_COPY_APPROVED="approved" \
   LITHEPG_PUBLICATION_APPROVED="approved"; then
   fail "gate unexpectedly passed with missing release copy"
@@ -215,6 +220,7 @@ if run_gate_capture "$grep_error_output" env -i \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
   LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
   LITHEPG_RELEASE_COPY_APPROVED="approved" \
   LITHEPG_PUBLICATION_APPROVED="approved"; then
   fail "gate unexpectedly passed when release copy grep scan failed"
@@ -234,6 +240,7 @@ if ! run_gate_capture "$no_remote_lookup_output" env -i \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
   LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
   LITHEPG_RELEASE_COPY_APPROVED="approved" \
   LITHEPG_PUBLICATION_APPROVED="approved"; then
   fail "gate unexpectedly failed with all required external inputs configured"
@@ -255,6 +262,7 @@ if ! run_gate_capture "$remote_opt_in_output" env -i \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
   LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
   LITHEPG_RELEASE_COPY_APPROVED="approved" \
   LITHEPG_PUBLICATION_APPROVED="approved"; then
   fail "gate unexpectedly failed when opt-in remote lookup returned unknown"
@@ -274,6 +282,7 @@ if run_gate_capture "$status_failure_output" env -i \
   LITHEPG_NOTARY_PROFILE="configured" \
   LITHEPG_SECURITY_CONTACT="configured" \
   LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
   LITHEPG_RELEASE_COPY_APPROVED="approved" \
   LITHEPG_PUBLICATION_APPROVED="approved"; then
   fail "gate unexpectedly passed when git status failed"
