@@ -281,3 +281,9 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Run: https://github.com/omarpr/lithepg/actions/runs/26688293183 (`workflow_dispatch`).
 - Result: failed in ~6 seconds before either job produced steps or logs (`Build & test (macOS)` and `Security scans` both completed with failure and empty step lists). `gh run view --log-failed` returned `log not found`.
 - Interpretation: this still looks like the external GitHub Actions account/settings blocker rather than a source/test failure. Local receipts remain the active release gate until Omar clears the Actions setting.
+
+## 2026-05-30 12:10 EDT — v1.0 README local gate refresh
+
+- Refreshed the README status section so public readers see the latest v1.0 local gate receipt instead of the older v0.5 metrics.
+- README now calls out that `swift test`, seeded `script/dogfood_check.sh`, package build, and package verification passed before public release/tag publication, while still listing the remaining external v1.0 blockers.
+- Verification: README link/reference sanity checks and focused secret-pattern scans passed; Swift tests were not required for this docs-only slice.

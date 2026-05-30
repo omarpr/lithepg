@@ -22,14 +22,16 @@ LithePG is a lean, Mac-native PostgreSQL client with local-first AI. It is pure 
 
 v0.5 is the current tagged milestone. v1.0 public launch work is in progress and remains unreleased until signed/notarized distribution, Homebrew metadata, final release receipts, and Omar-approved external publication gates are complete.
 
-Current local receipts:
+Latest local verification receipts:
 
+- **v1.0 local gate:** `swift test`, seeded `script/dogfood_check.sh`, package build, and `script/package_verify.sh dist/LithePG.app` passed before any public release/tag publication.
 - **AI drafting:** deterministic local Ask flow drafts runnable SQL for simple single-table prompts and two-table joins using schema/foreign-key metadata; drafts are inserted for human review and never auto-run.
 - **Model posture:** the CoreML adapter scaffold is disabled by default, requires a user-provided external model artifact, and keeps prompts, schema context, query results, history, and credentials on-device.
-- **Binary budget:** 21.338 MiB raw release executable / 11.959 MiB stripped packaged executable, under the 50 MiB hard cap and 30 MiB stretch goal.
-- **Startup:** 138.14 ms shell readiness; 222.00 ms connected startup through seeded dogfood Postgres.
-- **Query overhead:** -0.032 ms median overhead versus `psql` for `SELECT 1`; -0.004 ms for the dogfood query.
-- **Stability:** v0.4 seven-day zero-crash dogfood window satisfied; v0.5 dogfood/test/measurement gates passed.
+- **Binary budget:** 21.379 MiB raw release executable / 11.980 MiB strip-probe executable / 11.93 MiB packaged executable, under the 50 MiB hard cap and 30 MiB stretch goal.
+- **Startup:** 259.24 ms shell readiness; 250.97 ms connected startup through seeded dogfood Postgres.
+- **Query overhead:** -0.125 ms median overhead versus `psql` for `SELECT 1`; 0.035 ms for the dogfood query.
+- **Stability:** v0.4 seven-day zero-crash dogfood window satisfied; v0.5 and v1.0 local dogfood/test/measurement gates passed.
+- **Release blockers:** public v1.0 still needs Omar-controlled codesigning/notarization credentials, an approved security-reporting contact, Homebrew tap target, GitHub Actions account/settings fix, release-copy approval, and explicit publication approval.
 
 Evidence and policies: [`CHANGELOG.md`](CHANGELOG.md), [`docs/RELEASING.md`](docs/RELEASING.md), [`SECURITY.md`](SECURITY.md), and [`docs/dogfood-log.md`](docs/dogfood-log.md).
 
