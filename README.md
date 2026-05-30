@@ -74,11 +74,11 @@ The package step produces `dist/LithePG.app`, strips the copied release executab
 
 ## Quickstart for the seeded demo
 
-Start the local Docker Postgres with synthetic sample data, then launch the app directly into it:
+Start the local Docker Postgres with synthetic sample data, then launch the app directly into it. The Docker demo database uses the synthetic local password `postgres`; replace it with your own password for any non-demo database.
 
 ```sh
 ./script/dogfood_postgres.sh
-LITHEPG_STARTUP_URL="postgres://postgres:***@localhost:55432/postgres?sslmode=disable" \
+LITHEPG_STARTUP_URL="postgres://postgres:postgres@localhost:55432/postgres?sslmode=disable" \
 LITHEPG_STARTUP_QUERY="SELECT * FROM lithepg_demo.customer_revenue ORDER BY revenue_cents DESC;" \
 .build/arm64-apple-macosx/debug/LithePGApp
 ```
@@ -86,7 +86,7 @@ LITHEPG_STARTUP_QUERY="SELECT * FROM lithepg_demo.customer_revenue ORDER BY reve
 Or use the helper, which seeds Docker, builds `LithePGApp`, injects the startup URL/query, and launches the app:
 
 ```sh
-./script/run_dogfood_app.sh
+POSTGRES_TEST_URL="postgres://postgres:postgres@localhost:55432/postgres?sslmode=disable" ./script/run_dogfood_app.sh
 ```
 
 The startup environment variables are intentionally opt-in for dogfood and smoke runs. Normal app launches show the connection sheet.
