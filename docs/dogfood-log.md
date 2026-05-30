@@ -312,3 +312,10 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Added `script/create_release_zip.sh`, a local-only helper that verifies an already-built `LithePG.app`, creates the public `LithePG.app.zip` with `ditto --keepParent`, refuses accidental overwrites unless explicitly approved, and prints a SHA-256 digest without uploading, tagging, signing, notarizing, pushing, or contacting the network.
 - Added focused shell TDD coverage using fake `package_verify.sh` fixtures plus real `/usr/bin/ditto`/`/usr/bin/shasum` checks for verification failure, default overwrite refusal, explicit overwrite approval, inside-bundle output refusal, successful SHA output/redaction behavior, repo-root default path handling, preserved `.app` wrapper output, and help output.
 - Updated `docs/RELEASING.md` to use the helper instead of raw `ditto`/`shasum` for public zip creation.
+
+## 2026-05-30 15:13 EDT — v1.0 fast preflight recheck
+
+- Rechecked the fast publication gate on `main` at `6b999c4` with `./script/v10_release_gate.sh --check-remote`.
+- Local/tag readiness remains good: working tree clean, `v0.5` present locally/remotely, and `v1.0` absent locally/remotely.
+- Publication remains blocked by the expected seven external/publication gates: release-copy placeholders are still present, Apple codesigning identity is missing, notary profile is missing, approved public security contact is missing, Homebrew tap target is missing, release-copy approval is not approved, and explicit publication approval is not approved. Values stayed redacted, and no signing, notarization, GitHub Release upload, Homebrew publication, or `v1.0` tag was attempted.
+- Evidence artifact: `docs/evidence/2026-05-30-v10-fast-preflight-blockers.svg`.
