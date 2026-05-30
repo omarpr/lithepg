@@ -287,3 +287,9 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Refreshed the README status section so public readers see the latest v1.0 local gate receipt instead of the older v0.5 metrics.
 - README now calls out that `swift test`, seeded `script/dogfood_check.sh`, package build, and package verification passed before public release/tag publication, while still listing the remaining external v1.0 blockers.
 - Verification: README link/reference sanity checks and focused secret-pattern scans passed; Swift tests were not required for this docs-only slice.
+
+## 2026-05-30 12:24 EDT — v1.0 release gate status sync
+
+- Rechecked release state before any publication: origin has `v0.5`; origin does not have `v1.0`.
+- Rechecked GitHub Actions status: the latest manual `workflow_dispatch` run is still `failure` at https://github.com/omarpr/lithepg/actions/runs/26688293183, matching the existing external account/settings blocker because it failed before job logs were available.
+- Synced the v1.0 implementation plan checklist with completed local-gate bookkeeping while keeping GitHub Release creation, Homebrew publication, signing/notarization, and `v1.0` tagging blocked until Omar supplies credentials/contact/tap/approval.
