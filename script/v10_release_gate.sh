@@ -483,6 +483,55 @@ release_zip_bundle_file_types_status() {
   return 0
 }
 
+plist_key_matches() {
+  local plist_file="$1"
+  local key="$2"
+  local expected_value="$3"
+  local actual_value=""
+
+  if ! actual_value="$(/usr/libexec/PlistBuddy -c "Print :$key" "$plist_file" 2>/dev/null)"; then
+    return 1
+  fi
+
+  [[ "$actual_value" == "$expected_value" ]]
+}
+
+release_zip_info_plist_metadata_status() {
+  local zip_file="$1"
+  local expected_version="$2"
+  local plist_file=""
+
+  if [[ ! -x /usr/bin/unzip || ! -x /usr/libexec/PlistBuddy || ! -x /usr/bin/mktemp || ! -x /usr/bin/plutil ]]; then
+    return 2
+  fi
+
+  if ! plist_file="$(/usr/bin/mktemp "${TMPDIR:-/tmp}/lithepg-info-plist.XXXXXX")"; then
+    return 2
+  fi
+
+  if ! /usr/bin/unzip -p "$zip_file" "LithePG.app/Contents/Info.plist" >"$plist_file" 2>/dev/null; then
+    rm -f "$plist_file"
+    return 2
+  fi
+
+  if ! /usr/bin/plutil -lint "$plist_file" >/dev/null 2>&1; then
+    rm -f "$plist_file"
+    return 2
+  fi
+
+  if plist_key_matches "$plist_file" CFBundleExecutable "LithePGApp" && \
+    plist_key_matches "$plist_file" CFBundleIdentifier "dev.omarpr.lithepg" && \
+    plist_key_matches "$plist_file" CFBundleName "LithePG" && \
+    plist_key_matches "$plist_file" CFBundlePackageType "APPL" && \
+    plist_key_matches "$plist_file" CFBundleShortVersionString "$expected_version"; then
+    rm -f "$plist_file"
+    return 0
+  fi
+
+  rm -f "$plist_file"
+  return 1
+}
+
 release_zip_bundle_executable_permission_status() {
   local zip_file="$1"
   local zip_listing=""
@@ -1027,6 +1076,21 @@ if [[ "$release_zip_present" -eq 1 ]]; then
     fi
 
     if [[ "$release_zip_file_types_ready" -eq 1 ]]; then
+      if release_zip_info_plist_metadata_status "$release_zip_file" "$VERSION"; then
+        printf 'Release artifact Info.plist metadata: matches\n'
+      else
+        release_zip_info_plist_metadata_status=$?
+        case "$release_zip_info_plist_metadata_status" in
+          1)
+            printf 'Release artifact Info.plist metadata: mismatch\n'
+            ;;
+          *)
+            printf 'Release artifact Info.plist metadata: could not inspect\n'
+            ;;
+        esac
+        mark_blocker
+      fi
+
       if release_zip_bundle_executable_permission_status "$release_zip_file"; then
         printf 'Release artifact bundle executable: executable\n'
       else

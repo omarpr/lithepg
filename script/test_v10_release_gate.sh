@@ -60,6 +60,8 @@ artifact_bundle_file_type_invalid_output="$(mktemp)"
 artifact_bundle_executable_permission_output="$(mktemp)"
 artifact_bundle_owner_execute_permission_output="$(mktemp)"
 artifact_top_level_unexpected_output="$(mktemp)"
+artifact_info_plist_metadata_mismatch_output="$(mktemp)"
+artifact_info_plist_metadata_cannot_inspect_output="$(mktemp)"
 missing_artifact_sha_output="$(mktemp)"
 invalid_artifact_sha_output="$(mktemp)"
 mismatched_artifact_sha_output="$(mktemp)"
@@ -170,6 +172,14 @@ unexpected_top_level_zip_dir="$(mktemp -d)"
 unexpected_top_level_zip="$unexpected_top_level_zip_dir/LithePG.app.zip"
 unexpected_top_level_release_copy="$(mktemp)"
 unexpected_top_level_homebrew_cask="$(mktemp)"
+invalid_metadata_zip_dir="$(mktemp -d)"
+invalid_metadata_zip="$invalid_metadata_zip_dir/LithePG.app.zip"
+invalid_metadata_release_copy="$(mktemp)"
+invalid_metadata_homebrew_cask="$(mktemp)"
+malformed_metadata_zip_dir="$(mktemp -d)"
+malformed_metadata_zip="$malformed_metadata_zip_dir/LithePG.app.zip"
+malformed_metadata_release_copy="$(mktemp)"
+malformed_metadata_homebrew_cask="$(mktemp)"
 wrong_basename_zip_dir="$(mktemp -d)"
 wrong_basename_zip="$wrong_basename_zip_dir/NotLithePG.zip"
 grep_error_release_copy="$(mktemp)"
@@ -193,6 +203,8 @@ cleanup() {
     "$artifact_bundle_executable_permission_output" \
     "$artifact_bundle_owner_execute_permission_output" \
     "$artifact_top_level_unexpected_output" \
+    "$artifact_info_plist_metadata_mismatch_output" \
+    "$artifact_info_plist_metadata_cannot_inspect_output" \
     "$missing_artifact_sha_output" \
     "$invalid_artifact_sha_output" \
     "$mismatched_artifact_sha_output" \
@@ -295,10 +307,16 @@ cleanup() {
     "$unexpected_top_level_zip" \
     "$unexpected_top_level_release_copy" \
     "$unexpected_top_level_homebrew_cask" \
+    "$invalid_metadata_zip" \
+    "$invalid_metadata_release_copy" \
+    "$invalid_metadata_homebrew_cask" \
+    "$malformed_metadata_zip" \
+    "$malformed_metadata_release_copy" \
+    "$malformed_metadata_homebrew_cask" \
     "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$release_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$unexpected_top_level_zip_dir" "$wrong_basename_zip_dir"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$release_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
@@ -384,8 +402,31 @@ exec /usr/bin/grep "$@"
 FAKE_GREP
 chmod +x "$fake_git_dir/grep"
 fake_path="$fake_git_dir:${PATH:-/usr/bin:/bin}"
+write_valid_info_plist() {
+  local plist_path="$1"
+
+  cat >"$plist_path" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleExecutable</key>
+  <string>LithePGApp</string>
+  <key>CFBundleIdentifier</key>
+  <string>dev.omarpr.lithepg</string>
+  <key>CFBundleName</key>
+  <string>LithePG</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>1.0</string>
+</dict>
+</plist>
+PLIST
+}
+
 mkdir -p "$release_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
-printf '<plist><dict></dict></plist>\n' >"$release_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
+write_valid_info_plist "$release_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 printf 'fake public release app executable fixture\n' >"$release_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
 /bin/chmod 755 "$release_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
 (
@@ -431,7 +472,7 @@ printf 'fake public release app executable fixture\n' >"$symlink_bundle_zip_dir/
 symlink_bundle_zip_sha="$(/usr/bin/shasum -a 256 "$symlink_bundle_zip" | /usr/bin/cut -d ' ' -f 1)"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$symlink_bundle_zip_sha" >"$symlink_bundle_release_copy"
 mkdir -p "$unexpected_top_level_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
-printf '<plist><dict></dict></plist>\n' >"$unexpected_top_level_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
+write_valid_info_plist "$unexpected_top_level_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 printf 'fake public release app executable fixture\n' >"$unexpected_top_level_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
 /bin/chmod 755 "$unexpected_top_level_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
 printf 'unexpected public release top-level file\n' >"$unexpected_top_level_zip_dir/fixture-root/README.txt"
@@ -441,8 +482,29 @@ printf 'unexpected public release top-level file\n' >"$unexpected_top_level_zip_
 )
 unexpected_top_level_zip_sha="$(/usr/bin/shasum -a 256 "$unexpected_top_level_zip" | /usr/bin/cut -d ' ' -f 1)"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$unexpected_top_level_zip_sha" >"$unexpected_top_level_release_copy"
+mkdir -p "$invalid_metadata_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
+printf '<plist><dict></dict></plist>\n' >"$invalid_metadata_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
+printf 'fake public release app executable fixture\n' >"$invalid_metadata_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+/bin/chmod 755 "$invalid_metadata_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+(
+  cd "$invalid_metadata_zip_dir/fixture-root"
+  /usr/bin/zip -qr "$invalid_metadata_zip" LithePG.app
+)
+invalid_metadata_zip_sha="$(/usr/bin/shasum -a 256 "$invalid_metadata_zip" | /usr/bin/cut -d ' ' -f 1)"
+printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$invalid_metadata_zip_sha" >"$invalid_metadata_release_copy"
+mkdir -p "$malformed_metadata_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
+malformed_metadata_marker="MALFORMED_INFO_PLIST_SHOULD_NOT_LEAK"
+printf '<plist><dict><key>CFBundleName</key><string>%s\n' "$malformed_metadata_marker" >"$malformed_metadata_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
+printf 'fake public release app executable fixture\n' >"$malformed_metadata_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+/bin/chmod 755 "$malformed_metadata_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+(
+  cd "$malformed_metadata_zip_dir/fixture-root"
+  /usr/bin/zip -qr "$malformed_metadata_zip" LithePG.app
+)
+malformed_metadata_zip_sha="$(/usr/bin/shasum -a 256 "$malformed_metadata_zip" | /usr/bin/cut -d ' ' -f 1)"
+printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$malformed_metadata_zip_sha" >"$malformed_metadata_release_copy"
 mkdir -p "$non_executable_bundle_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
-printf '<plist><dict></dict></plist>\n' >"$non_executable_bundle_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
+write_valid_info_plist "$non_executable_bundle_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 printf 'fake non-executable release app executable fixture\n' >"$non_executable_bundle_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
 /bin/chmod 644 "$non_executable_bundle_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
 (
@@ -452,7 +514,7 @@ printf 'fake non-executable release app executable fixture\n' >"$non_executable_
 non_executable_bundle_zip_sha="$(/usr/bin/shasum -a 256 "$non_executable_bundle_zip" | /usr/bin/cut -d ' ' -f 1)"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$non_executable_bundle_zip_sha" >"$non_executable_bundle_release_copy"
 mkdir -p "$owner_execute_missing_bundle_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
-printf '<plist><dict></dict></plist>\n' >"$owner_execute_missing_bundle_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
+write_valid_info_plist "$owner_execute_missing_bundle_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 printf 'fake owner-execute-missing app executable fixture\n' >"$owner_execute_missing_bundle_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
 /bin/chmod 645 "$owner_execute_missing_bundle_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
 (
@@ -647,6 +709,50 @@ cat >"$owner_execute_missing_bundle_homebrew_cask" <<CASK
 cask "lithepg" do
   version "1.0"
   sha256 "$owner_execute_missing_bundle_zip_sha"
+
+  url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
+      verified: "github.com/omarpr/lithepg/"
+  name "LithePG"
+  desc "Lean PostgreSQL client with local-first AI"
+  homepage "https://github.com/omarpr/lithepg"
+  uninstall quit: "dev.omarpr.lithepg"
+
+  depends_on macos: ">= :sonoma"
+
+  app "LithePG.app"
+
+  zap trash: [
+    "~/Library/Application Support/LithePG",
+    "~/Library/Preferences/dev.omarpr.lithepg.plist",
+  ]
+end
+CASK
+cat >"$invalid_metadata_homebrew_cask" <<CASK
+cask "lithepg" do
+  version "1.0"
+  sha256 "$invalid_metadata_zip_sha"
+
+  url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
+      verified: "github.com/omarpr/lithepg/"
+  name "LithePG"
+  desc "Lean PostgreSQL client with local-first AI"
+  homepage "https://github.com/omarpr/lithepg"
+  uninstall quit: "dev.omarpr.lithepg"
+
+  depends_on macos: ">= :sonoma"
+
+  app "LithePG.app"
+
+  zap trash: [
+    "~/Library/Application Support/LithePG",
+    "~/Library/Preferences/dev.omarpr.lithepg.plist",
+  ]
+end
+CASK
+cat >"$malformed_metadata_homebrew_cask" <<CASK
+cask "lithepg" do
+  version "1.0"
+  sha256 "$malformed_metadata_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
@@ -1586,6 +1692,76 @@ assert_contains "$artifact_top_level_unexpected_text" "v1.0 publication blocked"
 assert_not_contains "$artifact_top_level_unexpected_text" "README.txt"
 assert_not_contains "$artifact_top_level_unexpected_text" "$unexpected_top_level_zip_sha"
 assert_not_contains "$artifact_top_level_unexpected_text" "fast preflight is clear"
+
+if run_gate_capture "$artifact_info_plist_metadata_mismatch_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$invalid_metadata_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$invalid_metadata_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$invalid_metadata_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$invalid_metadata_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  artifact_info_plist_metadata_mismatch_text="$(<"$artifact_info_plist_metadata_mismatch_output")"
+  assert_not_contains "$artifact_info_plist_metadata_mismatch_text" "$invalid_metadata_zip_sha"
+  fail "gate unexpectedly passed with mismatched release artifact Info.plist metadata"
+fi
+artifact_info_plist_metadata_mismatch_text="$(<"$artifact_info_plist_metadata_mismatch_output")"
+assert_contains "$artifact_info_plist_metadata_mismatch_text" "Release artifact filename: matches"
+assert_contains "$artifact_info_plist_metadata_mismatch_text" "Release artifact zip: present"
+assert_contains "$artifact_info_plist_metadata_mismatch_text" "Release artifact app wrapper: present"
+assert_contains "$artifact_info_plist_metadata_mismatch_text" "Release artifact bundle contents: present"
+assert_contains "$artifact_info_plist_metadata_mismatch_text" "Release artifact bundle file types: regular"
+assert_contains "$artifact_info_plist_metadata_mismatch_text" "Release artifact Info.plist metadata: mismatch"
+assert_contains "$artifact_info_plist_metadata_mismatch_text" "Release artifact bundle executable: executable"
+assert_contains "$artifact_info_plist_metadata_mismatch_text" "Release artifact top-level entries: clean"
+assert_contains "$artifact_info_plist_metadata_mismatch_text" "Release artifact SHA-256: matches"
+assert_contains "$artifact_info_plist_metadata_mismatch_text" "v1.0 publication blocked"
+assert_not_contains "$artifact_info_plist_metadata_mismatch_text" "$invalid_metadata_zip_sha"
+assert_not_contains "$artifact_info_plist_metadata_mismatch_text" "<plist>"
+assert_not_contains "$artifact_info_plist_metadata_mismatch_text" "fast preflight is clear"
+
+if run_gate_capture "$artifact_info_plist_metadata_cannot_inspect_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$malformed_metadata_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$malformed_metadata_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$malformed_metadata_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$malformed_metadata_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  artifact_info_plist_metadata_cannot_inspect_text="$(<"$artifact_info_plist_metadata_cannot_inspect_output")"
+  assert_not_contains "$artifact_info_plist_metadata_cannot_inspect_text" "$malformed_metadata_marker"
+  assert_not_contains "$artifact_info_plist_metadata_cannot_inspect_text" "$malformed_metadata_zip_sha"
+  fail "gate unexpectedly passed with malformed release artifact Info.plist metadata"
+fi
+artifact_info_plist_metadata_cannot_inspect_text="$(<"$artifact_info_plist_metadata_cannot_inspect_output")"
+assert_contains "$artifact_info_plist_metadata_cannot_inspect_text" "Release artifact filename: matches"
+assert_contains "$artifact_info_plist_metadata_cannot_inspect_text" "Release artifact zip: present"
+assert_contains "$artifact_info_plist_metadata_cannot_inspect_text" "Release artifact app wrapper: present"
+assert_contains "$artifact_info_plist_metadata_cannot_inspect_text" "Release artifact bundle contents: present"
+assert_contains "$artifact_info_plist_metadata_cannot_inspect_text" "Release artifact bundle file types: regular"
+assert_contains "$artifact_info_plist_metadata_cannot_inspect_text" "Release artifact Info.plist metadata: could not inspect"
+assert_contains "$artifact_info_plist_metadata_cannot_inspect_text" "Release artifact bundle executable: executable"
+assert_contains "$artifact_info_plist_metadata_cannot_inspect_text" "Release artifact top-level entries: clean"
+assert_contains "$artifact_info_plist_metadata_cannot_inspect_text" "Release artifact SHA-256: matches"
+assert_contains "$artifact_info_plist_metadata_cannot_inspect_text" "v1.0 publication blocked"
+assert_not_contains "$artifact_info_plist_metadata_cannot_inspect_text" "$malformed_metadata_marker"
+assert_not_contains "$artifact_info_plist_metadata_cannot_inspect_text" "$malformed_metadata_zip_sha"
+assert_not_contains "$artifact_info_plist_metadata_cannot_inspect_text" "<plist>"
+assert_not_contains "$artifact_info_plist_metadata_cannot_inspect_text" "fast preflight is clear"
 
 if run_gate_capture "$missing_artifact_sha_output" env -i \
   PATH="$fake_path" \
@@ -2726,6 +2902,7 @@ assert_contains "$no_remote_lookup_text" "Release artifact zip: present"
 assert_contains "$no_remote_lookup_text" "Release artifact app wrapper: present"
 assert_contains "$no_remote_lookup_text" "Release artifact bundle contents: present"
 assert_contains "$no_remote_lookup_text" "Release artifact bundle file types: regular"
+assert_contains "$no_remote_lookup_text" "Release artifact Info.plist metadata: matches"
 assert_contains "$no_remote_lookup_text" "Release artifact bundle executable: executable"
 assert_contains "$no_remote_lookup_text" "Release artifact top-level entries: clean"
 assert_contains "$no_remote_lookup_text" "Release artifact SHA-256: matches"

@@ -542,3 +542,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed after the minimal parser/readiness check was added; final syntax/whitespace/fast-preflight checks were run for this shell/docs slice.
 - No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-executable-permission-gate.svg`.
+
+## 2026-05-31 02:32 EDT — v1.0 release zip Info.plist metadata gate
+
+- Hardened `script/v10_release_gate.sh` so a present public `LithePG.app.zip` now verifies `LithePG.app/Contents/Info.plist` metadata after wrapper/content/file-type checks and before publication can pass.
+- The fast preflight now requires `CFBundleExecutable=LithePGApp`, `CFBundleIdentifier=dev.omarpr.lithepg`, `CFBundleName=LithePG`, `CFBundlePackageType=APPL`, and `CFBundleShortVersionString` matching the gate version, without printing plist contents, mismatched values, or SHA values.
+- Added shell TDD coverage for parseable metadata mismatches and malformed/unparseable plists; output reports only `Release artifact Info.plist metadata: mismatch` or `could not inspect` while keeping publication blocked.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with the expected Info.plist metadata gap before implementation, then the malformed-plist regression failed until the `could not inspect` path was added.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed. Independent spec review passed and code-quality/security re-review approved the fixed diff.
+- No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-info-plist-metadata-gate.svg`.
