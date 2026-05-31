@@ -144,6 +144,50 @@ assert_contains "$helper_output" "Codesign identity: present (redacted)"
 assert_contains "$helper_output" "Notary profile: present (redacted)"
 assert_contains "$(<"$notary_zip")" "$existing_notary_zip_marker"
 
+fake_bin="$fixture_root/fake-bin"
+mkdir -p "$fake_bin"
+cat >"$fake_bin/codesign" <<'SHIM'
+#!/usr/bin/env bash
+exit 0
+SHIM
+cat >"$fake_bin/ditto" <<'SHIM'
+#!/usr/bin/env bash
+printf 'fake ditto failed before zip creation\n' >&2
+exit 42
+SHIM
+cat >"$fake_bin/xcrun" <<'SHIM'
+#!/usr/bin/env bash
+printf 'unexpected xcrun invocation after ditto failure\n' >&2
+exit 99
+SHIM
+cat >"$fake_bin/spctl" <<'SHIM'
+#!/usr/bin/env bash
+printf 'unexpected spctl invocation after ditto failure\n' >&2
+exit 99
+SHIM
+chmod +x "$fake_bin/codesign" "$fake_bin/ditto" "$fake_bin/xcrun" "$fake_bin/spctl"
+
+printf '%s\n' "$existing_notary_zip_marker" >"$notary_zip"
+if PATH="$fake_bin:$PATH" \
+  LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$notary_zip" \
+  LITHEPG_NOTARY_ZIP_OVERWRITE=approved \
+  run_helper_capture "$output_file" "$app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "real mode unexpectedly passed when ditto failed"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "fake ditto failed before zip creation"
+assert_not_contains "$helper_output" "unexpected xcrun invocation"
+assert_not_contains "$helper_output" "unexpected spctl invocation"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+[[ -f "$notary_zip" ]] || fail "real mode zip-creation failure removed existing approved notary zip"
+[[ "$(<"$notary_zip")" == "$existing_notary_zip_marker" ]] || fail "real mode zip-creation failure changed existing approved notary zip"
+
 for overwrite_approval in 1 true yes; do
   if ! LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
     LITHEPG_NOTARY_PROFILE="$notary_sentinel" \

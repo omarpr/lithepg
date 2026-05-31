@@ -128,7 +128,18 @@ if [[ "$MODE" == "dry-run" ]]; then
   exit 0
 fi
 
-rm -f -- "$ZIP_PATH"
+STAGED_ZIP_DIR=""
+cleanup_staged_zip() {
+  if [[ -n "$STAGED_ZIP_DIR" ]]; then
+    rm -rf -- "$STAGED_ZIP_DIR"
+  fi
+}
+trap cleanup_staged_zip EXIT
+
+ZIP_PARENT="$(dirname "$ZIP_PATH")"
+STAGED_ZIP_DIR="$(mktemp -d "$ZIP_PARENT/.lithepg-notary.XXXXXX")"
+chmod 700 "$STAGED_ZIP_DIR"
+STAGED_ZIP="$STAGED_ZIP_DIR/$(basename "$ZIP_PATH")"
 
 codesign \
   --deep \
@@ -140,7 +151,8 @@ codesign \
   "$APP_BUNDLE_ABS"
 
 codesign --verify --strict --deep "$APP_BUNDLE_ABS"
-ditto -c -k --keepParent "$APP_BUNDLE_ABS" "$ZIP_PATH"
+ditto -c -k --keepParent "$APP_BUNDLE_ABS" "$STAGED_ZIP"
+/usr/bin/perl -e 'use strict; use warnings; rename($ARGV[0], $ARGV[1]) or die "rename failed: $!\n";' "$STAGED_ZIP" "$ZIP_PATH" || fail "could not replace notary zip: $ZIP_PATH"
 xcrun notarytool submit "$ZIP_PATH" --keychain-profile "$NOTARY_PROFILE" --wait
 xcrun stapler staple "$APP_BUNDLE_ABS"
 xcrun stapler validate "$APP_BUNDLE_ABS"

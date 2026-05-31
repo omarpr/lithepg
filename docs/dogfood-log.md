@@ -770,3 +770,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_create_release_zip.sh` passed; `bash -n script/create_release_zip.sh script/test_create_release_zip.sh` passed; `git diff --check` passed.
 - Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-uppercase-overwrite-rejection.svg`.
 - No release signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 11:17 EDT — v1.0 notary zip creation failure preservation
+
+- Hardened `script/sign_and_notarize.sh` real mode so the notary-submission zip is created in a secure temporary directory under the output parent, then moved to `LITHEPG_NOTARY_ZIP` only after `ditto` succeeds; the helper no longer removes an existing approved notary zip before successful zip creation.
+- Added strict-TDD coverage with fake `codesign`/`ditto`/`xcrun`/`spctl` shims proving a real-mode `ditto` failure exits nonzero before notarytool/stapler/spctl, preserves an existing approved notary zip marker unchanged, and does not print sentinel signing identity or notary profile values.
+- RED verification: `bash script/test_sign_and_notarize.sh` failed first with `test_sign_and_notarize failed: real mode zip-creation failure removed existing approved notary zip`.
+- GREEN verification: `bash script/test_sign_and_notarize.sh` passed; `bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh` passed; `git diff --check` passed.
+- Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-staged-notary-zip-gate.svg`.
+- No real signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
