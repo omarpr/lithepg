@@ -645,3 +645,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Build/release-impact verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed, `./script/v10_release_gate.sh --check-remote` remained safely blocked on the expected local/publication prerequisites, and `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` passed with artifacts at `.build/dogfood-checks/20260531-053230/`.
 - Output stays redacted: the gate reports only `Release artifact code signature runtime: present`, `missing`, or `could not inspect` and does not print codesign output, archive contents, extracted temp paths, SHA values, or signing identities.
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-hardened-runtime-gate.svg`.
+
+## 2026-05-31 05:55 EDT — v1.0 release zip metadata-files gate
+
+- Hardened `script/v10_release_gate.sh` so a present public `LithePG.app.zip` is blocked when the archive contains macOS/Finder metadata junk anywhere in the zip: any `__MACOSX` path component, any `.DS_Store` basename, or any AppleDouble basename beginning with `._`.
+- The fast preflight now reports exactly one redacted metadata status line for present zips: `Release artifact metadata files: absent`, `present`, or `could not inspect`; it does not print archive contents, matching entry names, paths, SHA values, temp paths, or marker payloads.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with metadata file in release artifact zip`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed.
+- No release signing, notarization, upload, Homebrew publication, tag, cron, push, or external publication changes were attempted.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-metadata-files-gate.svg`.

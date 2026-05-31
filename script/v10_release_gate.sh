@@ -621,6 +621,40 @@ release_zip_entry_paths_status() {
   return 0
 }
 
+release_zip_metadata_files_status() {
+  local zip_file="$1"
+  local zip_entries=""
+  local entry=""
+  local entry_without_trailing_slash=""
+  local entry_basename=""
+
+  if [[ ! -x /usr/bin/zipinfo ]]; then
+    return 2
+  fi
+
+  if ! zip_entries="$(/usr/bin/zipinfo -1 "$zip_file" 2>/dev/null)"; then
+    return 2
+  fi
+
+  while IFS= read -r entry || [[ -n "$entry" ]]; do
+    case "$entry" in
+      __MACOSX|__MACOSX/*|*/__MACOSX|*/__MACOSX/*)
+        return 1
+        ;;
+    esac
+
+    entry_without_trailing_slash="${entry%/}"
+    entry_basename="${entry_without_trailing_slash##*/}"
+    case "$entry_basename" in
+      .DS_Store|._*)
+        return 1
+        ;;
+    esac
+  done <<<"$zip_entries"
+
+  return 0
+}
+
 plist_key_matches() {
   local plist_file="$1"
   local key="$2"
@@ -1338,6 +1372,21 @@ else
 fi
 
 if [[ "$release_zip_present" -eq 1 ]]; then
+  if release_zip_metadata_files_status "$release_zip_file"; then
+    printf 'Release artifact metadata files: absent\n'
+  else
+    release_zip_metadata_files_status=$?
+    case "$release_zip_metadata_files_status" in
+      1)
+        printf 'Release artifact metadata files: present\n'
+        ;;
+      *)
+        printf 'Release artifact metadata files: could not inspect\n'
+        ;;
+    esac
+    mark_blocker
+  fi
+
   release_zip_structure_ready=0
   if release_zip_app_bundle_structure_status "$release_zip_file"; then
     printf 'Release artifact app wrapper: present\n'
