@@ -82,6 +82,7 @@ artifact_unicode_zip_path_collision_output="$(mktemp)"
 artifact_malformed_zip_path_encoding_output="$(mktemp)"
 artifact_code_signature_resources_missing_output="$(mktemp)"
 artifact_code_signature_verification_invalid_output="$(mktemp)"
+artifact_code_signature_identifier_mismatch_output="$(mktemp)"
 artifact_code_signature_runtime_missing_output="$(mktemp)"
 artifact_metadata_files_present_output="$(mktemp)"
 artifact_symlinks_present_output="$(mktemp)"
@@ -231,6 +232,10 @@ invalid_code_signature_zip_dir="$(mktemp -d)"
 invalid_code_signature_zip="$invalid_code_signature_zip_dir/LithePG.app.zip"
 invalid_code_signature_release_copy="$(mktemp)"
 invalid_code_signature_homebrew_cask="$(mktemp)"
+mismatched_code_signature_identifier_zip_dir="$(mktemp -d)"
+mismatched_code_signature_identifier_zip="$mismatched_code_signature_identifier_zip_dir/LithePG.app.zip"
+mismatched_code_signature_identifier_release_copy="$(mktemp)"
+mismatched_code_signature_identifier_homebrew_cask="$(mktemp)"
 missing_runtime_zip_dir="$(mktemp -d)"
 missing_runtime_zip="$missing_runtime_zip_dir/LithePG.app.zip"
 missing_runtime_release_copy="$(mktemp)"
@@ -285,6 +290,7 @@ cleanup() {
     "$artifact_malformed_zip_path_encoding_output" \
     "$artifact_code_signature_resources_missing_output" \
     "$artifact_code_signature_verification_invalid_output" \
+    "$artifact_code_signature_identifier_mismatch_output" \
     "$artifact_code_signature_runtime_missing_output" \
     "$artifact_metadata_files_present_output" \
     "$artifact_symlinks_present_output" \
@@ -418,6 +424,9 @@ cleanup() {
     "$invalid_code_signature_zip" \
     "$invalid_code_signature_release_copy" \
     "$invalid_code_signature_homebrew_cask" \
+    "$mismatched_code_signature_identifier_zip" \
+    "$mismatched_code_signature_identifier_release_copy" \
+    "$mismatched_code_signature_identifier_homebrew_cask" \
     "$missing_runtime_zip" \
     "$missing_runtime_release_copy" \
     "$missing_runtime_homebrew_cask" \
@@ -439,7 +448,7 @@ cleanup() {
     "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$release_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$release_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
@@ -744,6 +753,18 @@ printf '%s\n' "$invalid_code_signature_marker" >>"$invalid_code_signature_zip_di
 )
 invalid_code_signature_zip_sha="$(/usr/bin/shasum -a 256 "$invalid_code_signature_zip" | /usr/bin/cut -d ' ' -f 1)"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$invalid_code_signature_zip_sha" >"$invalid_code_signature_release_copy"
+mismatched_code_signature_identifier="dev.omarpr.lithepg.evil"
+mkdir -p "$mismatched_code_signature_identifier_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
+write_valid_info_plist "$mismatched_code_signature_identifier_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
+/bin/cp /usr/bin/true "$mismatched_code_signature_identifier_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+/bin/chmod 755 "$mismatched_code_signature_identifier_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+/usr/bin/codesign --force --sign - --options runtime --identifier "$mismatched_code_signature_identifier" "$mismatched_code_signature_identifier_zip_dir/fixture-root/LithePG.app" >/dev/null 2>&1
+(
+  cd "$mismatched_code_signature_identifier_zip_dir/fixture-root"
+  /usr/bin/zip -qr "$mismatched_code_signature_identifier_zip" LithePG.app
+)
+mismatched_code_signature_identifier_zip_sha="$(/usr/bin/shasum -a 256 "$mismatched_code_signature_identifier_zip" | /usr/bin/cut -d ' ' -f 1)"
+printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$mismatched_code_signature_identifier_zip_sha" >"$mismatched_code_signature_identifier_release_copy"
 mkdir -p "$missing_runtime_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
 write_valid_info_plist "$missing_runtime_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 /bin/cp /usr/bin/true "$missing_runtime_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
@@ -1308,6 +1329,28 @@ cat >"$invalid_code_signature_homebrew_cask" <<CASK
 cask "lithepg" do
   version "1.0"
   sha256 "$invalid_code_signature_zip_sha"
+
+  url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
+      verified: "github.com/omarpr/lithepg/"
+  name "LithePG"
+  desc "Lean PostgreSQL client with local-first AI"
+  homepage "https://github.com/omarpr/lithepg"
+  uninstall quit: "dev.omarpr.lithepg"
+
+  depends_on macos: ">= :sonoma"
+
+  app "LithePG.app"
+
+  zap trash: [
+    "~/Library/Application Support/LithePG",
+    "~/Library/Preferences/dev.omarpr.lithepg.plist",
+  ]
+end
+CASK
+cat >"$mismatched_code_signature_identifier_homebrew_cask" <<CASK
+cask "lithepg" do
+  version "1.0"
+  sha256 "$mismatched_code_signature_identifier_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
@@ -2810,6 +2853,55 @@ assert_not_contains "$artifact_code_signature_verification_invalid_text" "not va
 assert_not_contains "$artifact_code_signature_verification_invalid_text" "Release artifact code signature runtime:"
 assert_not_contains "$artifact_code_signature_verification_invalid_text" "codesign"
 assert_not_contains "$artifact_code_signature_verification_invalid_text" "fast preflight is clear"
+
+if run_gate_capture "$artifact_code_signature_identifier_mismatch_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$mismatched_code_signature_identifier_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$mismatched_code_signature_identifier_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$mismatched_code_signature_identifier_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$mismatched_code_signature_identifier_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  artifact_code_signature_identifier_mismatch_text="$(<"$artifact_code_signature_identifier_mismatch_output")"
+  assert_not_contains "$artifact_code_signature_identifier_mismatch_text" "$mismatched_code_signature_identifier"
+  assert_not_contains "$artifact_code_signature_identifier_mismatch_text" "$mismatched_code_signature_identifier_zip_sha"
+  assert_not_contains "$artifact_code_signature_identifier_mismatch_text" "$mismatched_code_signature_identifier_zip"
+  fail "gate unexpectedly passed with mismatched release artifact code signature identifier"
+fi
+artifact_code_signature_identifier_mismatch_text="$(<"$artifact_code_signature_identifier_mismatch_output")"
+assert_contains "$artifact_code_signature_identifier_mismatch_text" "Release artifact filename: matches"
+assert_contains "$artifact_code_signature_identifier_mismatch_text" "Release artifact zip: present"
+assert_contains "$artifact_code_signature_identifier_mismatch_text" "Release artifact app wrapper: present"
+assert_contains "$artifact_code_signature_identifier_mismatch_text" "Release artifact bundle contents: present"
+assert_contains "$artifact_code_signature_identifier_mismatch_text" "Release artifact bundle file types: regular"
+assert_contains "$artifact_code_signature_identifier_mismatch_text" "Release artifact entry paths: canonical"
+assert_contains "$artifact_code_signature_identifier_mismatch_text" "Release artifact essential entries: unique"
+assert_contains "$artifact_code_signature_identifier_mismatch_text" "Release artifact Info.plist metadata: matches"
+assert_contains "$artifact_code_signature_identifier_mismatch_text" "Release artifact bundle executable: executable"
+assert_contains "$artifact_code_signature_identifier_mismatch_text" "Release artifact executable format: Mach-O"
+assert_contains "$artifact_code_signature_identifier_mismatch_text" "Release artifact code signature resources: present"
+assert_contains "$artifact_code_signature_identifier_mismatch_text" "Release artifact code signature verification: valid"
+assert_contains "$artifact_code_signature_identifier_mismatch_text" "Release artifact code signature identifier: mismatch"
+assert_contains "$artifact_code_signature_identifier_mismatch_text" "Release artifact top-level entries: clean"
+assert_contains "$artifact_code_signature_identifier_mismatch_text" "Release artifact SHA-256: matches"
+assert_contains "$artifact_code_signature_identifier_mismatch_text" "v1.0 publication blocked"
+assert_not_contains "$artifact_code_signature_identifier_mismatch_text" "$mismatched_code_signature_identifier"
+assert_not_contains "$artifact_code_signature_identifier_mismatch_text" "$mismatched_code_signature_identifier_zip_sha"
+assert_not_contains "$artifact_code_signature_identifier_mismatch_text" "$mismatched_code_signature_identifier_zip"
+assert_not_contains "$artifact_code_signature_identifier_mismatch_text" "Identifier="
+assert_not_contains "$artifact_code_signature_identifier_mismatch_text" "Executable="
+assert_not_contains "$artifact_code_signature_identifier_mismatch_text" "Authority="
+assert_not_contains "$artifact_code_signature_identifier_mismatch_text" "TeamIdentifier="
+assert_not_contains "$artifact_code_signature_identifier_mismatch_text" "codesign"
+assert_not_contains "$artifact_code_signature_identifier_mismatch_text" "Release artifact code signature runtime:"
+assert_not_contains "$artifact_code_signature_identifier_mismatch_text" "fast preflight is clear"
 
 if run_gate_capture "$artifact_code_signature_runtime_missing_output" env -i \
   PATH="$fake_path" \

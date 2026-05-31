@@ -899,6 +899,46 @@ release_zip_code_signature_verification_status() {
   return 1
 }
 
+release_zip_code_signature_identifier_status() {
+  local zip_file="$1"
+  local extract_temp_dir=""
+  local app_bundle_path=""
+  local codesign_display_output=""
+
+  if [[ ! -x /usr/bin/unzip || ! -x /usr/bin/codesign || ! -x /usr/bin/mktemp || ! -x /bin/rm ]]; then
+    return 2
+  fi
+
+  if ! extract_temp_dir="$(/usr/bin/mktemp -d "${TMPDIR:-/tmp}/lithepg-code-signature-identifier.XXXXXX")"; then
+    return 2
+  fi
+  app_bundle_path="$extract_temp_dir/LithePG.app"
+
+  if ! /usr/bin/unzip -q "$zip_file" "LithePG.app/*" -d "$extract_temp_dir" >/dev/null 2>&1; then
+    /bin/rm -rf "$extract_temp_dir"
+    return 2
+  fi
+
+  if [[ ! -d "$app_bundle_path" ]]; then
+    /bin/rm -rf "$extract_temp_dir"
+    return 2
+  fi
+
+  if ! codesign_display_output="$(/usr/bin/codesign --display --verbose=4 "$app_bundle_path" 2>&1)"; then
+    /bin/rm -rf "$extract_temp_dir"
+    return 2
+  fi
+
+  /bin/rm -rf "$extract_temp_dir"
+  case $'\n'"$codesign_display_output"$'\n' in
+    *$'\nIdentifier=dev.omarpr.lithepg\n'*)
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
 release_zip_code_signature_runtime_status() {
   local zip_file="$1"
   local extract_temp_dir=""
@@ -1600,19 +1640,38 @@ if [[ "$release_zip_present" -eq 1 ]]; then
         fi
 
         if [[ "$release_zip_code_signature_verification_ready" -eq 1 ]]; then
-          if release_zip_code_signature_runtime_status "$release_zip_file"; then
-            printf 'Release artifact code signature runtime: present\n'
+          release_zip_code_signature_identifier_ready=0
+          if release_zip_code_signature_identifier_status "$release_zip_file"; then
+            printf 'Release artifact code signature identifier: matches\n'
+            release_zip_code_signature_identifier_ready=1
           else
-            release_zip_code_signature_runtime_status=$?
-            case "$release_zip_code_signature_runtime_status" in
+            release_zip_code_signature_identifier_status=$?
+            case "$release_zip_code_signature_identifier_status" in
               1)
-                printf 'Release artifact code signature runtime: missing\n'
+                printf 'Release artifact code signature identifier: mismatch\n'
                 ;;
               *)
-                printf 'Release artifact code signature runtime: could not inspect\n'
+                printf 'Release artifact code signature identifier: could not inspect\n'
                 ;;
             esac
             mark_blocker
+          fi
+
+          if [[ "$release_zip_code_signature_identifier_ready" -eq 1 ]]; then
+            if release_zip_code_signature_runtime_status "$release_zip_file"; then
+              printf 'Release artifact code signature runtime: present\n'
+            else
+              release_zip_code_signature_runtime_status=$?
+              case "$release_zip_code_signature_runtime_status" in
+                1)
+                  printf 'Release artifact code signature runtime: missing\n'
+                  ;;
+                *)
+                  printf 'Release artifact code signature runtime: could not inspect\n'
+                  ;;
+              esac
+              mark_blocker
+            fi
           fi
         fi
       fi

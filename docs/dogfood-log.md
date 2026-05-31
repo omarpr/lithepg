@@ -663,3 +663,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed.
 - No release signing beyond local ad-hoc test fixtures, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron, or external publication changes were attempted.
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-symlink-gate.svg`.
+
+## 2026-05-31 06:52 EDT — v1.0 release zip code-signature identifier gate
+
+- Hardened `script/v10_release_gate.sh` so a present public `LithePG.app.zip` is blocked when the extracted app's code-signature identifier does not match `dev.omarpr.lithepg`, even if `Info.plist` metadata and strict code-signature verification otherwise pass.
+- Added a strict-TDD fixture with a valid `Info.plist` bundle ID but an ad-hoc Hardened Runtime signature created with a prefix-collision mismatched `--identifier`; the gate now requires an exact `Identifier=dev.omarpr.lithepg` line, reports only `Release artifact code signature identifier: mismatch`, and does not print signing identifiers, codesign output, archive contents, temp paths, or SHA values.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with mismatched release artifact code signature identifier`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed after adding the redacted identifier check; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed; `./script/v10_release_gate.sh --check-remote` remained safely blocked on expected local/external publication prerequisites; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` passed with artifacts at `.build/dogfood-checks/20260531-065403/`.
+- No release signing beyond local ad-hoc test fixtures, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-code-signature-identifier-gate.svg`.
