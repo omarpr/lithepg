@@ -548,8 +548,9 @@ release_zip_entry_paths_status() {
   local zip_file="$1"
   local zip_entries=""
   local entry=""
+  local duplicate_entry_path_count=""
 
-  if [[ ! -x /usr/bin/zipinfo ]]; then
+  if [[ ! -x /usr/bin/zipinfo || ! -x /usr/bin/awk || ! -x /usr/bin/sort || ! -x /usr/bin/uniq || ! -x /usr/bin/wc ]]; then
     return 2
   fi
 
@@ -562,6 +563,14 @@ release_zip_entry_paths_status() {
       return 1
     fi
   done <<<"$zip_entries"
+
+  if ! duplicate_entry_path_count="$(printf '%s\n' "$zip_entries" | LC_ALL=C /usr/bin/awk '{ key = $0; sub(/\/$/, "", key); print tolower(key) }' | /usr/bin/sort | /usr/bin/uniq -d | /usr/bin/wc -l)"; then
+    return 2
+  fi
+  duplicate_entry_path_count="${duplicate_entry_path_count//[[:space:]]/}"
+  if [[ "$duplicate_entry_path_count" != "0" ]]; then
+    return 3
+  fi
 
   return 0
 }
@@ -1264,6 +1273,9 @@ if [[ "$release_zip_present" -eq 1 ]]; then
         case "$release_zip_entry_paths_status" in
           1)
             printf 'Release artifact entry paths: non-canonical\n'
+            ;;
+          3)
+            printf 'Release artifact entry paths: collision\n'
             ;;
           *)
             printf 'Release artifact entry paths: could not inspect\n'

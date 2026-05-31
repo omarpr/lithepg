@@ -62,6 +62,7 @@ artifact_bundle_owner_execute_permission_output="$(mktemp)"
 artifact_executable_format_invalid_output="$(mktemp)"
 artifact_duplicate_essential_entries_output="$(mktemp)"
 artifact_noncanonical_zip_path_output="$(mktemp)"
+artifact_casefold_zip_path_collision_output="$(mktemp)"
 artifact_code_signature_resources_missing_output="$(mktemp)"
 artifact_top_level_unexpected_output="$(mktemp)"
 artifact_info_plist_metadata_mismatch_output="$(mktemp)"
@@ -185,6 +186,10 @@ noncanonical_zip_path_dir="$(mktemp -d)"
 noncanonical_zip_path_zip="$noncanonical_zip_path_dir/LithePG.app.zip"
 noncanonical_zip_path_release_copy="$(mktemp)"
 noncanonical_zip_path_homebrew_cask="$(mktemp)"
+casefold_zip_path_collision_dir="$(mktemp -d)"
+casefold_zip_path_collision_zip="$casefold_zip_path_collision_dir/LithePG.app.zip"
+casefold_zip_path_collision_release_copy="$(mktemp)"
+casefold_zip_path_collision_homebrew_cask="$(mktemp)"
 missing_code_resources_zip_dir="$(mktemp -d)"
 missing_code_resources_zip="$missing_code_resources_zip_dir/LithePG.app.zip"
 missing_code_resources_release_copy="$(mktemp)"
@@ -230,6 +235,7 @@ cleanup() {
     "$artifact_executable_format_invalid_output" \
     "$artifact_duplicate_essential_entries_output" \
     "$artifact_noncanonical_zip_path_output" \
+    "$artifact_casefold_zip_path_collision_output" \
     "$artifact_code_signature_resources_missing_output" \
     "$artifact_top_level_unexpected_output" \
     "$artifact_info_plist_metadata_mismatch_output" \
@@ -343,6 +349,9 @@ cleanup() {
     "$noncanonical_zip_path_zip" \
     "$noncanonical_zip_path_release_copy" \
     "$noncanonical_zip_path_homebrew_cask" \
+    "$casefold_zip_path_collision_zip" \
+    "$casefold_zip_path_collision_release_copy" \
+    "$casefold_zip_path_collision_homebrew_cask" \
     "$missing_code_resources_zip" \
     "$missing_code_resources_release_copy" \
     "$missing_code_resources_homebrew_cask" \
@@ -361,7 +370,7 @@ cleanup() {
     "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$release_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$missing_code_resources_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$release_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$missing_code_resources_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
@@ -746,6 +755,54 @@ with zipfile.ZipFile(zip_path, "w") as archive:
 PY
 noncanonical_zip_path_zip_sha="$(/usr/bin/shasum -a 256 "$noncanonical_zip_path_zip" | /usr/bin/cut -d ' ' -f 1)"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$noncanonical_zip_path_zip_sha" >"$noncanonical_zip_path_release_copy"
+casefold_zip_path_collision_marker="CASEFOLD_ZIP_PATH_COLLISION_FIXTURE_SHOULD_NOT_LEAK"
+/usr/bin/python3 - "$casefold_zip_path_collision_zip" "/usr/bin/true" "$casefold_zip_path_collision_marker" <<'PY'
+import sys
+import zipfile
+
+zip_path, macho_path, casefold_marker = sys.argv[1:4]
+
+def zip_info(name, mode):
+    info = zipfile.ZipInfo(name)
+    info.create_system = 3
+    info.external_attr = (mode & 0xFFFF) << 16
+    return info
+
+valid_info_plist = b'''<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleExecutable</key>
+  <string>LithePGApp</string>
+  <key>CFBundleIdentifier</key>
+  <string>dev.omarpr.lithepg</string>
+  <key>CFBundleName</key>
+  <string>LithePG</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>1.0</string>
+  <key>CFBundleVersion</key>
+  <string>100</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>14.0</string>
+  <key>NSPrincipalClass</key>
+  <string>NSApplication</string>
+</dict>
+</plist>
+'''
+
+with open(macho_path, "rb") as executable:
+    macho_bytes = executable.read()
+
+with zipfile.ZipFile(zip_path, "w") as archive:
+    archive.writestr(zip_info("LithePG.app/Contents/Info.plist", 0o100644), valid_info_plist)
+    archive.writestr(zip_info("LithePG.app/Contents/MacOS/LithePGApp", 0o100755), macho_bytes)
+    archive.writestr(zip_info("LithePG.app/Contents/MacOS/lithepgapp", 0o100755), (casefold_marker + "\n").encode("utf-8"))
+    archive.writestr(zip_info("LithePG.app/Contents/_CodeSignature/CodeResources", 0o100644), b"fake code signature resources fixture\n")
+PY
+casefold_zip_path_collision_zip_sha="$(/usr/bin/shasum -a 256 "$casefold_zip_path_collision_zip" | /usr/bin/cut -d ' ' -f 1)"
+printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$casefold_zip_path_collision_zip_sha" >"$casefold_zip_path_collision_release_copy"
 printf 'LithePG v1.0 release copy with REPLACE_WITH_FINAL_VALUE placeholder.\n' >"$placeholder_release_copy"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$release_zip_sha" >"$placeholder_free_release_copy"
 wrong_release_copy_sha="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
@@ -1020,6 +1077,28 @@ cat >"$noncanonical_zip_path_homebrew_cask" <<CASK
 cask "lithepg" do
   version "1.0"
   sha256 "$noncanonical_zip_path_zip_sha"
+
+  url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
+      verified: "github.com/omarpr/lithepg/"
+  name "LithePG"
+  desc "Lean PostgreSQL client with local-first AI"
+  homepage "https://github.com/omarpr/lithepg"
+  uninstall quit: "dev.omarpr.lithepg"
+
+  depends_on macos: ">= :sonoma"
+
+  app "LithePG.app"
+
+  zap trash: [
+    "~/Library/Application Support/LithePG",
+    "~/Library/Preferences/dev.omarpr.lithepg.plist",
+  ]
+end
+CASK
+cat >"$casefold_zip_path_collision_homebrew_cask" <<CASK
+cask "lithepg" do
+  version "1.0"
+  sha256 "$casefold_zip_path_collision_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
@@ -2057,12 +2136,14 @@ assert_contains "$artifact_duplicate_essential_entries_text" "Release artifact z
 assert_contains "$artifact_duplicate_essential_entries_text" "Release artifact app wrapper: present"
 assert_contains "$artifact_duplicate_essential_entries_text" "Release artifact bundle contents: present"
 assert_contains "$artifact_duplicate_essential_entries_text" "Release artifact bundle file types: regular"
-assert_contains "$artifact_duplicate_essential_entries_text" "Release artifact essential entries: duplicate"
+assert_contains "$artifact_duplicate_essential_entries_text" "Release artifact entry paths: collision"
 assert_contains "$artifact_duplicate_essential_entries_text" "Release artifact SHA-256: matches"
 assert_contains "$artifact_duplicate_essential_entries_text" "v1.0 publication blocked"
 assert_not_contains "$artifact_duplicate_essential_entries_text" "$duplicate_essential_marker"
 assert_not_contains "$artifact_duplicate_essential_entries_text" "$duplicate_essential_entries_zip_sha"
 assert_not_contains "$artifact_duplicate_essential_entries_text" "LithePG.app/Contents/MacOS/LithePGApp"
+assert_not_contains "$artifact_duplicate_essential_entries_text" "Release artifact essential entries: duplicate"
+assert_not_contains "$artifact_duplicate_essential_entries_text" "Release artifact executable format: Mach-O"
 assert_not_contains "$artifact_duplicate_essential_entries_text" "fast preflight is clear"
 
 if run_gate_capture "$artifact_noncanonical_zip_path_output" env -i \
@@ -2098,6 +2179,43 @@ assert_not_contains "$artifact_noncanonical_zip_path_text" "$noncanonical_zip_pa
 assert_not_contains "$artifact_noncanonical_zip_path_text" "$noncanonical_zip_path_zip_sha"
 assert_not_contains "$artifact_noncanonical_zip_path_text" "LithePG.app/Contents/MacOS//LithePGApp"
 assert_not_contains "$artifact_noncanonical_zip_path_text" "fast preflight is clear"
+
+if run_gate_capture "$artifact_casefold_zip_path_collision_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$casefold_zip_path_collision_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$casefold_zip_path_collision_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$casefold_zip_path_collision_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$casefold_zip_path_collision_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  artifact_casefold_zip_path_collision_text="$(<"$artifact_casefold_zip_path_collision_output")"
+  assert_not_contains "$artifact_casefold_zip_path_collision_text" "$casefold_zip_path_collision_marker"
+  assert_not_contains "$artifact_casefold_zip_path_collision_text" "$casefold_zip_path_collision_zip_sha"
+  fail "gate unexpectedly passed with case-folded release artifact zip path collision"
+fi
+artifact_casefold_zip_path_collision_text="$(<"$artifact_casefold_zip_path_collision_output")"
+assert_contains "$artifact_casefold_zip_path_collision_text" "Release artifact filename: matches"
+assert_contains "$artifact_casefold_zip_path_collision_text" "Release artifact zip: present"
+assert_contains "$artifact_casefold_zip_path_collision_text" "Release artifact app wrapper: present"
+assert_contains "$artifact_casefold_zip_path_collision_text" "Release artifact bundle contents: present"
+assert_contains "$artifact_casefold_zip_path_collision_text" "Release artifact bundle file types: regular"
+assert_contains "$artifact_casefold_zip_path_collision_text" "Release artifact entry paths: collision"
+assert_contains "$artifact_casefold_zip_path_collision_text" "Release artifact SHA-256: matches"
+assert_contains "$artifact_casefold_zip_path_collision_text" "v1.0 publication blocked"
+assert_not_contains "$artifact_casefold_zip_path_collision_text" "$casefold_zip_path_collision_marker"
+assert_not_contains "$artifact_casefold_zip_path_collision_text" "$casefold_zip_path_collision_zip_sha"
+assert_not_contains "$artifact_casefold_zip_path_collision_text" "LithePG.app/Contents/MacOS/LithePGApp"
+assert_not_contains "$artifact_casefold_zip_path_collision_text" "LithePG.app/Contents/MacOS/lithepgapp"
+assert_not_contains "$artifact_casefold_zip_path_collision_text" "Release artifact essential entries: unique"
+assert_not_contains "$artifact_casefold_zip_path_collision_text" "Release artifact executable format: Mach-O"
+assert_not_contains "$artifact_casefold_zip_path_collision_text" "fast preflight is clear"
 
 if run_gate_capture "$artifact_code_signature_resources_missing_output" env -i \
   PATH="$fake_path" \

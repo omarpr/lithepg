@@ -599,3 +599,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with non-canonical release artifact zip path collision`.
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed; `./script/v10_release_gate.sh --check-remote` remained blocked only on expected local/external publication prerequisites.
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-canonical-path-gate.svg`.
+
+## 2026-05-31 — v1.0 release zip case-fold path-collision gate follow-up
+
+- Hardened `script/v10_release_gate.sh` so a present public `LithePG.app.zip` is blocked when any canonical zip entry path collides after trailing-slash normalization and ASCII case-folding. This closes the default macOS case-insensitive extraction bypass where a valid inspected executable and a case-variant payload can target the same filesystem path.
+- The collision check runs after existing syntactic canonical path checks and before essential-entry uniqueness, Info.plist, executable-permission, Mach-O, or code-signature extraction checks continue. Because this is a macOS app zip, any case-folded duplicate archive entry is rejected.
+- Added redacted shell TDD coverage for an otherwise valid release zip with `LithePG.app/Contents/MacOS/LithePGApp` as a real Mach-O and a case-variant marker payload entry. Output reports only `Release artifact entry paths: collision` and does not print archive paths, marker text, or SHA values.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with case-folded release artifact zip path collision`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed; final syntax, whitespace, and fast-preflight blocked-prerequisite checks were run for this shell/docs slice.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-casefold-collision-gate.svg`.
