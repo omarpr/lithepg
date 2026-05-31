@@ -129,6 +129,18 @@ require_config() {
   [[ -f "$ENTITLEMENTS" ]] || fail "missing entitlements file: $ENTITLEMENTS"
 }
 
+validate_app_bundle_not_symlink() {
+  local normalized_app_bundle_path="$APP_BUNDLE_ABS"
+  while [[ "$normalized_app_bundle_path" != "/" && "$normalized_app_bundle_path" == */ ]]; do
+    normalized_app_bundle_path="${normalized_app_bundle_path%/}"
+  done
+
+  # Reject a symlink at the final .app path before package verification or signing.
+  # Parent components may include platform-level aliases such as /var -> /private/var
+  # on macOS; later physical-location checks still guard notary zip placement.
+  [[ ! -L "$normalized_app_bundle_path" ]] || fail "app bundle path must not be a symlink"
+}
+
 validate_notary_zip_location() {
   local app_bundle_check_path
   local zip_check_path
@@ -163,6 +175,7 @@ validate_notary_zip_overwrite() {
 
 ZIP_PATH="$(make_absolute_path "$ZIP_PATH")"
 cd "$ROOT_DIR"
+validate_app_bundle_not_symlink
 "$ROOT_DIR/script/package_verify.sh" "$APP_BUNDLE_ABS"
 require_config
 validate_notary_zip_location

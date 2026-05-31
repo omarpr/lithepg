@@ -108,6 +108,41 @@ assert_contains "$helper_output" "Codesign identity: present (redacted)"
 assert_contains "$helper_output" "Notary profile: present (redacted)"
 [[ ! -e "$notary_zip" ]] || fail "dry run created notary zip: $notary_zip"
 
+symlinked_app_target="$fixture_root/RealLithePG.app"
+symlinked_app_parent="$fixture_root/symlinked-app-input"
+symlinked_app_bundle="$symlinked_app_parent/LithePG.app"
+mkdir -p "$symlinked_app_parent"
+make_minimal_app_bundle "$symlinked_app_target"
+ln -s "$symlinked_app_target" "$symlinked_app_bundle"
+[[ -L "$symlinked_app_bundle" ]] || fail "failed to create symlinked app bundle fixture"
+
+symlinked_app_inputs=("$symlinked_app_bundle" "$symlinked_app_bundle/")
+symlinked_app_labels=("final-symlink" "final-symlink-trailing-slash")
+for symlinked_app_index in "${!symlinked_app_inputs[@]}"; do
+  symlinked_app_input="${symlinked_app_inputs[$symlinked_app_index]}"
+  symlinked_app_label="${symlinked_app_labels[$symlinked_app_index]}"
+  symlinked_app_notary_zip="$fixture_root/LithePG-symlinked-app-notary-$symlinked_app_label.zip"
+  if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+    LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+    LITHEPG_NOTARY_ZIP="$symlinked_app_notary_zip" \
+    run_helper_capture "$output_file" --dry-run "$symlinked_app_input"; then
+    helper_output="$(<"$output_file")"
+    printf '%s\n' "$helper_output" >&2
+    [[ -L "$symlinked_app_bundle" ]] || fail "dry run changed symlinked app bundle before passing: $symlinked_app_bundle"
+    [[ ! -e "$symlinked_app_notary_zip" ]] || fail "dry run created notary zip for symlinked app bundle before passing: $symlinked_app_notary_zip"
+    fail "dry run unexpectedly passed with symlinked app bundle input: $symlinked_app_input"
+  fi
+
+  helper_output="$(<"$output_file")"
+  assert_contains "$helper_output" "app bundle path must not be a symlink"
+  assert_not_contains "$helper_output" "Package verified:"
+  assert_not_contains "$helper_output" "Signing/notarization dry run OK"
+  assert_not_contains "$helper_output" "$codesign_sentinel"
+  assert_not_contains "$helper_output" "$notary_sentinel"
+  [[ -L "$symlinked_app_bundle" ]] || fail "dry run changed symlinked app bundle: $symlinked_app_bundle"
+  [[ ! -e "$symlinked_app_notary_zip" ]] || fail "dry run created notary zip for symlinked app bundle: $symlinked_app_notary_zip"
+done
+
 existing_notary_zip_marker='EXISTING_NOTARY_ZIP_SHOULD_SURVIVE'
 printf '%s\n' "$existing_notary_zip_marker" >"$notary_zip"
 

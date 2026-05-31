@@ -866,3 +866,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260531-152804/` with default Swift tests, live dogfood tests, and v0.4 measurement all passed. Metrics: shell readiness 134.05 ms; connected cold start 231.52 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead 0.034 ms; dogfood query median overhead 0.021 ms.
 - Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-directory-output-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 16:08 EDT — v1.0 sign/notarize symlink app-bundle gate
+
+- Hardened `script/sign_and_notarize.sh` so the credential-gated signing/notarization helper rejects a final symlinked `.app` input path before package verification, dry-run success, or real signing/notarization can proceed.
+- Added strict-TDD coverage proving both direct and trailing-slash symlinked `LithePG.app` inputs exit nonzero with `app bundle path must not be a symlink`, keep signing/notary sentinel values redacted, preserve the symlink, and create no notary zip.
+- RED verification: `bash script/test_sign_and_notarize.sh` failed first with `test_sign_and_notarize failed: dry run unexpectedly passed with symlinked app bundle input`.
+- GREEN verification: `bash script/test_sign_and_notarize.sh` passed; adjacent release helper tests `bash script/test_create_release_zip.sh` and `bash script/test_v10_release_gate.sh` passed; `bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh` passed; `git diff --check` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260531-160818/` with default Swift tests, live dogfood tests, and v0.4 measurement all passed. Metrics: shell readiness 134.34 ms; connected cold start 223.00 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead 0.035 ms; dogfood query median overhead 0.020 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-symlink-app-bundle-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
