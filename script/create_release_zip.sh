@@ -67,6 +67,12 @@ if [[ -L "$app_bundle_symlink_check" ]]; then
   fail "app bundle path must not be a symlink"
 fi
 
+case "$OUTPUT_ZIP" in
+  */)
+    fail "output zip path must not end with a slash"
+    ;;
+esac
+
 if [[ "$(basename "$OUTPUT_ZIP")" != "LithePG.app.zip" ]]; then
   fail "output zip basename must be LithePG.app.zip"
 fi

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release zip trailing-slash output gate evidence</title>
+  <desc id="desc">Visual receipt for the create_release_zip trailing-slash output path hardening slice and its verification commands.</desc>
+  <rect width="1200" height="760" fill="#0f172a"/>
+  <rect x="40" y="40" width="1120" height="680" rx="22" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="80" y="100" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="30" font-weight="700">LithePG release helper evidence</text>
+  <text x="80" y="145" fill="#93c5fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20">2026-05-31 18:39 EDT · create_release_zip trailing-slash output gate</text>
+
+  <rect x="80" y="185" width="1040" height="120" rx="14" fill="#082f49" stroke="#0ea5e9"/>
+  <text x="110" y="225" fill="#f8fafc" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="22">Behavior hardened</text>
+  <text x="110" y="262" fill="#bae6fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">script/create_release_zip.sh rejects output paths ending in slash before creating output dirs.</text>
+  <text x="110" y="288" fill="#bae6fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">Example refused path: dist/LithePG.app.zip/</text>
+
+  <rect x="80" y="335" width="1040" height="245" rx="14" fill="#020617" stroke="#334155"/>
+  <text x="110" y="375" fill="#86efac" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="21">Verification passed</text>
+  <text x="110" y="415" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">✓ bash script/test_create_release_zip.sh → test_create_release_zip passed</text>
+  <text x="110" y="448" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">✓ bash script/test_sign_and_notarize.sh → passed</text>
+  <text x="110" y="481" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">✓ bash script/test_v10_release_gate.sh → passed</text>
+  <text x="110" y="514" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">✓ swift build + swift test → 127 tests / 20 suites passed</text>
+  <text x="110" y="547" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">✓ dogfood_check.sh → passed, artifacts .build/dogfood-checks/20260531-184019/</text>
+
+  <rect x="80" y="610" width="1040" height="70" rx="14" fill="#14532d" stroke="#22c55e"/>
+  <text x="110" y="653" fill="#dcfce7" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">Independent reviews: spec PASS · quality/security APPROVED · pre-commit JSON passed</text>
+</svg>

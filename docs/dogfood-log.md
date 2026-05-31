@@ -940,3 +940,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-trailing-slash-notary-zip-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 18:39 EDT — v1.0 release zip trailing-slash output gate
+
+- Hardened `script/create_release_zip.sh` so a public release output path ending in slash, such as `dist/LithePG.app.zip/`, is rejected after package verification and before output parent directory creation, staging, `ditto`, or rename operations.
+- Added strict-TDD coverage proving the trailing-slash output path exits nonzero with `output zip path must not end with a slash`, keeps release/signing sentinel values redacted, runs package verification first, and creates neither `dist/LithePG.app.zip` nor a nested `dist/LithePG.app.zip/LithePG.app.zip` artifact.
+- RED verification: `bash script/test_create_release_zip.sh` failed first with `test_create_release_zip failed: expected output to contain: output zip path must not end with a slash`.
+- GREEN verification: `bash script/test_create_release_zip.sh`, adjacent release helper tests `bash script/test_sign_and_notarize.sh` and `bash script/test_v10_release_gate.sh`, `bash -n` syntax checks, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` all passed; Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260531-184019/` with default Swift tests, live dogfood tests, and v0.4 measurement all passed. Metrics: shell readiness 128.07 ms; connected cold start 230.08 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead 0.023 ms; dogfood query median overhead 0.028 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED; fail-closed pre-commit JSON review passed.
+- Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-trailing-slash-output-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
