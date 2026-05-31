@@ -1,10 +1,46 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+usage() {
+  cat <<'USAGE'
+Usage: sign_and_notarize.sh [--dry-run] [app-bundle]
+
+Sign, zip for notarization, submit to Apple notarization, staple, and validate
+the LithePG macOS app bundle. This helper is credential-gated and reads
+configuration from environment variables; it never stores credentials.
+
+Arguments:
+  app-bundle   App bundle to sign/notarize (default: dist/LithePG.app)
+
+Options:
+  --dry-run    Validate inputs/configuration and print planned actions without
+               signing, zipping, submitting, stapling, or assessing.
+  -h, --help   Show this help.
+
+Environment:
+  LITHEPG_CODESIGN_IDENTITY     Apple Developer Application signing identity.
+  LITHEPG_NOTARY_PROFILE        xcrun notarytool keychain profile name.
+  LITHEPG_ENTITLEMENTS          Entitlements path.
+  LITHEPG_NOTARY_ZIP            Intermediate notary zip path.
+  LITHEPG_NOTARY_ZIP_OVERWRITE  Set to 1, true, yes, or approved to replace an
+                                existing notary zip.
+USAGE
+}
+
 MODE="sign"
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
 if [[ "${1:-}" == "--dry-run" ]]; then
   MODE="dry-run"
   shift
+fi
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  usage
+  exit 0
 fi
 
 APP_BUNDLE="${1:-dist/LithePG.app}"

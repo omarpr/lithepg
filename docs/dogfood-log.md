@@ -908,3 +908,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-final-symlink-inside-bundle-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 17:35 EDT — v1.0 sign/notarize help gate
+
+- Added explicit `-h` / `--help` handling to `script/sign_and_notarize.sh`, including after optional `--dry-run`, so help exits before package validation, credential requirements, notary zip checks, or any signing/notarization path.
+- Added strict-TDD coverage proving `--help` and `--dry-run --help` exit 0, print usage plus relevant env names, do not print package-verification or dry-run success output, keep signing/notary sentinel values redacted, and create no notary zip.
+- RED verification: `bash script/test_sign_and_notarize.sh` failed first with `sign/notarize failed: app bundle basename must be LithePG.app` and `test_sign_and_notarize failed: --help did not exit 0`.
+- GREEN verification: `bash script/test_sign_and_notarize.sh` passed; `bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh` passed; adjacent release helper tests `bash script/test_create_release_zip.sh` and `bash script/test_v10_release_gate.sh` passed; adjacent `bash -n` syntax checks passed; `git diff --check` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-help-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.

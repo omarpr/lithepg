@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG sign_and_notarize help gate evidence</title>
+  <desc id="desc">Terminal-style evidence for the v1.0 signing helper help flag hardening slice.</desc>
+  <rect width="1280" height="720" fill="#0b1020"/>
+  <rect x="36" y="32" width="1208" height="656" rx="18" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <circle cx="72" cy="66" r="8" fill="#ef4444"/>
+  <circle cx="100" cy="66" r="8" fill="#f59e0b"/>
+  <circle cx="128" cy="66" r="8" fill="#22c55e"/>
+  <text x="56" y="112" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="24" font-weight="700">v1.0 release helper hardening — sign_and_notarize --help gate</text>
+  <text x="56" y="158" fill="#93c5fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">RED</text>
+  <text x="116" y="158" fill="#fca5a5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">bash script/test_sign_and_notarize.sh</text>
+  <text x="116" y="188" fill="#fca5a5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">sign/notarize failed: app bundle basename must be LithePG.app</text>
+  <text x="116" y="216" fill="#fca5a5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">test_sign_and_notarize failed: --help did not exit 0</text>
+  <text x="56" y="270" fill="#86efac" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">GREEN</text>
+  <text x="136" y="270" fill="#d1fae5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">bash script/test_sign_and_notarize.sh &amp;&amp; bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh</text>
+  <text x="136" y="300" fill="#d1fae5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">test_sign_and_notarize passed</text>
+  <text x="56" y="354" fill="#86efac" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">REGRESSION</text>
+  <text x="180" y="354" fill="#d1fae5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">bash script/test_create_release_zip.sh &amp;&amp; bash script/test_v10_release_gate.sh</text>
+  <text x="180" y="384" fill="#d1fae5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">test_create_release_zip passed</text>
+  <text x="180" y="412" fill="#d1fae5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">test_v10_release_gate passed</text>
+  <text x="56" y="466" fill="#86efac" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">BUILD</text>
+  <text x="128" y="466" fill="#d1fae5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build</text>
+  <text x="128" y="496" fill="#d1fae5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">Build complete! (5.45s)</text>
+  <text x="56" y="550" fill="#fbbf24" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">REVIEWS</text>
+  <text x="150" y="550" fill="#fde68a" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">Spec compliance: PASS · Code quality/security: APPROVED</text>
+  <text x="56" y="614" fill="#94a3b8" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron change, or external publication was attempted.</text>
+</svg>

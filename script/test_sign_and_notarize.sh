@@ -94,6 +94,42 @@ make_minimal_app_bundle "$app_bundle"
 if ! LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
   LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
   LITHEPG_NOTARY_ZIP="$notary_zip" \
+  run_helper_capture "$output_file" --help; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "--help did not exit 0"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "Usage: sign_and_notarize.sh [--dry-run] [app-bundle]"
+assert_contains "$helper_output" "LITHEPG_CODESIGN_IDENTITY"
+assert_contains "$helper_output" "LITHEPG_NOTARY_PROFILE"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "Signing/notarization dry run OK"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+[[ ! -e "$notary_zip" ]] || fail "--help created notary zip: $notary_zip"
+
+if ! LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$notary_zip" \
+  run_helper_capture "$output_file" --dry-run --help; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "--dry-run --help did not exit 0"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "Usage: sign_and_notarize.sh [--dry-run] [app-bundle]"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "Signing/notarization dry run OK"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+[[ ! -e "$notary_zip" ]] || fail "--dry-run --help created notary zip: $notary_zip"
+
+if ! LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$notary_zip" \
   run_helper_capture "$output_file" --dry-run "$app_bundle"; then
   helper_output="$(<"$output_file")"
   printf '%s\n' "$helper_output" >&2
