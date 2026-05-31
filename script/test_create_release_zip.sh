@@ -107,6 +107,7 @@ assert_not_contains "$helper_contents" '/usr/bin/ditto -c -k --keepParent "$APP_
 
 missing_verify_output="$(mktemp)"
 wrong_app_bundle_name_output="$(mktemp)"
+wrong_output_zip_name_output="$(mktemp)"
 refuse_output="$(mktemp)"
 uppercase_overwrite_output="$(mktemp)"
 dangling_symlink_output="$(mktemp)"
@@ -121,7 +122,7 @@ success_output="$(mktemp)"
 outside_cwd_output="$(mktemp)"
 help_output="$(mktemp)"
 fixture_root="$(mktemp -d)"
-trap 'rm -f "$missing_verify_output" "$wrong_app_bundle_name_output" "$refuse_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$inside_bundle_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$success_output" "$outside_cwd_output" "$help_output"; rm -rf "$fixture_root"' EXIT
+trap 'rm -f "$missing_verify_output" "$wrong_app_bundle_name_output" "$wrong_output_zip_name_output" "$refuse_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$inside_bundle_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$success_output" "$outside_cwd_output" "$help_output"; rm -rf "$fixture_root"' EXIT
 
 sensitive_identity="SENSITIVE_CODESIGN_IDENTITY_DO_NOT_PRINT"
 sensitive_notary="SENSITIVE_NOTARY_PROFILE_DO_NOT_PRINT"
@@ -160,6 +161,25 @@ assert_not_contains "$wrong_app_bundle_name_text" "$sensitive_notary"
 assert_not_contains "$wrong_app_bundle_name_text" "$sensitive_release_marker"
 assert_file_contains "$verify_log" "package_verify dist/NotLithePG.app"
 [[ ! -e "$wrong_app_bundle_name_fixture/dist/LithePG.app.zip" ]] || fail "zip was created for a non-canonical app bundle name"
+
+# The public release helper must only create the canonical public zip basename after verification.
+wrong_output_zip_name_fixture="$fixture_root/wrong-output-zip-name"
+make_fixture "$wrong_output_zip_name_fixture"
+verify_log="$wrong_output_zip_name_fixture/verify.log"
+if FAKE_VERIFY_LOG="$verify_log" \
+  LITHEPG_CODESIGN_IDENTITY="$sensitive_identity" \
+  LITHEPG_NOTARY_PROFILE="$sensitive_notary" \
+  LITHEPG_RELEASE_MARKER="$sensitive_release_marker" \
+  run_helper_capture "$wrong_output_zip_name_fixture" "$wrong_output_zip_name_output" "dist/LithePG.app" "dist/NotLithePG.zip"; then
+  fail "helper unexpectedly created a non-canonical output zip basename"
+fi
+wrong_output_zip_name_text="$(<"$wrong_output_zip_name_output")"
+assert_contains "$wrong_output_zip_name_text" "output zip basename must be LithePG.app.zip"
+assert_not_contains "$wrong_output_zip_name_text" "$sensitive_identity"
+assert_not_contains "$wrong_output_zip_name_text" "$sensitive_notary"
+assert_not_contains "$wrong_output_zip_name_text" "$sensitive_release_marker"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+[[ ! -e "$wrong_output_zip_name_fixture/dist/NotLithePG.zip" ]] || fail "non-canonical output zip was created"
 
 # Existing output zip is refused by default after verification.
 refuse_fixture="$fixture_root/refuse-existing"

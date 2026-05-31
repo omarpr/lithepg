@@ -836,3 +836,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-app-bundle-basename-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 14:40 EDT — v1.0 release zip output-basename gate
+
+- Hardened `script/create_release_zip.sh` so the public release zip helper refuses to create an output artifact whose basename is not exactly `LithePG.app.zip`, after package verification and before any output directory or staged zip is created.
+- Added strict-TDD coverage proving `dist/NotLithePG.zip` is rejected with a generic basename message, package verification still runs first, no output zip is created, and sentinel signing/notary/release env values are not printed.
+- RED verification: `bash script/test_create_release_zip.sh` failed first with `test_create_release_zip failed: helper unexpectedly created a non-canonical output zip basename`.
+- GREEN verification: `bash script/test_create_release_zip.sh` passed; `bash -n script/create_release_zip.sh script/test_create_release_zip.sh` passed; `git diff --check` passed.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-output-basename-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.

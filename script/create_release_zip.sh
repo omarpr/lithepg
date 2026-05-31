@@ -15,7 +15,7 @@ not upload, tag, sign, notarize, push, or contact the network.
 
 Arguments:
   app-bundle   App bundle to package (default: dist/LithePG.app)
-  output-zip   Zip path to create (default: dist/LithePG.app.zip)
+  output-zip   Zip path to create; basename must be LithePG.app.zip (default: dist/LithePG.app.zip)
 
 Set LITHEPG_RELEASE_ZIP_OVERWRITE=1 (also true/yes/approved) to replace an
 existing output zip.
@@ -57,6 +57,10 @@ cd "$ROOT_DIR"
 
 if [[ "$(basename "$APP_BUNDLE")" != "LithePG.app" ]]; then
   fail "app bundle basename must be LithePG.app"
+fi
+
+if [[ "$(basename "$OUTPUT_ZIP")" != "LithePG.app.zip" ]]; then
+  fail "output zip basename must be LithePG.app.zip"
 fi
 
 absolute_lexical_path() {
