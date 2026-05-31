@@ -490,3 +490,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with mismatched release artifact filename`.
 - GREEN verification: `bash script/test_v10_release_gate.sh`, `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh`, and `git diff --check` passed. No signing, notarization, upload, Homebrew publication, tag, commit, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-30-v10-release-artifact-filename-gate.svg`.
+
+## 2026-05-31 — v1.0 release zip wrapper gate
+
+- Hardened `script/v10_release_gate.sh` so any present public release zip must contain a top-level `LithePG.app/` bundle wrapper before the fast publication preflight can pass.
+- The zip structure check uses `/usr/bin/zipinfo` without extracting files or printing archive contents, and reports only `Release artifact app wrapper: present`, `missing`, or `could not inspect`.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with release artifact missing top-level LithePG.app wrapper`.
+- GREEN verification: `bash script/test_v10_release_gate.sh`, `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh`, and `git diff --check` passed.
+- No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-wrapper-gate.svg`.

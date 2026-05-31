@@ -53,6 +53,7 @@ redaction_output="$(mktemp)"
 missing_artifact_output="$(mktemp)"
 missing_artifact_zip="$(mktemp)"
 artifact_filename_mismatch_output="$(mktemp)"
+artifact_app_wrapper_missing_output="$(mktemp)"
 missing_artifact_sha_output="$(mktemp)"
 invalid_artifact_sha_output="$(mktemp)"
 mismatched_artifact_sha_output="$(mktemp)"
@@ -135,6 +136,10 @@ placeholder_security_doc="$(mktemp)"
 placeholder_free_security_doc="$(mktemp)"
 release_zip_dir="$(mktemp -d)"
 release_zip_fixture="$release_zip_dir/LithePG.app.zip"
+missing_wrapper_zip_dir="$(mktemp -d)"
+missing_wrapper_zip="$missing_wrapper_zip_dir/LithePG.app.zip"
+missing_wrapper_release_copy="$(mktemp)"
+missing_wrapper_homebrew_cask="$(mktemp)"
 wrong_basename_zip_dir="$(mktemp -d)"
 wrong_basename_zip="$wrong_basename_zip_dir/NotLithePG.zip"
 grep_error_release_copy="$(mktemp)"
@@ -151,6 +156,7 @@ cleanup() {
     "$missing_artifact_output" \
     "$missing_artifact_zip" \
     "$artifact_filename_mismatch_output" \
+    "$artifact_app_wrapper_missing_output" \
     "$missing_artifact_sha_output" \
     "$invalid_artifact_sha_output" \
     "$mismatched_artifact_sha_output" \
@@ -232,10 +238,13 @@ cleanup() {
     "$placeholder_security_doc" \
     "$placeholder_free_security_doc" \
     "$release_zip_fixture" \
+    "$missing_wrapper_zip" \
+    "$missing_wrapper_release_copy" \
+    "$missing_wrapper_homebrew_cask" \
     "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$release_zip_dir" "$wrong_basename_zip_dir"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$release_zip_dir" "$missing_wrapper_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
@@ -321,10 +330,23 @@ exec /usr/bin/grep "$@"
 FAKE_GREP
 chmod +x "$fake_git_dir/grep"
 fake_path="$fake_git_dir:${PATH:-/usr/bin:/bin}"
-printf 'fake public release zip fixture\n' >"$release_zip_fixture"
+mkdir -p "$release_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
+printf 'fake public release app executable fixture\n' >"$release_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePG"
+(
+  cd "$release_zip_dir/fixture-root"
+  /usr/bin/zip -qr "$release_zip_fixture" LithePG.app
+)
 release_zip_sha="$(/usr/bin/shasum -a 256 "$release_zip_fixture" | /usr/bin/cut -d ' ' -f 1)"
 release_zip_sha_upper="$(printf '%s' "$release_zip_sha" | /usr/bin/tr '[:lower:]' '[:upper:]')"
 /bin/cp "$release_zip_fixture" "$wrong_basename_zip"
+mkdir -p "$missing_wrapper_zip_dir/fixture-root/NotLithePG.app/Contents/MacOS"
+printf 'fake wrong release app executable fixture\n' >"$missing_wrapper_zip_dir/fixture-root/NotLithePG.app/Contents/MacOS/NotLithePG"
+(
+  cd "$missing_wrapper_zip_dir/fixture-root"
+  /usr/bin/zip -qr "$missing_wrapper_zip" NotLithePG.app
+)
+missing_wrapper_zip_sha="$(/usr/bin/shasum -a 256 "$missing_wrapper_zip" | /usr/bin/cut -d ' ' -f 1)"
+printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$missing_wrapper_zip_sha" >"$missing_wrapper_release_copy"
 printf 'LithePG v1.0 release copy with REPLACE_WITH_FINAL_VALUE placeholder.\n' >"$placeholder_release_copy"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$release_zip_sha" >"$placeholder_free_release_copy"
 wrong_release_copy_sha="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
@@ -357,6 +379,28 @@ cat >"$placeholder_free_homebrew_cask" <<CASK
 cask "lithepg" do
   version "1.0"
   sha256 "$release_zip_sha"
+
+  url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
+      verified: "github.com/omarpr/lithepg/"
+  name "LithePG"
+  desc "Lean PostgreSQL client with local-first AI"
+  homepage "https://github.com/omarpr/lithepg"
+  uninstall quit: "dev.omarpr.lithepg"
+
+  depends_on macos: ">= :sonoma"
+
+  app "LithePG.app"
+
+  zap trash: [
+    "~/Library/Application Support/LithePG",
+    "~/Library/Preferences/dev.omarpr.lithepg.plist",
+  ]
+end
+CASK
+cat >"$missing_wrapper_homebrew_cask" <<CASK
+cask "lithepg" do
+  version "1.0"
+  sha256 "$missing_wrapper_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
@@ -1072,6 +1116,36 @@ assert_contains "$artifact_filename_mismatch_text" "v1.0 publication blocked"
 assert_not_contains "$artifact_filename_mismatch_text" "$wrong_basename_zip"
 assert_not_contains "$artifact_filename_mismatch_text" "$release_zip_sha"
 assert_not_contains "$artifact_filename_mismatch_text" "fast preflight is clear"
+
+if run_gate_capture "$artifact_app_wrapper_missing_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$missing_wrapper_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$missing_wrapper_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$missing_wrapper_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$missing_wrapper_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  artifact_app_wrapper_missing_text="$(<"$artifact_app_wrapper_missing_output")"
+  assert_not_contains "$artifact_app_wrapper_missing_text" "NotLithePG.app"
+  assert_not_contains "$artifact_app_wrapper_missing_text" "$missing_wrapper_zip_sha"
+  fail "gate unexpectedly passed with release artifact missing top-level LithePG.app wrapper"
+fi
+artifact_app_wrapper_missing_text="$(<"$artifact_app_wrapper_missing_output")"
+assert_contains "$artifact_app_wrapper_missing_text" "Release artifact filename: matches"
+assert_contains "$artifact_app_wrapper_missing_text" "Release artifact zip: present"
+assert_contains "$artifact_app_wrapper_missing_text" "Release artifact app wrapper: missing"
+assert_contains "$artifact_app_wrapper_missing_text" "Release artifact SHA-256: matches"
+assert_contains "$artifact_app_wrapper_missing_text" "v1.0 publication blocked"
+assert_not_contains "$artifact_app_wrapper_missing_text" "NotLithePG.app"
+assert_not_contains "$artifact_app_wrapper_missing_text" "$missing_wrapper_zip_sha"
+assert_not_contains "$artifact_app_wrapper_missing_text" "fast preflight is clear"
 
 if run_gate_capture "$missing_artifact_sha_output" env -i \
   PATH="$fake_path" \
@@ -2209,6 +2283,7 @@ assert_contains "$no_remote_lookup_text" "Homebrew cask Ruby syntax: valid"
 assert_contains "$no_remote_lookup_text" "Homebrew cask SHA-256: matches"
 assert_contains "$no_remote_lookup_text" "Release artifact filename: matches"
 assert_contains "$no_remote_lookup_text" "Release artifact zip: present"
+assert_contains "$no_remote_lookup_text" "Release artifact app wrapper: present"
 assert_contains "$no_remote_lookup_text" "Release artifact SHA-256: matches"
 assert_contains "$no_remote_lookup_text" "Remote origin tag v1.0: not checked (set LITHEPG_CHECK_REMOTE_TAGS=1 or pass --check-remote)"
 if [[ -e "$fake_git_marker" ]]; then

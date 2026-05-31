@@ -393,6 +393,30 @@ release_zip_full_path() {
   esac
 }
 
+release_zip_has_top_level_app_wrapper() {
+  local zip_file="$1"
+  local zip_entries=""
+  local entry=""
+
+  if [[ ! -x /usr/bin/zipinfo ]]; then
+    return 2
+  fi
+
+  if ! zip_entries="$(/usr/bin/zipinfo -1 "$zip_file" 2>/dev/null)"; then
+    return 2
+  fi
+
+  while IFS= read -r entry || [[ -n "$entry" ]]; do
+    case "$entry" in
+      LithePG.app/*)
+        return 0
+        ;;
+    esac
+  done <<<"$zip_entries"
+
+  return 1
+}
+
 cd "$ROOT_DIR"
 
 printf 'LithePG %s fast publication preflight\n' "$TAG"
@@ -816,6 +840,20 @@ if [[ ! -f "$release_zip_file" ]]; then
 else
   printf 'Release artifact zip: present\n'
   release_zip_present=1
+fi
+
+if [[ "$release_zip_present" -eq 1 ]]; then
+  if release_zip_has_top_level_app_wrapper "$release_zip_file"; then
+    printf 'Release artifact app wrapper: present\n'
+  else
+    release_zip_wrapper_status=$?
+    if [[ "$release_zip_wrapper_status" -eq 1 ]]; then
+      printf 'Release artifact app wrapper: missing\n'
+    else
+      printf 'Release artifact app wrapper: could not inspect\n'
+    fi
+    mark_blocker
+  fi
 fi
 
 if [[ -z "$RELEASE_ZIP_SHA256" ]]; then
