@@ -761,3 +761,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED after confirming the cleanup-trap quoting concern was only a tool-output escaping artifact.
 - Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-non-dangling-symlink-overwrite.svg`.
 - No release signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 10:58 EDT — v1.0 release zip exact overwrite approval hardening
+
+- Hardened `script/create_release_zip.sh` so `LITHEPG_RELEASE_ZIP_OVERWRITE` accepts only the documented exact approvals: `1`, `true`, `yes`, and `approved`.
+- Added strict-TDD coverage proving undocumented uppercase `LITHEPG_RELEASE_ZIP_OVERWRITE=APPROVED` is refused for an existing `dist/LithePG.app.zip`, runs package verification first, prints the overwrite-approval hint, and preserves the existing file contents.
+- RED verification: `bash script/test_create_release_zip.sh` failed first with `test_create_release_zip failed: helper unexpectedly accepted undocumented uppercase overwrite approval`.
+- GREEN verification: `bash script/test_create_release_zip.sh` passed; `bash -n script/create_release_zip.sh script/test_create_release_zip.sh` passed; `git diff --check` passed.
+- Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-uppercase-overwrite-rejection.svg`.
+- No release signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.

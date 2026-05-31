@@ -29,7 +29,7 @@ fail() {
 
 is_approved() {
   case "${1:-}" in
-    1|true|TRUE|True|yes|YES|Yes|approved|APPROVED|Approved)
+    1|true|yes|approved)
       return 0
       ;;
     *)

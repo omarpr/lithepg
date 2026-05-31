@@ -107,6 +107,7 @@ assert_not_contains "$helper_contents" '/usr/bin/ditto -c -k --keepParent "$APP_
 
 missing_verify_output="$(mktemp)"
 refuse_output="$(mktemp)"
+uppercase_overwrite_output="$(mktemp)"
 dangling_symlink_output="$(mktemp)"
 overwrite_output="$(mktemp)"
 approved_symlink_output="$(mktemp)"
@@ -119,7 +120,7 @@ success_output="$(mktemp)"
 outside_cwd_output="$(mktemp)"
 help_output="$(mktemp)"
 fixture_root="$(mktemp -d)"
-trap 'rm -f "$missing_verify_output" "$refuse_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$inside_bundle_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$success_output" "$outside_cwd_output" "$help_output"; rm -rf "$fixture_root"' EXIT
+trap 'rm -f "$missing_verify_output" "$refuse_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$inside_bundle_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$success_output" "$outside_cwd_output" "$help_output"; rm -rf "$fixture_root"' EXIT
 
 sensitive_identity="SENSITIVE_CODESIGN_IDENTITY_DO_NOT_PRINT"
 sensitive_notary="SENSITIVE_NOTARY_PROFILE_DO_NOT_PRINT"
@@ -153,6 +154,22 @@ assert_contains "$refuse_text" "Refusing to overwrite existing output zip"
 assert_contains "$refuse_text" "LITHEPG_RELEASE_ZIP_OVERWRITE=1"
 assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
 [[ "$(<"$refuse_fixture/dist/LithePG.app.zip")" == "existing zip" ]] || fail "existing zip content changed despite refusal"
+
+# Undocumented uppercase overwrite approval must be refused and preserve the existing zip.
+uppercase_overwrite_fixture="$fixture_root/refuse-uppercase-overwrite"
+make_fixture "$uppercase_overwrite_fixture"
+printf 'existing uppercase zip\n' >"$uppercase_overwrite_fixture/dist/LithePG.app.zip"
+verify_log="$uppercase_overwrite_fixture/verify.log"
+if FAKE_VERIFY_LOG="$verify_log" \
+  LITHEPG_RELEASE_ZIP_OVERWRITE="APPROVED" \
+  run_helper_capture "$uppercase_overwrite_fixture" "$uppercase_overwrite_output" "dist/LithePG.app" "dist/LithePG.app.zip"; then
+  fail "helper unexpectedly accepted undocumented uppercase overwrite approval"
+fi
+uppercase_overwrite_text="$(<"$uppercase_overwrite_output")"
+assert_contains "$uppercase_overwrite_text" "Refusing to overwrite existing output zip"
+assert_contains "$uppercase_overwrite_text" "LITHEPG_RELEASE_ZIP_OVERWRITE=1"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+[[ "$(<"$uppercase_overwrite_fixture/dist/LithePG.app.zip")" == "existing uppercase zip" ]] || fail "existing zip content changed despite uppercase overwrite refusal"
 
 # Dangling output symlink is refused by default after verification; it must not be followed or removed.
 dangling_fixture="$fixture_root/refuse-dangling-symlink"
