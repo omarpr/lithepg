@@ -499,3 +499,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh`, `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh`, and `git diff --check` passed.
 - No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-wrapper-gate.svg`.
+
+## 2026-05-31 00:31 EDT — v1.0 release zip bundle contents gate
+
+- Hardened `script/v10_release_gate.sh` so the public `LithePG.app.zip` structure check now requires the top-level `LithePG.app` wrapper plus exact `LithePG.app/Contents/Info.plist` and `LithePG.app/Contents/MacOS/LithePGApp` entries before the fast preflight can pass.
+- Added redacted shell TDD coverage for a zip that contains `LithePG.app/` but omits the essential bundle files; output reports only `Release artifact bundle contents: missing` without printing archive contents.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with release artifact missing essential app bundle contents`.
+- GREEN verification: `bash script/test_v10_release_gate.sh`, `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh`, and `git diff --check` passed.
+- No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-bundle-contents-gate.svg`.

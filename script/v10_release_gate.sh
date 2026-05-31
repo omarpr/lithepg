@@ -393,10 +393,13 @@ release_zip_full_path() {
   esac
 }
 
-release_zip_has_top_level_app_wrapper() {
+release_zip_app_bundle_structure_status() {
   local zip_file="$1"
   local zip_entries=""
   local entry=""
+  local has_app_wrapper=0
+  local has_info_plist=0
+  local has_app_executable=0
 
   if [[ ! -x /usr/bin/zipinfo ]]; then
     return 2
@@ -408,13 +411,27 @@ release_zip_has_top_level_app_wrapper() {
 
   while IFS= read -r entry || [[ -n "$entry" ]]; do
     case "$entry" in
-      LithePG.app/*)
-        return 0
+      LithePG.app|LithePG.app/*)
+        has_app_wrapper=1
         ;;
     esac
+
+    if [[ "$entry" == "LithePG.app/Contents/Info.plist" ]]; then
+      has_info_plist=1
+    elif [[ "$entry" == "LithePG.app/Contents/MacOS/LithePGApp" ]]; then
+      has_app_executable=1
+    fi
   done <<<"$zip_entries"
 
-  return 1
+  if [[ "$has_app_wrapper" -ne 1 ]]; then
+    return 1
+  fi
+
+  if [[ "$has_info_plist" -ne 1 || "$has_app_executable" -ne 1 ]]; then
+    return 3
+  fi
+
+  return 0
 }
 
 cd "$ROOT_DIR"
@@ -843,15 +860,23 @@ else
 fi
 
 if [[ "$release_zip_present" -eq 1 ]]; then
-  if release_zip_has_top_level_app_wrapper "$release_zip_file"; then
+  if release_zip_app_bundle_structure_status "$release_zip_file"; then
     printf 'Release artifact app wrapper: present\n'
+    printf 'Release artifact bundle contents: present\n'
   else
-    release_zip_wrapper_status=$?
-    if [[ "$release_zip_wrapper_status" -eq 1 ]]; then
-      printf 'Release artifact app wrapper: missing\n'
-    else
-      printf 'Release artifact app wrapper: could not inspect\n'
-    fi
+    release_zip_structure_status=$?
+    case "$release_zip_structure_status" in
+      1)
+        printf 'Release artifact app wrapper: missing\n'
+        ;;
+      3)
+        printf 'Release artifact app wrapper: present\n'
+        printf 'Release artifact bundle contents: missing\n'
+        ;;
+      *)
+        printf 'Release artifact app wrapper: could not inspect\n'
+        ;;
+    esac
     mark_blocker
   fi
 fi
