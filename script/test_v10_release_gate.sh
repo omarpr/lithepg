@@ -52,6 +52,7 @@ missing_output="$(mktemp)"
 redaction_output="$(mktemp)"
 missing_artifact_output="$(mktemp)"
 missing_artifact_zip="$(mktemp)"
+artifact_filename_mismatch_output="$(mktemp)"
 missing_artifact_sha_output="$(mktemp)"
 invalid_artifact_sha_output="$(mktemp)"
 mismatched_artifact_sha_output="$(mktemp)"
@@ -132,7 +133,10 @@ unterminated_zap_homebrew_cask="$(mktemp)"
 syntax_error_homebrew_cask="$(mktemp)"
 placeholder_security_doc="$(mktemp)"
 placeholder_free_security_doc="$(mktemp)"
-release_zip_fixture="$(mktemp)"
+release_zip_dir="$(mktemp -d)"
+release_zip_fixture="$release_zip_dir/LithePG.app.zip"
+wrong_basename_zip_dir="$(mktemp -d)"
+wrong_basename_zip="$wrong_basename_zip_dir/NotLithePG.zip"
 grep_error_release_copy="$(mktemp)"
 missing_release_copy="$(mktemp)"
 rm -f "$missing_release_copy"
@@ -146,6 +150,7 @@ cleanup() {
     "$redaction_output" \
     "$missing_artifact_output" \
     "$missing_artifact_zip" \
+    "$artifact_filename_mismatch_output" \
     "$missing_artifact_sha_output" \
     "$invalid_artifact_sha_output" \
     "$mismatched_artifact_sha_output" \
@@ -227,9 +232,10 @@ cleanup() {
     "$placeholder_security_doc" \
     "$placeholder_free_security_doc" \
     "$release_zip_fixture" \
+    "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$release_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
@@ -318,6 +324,7 @@ fake_path="$fake_git_dir:${PATH:-/usr/bin:/bin}"
 printf 'fake public release zip fixture\n' >"$release_zip_fixture"
 release_zip_sha="$(/usr/bin/shasum -a 256 "$release_zip_fixture" | /usr/bin/cut -d ' ' -f 1)"
 release_zip_sha_upper="$(printf '%s' "$release_zip_sha" | /usr/bin/tr '[:lower:]' '[:upper:]')"
+/bin/cp "$release_zip_fixture" "$wrong_basename_zip"
 printf 'LithePG v1.0 release copy with REPLACE_WITH_FINAL_VALUE placeholder.\n' >"$placeholder_release_copy"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$release_zip_sha" >"$placeholder_free_release_copy"
 wrong_release_copy_sha="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
@@ -1036,6 +1043,35 @@ missing_artifact_text="$(<"$missing_artifact_output")"
 assert_contains "$missing_artifact_text" "Release artifact zip: missing at $missing_artifact_zip"
 assert_contains "$missing_artifact_text" "v1.0 publication blocked"
 assert_not_contains "$missing_artifact_text" "fast preflight is clear"
+
+if run_gate_capture "$artifact_filename_mismatch_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$wrong_basename_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  artifact_filename_mismatch_text="$(<"$artifact_filename_mismatch_output")"
+  assert_not_contains "$artifact_filename_mismatch_text" "$wrong_basename_zip"
+  assert_not_contains "$artifact_filename_mismatch_text" "$release_zip_sha"
+  fail "gate unexpectedly passed with mismatched release artifact filename"
+fi
+artifact_filename_mismatch_text="$(<"$artifact_filename_mismatch_output")"
+assert_contains "$artifact_filename_mismatch_text" "Release artifact filename: mismatch"
+assert_contains "$artifact_filename_mismatch_text" "Release artifact zip: present"
+assert_contains "$artifact_filename_mismatch_text" "Release artifact SHA-256: matches"
+assert_contains "$artifact_filename_mismatch_text" "v1.0 publication blocked"
+assert_not_contains "$artifact_filename_mismatch_text" "$wrong_basename_zip"
+assert_not_contains "$artifact_filename_mismatch_text" "$release_zip_sha"
+assert_not_contains "$artifact_filename_mismatch_text" "fast preflight is clear"
 
 if run_gate_capture "$missing_artifact_sha_output" env -i \
   PATH="$fake_path" \
@@ -2171,6 +2207,7 @@ assert_contains "$no_remote_lookup_text" "Homebrew cask macOS requirement: match
 assert_contains "$no_remote_lookup_text" "Homebrew cask zap stanza: matches"
 assert_contains "$no_remote_lookup_text" "Homebrew cask Ruby syntax: valid"
 assert_contains "$no_remote_lookup_text" "Homebrew cask SHA-256: matches"
+assert_contains "$no_remote_lookup_text" "Release artifact filename: matches"
 assert_contains "$no_remote_lookup_text" "Release artifact zip: present"
 assert_contains "$no_remote_lookup_text" "Release artifact SHA-256: matches"
 assert_contains "$no_remote_lookup_text" "Remote origin tag v1.0: not checked (set LITHEPG_CHECK_REMOTE_TAGS=1 or pass --check-remote)"

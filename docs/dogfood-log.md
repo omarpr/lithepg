@@ -482,3 +482,11 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed.
 - No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-30-v10-release-copy-checklist-gate.svg`.
+
+## 2026-05-30 23:49 EDT — v1.0 release artifact filename gate
+
+- Hardened `script/v10_release_gate.sh` so the fast publication preflight blocks when the `LITHEPG_RELEASE_ZIP_PATH` basename is not exactly the public artifact name `LithePG.app.zip`.
+- The filename check runs in `Release artifact readiness:` independently from file/SHA checks and reports only `Release artifact filename: matches` or `Release artifact filename: mismatch`.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with mismatched release artifact filename`.
+- GREEN verification: `bash script/test_v10_release_gate.sh`, `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh`, and `git diff --check` passed. No signing, notarization, upload, Homebrew publication, tag, commit, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-30-v10-release-artifact-filename-gate.svg`.

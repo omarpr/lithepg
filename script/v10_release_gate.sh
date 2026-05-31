@@ -23,8 +23,9 @@ to scan non-default release copy or Homebrew cask files. Set
 LITHEPG_SECURITY_DOC_PATH to scan one alternate security policy file instead of
 the default SECURITY.md and docs/SECURITY.md files (paths may be relative to the
 repository root or absolute). Set LITHEPG_RELEASE_ZIP_PATH to the final public
-release zip artifact path (default: dist/LithePG.app.zip) and
-LITHEPG_RELEASE_ZIP_SHA256 to the approved expected 64-hex SHA-256 digest.
+release zip artifact path (default: dist/LithePG.app.zip; basename must be
+LithePG.app.zip) and LITHEPG_RELEASE_ZIP_SHA256 to the approved expected
+64-hex SHA-256 digest.
 USAGE
 }
 
@@ -802,6 +803,13 @@ done
 printf '\nRelease artifact readiness:\n'
 release_zip_file="$(release_zip_full_path)"
 release_zip_present=0
+if [[ "${RELEASE_ZIP_PATH##*/}" == "LithePG.app.zip" ]]; then
+  printf 'Release artifact filename: matches\n'
+else
+  printf 'Release artifact filename: mismatch\n'
+  mark_blocker
+fi
+
 if [[ ! -f "$release_zip_file" ]]; then
   printf 'Release artifact zip: missing at %s\n' "$RELEASE_ZIP_PATH"
   mark_blocker
