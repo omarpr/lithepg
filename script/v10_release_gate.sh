@@ -195,6 +195,20 @@ extract_homebrew_cask_verified_url() {
   return 1
 }
 
+extract_homebrew_cask_homepage() {
+  local cask_file="$1"
+  local line=""
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" =~ ^[[:space:]]*homepage[[:space:]]+\"([^\"]+)\" ]]; then
+      printf '%s\n' "${BASH_REMATCH[1]}"
+      return 0
+    fi
+  done <"$cask_file"
+
+  return 1
+}
+
 extract_homebrew_cask_app_stanza() {
   local cask_file="$1"
   local line=""
@@ -502,6 +516,20 @@ if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
     fi
   else
     printf 'Homebrew cask verified URL: missing\n'
+    mark_blocker
+  fi
+fi
+
+if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
+  if cask_homepage="$(extract_homebrew_cask_homepage "$homebrew_cask_file")"; then
+    if [[ "$cask_homepage" == "https://github.com/omarpr/lithepg" ]]; then
+      printf 'Homebrew cask homepage: matches\n'
+    else
+      printf 'Homebrew cask homepage: mismatch\n'
+      mark_blocker
+    fi
+  else
+    printf 'Homebrew cask homepage: missing\n'
     mark_blocker
   fi
 fi

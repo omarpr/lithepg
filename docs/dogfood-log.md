@@ -412,3 +412,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - RED verification: `bash script/test_v10_release_gate.sh` failed first with `gate unexpectedly passed with mismatched Homebrew cask zap stanza`.
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed after the minimal parser/readiness check was added; final syntax/whitespace checks were run for this slice.
 - Evidence artifact: `docs/evidence/2026-05-30-v10-homebrew-cask-zap-stanza-gate.svg`.
+
+## 2026-05-30 20:18 EDT — v1.0 Homebrew cask homepage gate
+
+- Hardened `script/v10_release_gate.sh` so placeholder-free Homebrew casks must include `homepage "https://github.com/omarpr/lithepg"` before the fast publication preflight can pass.
+- Added redacted shell TDD coverage for wrong and missing homepage stanzas, the valid `Homebrew cask homepage: matches` pass path, and placeholder-cask no-noise behavior.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `gate unexpectedly passed with mismatched Homebrew cask homepage`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed with no output; `./script/v10_release_gate.sh --check-remote` remained safely blocked on expected local/publication inputs/placeholders.
+- No signing, notarization, upload, Homebrew publication, tag, push, commit, or cron changes were attempted.
+- Evidence artifact: `docs/evidence/2026-05-30-v10-homebrew-cask-homepage-gate.svg`.
