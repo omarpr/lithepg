@@ -434,6 +434,55 @@ release_zip_app_bundle_structure_status() {
   return 0
 }
 
+release_zip_bundle_file_types_status() {
+  local zip_file="$1"
+  local zip_listing=""
+  local line=""
+  local mode=""
+  local entry_rest=""
+  local entry_name=""
+  local has_info_plist=0
+  local has_app_executable=0
+  local invalid_bundle_file_type=0
+
+  if [[ ! -x /usr/bin/zipinfo ]]; then
+    return 2
+  fi
+
+  if ! zip_listing="$(/usr/bin/zipinfo -l "$zip_file" 2>/dev/null)"; then
+    return 2
+  fi
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    mode=""
+    entry_rest=""
+    read -r mode _zip_version _zip_system _uncompressed_size _entry_type _compressed_size _method _date _time entry_rest <<<"$line" || true
+    entry_name="${entry_rest%% -> *}"
+
+    if [[ "$entry_name" == "LithePG.app/Contents/Info.plist" ]]; then
+      has_info_plist=1
+      if [[ "$mode" != -* ]]; then
+        invalid_bundle_file_type=1
+      fi
+    elif [[ "$entry_name" == "LithePG.app/Contents/MacOS/LithePGApp" ]]; then
+      has_app_executable=1
+      if [[ "$mode" != -* ]]; then
+        invalid_bundle_file_type=1
+      fi
+    fi
+  done <<<"$zip_listing"
+
+  if [[ "$invalid_bundle_file_type" -eq 1 ]]; then
+    return 1
+  fi
+
+  if [[ "$has_info_plist" -ne 1 || "$has_app_executable" -ne 1 ]]; then
+    return 2
+  fi
+
+  return 0
+}
+
 release_zip_top_level_entries_status() {
   local zip_file="$1"
   local zip_entries=""
@@ -896,9 +945,11 @@ else
 fi
 
 if [[ "$release_zip_present" -eq 1 ]]; then
+  release_zip_structure_ready=0
   if release_zip_app_bundle_structure_status "$release_zip_file"; then
     printf 'Release artifact app wrapper: present\n'
     printf 'Release artifact bundle contents: present\n'
+    release_zip_structure_ready=1
   else
     release_zip_structure_status=$?
     case "$release_zip_structure_status" in
@@ -911,9 +962,27 @@ if [[ "$release_zip_present" -eq 1 ]]; then
         ;;
       *)
         printf 'Release artifact app wrapper: could not inspect\n'
+        printf 'Release artifact bundle file types: could not inspect\n'
         ;;
     esac
     mark_blocker
+  fi
+
+  if [[ "$release_zip_structure_ready" -eq 1 ]]; then
+    if release_zip_bundle_file_types_status "$release_zip_file"; then
+      printf 'Release artifact bundle file types: regular\n'
+    else
+      release_zip_file_types_status=$?
+      case "$release_zip_file_types_status" in
+        1)
+          printf 'Release artifact bundle file types: invalid\n'
+          ;;
+        *)
+          printf 'Release artifact bundle file types: could not inspect\n'
+          ;;
+      esac
+      mark_blocker
+    fi
   fi
 
   if release_zip_top_level_entries_status "$release_zip_file"; then

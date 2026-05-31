@@ -517,3 +517,19 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed.
 - No signing, notarization, upload, Homebrew publication, tag, commit, push, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-top-level-entries-gate.svg`.
+
+## 2026-05-31 01:19 EDT — v1.0 release zip bundle file type gate
+
+- Hardened `script/v10_release_gate.sh` so a present public `LithePG.app.zip` is blocked when either essential app bundle entry (`LithePG.app/Contents/Info.plist` or `LithePG.app/Contents/MacOS/LithePGApp`) is a symlink or other non-regular archive entry.
+- Added redacted shell TDD coverage for a zip whose essential bundle entries are symlinks while all name-based artifact/SHA/cask checks otherwise pass; output reports only `Release artifact bundle file types: invalid` and does not print archive contents, symlink targets, paths beyond existing configured path status, or SHA values.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with symlink essential app bundle files`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed; final syntax/whitespace checks were run for this shell/docs slice.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-bundle-file-types-gate.svg`.
+
+## 2026-05-31 01:26 EDT — v1.0 release zip bundle file type gate spec review follow-up
+
+- Closed the spec review gap where an uninspectable present `LithePG.app.zip` printed `Release artifact app wrapper: could not inspect` but skipped the required `Release artifact bundle file types: could not inspect` line.
+- Added redacted shell TDD coverage using a non-zip file with the correct `LithePG.app.zip` basename; the test asserts both could-not-inspect status lines and that archive contents/SHA values do not leak.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: expected output to contain: Release artifact bundle file types: could not inspect`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed before the log receipt update; final syntax/whitespace checks were run for this shell/docs slice.
+- No signing, notarization, upload, Homebrew publication, tag, commit, push, cron changes, or external publication was attempted.
