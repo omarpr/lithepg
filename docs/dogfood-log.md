@@ -533,3 +533,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: expected output to contain: Release artifact bundle file types: could not inspect`.
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed before the log receipt update; final syntax/whitespace checks were run for this shell/docs slice.
 - No signing, notarization, upload, Homebrew publication, tag, commit, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 01:53 EDT — v1.0 release zip executable permission gate
+
+- Hardened `script/v10_release_gate.sh` so a present public `LithePG.app.zip` is blocked when `LithePG.app/Contents/MacOS/LithePGApp` is a regular archive entry but lacks owner executable permission.
+- Added redacted shell TDD coverage for a zip with the correct wrapper, required bundle entries, clean top-level entries, matching SHA/release-copy/cask metadata, and a non-executable app executable; added a follow-up regression fixture for mode `0645`, where group/other execute bits are present but owner execute is missing. Output reports only `Release artifact bundle executable: not executable` without printing archive contents or SHA values.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with non-executable app bundle executable`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed after the minimal parser/readiness check was added; final syntax/whitespace/fast-preflight checks were run for this shell/docs slice.
+- No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-executable-permission-gate.svg`.

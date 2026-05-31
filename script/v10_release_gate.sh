@@ -483,6 +483,46 @@ release_zip_bundle_file_types_status() {
   return 0
 }
 
+release_zip_bundle_executable_permission_status() {
+  local zip_file="$1"
+  local zip_listing=""
+  local line=""
+  local mode=""
+  local entry_rest=""
+  local entry_name=""
+  local executable_mode=""
+
+  if [[ ! -x /usr/bin/zipinfo ]]; then
+    return 2
+  fi
+
+  if ! zip_listing="$(/usr/bin/zipinfo -l "$zip_file" 2>/dev/null)"; then
+    return 2
+  fi
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    mode=""
+    entry_rest=""
+    read -r mode _zip_version _zip_system _uncompressed_size _entry_type _compressed_size _method _date _time entry_rest <<<"$line" || true
+    entry_name="${entry_rest%% -> *}"
+
+    if [[ "$entry_name" == "LithePG.app/Contents/MacOS/LithePGApp" ]]; then
+      executable_mode="$mode"
+      break
+    fi
+  done <<<"$zip_listing"
+
+  if [[ -z "$executable_mode" || "$executable_mode" != -* ]]; then
+    return 2
+  fi
+
+  if [[ "${executable_mode:3:1}" == "x" ]]; then
+    return 0
+  fi
+
+  return 1
+}
+
 release_zip_top_level_entries_status() {
   local zip_file="$1"
   local zip_entries=""
@@ -969,8 +1009,10 @@ if [[ "$release_zip_present" -eq 1 ]]; then
   fi
 
   if [[ "$release_zip_structure_ready" -eq 1 ]]; then
+    release_zip_file_types_ready=0
     if release_zip_bundle_file_types_status "$release_zip_file"; then
       printf 'Release artifact bundle file types: regular\n'
+      release_zip_file_types_ready=1
     else
       release_zip_file_types_status=$?
       case "$release_zip_file_types_status" in
@@ -982,6 +1024,23 @@ if [[ "$release_zip_present" -eq 1 ]]; then
           ;;
       esac
       mark_blocker
+    fi
+
+    if [[ "$release_zip_file_types_ready" -eq 1 ]]; then
+      if release_zip_bundle_executable_permission_status "$release_zip_file"; then
+        printf 'Release artifact bundle executable: executable\n'
+      else
+        release_zip_executable_status=$?
+        case "$release_zip_executable_status" in
+          1)
+            printf 'Release artifact bundle executable: not executable\n'
+            ;;
+          *)
+            printf 'Release artifact bundle executable: could not inspect\n'
+            ;;
+        esac
+        mark_blocker
+      fi
     fi
   fi
 

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release zip executable permission gate evidence</title>
+  <desc id="desc">Verification receipt for the v1.0 release zip owner executable permission gate.</desc>
+  <rect width="1280" height="720" fill="#0b1020"/>
+  <rect x="32" y="32" width="1216" height="656" rx="18" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="64" y="86" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="28" font-weight="700">LithePG v1.0 release zip executable permission gate</text>
+  <text x="64" y="128" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="18">2026-05-31 01:53 EDT · local shell/docs gate · no signing/notary/upload/tag</text>
+
+  <rect x="64" y="158" width="1152" height="120" rx="10" fill="#1f2937" stroke="#475569"/>
+  <text x="88" y="194" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">RED</text>
+  <text x="88" y="226" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="17">bash script/test_v10_release_gate.sh</text>
+  <text x="88" y="254" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="16">failed first: gate unexpectedly passed with non-executable app bundle executable</text>
+
+  <rect x="64" y="302" width="1152" height="152" rx="10" fill="#1f2937" stroke="#475569"/>
+  <text x="88" y="338" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">GREEN</text>
+  <text x="88" y="370" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="17">bash script/test_v10_release_gate.sh</text>
+  <text x="88" y="398" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="16">test_v10_release_gate passed</text>
+  <text x="88" y="426" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="16">bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh · git diff --check</text>
+
+  <rect x="64" y="478" width="1152" height="132" rx="10" fill="#1f2937" stroke="#475569"/>
+  <text x="88" y="514" fill="#fde68a" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">Gate behavior</text>
+  <text x="88" y="546" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="16">Blocks LithePG.app.zip when Contents/MacOS/LithePGApp lacks owner executable permission.</text>
+  <text x="88" y="574" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="16">Redacted status line: Release artifact bundle executable: not executable</text>
+  <text x="88" y="602" fill="#94a3b8" font-family="Menlo, Consolas, monospace" font-size="16">Fast preflight remains blocked only on expected v1.0 publication inputs/placeholders/artifact.</text>
+
+  <text x="64" y="656" fill="#64748b" font-family="Menlo, Consolas, monospace" font-size="14">Evidence artifact: docs/evidence/2026-05-31-v10-release-zip-executable-permission-gate.svg</text>
+</svg>
