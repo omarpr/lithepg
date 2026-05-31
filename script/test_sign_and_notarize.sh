@@ -108,6 +108,99 @@ assert_contains "$helper_output" "Codesign identity: present (redacted)"
 assert_contains "$helper_output" "Notary profile: present (redacted)"
 [[ ! -e "$notary_zip" ]] || fail "dry run created notary zip: $notary_zip"
 
+existing_notary_zip_marker='EXISTING_NOTARY_ZIP_SHOULD_SURVIVE'
+printf '%s\n' "$existing_notary_zip_marker" >"$notary_zip"
+
+if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$notary_zip" \
+  run_helper_capture "$output_file" --dry-run "$app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "dry run unexpectedly passed with existing notary zip without overwrite approval"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "notary zip already exists; set LITHEPG_NOTARY_ZIP_OVERWRITE=approved to replace it"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+assert_contains "$(<"$notary_zip")" "$existing_notary_zip_marker"
+
+if ! LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$notary_zip" \
+  LITHEPG_NOTARY_ZIP_OVERWRITE=approved \
+  run_helper_capture "$output_file" --dry-run "$app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "dry run unexpectedly failed with existing notary zip and overwrite approval"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "Signing/notarization dry run OK"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+assert_contains "$helper_output" "Codesign identity: present (redacted)"
+assert_contains "$helper_output" "Notary profile: present (redacted)"
+assert_contains "$(<"$notary_zip")" "$existing_notary_zip_marker"
+
+for overwrite_approval in 1 true yes; do
+  if ! LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+    LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+    LITHEPG_NOTARY_ZIP="$notary_zip" \
+    LITHEPG_NOTARY_ZIP_OVERWRITE="$overwrite_approval" \
+    run_helper_capture "$output_file" --dry-run "$app_bundle"; then
+    helper_output="$(<"$output_file")"
+    printf '%s\n' "$helper_output" >&2
+    fail "dry run unexpectedly failed with documented overwrite approval: $overwrite_approval"
+  fi
+
+  helper_output="$(<"$output_file")"
+  assert_contains "$helper_output" "Signing/notarization dry run OK"
+  assert_not_contains "$helper_output" "$codesign_sentinel"
+  assert_not_contains "$helper_output" "$notary_sentinel"
+  assert_contains "$helper_output" "Codesign identity: present (redacted)"
+  assert_contains "$helper_output" "Notary profile: present (redacted)"
+  assert_contains "$(<"$notary_zip")" "$existing_notary_zip_marker"
+done
+
+dangling_notary_zip="$fixture_root/LithePG-dangling-notary.zip"
+dangling_notary_zip_target="$fixture_root/missing-dangling-notary-target.zip"
+ln -s "$dangling_notary_zip_target" "$dangling_notary_zip"
+[[ -L "$dangling_notary_zip" && ! -e "$dangling_notary_zip" ]] || fail "failed to create dangling notary zip symlink fixture"
+
+if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$dangling_notary_zip" \
+  run_helper_capture "$output_file" --dry-run "$app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  [[ -L "$dangling_notary_zip" && ! -e "$dangling_notary_zip" ]] || fail "dry run removed dangling notary zip symlink before passing without overwrite approval"
+  fail "dry run unexpectedly passed with dangling symlink notary zip without overwrite approval"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "notary zip already exists; set LITHEPG_NOTARY_ZIP_OVERWRITE=approved to replace it"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+[[ -L "$dangling_notary_zip" && ! -e "$dangling_notary_zip" ]] || fail "dry run removed dangling notary zip symlink: $dangling_notary_zip"
+
+if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$notary_zip" \
+  LITHEPG_NOTARY_ZIP_OVERWRITE=TRUE \
+  run_helper_capture "$output_file" --dry-run "$app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "dry run unexpectedly passed with undocumented uppercase overwrite approval"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "notary zip already exists; set LITHEPG_NOTARY_ZIP_OVERWRITE=approved to replace it"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+assert_contains "$(<"$notary_zip")" "$existing_notary_zip_marker"
+
 public_release_named_notary_zip="$fixture_root/LithePG.app.zip"
 if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
   LITHEPG_NOTARY_PROFILE="$notary_sentinel" \

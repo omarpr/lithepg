@@ -59,6 +59,7 @@ An unsigned/ad-hoc-signed local bundle is only a development artifact. Do not pu
 | `LITHEPG_NOTARY_PROFILE` | `xcrun notarytool` keychain profile name. |
 | `LITHEPG_ENTITLEMENTS` | Optional entitlements override; defaults to `Sources/LithePGApp/LithePGApp.entitlements`. |
 | `LITHEPG_NOTARY_ZIP` | Optional zip output path; defaults to `dist/LithePG-notary.zip`. |
+| `LITHEPG_NOTARY_ZIP_OVERWRITE` | Optional explicit approval to replace an existing notary-submission zip; accepted values are `1`, `true`, `yes`, or `approved`. |
 
 Check the configuration without signing or submitting anything:
 
@@ -78,6 +79,8 @@ Real signing/notarization runs:
 6. `spctl --assess --type execute --verbose=4`.
 
 If `LITHEPG_CODESIGN_IDENTITY` or `LITHEPG_NOTARY_PROFILE` is missing, the wrapper exits non-zero with a clear message. That is expected on machines without Apple Developer credentials.
+
+The notary-submission zip is a credential-gated intermediate artifact, not the public release attachment. `script/sign_and_notarize.sh` refuses to use an existing `LITHEPG_NOTARY_ZIP` path, including a symlink at that path, unless `LITHEPG_NOTARY_ZIP_OVERWRITE` is explicitly approved (`1`, `true`, `yes`, or `approved`); the same guard runs during `--dry-run` so preflight catches stale zip artifacts before real signing/notary execution. After that approval gate passes, real mode may remove and recreate the zip as part of the signing/notarization flow; dry-run still creates no zip.
 
 ## GitHub Release artifact and Homebrew cask metadata
 

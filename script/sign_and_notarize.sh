@@ -26,6 +26,17 @@ fail() {
   exit 1
 }
 
+is_approved() {
+  case "${1:-}" in
+    1|true|yes|approved)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
 make_absolute_path() {
   local path="$1"
   if [[ "$path" == /* ]]; then
@@ -91,6 +102,12 @@ validate_notary_zip_parent_dir() {
   [[ -w "$zip_parent" ]] || fail "notary zip parent directory is not writable"
 }
 
+validate_notary_zip_overwrite() {
+  if [[ ( -e "$ZIP_PATH" || -L "$ZIP_PATH" ) ]] && ! is_approved "${LITHEPG_NOTARY_ZIP_OVERWRITE:-}"; then
+    fail "notary zip already exists; set LITHEPG_NOTARY_ZIP_OVERWRITE=approved to replace it"
+  fi
+}
+
 ZIP_PATH="$(make_absolute_path "$ZIP_PATH")"
 cd "$ROOT_DIR"
 "$ROOT_DIR/script/package_verify.sh" "$APP_BUNDLE_ABS"
@@ -98,6 +115,7 @@ require_config
 validate_notary_zip_location
 validate_notary_zip_public_release_name
 validate_notary_zip_parent_dir
+validate_notary_zip_overwrite
 
 if [[ "$MODE" == "dry-run" ]]; then
   printf 'Signing/notarization dry run OK. No changes made.\n'

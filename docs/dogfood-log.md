@@ -709,3 +709,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_sign_and_notarize.sh` passed; `bash -n script/sign_and_notarize.sh && bash -n script/test_sign_and_notarize.sh` passed; `git diff --check` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 127 tests across 20 suites; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` passed with artifacts at `.build/dogfood-checks/20260531-082848/`.
 - No release signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-public-release-zip-basename-gate.svg`.
+
+## 2026-05-31 08:43 EDT — v1.0 signing/notarization notary zip overwrite approval gate
+
+- Hardened `script/sign_and_notarize.sh` so an existing `LITHEPG_NOTARY_ZIP` path, including a dangling symlink, is refused unless `LITHEPG_NOTARY_ZIP_OVERWRITE` is explicitly approved with one of the documented exact values (`1`, `true`, `yes`, or `approved`), including during `--dry-run` preflight.
+- Added strict-TDD coverage proving an existing dry-run notary zip exits non-zero with the generic overwrite-approval message, does not print the sentinel signing/notary values, and leaves the existing zip marker intact; the approved dry-run path passes while still leaving the existing zip unchanged. Added regression coverage proving a dangling notary-zip symlink without approval is blocked, does not leak sentinels, and is not removed.
+- Added lightweight coverage for the other documented approval values (`1`, `true`, and `yes`) and for rejecting undocumented uppercase approval values.
+- RED verification: `bash script/test_sign_and_notarize.sh` failed first with `test_sign_and_notarize failed: dry run unexpectedly passed with dangling symlink notary zip without overwrite approval`.
+- GREEN verification: `bash script/test_sign_and_notarize.sh` passed; `bash -n script/sign_and_notarize.sh && bash -n script/test_sign_and_notarize.sh` passed; `git diff --check` passed.
+- Updated `docs/RELEASING.md` to document `LITHEPG_NOTARY_ZIP_OVERWRITE` and the dry-run/real-mode overwrite behavior.
+- Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-notary-zip-overwrite-gate.svg`.
+- No release signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
