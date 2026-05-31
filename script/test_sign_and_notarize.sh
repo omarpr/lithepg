@@ -74,7 +74,15 @@ run_helper_capture() {
 
 output_file="$(mktemp)"
 fixture_root="$(mktemp -d)"
-trap 'rm -f "$output_file"; rm -rf "$fixture_root"' EXIT
+non_writable_notary_zip_parent=""
+cleanup() {
+  if [[ -n "$non_writable_notary_zip_parent" && -d "$non_writable_notary_zip_parent" ]]; then
+    chmod u+w "$non_writable_notary_zip_parent" 2>/dev/null || true
+  fi
+  rm -f "$output_file"
+  rm -rf "$fixture_root"
+}
+trap cleanup EXIT
 
 app_bundle="$fixture_root/LithePG.app"
 notary_zip="$fixture_root/LithePG-notary.zip"
@@ -115,5 +123,41 @@ assert_contains "$helper_output" "notary zip must not be inside app bundle"
 assert_not_contains "$helper_output" "$codesign_sentinel"
 assert_not_contains "$helper_output" "$notary_sentinel"
 [[ ! -e "$inside_bundle_notary_zip" ]] || fail "dry run created inside-bundle notary zip: $inside_bundle_notary_zip"
+
+missing_parent_notary_zip="$fixture_root/missing-parent/LithePG-notary.zip"
+if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$missing_parent_notary_zip" \
+  run_helper_capture "$output_file" --dry-run "$app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "dry run unexpectedly passed with missing notary zip parent directory"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "notary zip parent directory does not exist"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+[[ ! -e "$missing_parent_notary_zip" ]] || fail "dry run created notary zip with missing parent: $missing_parent_notary_zip"
+
+non_writable_notary_zip_parent="$fixture_root/non-writable-parent"
+non_writable_parent_notary_zip="$non_writable_notary_zip_parent/LithePG-notary.zip"
+mkdir -p "$non_writable_notary_zip_parent"
+chmod a-w "$non_writable_notary_zip_parent"
+if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$non_writable_parent_notary_zip" \
+  run_helper_capture "$output_file" --dry-run "$app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "dry run unexpectedly passed with non-writable notary zip parent directory"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "notary zip parent directory is not writable"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+[[ ! -e "$non_writable_parent_notary_zip" ]] || fail "dry run created notary zip with non-writable parent: $non_writable_parent_notary_zip"
+chmod u+w "$non_writable_notary_zip_parent"
 
 printf 'test_sign_and_notarize passed\n'

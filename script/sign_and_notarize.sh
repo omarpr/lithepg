@@ -80,10 +80,19 @@ validate_notary_zip_location() {
   fi
 }
 
+validate_notary_zip_parent_dir() {
+  local zip_parent
+  zip_parent="$(dirname "$ZIP_PATH")"
+  [[ -d "$zip_parent" ]] || fail "notary zip parent directory does not exist"
+  [[ -w "$zip_parent" ]] || fail "notary zip parent directory is not writable"
+}
+
+ZIP_PATH="$(make_absolute_path "$ZIP_PATH")"
 cd "$ROOT_DIR"
 "$ROOT_DIR/script/package_verify.sh" "$APP_BUNDLE_ABS"
 require_config
 validate_notary_zip_location
+validate_notary_zip_parent_dir
 
 if [[ "$MODE" == "dry-run" ]]; then
   printf 'Signing/notarization dry run OK. No changes made.\n'

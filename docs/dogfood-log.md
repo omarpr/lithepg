@@ -690,3 +690,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_sign_and_notarize.sh` passed; `bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh` passed; `git diff --check` passed.
 - No release signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-inside-bundle-zip-gate.svg`.
+
+## 2026-05-31 08:01 EDT — v1.0 signing/notarization notary zip parent gate
+
+- Hardened `script/sign_and_notarize.sh` so `LITHEPG_NOTARY_ZIP` is rejected when its parent directory does not exist or is not writable, including `--dry-run`, instead of letting the wrapper claim readiness for an unwritable output location.
+- Added strict-TDD coverage proving missing-parent and non-writable-parent dry-run zip paths exit non-zero with generic parent-directory errors, create no zip, and do not print the sentinel code-signing identity or notarytool profile.
+- RED verification: `bash script/test_sign_and_notarize.sh` failed first with `test_sign_and_notarize failed: dry run unexpectedly passed with missing notary zip parent directory`, then the independent pre-commit review caught the existing-but-non-writable parent gap and the new non-writable-parent test failed before implementation.
+- GREEN verification: `bash script/test_sign_and_notarize.sh` passed; `bash -n script/sign_and_notarize.sh && bash -n script/test_sign_and_notarize.sh` passed; `git diff --check` passed.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- No release signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-notary-zip-parent-gate.svg`.
