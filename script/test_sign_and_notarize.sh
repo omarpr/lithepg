@@ -541,6 +541,51 @@ assert_not_contains "$helper_output" "$codesign_sentinel"
 assert_not_contains "$helper_output" "$notary_sentinel"
 [[ ! -e "$missing_parent_notary_zip" ]] || fail "dry run created notary zip with missing parent: $missing_parent_notary_zip"
 
+notary_zip_parent_file="$fixture_root/notary-zip-parent-file"
+notary_zip_parent_file_marker='NOTARY_ZIP_PARENT_FILE_SHOULD_SURVIVE'
+notary_zip_under_parent_file="$notary_zip_parent_file/LithePG-notary.zip"
+printf '%s\n' "$notary_zip_parent_file_marker" >"$notary_zip_parent_file"
+if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$notary_zip_under_parent_file" \
+  run_helper_capture "$output_file" --dry-run "$app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "dry run unexpectedly passed with regular-file notary zip parent path"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "notary zip parent path must be a directory"
+assert_not_contains "$helper_output" "Signing/notarization dry run OK"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+[[ -f "$notary_zip_parent_file" && ! -L "$notary_zip_parent_file" ]] || fail "dry run replaced regular-file notary zip parent path: $notary_zip_parent_file"
+[[ "$(<"$notary_zip_parent_file")" == "$notary_zip_parent_file_marker" ]] || fail "dry run changed regular-file notary zip parent path: $notary_zip_parent_file"
+[[ ! -e "$notary_zip_under_parent_file" && ! -L "$notary_zip_under_parent_file" ]] || fail "dry run created notary zip under regular-file parent path: $notary_zip_under_parent_file"
+
+dangling_notary_zip_parent="$fixture_root/notary-zip-parent-dangling-link"
+dangling_notary_zip_parent_target="$fixture_root/missing-notary-zip-parent-target"
+dangling_parent_notary_zip="$dangling_notary_zip_parent/LithePG-notary.zip"
+ln -s "$dangling_notary_zip_parent_target" "$dangling_notary_zip_parent"
+[[ -L "$dangling_notary_zip_parent" && ! -e "$dangling_notary_zip_parent" ]] || fail "failed to create dangling notary zip parent symlink fixture"
+if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$dangling_parent_notary_zip" \
+  run_helper_capture "$output_file" --dry-run "$app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "dry run unexpectedly passed with dangling-symlink notary zip parent path"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "notary zip parent path must be a directory"
+assert_not_contains "$helper_output" "Signing/notarization dry run OK"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+[[ -L "$dangling_notary_zip_parent" && ! -e "$dangling_notary_zip_parent" ]] || fail "dry run changed dangling notary zip parent symlink: $dangling_notary_zip_parent"
+[[ ! -e "$dangling_notary_zip_parent_target" && ! -L "$dangling_notary_zip_parent_target" ]] || fail "dry run created dangling notary zip parent symlink target: $dangling_notary_zip_parent_target"
+[[ ! -e "$dangling_parent_notary_zip" && ! -L "$dangling_parent_notary_zip" ]] || fail "dry run created notary zip under dangling-symlink parent path: $dangling_parent_notary_zip"
+
 non_writable_notary_zip_parent="$fixture_root/non-writable-parent"
 non_writable_parent_notary_zip="$non_writable_notary_zip_parent/LithePG-notary.zip"
 mkdir -p "$non_writable_notary_zip_parent"

@@ -217,7 +217,12 @@ validate_notary_zip_public_release_name() {
 validate_notary_zip_parent_dir() {
   local zip_parent
   zip_parent="$(dirname "$ZIP_PATH")"
-  [[ -d "$zip_parent" ]] || fail "notary zip parent directory does not exist"
+  if [[ ! -d "$zip_parent" ]]; then
+    if [[ -e "$zip_parent" || -L "$zip_parent" ]]; then
+      fail "notary zip parent path must be a directory"
+    fi
+    fail "notary zip parent directory does not exist"
+  fi
   [[ -w "$zip_parent" ]] || fail "notary zip parent directory is not writable"
 }
 

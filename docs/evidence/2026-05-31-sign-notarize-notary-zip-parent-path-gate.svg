@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 sign/notarize notary zip parent-path gate evidence</title>
+  <desc id="desc">Verification evidence for the sign_and_notarize notary zip parent regular-file and dangling-symlink hardening slice.</desc>
+  <rect width="1200" height="720" fill="#0d1117"/>
+  <rect x="32" y="32" width="1136" height="656" rx="18" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+  <text x="64" y="82" font-family="Menlo, Consolas, monospace" font-size="28" fill="#f0f6fc">LithePG sign/notarize notary zip parent-path gate</text>
+  <text x="64" y="124" font-family="Menlo, Consolas, monospace" font-size="17" fill="#8b949e">2026-05-31 · v1.0 release-helper hardening · no external publication</text>
+
+  <rect x="64" y="158" width="1072" height="218" rx="12" fill="#0d1117" stroke="#30363d"/>
+  <text x="88" y="198" font-family="Menlo, Consolas, monospace" font-size="18" fill="#79c0ff">Behavior added</text>
+  <text x="88" y="236" font-family="Menlo, Consolas, monospace" font-size="16" fill="#c9d1d9">script/sign_and_notarize.sh now rejects LITHEPG_NOTARY_ZIP parents</text>
+  <text x="88" y="264" font-family="Menlo, Consolas, monospace" font-size="16" fill="#c9d1d9">that already exist but are not directories before dry-run success or zip creation.</text>
+  <text x="88" y="304" font-family="Menlo, Consolas, monospace" font-size="16" fill="#ffdf5d">Failure text: notary zip parent path must be a directory</text>
+  <text x="88" y="334" font-family="Menlo, Consolas, monospace" font-size="16" fill="#c9d1d9">Covered cases: regular-file parent and dangling-symlink parent.</text>
+
+  <rect x="64" y="404" width="1072" height="198" rx="12" fill="#0d1117" stroke="#30363d"/>
+  <text x="88" y="444" font-family="Menlo, Consolas, monospace" font-size="18" fill="#7ee787">Verification passed</text>
+  <text x="88" y="482" font-family="Menlo, Consolas, monospace" font-size="16" fill="#c9d1d9">✓ bash script/test_sign_and_notarize.sh</text>
+  <text x="88" y="510" font-family="Menlo, Consolas, monospace" font-size="16" fill="#c9d1d9">✓ bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh</text>
+  <text x="88" y="538" font-family="Menlo, Consolas, monospace" font-size="16" fill="#c9d1d9">✓ git diff --check</text>
+  <text x="88" y="566" font-family="Menlo, Consolas, monospace" font-size="16" fill="#c9d1d9">RED first: expected output to contain the new parent-path failure text.</text>
+
+  <text x="64" y="648" font-family="Menlo, Consolas, monospace" font-size="15" fill="#8b949e">No signing, notarization, upload, Homebrew publication, v1.0 tag, push, or cron changes were attempted.</text>
+</svg>
