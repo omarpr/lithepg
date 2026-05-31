@@ -59,10 +59,90 @@ absolute_lexical_path() {
   /usr/bin/perl -MFile::Spec -e 'print File::Spec->canonpath(File::Spec->rel2abs($ARGV[0], $ARGV[1]))' "$1" "$ROOT_DIR"
 }
 
+canonicalize_path_for_location_check() {
+  local path="$1"
+  /usr/bin/perl -MCwd=abs_path -e '
+use strict;
+use warnings;
+
+sub path_parts {
+  my ($path) = @_;
+  return grep { length($_) && $_ ne "." } split m{/+}, $path;
+}
+
+my ($path, $root_dir) = @ARGV;
+my @parts;
+my @queue;
+
+if ($path =~ m{\A/}) {
+  @parts = ();
+  @queue = path_parts($path);
+} else {
+  my $physical_root = abs_path($root_dir);
+  die "could not resolve repository root: $root_dir\n" unless defined $physical_root;
+  @parts = path_parts($physical_root);
+  @queue = path_parts($path);
+}
+
+my $symlink_count = 0;
+while (@queue) {
+  my $part = shift @queue;
+  next if $part eq "" || $part eq ".";
+  if ($part eq "..") {
+    pop @parts if @parts;
+    next;
+  }
+
+  my $parent = "/" . join("/", @parts);
+  my $candidate = "/" . join("/", @parts, $part);
+  if ((-e $candidate || -l $candidate) && opendir(my $dh, $parent)) {
+    my $case_insensitive_match;
+    while (defined(my $entry = readdir($dh))) {
+      next if $entry eq "." || $entry eq "..";
+      if ($entry eq $part) {
+        $part = $entry;
+        undef $case_insensitive_match;
+        last;
+      }
+      $case_insensitive_match = $entry if !defined($case_insensitive_match) && lc($entry) eq lc($part);
+    }
+    closedir($dh);
+    $part = $case_insensitive_match if defined($case_insensitive_match);
+    $candidate = "/" . join("/", @parts, $part);
+  }
+
+  if (-l $candidate) {
+    die "too many symlinks while resolving path: $path\n" if ++$symlink_count > 40;
+    my $target = readlink($candidate);
+    die "could not read symlink: $candidate\n" unless defined $target;
+    if ($target =~ m{\A/}) {
+      @parts = ();
+      unshift @queue, path_parts($target);
+    } else {
+      unshift @queue, path_parts($target);
+    }
+    next;
+  }
+
+  push @parts, $part;
+}
+
+print "/" . join("/", @parts) . "\n";
+' "$path" "$ROOT_DIR"
+}
+
 APP_BUNDLE_ABS="$(absolute_lexical_path "$APP_BUNDLE")"
 OUTPUT_ZIP_ABS="$(absolute_lexical_path "$OUTPUT_ZIP")"
 case "$OUTPUT_ZIP_ABS" in
   "$APP_BUNDLE_ABS"|"$APP_BUNDLE_ABS"/*)
+    fail "output zip must not be inside the app bundle: $OUTPUT_ZIP"
+    ;;
+esac
+
+APP_BUNDLE_PHYSICAL="$(canonicalize_path_for_location_check "$APP_BUNDLE")"
+OUTPUT_ZIP_PHYSICAL="$(canonicalize_path_for_location_check "$OUTPUT_ZIP")"
+case "$OUTPUT_ZIP_PHYSICAL" in
+  "$APP_BUNDLE_PHYSICAL"|"$APP_BUNDLE_PHYSICAL"/*)
     fail "output zip must not be inside the app bundle: $OUTPUT_ZIP"
     ;;
 esac

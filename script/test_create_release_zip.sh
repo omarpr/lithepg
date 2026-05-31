@@ -111,11 +111,14 @@ dangling_symlink_output="$(mktemp)"
 overwrite_output="$(mktemp)"
 approved_symlink_output="$(mktemp)"
 inside_bundle_output="$(mktemp)"
+case_variant_inside_bundle_output="$(mktemp)"
+symlink_inside_bundle_output="$(mktemp)"
+symlink_parent_traversal_output="$(mktemp)"
 success_output="$(mktemp)"
 outside_cwd_output="$(mktemp)"
 help_output="$(mktemp)"
 fixture_root="$(mktemp -d)"
-trap 'rm -f "$missing_verify_output" "$refuse_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$inside_bundle_output" "$success_output" "$outside_cwd_output" "$help_output"; rm -rf "$fixture_root"' EXIT
+trap 'rm -f "$missing_verify_output" "$refuse_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$inside_bundle_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$success_output" "$outside_cwd_output" "$help_output"; rm -rf "$fixture_root"' EXIT
 
 sensitive_identity="SENSITIVE_CODESIGN_IDENTITY_DO_NOT_PRINT"
 sensitive_notary="SENSITIVE_NOTARY_PROFILE_DO_NOT_PRINT"
@@ -231,6 +234,49 @@ absolute_inside_text="$(<"$inside_bundle_output")"
 assert_contains "$absolute_inside_text" "output zip must not be inside the app bundle"
 assert_file_contains "$verify_log" "package_verify ./dist/LithePG.app"
 [[ ! -e "$absolute_inside_output" ]] || fail "absolute zip was created inside the app bundle"
+
+case_variant_inside_fixture="$fixture_root/case-variant-inside-app-output"
+make_fixture "$case_variant_inside_fixture"
+case_variant_contents="$case_variant_inside_fixture/dist/lithepg.app/Contents"
+if [[ -d "$case_variant_contents" && "$case_variant_contents" -ef "$case_variant_inside_fixture/dist/LithePG.app/Contents" ]]; then
+  verify_log="$case_variant_inside_fixture/verify.log"
+  if FAKE_VERIFY_LOG="$verify_log" \
+    run_helper_capture "$case_variant_inside_fixture" "$case_variant_inside_bundle_output" "dist/LithePG.app" "dist/lithepg.app/Contents/LithePG.app.zip"; then
+    fail "helper unexpectedly allowed a case-variant output zip inside the app bundle"
+  fi
+  case_variant_inside_text="$(<"$case_variant_inside_bundle_output")"
+  assert_contains "$case_variant_inside_text" "output zip must not be inside the app bundle"
+  assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+  [[ ! -e "$case_variant_inside_fixture/dist/LithePG.app/Contents/LithePG.app.zip" ]] || fail "zip was created inside the app bundle through a case-variant path"
+else
+  printf 'Skipping case-variant inside-bundle output assertion on case-sensitive filesystem\n'
+fi
+
+symlink_inside_fixture="$fixture_root/symlink-inside-app-output"
+make_fixture "$symlink_inside_fixture"
+ln -s "$symlink_inside_fixture/dist/LithePG.app/Contents" "$symlink_inside_fixture/dist/out-link"
+verify_log="$symlink_inside_fixture/verify.log"
+if FAKE_VERIFY_LOG="$verify_log" \
+  run_helper_capture "$symlink_inside_fixture" "$symlink_inside_bundle_output" "dist/LithePG.app" "dist/out-link/LithePG.app.zip"; then
+  fail "helper unexpectedly allowed a symlinked output parent inside the app bundle"
+fi
+symlink_inside_text="$(<"$symlink_inside_bundle_output")"
+assert_contains "$symlink_inside_text" "output zip must not be inside the app bundle"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+[[ ! -e "$symlink_inside_fixture/dist/LithePG.app/Contents/LithePG.app.zip" ]] || fail "zip was created inside the app bundle through a symlinked parent"
+
+symlink_parent_traversal_fixture="$fixture_root/symlink-parent-traversal-inside-app-output"
+make_fixture "$symlink_parent_traversal_fixture"
+ln -s "$symlink_parent_traversal_fixture/dist/LithePG.app/Contents" "$symlink_parent_traversal_fixture/dist/out-link"
+verify_log="$symlink_parent_traversal_fixture/verify.log"
+if FAKE_VERIFY_LOG="$verify_log" \
+  run_helper_capture "$symlink_parent_traversal_fixture" "$symlink_parent_traversal_output" "dist/LithePG.app" "dist/out-link/../LithePG.app.zip"; then
+  fail "helper unexpectedly allowed a symlink-plus-parent-traversal output inside the app bundle"
+fi
+symlink_parent_traversal_text="$(<"$symlink_parent_traversal_output")"
+assert_contains "$symlink_parent_traversal_text" "output zip must not be inside the app bundle"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+[[ ! -e "$symlink_parent_traversal_fixture/dist/LithePG.app/LithePG.app.zip" ]] || fail "zip was created inside the app bundle through symlink-plus-parent traversal"
 
 # Success creates parent directories, preserves the .app wrapper, prints SHA-256, and does not leak secret-ish env values.
 success_fixture="$fixture_root/success"
