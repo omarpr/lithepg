@@ -167,6 +167,20 @@ extract_homebrew_cask_name() {
   return 1
 }
 
+extract_homebrew_cask_desc() {
+  local cask_file="$1"
+  local line=""
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" =~ ^[[:space:]]*desc[[:space:]]+\"([^\"]+)\" ]]; then
+      printf '%s\n' "${BASH_REMATCH[1]}"
+      return 0
+    fi
+  done <"$cask_file"
+
+  return 1
+}
+
 extract_homebrew_cask_sha256() {
   local cask_file="$1"
   local line=""
@@ -528,6 +542,20 @@ if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
     fi
   else
     printf 'Homebrew cask name: missing\n'
+    mark_blocker
+  fi
+fi
+
+if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
+  if cask_desc="$(extract_homebrew_cask_desc "$homebrew_cask_file")"; then
+    if [[ "$cask_desc" == "Lean PostgreSQL client with local-first AI" ]]; then
+      printf 'Homebrew cask desc: matches\n'
+    else
+      printf 'Homebrew cask desc: mismatch\n'
+      mark_blocker
+    fi
+  else
+    printf 'Homebrew cask desc: missing\n'
     mark_blocker
   fi
 fi

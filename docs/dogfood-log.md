@@ -439,3 +439,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed; final syntax/whitespace/remote-block checks were run for this shell/docs slice.
 - No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-30-v10-homebrew-cask-name-gate.svg`.
+
+## 2026-05-30 21:19 EDT — v1.0 Homebrew cask desc gate
+
+- Hardened `script/v10_release_gate.sh` so placeholder-free Homebrew casks must include exactly `desc "Lean PostgreSQL client with local-first AI"` before the fast publication preflight can pass.
+- Added redacted shell TDD coverage for mismatched and missing cask descriptions, while keeping the valid cask fixture on the public launch description.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with mismatched Homebrew cask desc`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed after the minimal parser/readiness check; final syntax/whitespace/remote-block checks were run for this shell/docs slice.
+- No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-30-v10-homebrew-cask-desc-gate.svg`.

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620" viewBox="0 0 1100 620">
+  <rect width="1100" height="620" fill="#0f172a"/>
+  <rect x="32" y="32" width="1036" height="556" rx="20" fill="#111827" stroke="#38bdf8" stroke-width="2"/>
+  <text x="56" y="82" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="28" font-weight="700">LithePG v1.0 release gate evidence</text>
+  <text x="56" y="126" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="20">Slice: Homebrew cask desc readiness gate</text>
+  <text x="56" y="172" fill="#f8fafc" font-family="Menlo, Consolas, monospace" font-size="18">TDD RED</text>
+  <text x="84" y="202" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="16">bash script/test_v10_release_gate.sh</text>
+  <text x="84" y="228" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="16">failed first: gate unexpectedly passed with mismatched Homebrew cask desc</text>
+  <text x="56" y="276" fill="#f8fafc" font-family="Menlo, Consolas, monospace" font-size="18">GREEN</text>
+  <text x="84" y="306" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="16">Added parser/readiness check for desc &quot;Lean PostgreSQL client with local-first AI&quot;</text>
+  <text x="84" y="332" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="16">bash script/test_v10_release_gate.sh → passed</text>
+  <text x="84" y="358" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="16">bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh → passed</text>
+  <text x="84" y="384" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="16">git diff --check → passed</text>
+  <text x="56" y="432" fill="#f8fafc" font-family="Menlo, Consolas, monospace" font-size="18">Publication safety</text>
+  <text x="84" y="462" fill="#fcd34d" font-family="Menlo, Consolas, monospace" font-size="16">./script/v10_release_gate.sh --check-remote remains blocked on expected external/publication inputs.</text>
+  <text x="84" y="488" fill="#fcd34d" font-family="Menlo, Consolas, monospace" font-size="16">No signing, notarization, upload, Homebrew publication, tag, cron changes, or external release action.</text>
+  <text x="56" y="544" fill="#94a3b8" font-family="Menlo, Consolas, monospace" font-size="15">Artifact: docs/evidence/2026-05-30-v10-homebrew-cask-desc-gate.svg</text>
+</svg>
