@@ -39,8 +39,8 @@ require_config
 if [[ "$MODE" == "dry-run" ]]; then
   printf 'Signing/notarization dry run OK. No changes made.\n'
   printf 'App bundle: %s\n' "$APP_BUNDLE_ABS"
-  printf 'Codesign identity: %s\n' "$CODESIGN_IDENTITY"
-  printf 'Notary profile: %s\n' "$NOTARY_PROFILE"
+  printf 'Codesign identity: present (redacted)\n'
+  printf 'Notary profile: present (redacted)\n'
   printf 'Entitlements: %s\n' "$ENTITLEMENTS"
   printf 'Notary zip: %s\n' "$ZIP_PATH"
   printf 'Planned commands: codesign -> zip -> notarytool submit --wait -> stapler -> spctl/stapler validation\n'

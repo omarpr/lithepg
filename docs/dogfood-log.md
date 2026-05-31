@@ -672,3 +672,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed after adding the redacted identifier check; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed; `./script/v10_release_gate.sh --check-remote` remained safely blocked on expected local/external publication prerequisites; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` passed with artifacts at `.build/dogfood-checks/20260531-065403/`.
 - No release signing beyond local ad-hoc test fixtures, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-code-signature-identifier-gate.svg`.
+
+## 2026-05-31 — v1.0 signing/notarization dry-run redaction gate
+
+- Hardened `script/sign_and_notarize.sh --dry-run` so required signing/notary configuration is reported as present but redacted instead of printing the configured code-signing identity or notarytool keychain profile value.
+- Added `script/test_sign_and_notarize.sh`, which builds a minimal temp `LithePG.app` accepted by `script/package_verify.sh`, injects sentinel signing/notary values, asserts the dry run succeeds, verifies `Signing/notarization dry run OK`, verifies the redacted present-status lines, rejects both sentinels in output, and confirms no notary zip is created.
+- RED verification: `bash script/test_sign_and_notarize.sh` failed first with `test_sign_and_notarize failed: output leaked forbidden value: Developer ID Application: SHOULD_NOT_LEAK`.
+- GREEN verification: `bash script/test_sign_and_notarize.sh` passed after redacting dry-run config output; `bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh` passed; `git diff --check` passed; `./script/v10_release_gate.sh --check-remote` remained safely blocked on 14 expected local/external publication prerequisites.
+- No release signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-dry-run-redaction.svg`.

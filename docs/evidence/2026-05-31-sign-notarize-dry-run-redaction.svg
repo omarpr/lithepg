@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="360" viewBox="0 0 920 360" role="img" aria-labelledby="title desc">
+  <title id="title">sign_and_notarize dry-run redaction gate</title>
+  <desc id="desc">Deterministic evidence that dry-run signing and notary config values are present but redacted, with no notary zip produced.</desc>
+  <rect width="920" height="360" fill="#0b1020"/>
+  <text x="40" y="54" font-family="Menlo, Consolas, monospace" font-size="24" fill="#f8fafc">v1.0 dry-run signing/notary redaction gate</text>
+  <text x="40" y="86" font-family="Menlo, Consolas, monospace" font-size="14" fill="#94a3b8">2026-05-31 · script/test_sign_and_notarize.sh</text>
+
+  <rect x="40" y="122" width="245" height="112" rx="14" fill="#1e293b" stroke="#64748b"/>
+  <text x="64" y="154" font-family="Menlo, Consolas, monospace" font-size="16" fill="#e2e8f0">Fixture app bundle</text>
+  <text x="64" y="184" font-family="Menlo, Consolas, monospace" font-size="13" fill="#cbd5e1">Package verify: valid</text>
+  <text x="64" y="210" font-family="Menlo, Consolas, monospace" font-size="13" fill="#cbd5e1">Temp LithePG.app only</text>
+
+  <path d="M305 178 H380" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
+  <path d="M380 178 l-13 -9 v18 z" fill="#38bdf8"/>
+
+  <rect x="400" y="104" width="260" height="148" rx="14" fill="#172554" stroke="#38bdf8"/>
+  <text x="424" y="136" font-family="Menlo, Consolas, monospace" font-size="16" fill="#e0f2fe">--dry-run output</text>
+  <text x="424" y="168" font-family="Menlo, Consolas, monospace" font-size="13" fill="#bae6fd">Signing/notarization dry run OK</text>
+  <text x="424" y="196" font-family="Menlo, Consolas, monospace" font-size="13" fill="#bae6fd">Codesign identity: present (redacted)</text>
+  <text x="424" y="222" font-family="Menlo, Consolas, monospace" font-size="13" fill="#bae6fd">Notary profile: present (redacted)</text>
+
+  <path d="M680 178 H755" stroke="#22c55e" stroke-width="4" stroke-linecap="round"/>
+  <path d="M755 178 l-13 -9 v18 z" fill="#22c55e"/>
+
+  <rect x="775" y="122" width="105" height="112" rx="14" fill="#052e16" stroke="#22c55e"/>
+  <text x="802" y="158" font-family="Menlo, Consolas, monospace" font-size="18" fill="#bbf7d0">PASS</text>
+  <text x="794" y="188" font-family="Menlo, Consolas, monospace" font-size="13" fill="#dcfce7">no sentinels</text>
+  <text x="794" y="212" font-family="Menlo, Consolas, monospace" font-size="13" fill="#dcfce7">no zip</text>
+
+  <rect x="40" y="282" width="840" height="42" rx="10" fill="#111827" stroke="#334155"/>
+  <text x="64" y="308" font-family="Menlo, Consolas, monospace" font-size="14" fill="#fbbf24">Secrets policy:</text>
+  <text x="184" y="308" font-family="Menlo, Consolas, monospace" font-size="14" fill="#e5e7eb">sentinel signing identity and notary profile are asserted absent from dry-run logs.</text>
+</svg>
