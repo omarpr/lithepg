@@ -55,6 +55,10 @@ cd "$ROOT_DIR"
 
 "$ROOT_DIR/script/package_verify.sh" "$APP_BUNDLE"
 
+if [[ "$(basename "$APP_BUNDLE")" != "LithePG.app" ]]; then
+  fail "app bundle basename must be LithePG.app"
+fi
+
 absolute_lexical_path() {
   /usr/bin/perl -MFile::Spec -e 'print File::Spec->canonpath(File::Spec->rel2abs($ARGV[0], $ARGV[1]))' "$1" "$ROOT_DIR"
 }

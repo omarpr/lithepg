@@ -826,3 +826,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed; `./script/v10_release_gate.sh --check-remote` remained blocked on expected local/external publication prerequisites; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed; release-impact `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` passed with artifacts at `.build/dogfood-checks/20260531-133501/` (shell readiness 134.25 ms; connected cold start 229.71 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead 0.039 ms; dogfood query median overhead 0.041 ms).
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-writable-executable-mode-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 14:24 EDT — v1.0 release zip app-bundle basename gate
+
+- Hardened `script/create_release_zip.sh` so the public `LithePG.app.zip` helper refuses to package an input app bundle whose basename is not exactly `LithePG.app`, after package verification and before any output zip is created.
+- Added strict-TDD coverage proving `dist/NotLithePG.app` is rejected with a generic basename message, package verification still runs first, no output zip is created, and sentinel signing/notary/release env values are not printed.
+- RED verification: `bash script/test_create_release_zip.sh` failed first with `test_create_release_zip failed: helper unexpectedly packaged a non-canonical app bundle name`.
+- GREEN verification: `bash script/test_create_release_zip.sh` passed; `bash -n script/create_release_zip.sh script/test_create_release_zip.sh` passed; `git diff --check` passed.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-app-bundle-basename-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
