@@ -877,3 +877,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-symlink-app-bundle-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 16:28 EDT — v1.0 sign/notarize app-bundle basename gate
+
+- Hardened `script/sign_and_notarize.sh` so the credential-gated signing/notarization helper accepts only an input app bundle named exactly `LithePG.app`, rejecting non-canonical names before package verification, dry-run success, or real signing/notarization.
+- Added strict-TDD coverage proving a valid fixture named `NotLithePG.app` exits nonzero in `--dry-run` with `app bundle basename must be LithePG.app`, does not print package-verification or dry-run success output, keeps signing/notary sentinel values redacted, and creates no notary zip.
+- RED verification: `bash script/test_sign_and_notarize.sh` failed first with `test_sign_and_notarize failed: dry run unexpectedly passed with non-canonical app bundle basename`.
+- GREEN verification: `bash script/test_sign_and_notarize.sh` passed; adjacent release helper tests `bash script/test_create_release_zip.sh` and `bash script/test_v10_release_gate.sh` passed; `bash -n` syntax checks passed; `git diff --check` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-app-bundle-basename-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.

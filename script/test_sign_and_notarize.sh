@@ -108,6 +108,28 @@ assert_contains "$helper_output" "Codesign identity: present (redacted)"
 assert_contains "$helper_output" "Notary profile: present (redacted)"
 [[ ! -e "$notary_zip" ]] || fail "dry run created notary zip: $notary_zip"
 
+noncanonical_app_bundle="$fixture_root/NotLithePG.app"
+noncanonical_notary_zip="$fixture_root/NotLithePG-notary.zip"
+make_minimal_app_bundle "$noncanonical_app_bundle"
+
+if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$noncanonical_notary_zip" \
+  run_helper_capture "$output_file" --dry-run "$noncanonical_app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  [[ ! -e "$noncanonical_notary_zip" ]] || fail "dry run created notary zip for non-canonical app bundle before passing: $noncanonical_notary_zip"
+  fail "dry run unexpectedly passed with non-canonical app bundle basename: $noncanonical_app_bundle"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "app bundle basename must be LithePG.app"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "Signing/notarization dry run OK"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+[[ ! -e "$noncanonical_notary_zip" ]] || fail "dry run created notary zip for non-canonical app bundle: $noncanonical_notary_zip"
+
 symlinked_app_target="$fixture_root/RealLithePG.app"
 symlinked_app_parent="$fixture_root/symlinked-app-input"
 symlinked_app_bundle="$symlinked_app_parent/LithePG.app"

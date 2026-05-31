@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG sign/notarize app-bundle basename gate evidence</title>
+  <desc id="desc">Visual evidence for the v1.0 release-helper hardening slice that rejects non-canonical signing app bundle basenames.</desc>
+  <rect width="1200" height="720" fill="#0b1020"/>
+  <rect x="36" y="36" width="1128" height="648" rx="24" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="72" y="94" fill="#e5f2ff" font-family="Menlo, Consolas, monospace" font-size="30" font-weight="700">LithePG v1.0 release helper hardening</text>
+  <text x="72" y="136" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="20">2026-05-31 16:28 EDT • script/sign_and_notarize.sh basename gate</text>
+
+  <rect x="72" y="172" width="1056" height="136" rx="14" fill="#172554" stroke="#60a5fa" stroke-width="2"/>
+  <text x="100" y="214" fill="#bfdbfe" font-family="Menlo, Consolas, monospace" font-size="22" font-weight="700">RED</text>
+  <text x="168" y="214" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="18">bash script/test_sign_and_notarize.sh</text>
+  <text x="100" y="250" fill="#fecaca" font-family="Menlo, Consolas, monospace" font-size="17">failed first: dry run unexpectedly passed with non-canonical app bundle basename</text>
+  <text x="100" y="280" fill="#fecaca" font-family="Menlo, Consolas, monospace" font-size="17">fixture: NotLithePG.app • no secrets printed in the committed test assertion path</text>
+
+  <rect x="72" y="334" width="1056" height="168" rx="14" fill="#052e16" stroke="#22c55e" stroke-width="2"/>
+  <text x="100" y="376" fill="#bbf7d0" font-family="Menlo, Consolas, monospace" font-size="22" font-weight="700">GREEN</text>
+  <text x="188" y="376" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="18">test_sign_and_notarize passed</text>
+  <text x="100" y="414" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="18">test_create_release_zip passed</text>
+  <text x="100" y="448" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="18">test_v10_release_gate passed</text>
+  <text x="100" y="482" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="18">bash -n release helper scripts • git diff --check • swift build: passed</text>
+
+  <rect x="72" y="528" width="1056" height="104" rx="14" fill="#1e1b4b" stroke="#a78bfa" stroke-width="2"/>
+  <text x="100" y="568" fill="#ddd6fe" font-family="Menlo, Consolas, monospace" font-size="20" font-weight="700">Independent reviews</text>
+  <text x="100" y="604" fill="#ede9fe" font-family="Menlo, Consolas, monospace" font-size="18">Spec compliance: PASS • Code quality/security: APPROVED</text>
+
+  <text x="72" y="662" fill="#94a3b8" font-family="Menlo, Consolas, monospace" font-size="15">No signing, notarization, upload, GitHub Release, tag, cron change, or external publication was attempted.</text>
+</svg>
