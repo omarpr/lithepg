@@ -744,6 +744,18 @@ if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
   fi
 fi
 
+if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
+  if [[ ! -x /usr/bin/ruby ]]; then
+    printf 'Homebrew cask Ruby syntax: ruby unavailable\n'
+    mark_blocker
+  elif /usr/bin/ruby -c "$homebrew_cask_file" >/dev/null 2>&1; then
+    printf 'Homebrew cask Ruby syntax: valid\n'
+  else
+    printf 'Homebrew cask Ruby syntax: invalid\n'
+    mark_blocker
+  fi
+fi
+
 if [[ "$homebrew_cask_check_ready" -eq 1 && "$RELEASE_ZIP_SHA256" =~ ^[[:xdigit:]]{64}$ ]]; then
   if cask_sha="$(extract_homebrew_cask_sha256 "$homebrew_cask_file")"; then
     expected_sha="$(printf '%s' "$RELEASE_ZIP_SHA256" | /usr/bin/tr '[:upper:]' '[:lower:]')"

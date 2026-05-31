@@ -84,6 +84,7 @@ missing_homebrew_cask_zap_output="$(mktemp)"
 commented_homebrew_cask_zap_output="$(mktemp)"
 inline_commented_homebrew_cask_zap_output="$(mktemp)"
 unterminated_homebrew_cask_zap_output="$(mktemp)"
+syntax_error_homebrew_cask_output="$(mktemp)"
 placeholder_output="$(mktemp)"
 homebrew_cask_placeholder_output="$(mktemp)"
 security_doc_placeholder_output="$(mktemp)"
@@ -128,6 +129,7 @@ missing_zap_homebrew_cask="$(mktemp)"
 commented_zap_homebrew_cask="$(mktemp)"
 inline_commented_zap_homebrew_cask="$(mktemp)"
 unterminated_zap_homebrew_cask="$(mktemp)"
+syntax_error_homebrew_cask="$(mktemp)"
 placeholder_security_doc="$(mktemp)"
 placeholder_free_security_doc="$(mktemp)"
 release_zip_fixture="$(mktemp)"
@@ -176,6 +178,7 @@ cleanup() {
     "$commented_homebrew_cask_zap_output" \
     "$inline_commented_homebrew_cask_zap_output" \
     "$unterminated_homebrew_cask_zap_output" \
+    "$syntax_error_homebrew_cask_output" \
     "$placeholder_output" \
     "$homebrew_cask_placeholder_output" \
     "$security_doc_placeholder_output" \
@@ -220,6 +223,7 @@ cleanup() {
     "$commented_zap_homebrew_cask" \
     "$inline_commented_zap_homebrew_cask" \
     "$unterminated_zap_homebrew_cask" \
+    "$syntax_error_homebrew_cask" \
     "$placeholder_security_doc" \
     "$placeholder_free_security_doc" \
     "$release_zip_fixture" \
@@ -924,6 +928,29 @@ cask "lithepg" do
   zap trash: [
     "~/Library/Application Support/LithePG",
     "~/Library/Preferences/dev.omarpr.lithepg.plist",
+end
+CASK
+cat >"$syntax_error_homebrew_cask" <<CASK
+cask "lithepg" do
+  version "1.0"
+  sha256 "$release_zip_sha"
+
+  url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
+      verified: "github.com/omarpr/lithepg/"
+  name "LithePG"
+  desc "Lean PostgreSQL client with local-first AI"
+  homepage "https://github.com/omarpr/lithepg"
+  uninstall quit: "dev.omarpr.lithepg"
+
+  depends_on macos: ">= :sonoma"
+
+  app "LithePG.app"
+
+  zap trash: [
+    "~/Library/Application Support/LithePG",
+    "~/Library/Preferences/dev.omarpr.lithepg.plist",
+  ]
+  if true
 end
 CASK
 printf 'Report vulnerabilities to [security contact pending].\n' >"$placeholder_security_doc"
@@ -1898,6 +1925,32 @@ assert_contains "$unterminated_homebrew_cask_zap_text" "Homebrew cask SHA-256: m
 assert_not_contains "$unterminated_homebrew_cask_zap_text" "$release_zip_sha"
 assert_contains "$unterminated_homebrew_cask_zap_text" "v1.0 publication blocked"
 
+if run_gate_capture "$syntax_error_homebrew_cask_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$syntax_error_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  fail "gate unexpectedly passed with invalid Homebrew cask Ruby syntax"
+fi
+syntax_error_homebrew_cask_text="$(<"$syntax_error_homebrew_cask_output")"
+assert_contains "$syntax_error_homebrew_cask_text" "Homebrew cask placeholders: none found"
+assert_contains "$syntax_error_homebrew_cask_text" "Homebrew cask zap stanza: matches"
+assert_contains "$syntax_error_homebrew_cask_text" "Homebrew cask Ruby syntax: invalid"
+assert_contains "$syntax_error_homebrew_cask_text" "Homebrew cask SHA-256: matches"
+assert_not_contains "$syntax_error_homebrew_cask_text" "$release_zip_sha"
+assert_contains "$syntax_error_homebrew_cask_text" "v1.0 publication blocked"
+assert_not_contains "$syntax_error_homebrew_cask_text" "fast preflight is clear"
+
 if run_gate_capture "$placeholder_output" env -i \
   PATH="$fake_path" \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
@@ -1953,6 +2006,7 @@ assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask uninstall q
 assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask app stanza:"
 assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask macOS requirement:"
 assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask zap stanza:"
+assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask Ruby syntax:"
 assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask SHA-256: mismatch"
 assert_contains "$homebrew_cask_placeholder_text" "v1.0 publication blocked"
 assert_not_contains "$homebrew_cask_placeholder_text" "fast preflight is clear"
@@ -2115,6 +2169,7 @@ assert_contains "$no_remote_lookup_text" "Homebrew cask uninstall quit bundle ID
 assert_contains "$no_remote_lookup_text" "Homebrew cask app stanza: matches"
 assert_contains "$no_remote_lookup_text" "Homebrew cask macOS requirement: matches"
 assert_contains "$no_remote_lookup_text" "Homebrew cask zap stanza: matches"
+assert_contains "$no_remote_lookup_text" "Homebrew cask Ruby syntax: valid"
 assert_contains "$no_remote_lookup_text" "Homebrew cask SHA-256: matches"
 assert_contains "$no_remote_lookup_text" "Release artifact zip: present"
 assert_contains "$no_remote_lookup_text" "Release artifact SHA-256: matches"
