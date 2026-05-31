@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="660" viewBox="0 0 1180 660" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release zip dangling symlink overwrite gate evidence</title>
+  <desc id="desc">Visual evidence for the 2026-05-31 create_release_zip dangling symlink hardening slice.</desc>
+  <rect width="1180" height="660" fill="#0f172a"/>
+  <rect x="32" y="32" width="1116" height="596" rx="18" fill="#111827" stroke="#38bdf8" stroke-width="2"/>
+  <text x="64" y="82" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="28" font-weight="700">LithePG v1.0 release helper gate</text>
+  <text x="64" y="122" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="18">2026-05-31 09:08 EDT — create_release_zip dangling symlink refusal</text>
+
+  <rect x="64" y="154" width="1052" height="154" rx="12" fill="#020617" stroke="#334155"/>
+  <text x="88" y="192" fill="#fbbf24" font-family="Menlo, Consolas, monospace" font-size="18">Behavior hardened</text>
+  <text x="88" y="228" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="16">script/create_release_zip.sh now treats an output path as existing when:</text>
+  <text x="112" y="260" fill="#a7f3d0" font-family="Menlo, Consolas, monospace" font-size="16">[[ -e "$OUTPUT_ZIP" || -L "$OUTPUT_ZIP" ]]</text>
+  <text x="88" y="292" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="16">This blocks stale/dangling LithePG.app.zip symlinks unless overwrite approval is explicit.</text>
+
+  <rect x="64" y="332" width="1052" height="194" rx="12" fill="#020617" stroke="#334155"/>
+  <text x="88" y="370" fill="#fbbf24" font-family="Menlo, Consolas, monospace" font-size="18">TDD + verification receipt</text>
+  <text x="88" y="406" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="16">RED: bash script/test_create_release_zip.sh</text>
+  <text x="112" y="434" fill="#fecaca" font-family="Menlo, Consolas, monospace" font-size="15">failed: expected output to contain: Refusing to overwrite existing output zip</text>
+  <text x="88" y="470" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="16">GREEN: bash script/test_create_release_zip.sh → test_create_release_zip passed</text>
+  <text x="88" y="500" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="16">bash -n script/create_release_zip.sh script/test_create_release_zip.sh → passed</text>
+
+  <rect x="64" y="550" width="1052" height="46" rx="12" fill="#052e16" stroke="#22c55e"/>
+  <text x="88" y="580" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="16">No signing, notarization, GitHub Release upload, Homebrew publication, tag, or cron change performed.</text>
+</svg>

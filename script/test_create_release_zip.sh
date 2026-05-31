@@ -103,13 +103,14 @@ assert_contains "$helper_contents" "/usr/bin/shasum -a 256"
 
 missing_verify_output="$(mktemp)"
 refuse_output="$(mktemp)"
+dangling_symlink_output="$(mktemp)"
 overwrite_output="$(mktemp)"
 inside_bundle_output="$(mktemp)"
 success_output="$(mktemp)"
 outside_cwd_output="$(mktemp)"
 help_output="$(mktemp)"
 fixture_root="$(mktemp -d)"
-trap 'rm -f "$missing_verify_output" "$refuse_output" "$overwrite_output" "$inside_bundle_output" "$success_output" "$outside_cwd_output" "$help_output"; rm -rf "$fixture_root"' EXIT
+trap 'rm -f "$missing_verify_output" "$refuse_output" "$dangling_symlink_output" "$overwrite_output" "$inside_bundle_output" "$success_output" "$outside_cwd_output" "$help_output"; rm -rf "$fixture_root"' EXIT
 
 sensitive_identity="SENSITIVE_CODESIGN_IDENTITY_DO_NOT_PRINT"
 sensitive_notary="SENSITIVE_NOTARY_PROFILE_DO_NOT_PRINT"
@@ -143,6 +144,23 @@ assert_contains "$refuse_text" "Refusing to overwrite existing output zip"
 assert_contains "$refuse_text" "LITHEPG_RELEASE_ZIP_OVERWRITE=1"
 assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
 [[ "$(<"$refuse_fixture/dist/LithePG.app.zip")" == "existing zip" ]] || fail "existing zip content changed despite refusal"
+
+# Dangling output symlink is refused by default after verification; it must not be followed or removed.
+dangling_fixture="$fixture_root/refuse-dangling-symlink"
+make_fixture "$dangling_fixture"
+dangling_target="$dangling_fixture/missing-target/LithePG.app.zip"
+ln -s "$dangling_target" "$dangling_fixture/dist/LithePG.app.zip"
+verify_log="$dangling_fixture/verify.log"
+if FAKE_VERIFY_LOG="$verify_log" \
+  run_helper_capture "$dangling_fixture" "$dangling_symlink_output" "dist/LithePG.app" "dist/LithePG.app.zip"; then
+  fail "helper unexpectedly followed dangling output symlink by default"
+fi
+dangling_text="$(<"$dangling_symlink_output")"
+assert_contains "$dangling_text" "Refusing to overwrite existing output zip"
+assert_contains "$dangling_text" "LITHEPG_RELEASE_ZIP_OVERWRITE=1"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+[[ -L "$dangling_fixture/dist/LithePG.app.zip" && ! -e "$dangling_fixture/dist/LithePG.app.zip" ]] || fail "dangling output symlink changed despite refusal"
+[[ ! -e "$dangling_target" ]] || fail "dangling output symlink target was created despite refusal"
 
 # Explicit overwrite approval allows replacing an existing zip.
 overwrite_fixture="$fixture_root/overwrite-existing"

@@ -720,3 +720,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Updated `docs/RELEASING.md` to document `LITHEPG_NOTARY_ZIP_OVERWRITE` and the dry-run/real-mode overwrite behavior.
 - Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-notary-zip-overwrite-gate.svg`.
 - No release signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 09:08 EDT — v1.0 release zip dangling symlink overwrite gate
+
+- Hardened `script/create_release_zip.sh` so a dangling output symlink at the public release zip path is treated as an existing output artifact and refused unless `LITHEPG_RELEASE_ZIP_OVERWRITE` is explicitly approved.
+- Added strict-TDD coverage proving a dangling `dist/LithePG.app.zip` symlink exits nonzero by default after package verification, prints the existing-output overwrite approval hint, keeps the symlink dangling, and does not create the symlink target.
+- RED verification: `bash script/test_create_release_zip.sh` failed first with `test_create_release_zip failed: expected output to contain: Refusing to overwrite existing output zip`.
+- GREEN verification: `bash script/test_create_release_zip.sh` passed; `bash -n script/create_release_zip.sh script/test_create_release_zip.sh` passed; `git diff --check` passed; `./script/v10_release_gate.sh --check-remote` remained safely blocked on expected local/external publication prerequisites.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-dangling-symlink-gate.svg`.
+- No release signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.

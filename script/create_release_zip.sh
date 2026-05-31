@@ -67,7 +67,7 @@ case "$OUTPUT_ZIP_ABS" in
     ;;
 esac
 
-if [[ -e "$OUTPUT_ZIP" ]] && ! is_approved "${LITHEPG_RELEASE_ZIP_OVERWRITE:-}"; then
+if [[ ( -e "$OUTPUT_ZIP" || -L "$OUTPUT_ZIP" ) ]] && ! is_approved "${LITHEPG_RELEASE_ZIP_OVERWRITE:-}"; then
   fail "Refusing to overwrite existing output zip: $OUTPUT_ZIP (set LITHEPG_RELEASE_ZIP_OVERWRITE=1 to replace it)"
 fi
 
