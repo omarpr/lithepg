@@ -626,3 +626,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed; final syntax, whitespace, and fast-preflight blocked-prerequisite checks were run for this shell/docs slice.
 - Output stays redacted: the gate reports malformed filename encodings as `Release artifact entry paths: non-canonical` and does not print tracebacks, exception names, archive paths, marker text, or SHA values.
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-malformed-encoding-redaction-gate.svg`.
+
+## 2026-05-31 04:55 EDT — v1.0 release zip codesign verification gate
+
+- Hardened `script/v10_release_gate.sh` so a present public `LithePG.app.zip` is blocked unless the extracted `LithePG.app` verifies with `/usr/bin/codesign --verify --strict --deep`, not just a present `_CodeSignature/CodeResources` file.
+- Updated the valid shell release-zip fixture to be ad-hoc signed before zipping, and added a tampered signed-bundle fixture with otherwise-valid wrapper, paths, Info.plist, owner-executable Mach-O, CodeResources, SHA, release copy, and cask metadata.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with invalid release artifact code signature`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed after adding the minimal extracted-bundle codesign check; final syntax, whitespace, and fast-preflight blocked-prerequisite checks were run for this shell/docs slice.
+- Output stays redacted: the gate reports only `Release artifact code signature verification: valid`, `invalid`, or `could not inspect` and does not print archive contents, extracted temp paths, codesign stderr, SHA values, signing identities, or fixture marker strings.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-codesign-verification-gate.svg`.

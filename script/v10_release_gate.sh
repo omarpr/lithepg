@@ -805,6 +805,39 @@ release_zip_code_signature_resources_status() {
   return 0
 }
 
+release_zip_code_signature_verification_status() {
+  local zip_file="$1"
+  local extract_temp_dir=""
+  local app_bundle_path=""
+
+  if [[ ! -x /usr/bin/unzip || ! -x /usr/bin/codesign || ! -x /usr/bin/mktemp || ! -x /bin/rm ]]; then
+    return 2
+  fi
+
+  if ! extract_temp_dir="$(/usr/bin/mktemp -d "${TMPDIR:-/tmp}/lithepg-code-signature.XXXXXX")"; then
+    return 2
+  fi
+  app_bundle_path="$extract_temp_dir/LithePG.app"
+
+  if ! /usr/bin/unzip -q "$zip_file" "LithePG.app/*" -d "$extract_temp_dir" >/dev/null 2>&1; then
+    /bin/rm -rf "$extract_temp_dir"
+    return 2
+  fi
+
+  if [[ ! -d "$app_bundle_path" ]]; then
+    /bin/rm -rf "$extract_temp_dir"
+    return 2
+  fi
+
+  if /usr/bin/codesign --verify --strict --deep "$app_bundle_path" >/dev/null 2>&1; then
+    /bin/rm -rf "$extract_temp_dir"
+    return 0
+  fi
+
+  /bin/rm -rf "$extract_temp_dir"
+  return 1
+}
+
 release_zip_top_level_entries_status() {
   local zip_file="$1"
   local zip_entries=""
@@ -1399,8 +1432,10 @@ if [[ "$release_zip_present" -eq 1 ]]; then
         fi
       fi
 
+      release_zip_code_signature_resources_ready=0
       if release_zip_code_signature_resources_status "$release_zip_file"; then
         printf 'Release artifact code signature resources: present\n'
+        release_zip_code_signature_resources_ready=1
       else
         release_zip_code_signature_resources_status=$?
         case "$release_zip_code_signature_resources_status" in
@@ -1415,6 +1450,23 @@ if [[ "$release_zip_present" -eq 1 ]]; then
             ;;
         esac
         mark_blocker
+      fi
+
+      if [[ "$release_zip_code_signature_resources_ready" -eq 1 ]]; then
+        if release_zip_code_signature_verification_status "$release_zip_file"; then
+          printf 'Release artifact code signature verification: valid\n'
+        else
+          release_zip_code_signature_verification_status=$?
+          case "$release_zip_code_signature_verification_status" in
+            1)
+              printf 'Release artifact code signature verification: invalid\n'
+              ;;
+            *)
+              printf 'Release artifact code signature verification: could not inspect\n'
+              ;;
+          esac
+          mark_blocker
+        fi
       fi
     fi
   fi
