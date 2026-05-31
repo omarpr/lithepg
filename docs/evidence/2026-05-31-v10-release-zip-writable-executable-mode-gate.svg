@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release zip writable executable-mode gate evidence</title>
+  <desc id="desc">Strict-TDD verification receipt for release gate hardening that blocks group/world-writable archived app executable modes in the public LithePG.app.zip.</desc>
+  <rect width="1200" height="760" fill="#0b1020"/>
+  <rect x="40" y="40" width="1120" height="680" rx="24" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="80" y="100" fill="#e5f3ff" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="30" font-weight="700">v1.0 release artifact writable-mode gate</text>
+  <text x="80" y="145" fill="#93c5fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">Generated: 2026-05-31 13:29 EDT · Repo: lithepg · Branch: main</text>
+
+  <rect x="80" y="185" width="1040" height="132" rx="16" fill="#172554" stroke="#2563eb"/>
+  <text x="110" y="225" fill="#bfdbfe" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700">Change under test</text>
+  <text x="110" y="260" fill="#dbeafe" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">Release gate rejects public app zips whose archived executable is writable by group/other.</text>
+  <text x="110" y="287" fill="#dbeafe" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">Status output remains generic: Release artifact bundle executable mode: unsafe.</text>
+
+  <rect x="80" y="350" width="1040" height="112" rx="16" fill="#450a0a" stroke="#ef4444"/>
+  <text x="110" y="390" fill="#fecaca" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700">RED receipt</text>
+  <text x="110" y="428" fill="#fee2e2" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">✗ bash script/test_v10_release_gate.sh</text>
+  <text x="110" y="453" fill="#fee2e2" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">test_v10_release_gate failed: gate unexpectedly passed with group/world-writable release artifact executable mode</text>
+
+  <rect x="80" y="500" width="500" height="150" rx="16" fill="#052e16" stroke="#22c55e"/>
+  <text x="110" y="540" fill="#bbf7d0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700">GREEN verification</text>
+  <text x="110" y="578" fill="#dcfce7" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">✓ release gate test passed</text>
+  <text x="110" y="606" fill="#dcfce7" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">✓ bash -n release gate scripts passed</text>
+  <text x="110" y="634" fill="#dcfce7" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">✓ git diff --check passed</text>
+
+  <rect x="620" y="500" width="500" height="150" rx="16" fill="#312e81" stroke="#a78bfa"/>
+  <text x="650" y="540" fill="#ddd6fe" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700">Release-impact checks</text>
+  <text x="650" y="578" fill="#ede9fe" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">✓ --check-remote stayed blocked on prerequisites</text>
+  <text x="650" y="606" fill="#ede9fe" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">✓ swift build passed</text>
+  <text x="650" y="634" fill="#ede9fe" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">✓ dogfood_check passed: .build/dogfood-checks/20260531-133501/</text>
+
+  <rect x="80" y="675" width="1040" height="45" rx="12" fill="#1f2937" stroke="#4b5563"/>
+  <text x="110" y="704" fill="#f9fafb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Evidence artifact: docs/evidence/2026-05-31-v10-release-zip-writable-executable-mode-gate.svg</text>
+</svg>

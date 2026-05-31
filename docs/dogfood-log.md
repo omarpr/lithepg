@@ -817,3 +817,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed.
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-special-mode-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-05-31 13:29 EDT — v1.0 release zip writable executable-mode gate
+
+- Hardened `script/v10_release_gate.sh` so the final public `LithePG.app.zip` is blocked when the archived `LithePG.app/Contents/MacOS/LithePGApp` executable mode is writable by group and/or other, in addition to the existing special-mode marker rejection.
+- Added strict-TDD coverage by rewriting an otherwise-valid signed fixture zip so only the archived executable mode is group/world writable; output reports only `Release artifact bundle executable mode: unsafe` and keeps paths, entry names, raw modes, and SHA values redacted.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with group/world-writable release artifact executable mode`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed; `./script/v10_release_gate.sh --check-remote` remained blocked on expected local/external publication prerequisites; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed; release-impact `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` passed with artifacts at `.build/dogfood-checks/20260531-133501/` (shell readiness 134.25 ms; connected cold start 229.71 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead 0.039 ms; dogfood query median overhead 0.041 ms).
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-writable-executable-mode-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.

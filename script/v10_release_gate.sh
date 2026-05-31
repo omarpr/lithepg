@@ -826,6 +826,12 @@ release_zip_bundle_executable_mode_safety_status() {
       ;;
   esac
 
+  case "${executable_mode:5:1}${executable_mode:8:1}" in
+    *w*)
+      return 1
+      ;;
+  esac
+
   return 0
 }
 
