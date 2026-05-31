@@ -153,6 +153,20 @@ extract_homebrew_cask_token() {
   return 1
 }
 
+extract_homebrew_cask_name() {
+  local cask_file="$1"
+  local line=""
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" =~ ^[[:space:]]*name[[:space:]]+\"([^\"]+)\" ]]; then
+      printf '%s\n' "${BASH_REMATCH[1]}"
+      return 0
+    fi
+  done <"$cask_file"
+
+  return 1
+}
+
 extract_homebrew_cask_sha256() {
   local cask_file="$1"
   local line=""
@@ -500,6 +514,20 @@ if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
     fi
   else
     printf 'Homebrew cask token: missing\n'
+    mark_blocker
+  fi
+fi
+
+if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
+  if cask_name="$(extract_homebrew_cask_name "$homebrew_cask_file")"; then
+    if [[ "$cask_name" == "LithePG" ]]; then
+      printf 'Homebrew cask name: matches\n'
+    else
+      printf 'Homebrew cask name: mismatch\n'
+      mark_blocker
+    fi
+  else
+    printf 'Homebrew cask name: missing\n'
     mark_blocker
   fi
 fi

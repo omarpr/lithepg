@@ -430,3 +430,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed with no output; `git diff --check` passed with no output; `./script/v10_release_gate.sh --check-remote` remained safely blocked on expected local/publication inputs/placeholders.
 - No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-30-v10-homebrew-cask-token-gate.svg`.
+
+## 2026-05-30 21:01 EDT — v1.0 Homebrew cask name gate
+
+- Hardened `script/v10_release_gate.sh` so placeholder-free Homebrew casks must include `name "LithePG"` before the fast publication preflight can pass.
+- Added redacted shell TDD coverage for `name "NotLithePG"`, a missing name stanza, the valid `Homebrew cask name: matches` pass path, and placeholder-cask no-noise behavior.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with missing Homebrew cask name`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed; final syntax/whitespace/remote-block checks were run for this shell/docs slice.
+- No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-30-v10-homebrew-cask-name-gate.svg`.

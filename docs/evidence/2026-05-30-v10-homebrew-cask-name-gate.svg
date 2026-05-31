@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 Homebrew cask name gate evidence</title>
+  <desc id="desc">Evidence that the fast preflight validates the Homebrew cask name stanza exactly matches LithePG.</desc>
+  <rect width="960" height="520" fill="#0f172a"/>
+  <rect x="32" y="28" width="896" height="464" rx="18" fill="#111827" stroke="#38bdf8" stroke-width="2"/>
+  <text x="56" y="68" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="22" font-weight="700">v1.0 Homebrew cask name gate</text>
+  <text x="56" y="102" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="15">Expected stanza: name &quot;LithePG&quot;</text>
+
+  <g font-family="Menlo, Consolas, monospace" font-size="15">
+    <text x="56" y="148" fill="#fca5a5">RED</text>
+    <text x="118" y="148" fill="#e5e7eb">bash script/test_v10_release_gate.sh</text>
+    <text x="118" y="174" fill="#fca5a5">exit 1 — test_v10_release_gate failed: gate unexpectedly passed with missing Homebrew cask name</text>
+
+    <text x="56" y="224" fill="#86efac">GREEN</text>
+    <text x="118" y="224" fill="#e5e7eb">Added extractor for name &quot;...&quot; and redacted readiness output</text>
+    <text x="118" y="250" fill="#86efac">Homebrew cask name: matches | mismatch | missing</text>
+    <text x="118" y="276" fill="#86efac">Mismatched value is not printed</text>
+
+    <text x="56" y="326" fill="#fde68a">VERIFY</text>
+    <text x="118" y="326" fill="#e5e7eb">bash script/test_v10_release_gate.sh</text>
+    <text x="118" y="352" fill="#86efac">passed</text>
+    <text x="118" y="386" fill="#e5e7eb">bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh</text>
+    <text x="118" y="412" fill="#86efac">passed with no output</text>
+    <text x="118" y="446" fill="#e5e7eb">git diff --check; ./script/v10_release_gate.sh --check-remote</text>
+    <text x="118" y="472" fill="#86efac">diff check clean; remote preflight remained blocked as expected</text>
+  </g>
+</svg>
