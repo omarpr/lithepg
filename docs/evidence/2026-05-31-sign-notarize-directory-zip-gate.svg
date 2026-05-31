@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 notary zip directory-path rejection evidence</title>
+  <desc id="desc">Visual receipt for the 2026-05-31 sign_and_notarize notary zip directory guard and verification commands.</desc>
+  <rect width="1200" height="640" fill="#0f172a"/>
+  <rect x="36" y="36" width="1128" height="568" rx="22" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="72" y="92" font-family="SF Pro Display, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="32" font-weight="700" fill="#e5e7eb">LithePG v1.0 release hardening</text>
+  <text x="72" y="130" font-family="SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="20" fill="#93c5fd">sign_and_notarize.sh rejects directory notary zip outputs before dry-run or real signing proceeds</text>
+
+  <rect x="72" y="166" width="1056" height="126" rx="14" fill="#172554" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="100" y="206" font-family="SF Mono, Menlo, Consolas, monospace" font-size="19" fill="#bfdbfe">RED</text>
+  <text x="168" y="206" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18" fill="#dbeafe">bash script/test_sign_and_notarize.sh</text>
+  <text x="168" y="242" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18" fill="#fecaca">failed first: dry run unexpectedly passed with directory notary zip path</text>
+  <text x="168" y="270" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16" fill="#cbd5e1">Test used overwrite=approved to avoid masking the directory-specific guard.</text>
+
+  <rect x="72" y="318" width="1056" height="166" rx="14" fill="#052e16" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="100" y="358" font-family="SF Mono, Menlo, Consolas, monospace" font-size="19" fill="#86efac">GREEN</text>
+  <text x="188" y="358" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18" fill="#dcfce7">bash script/test_sign_and_notarize.sh</text>
+  <text x="188" y="388" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18" fill="#bbf7d0">test_sign_and_notarize passed</text>
+  <text x="188" y="428" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18" fill="#dcfce7">bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh</text>
+  <text x="188" y="458" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18" fill="#dcfce7">git diff --check</text>
+
+  <rect x="72" y="510" width="1056" height="54" rx="12" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <text x="100" y="544" font-family="SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" fill="#e2e8f0">No real signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron, or secret-bearing output was attempted.</text>
+  <text x="72" y="588" font-family="SF Mono, Menlo, Consolas, monospace" font-size="15" fill="#94a3b8">Generated 2026-05-31 11:42 EDT • Evidence path: docs/evidence/2026-05-31-sign-notarize-directory-zip-gate.svg</text>
+</svg>

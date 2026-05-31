@@ -144,6 +144,24 @@ assert_contains "$helper_output" "Codesign identity: present (redacted)"
 assert_contains "$helper_output" "Notary profile: present (redacted)"
 assert_contains "$(<"$notary_zip")" "$existing_notary_zip_marker"
 
+notary_zip_directory="$fixture_root/LithePG-directory-notary.zip"
+mkdir -p "$notary_zip_directory"
+if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$notary_zip_directory" \
+  LITHEPG_NOTARY_ZIP_OVERWRITE=approved \
+  run_helper_capture "$output_file" --dry-run "$app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "dry run unexpectedly passed with directory notary zip path"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "notary zip path must not be a directory"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+[[ -d "$notary_zip_directory" ]] || fail "dry run changed directory notary zip path: $notary_zip_directory"
+
 fake_bin="$fixture_root/fake-bin"
 mkdir -p "$fake_bin"
 cat >"$fake_bin/codesign" <<'SHIM'

@@ -102,6 +102,10 @@ validate_notary_zip_parent_dir() {
   [[ -w "$zip_parent" ]] || fail "notary zip parent directory is not writable"
 }
 
+validate_notary_zip_not_directory() {
+  [[ ! -d "$ZIP_PATH" ]] || fail "notary zip path must not be a directory"
+}
+
 validate_notary_zip_overwrite() {
   if [[ ( -e "$ZIP_PATH" || -L "$ZIP_PATH" ) ]] && ! is_approved "${LITHEPG_NOTARY_ZIP_OVERWRITE:-}"; then
     fail "notary zip already exists; set LITHEPG_NOTARY_ZIP_OVERWRITE=approved to replace it"
@@ -115,6 +119,7 @@ require_config
 validate_notary_zip_location
 validate_notary_zip_public_release_name
 validate_notary_zip_parent_dir
+validate_notary_zip_not_directory
 validate_notary_zip_overwrite
 
 if [[ "$MODE" == "dry-run" ]]; then

@@ -779,3 +779,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_sign_and_notarize.sh` passed; `bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh` passed; `git diff --check` passed.
 - Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-staged-notary-zip-gate.svg`.
 - No real signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 11:38 EDT — v1.0 notary zip directory-path rejection
+
+- Hardened `script/sign_and_notarize.sh` so `LITHEPG_NOTARY_ZIP` is rejected when it points to an existing directory, before dry-run or real signing/notarization can proceed to success.
+- Added strict-TDD coverage proving an existing directory at the notary zip path with `LITHEPG_NOTARY_ZIP_OVERWRITE=approved` exits nonzero in `--dry-run`, prints `notary zip path must not be a directory`, keeps sentinel signing/notary values redacted, and leaves the directory intact.
+- RED verification: `bash script/test_sign_and_notarize.sh` failed first with `test_sign_and_notarize failed: dry run unexpectedly passed with directory notary zip path`.
+- GREEN verification: `bash script/test_sign_and_notarize.sh` passed; `bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh` passed; `git diff --check` passed.
+- Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-directory-zip-gate.svg`.
+- No real signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
