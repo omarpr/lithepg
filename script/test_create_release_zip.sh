@@ -107,6 +107,8 @@ assert_not_contains "$helper_contents" '/usr/bin/ditto -c -k --keepParent "$APP_
 
 missing_verify_output="$(mktemp)"
 wrong_app_bundle_name_output="$(mktemp)"
+symlink_app_bundle_output="$(mktemp)"
+symlink_app_bundle_trailing_slash_output="$(mktemp)"
 wrong_output_zip_name_output="$(mktemp)"
 refuse_output="$(mktemp)"
 uppercase_overwrite_output="$(mktemp)"
@@ -122,7 +124,7 @@ success_output="$(mktemp)"
 outside_cwd_output="$(mktemp)"
 help_output="$(mktemp)"
 fixture_root="$(mktemp -d)"
-trap 'rm -f "$missing_verify_output" "$wrong_app_bundle_name_output" "$wrong_output_zip_name_output" "$refuse_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$inside_bundle_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$success_output" "$outside_cwd_output" "$help_output"; rm -rf "$fixture_root"' EXIT
+trap 'rm -f "$missing_verify_output" "$wrong_app_bundle_name_output" "$symlink_app_bundle_output" "$symlink_app_bundle_trailing_slash_output" "$wrong_output_zip_name_output" "$refuse_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$inside_bundle_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$success_output" "$outside_cwd_output" "$help_output"; rm -rf "$fixture_root"' EXIT
 
 sensitive_identity="SENSITIVE_CODESIGN_IDENTITY_DO_NOT_PRINT"
 sensitive_notary="SENSITIVE_NOTARY_PROFILE_DO_NOT_PRINT"
@@ -161,6 +163,56 @@ assert_not_contains "$wrong_app_bundle_name_text" "$sensitive_notary"
 assert_not_contains "$wrong_app_bundle_name_text" "$sensitive_release_marker"
 assert_file_contains "$verify_log" "package_verify dist/NotLithePG.app"
 [[ ! -e "$wrong_app_bundle_name_fixture/dist/LithePG.app.zip" ]] || fail "zip was created for a non-canonical app bundle name"
+
+# The public release helper must reject a symlinked input path even when the path basename is canonical.
+symlink_app_bundle_fixture="$fixture_root/symlink-app-bundle"
+make_fixture "$symlink_app_bundle_fixture"
+mkdir -p "$symlink_app_bundle_fixture/real-apps"
+mv "$symlink_app_bundle_fixture/dist/LithePG.app" "$symlink_app_bundle_fixture/real-apps/LithePG.app"
+ln -s "$symlink_app_bundle_fixture/real-apps/LithePG.app" "$symlink_app_bundle_fixture/dist/LithePG.app"
+symlink_app_bundle_target="$(readlink "$symlink_app_bundle_fixture/dist/LithePG.app")"
+verify_log="$symlink_app_bundle_fixture/verify.log"
+if FAKE_VERIFY_LOG="$verify_log" \
+  LITHEPG_CODESIGN_IDENTITY="$sensitive_identity" \
+  LITHEPG_NOTARY_PROFILE="$sensitive_notary" \
+  LITHEPG_RELEASE_MARKER="$sensitive_release_marker" \
+  run_helper_capture "$symlink_app_bundle_fixture" "$symlink_app_bundle_output" "dist/LithePG.app" "dist/LithePG.app.zip"; then
+  fail "helper unexpectedly packaged a symlinked app bundle input"
+fi
+symlink_app_bundle_text="$(<"$symlink_app_bundle_output")"
+assert_contains "$symlink_app_bundle_text" "app bundle path must not be a symlink"
+assert_not_contains "$symlink_app_bundle_text" "$sensitive_identity"
+assert_not_contains "$symlink_app_bundle_text" "$sensitive_notary"
+assert_not_contains "$symlink_app_bundle_text" "$sensitive_release_marker"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+[[ -L "$symlink_app_bundle_fixture/dist/LithePG.app" ]] || fail "symlinked app bundle input was not preserved"
+[[ "$(readlink "$symlink_app_bundle_fixture/dist/LithePG.app")" == "$symlink_app_bundle_target" ]] || fail "symlinked app bundle target changed despite refusal"
+[[ ! -e "$symlink_app_bundle_fixture/dist/LithePG.app.zip" ]] || fail "zip was created for a symlinked app bundle input"
+
+# The symlinked input path refusal must not be bypassable with a trailing slash.
+symlink_app_bundle_trailing_slash_fixture="$fixture_root/symlink-app-bundle-trailing-slash"
+make_fixture "$symlink_app_bundle_trailing_slash_fixture"
+mkdir -p "$symlink_app_bundle_trailing_slash_fixture/real-apps"
+mv "$symlink_app_bundle_trailing_slash_fixture/dist/LithePG.app" "$symlink_app_bundle_trailing_slash_fixture/real-apps/LithePG.app"
+ln -s "$symlink_app_bundle_trailing_slash_fixture/real-apps/LithePG.app" "$symlink_app_bundle_trailing_slash_fixture/dist/LithePG.app"
+symlink_app_bundle_trailing_slash_target="$(readlink "$symlink_app_bundle_trailing_slash_fixture/dist/LithePG.app")"
+verify_log="$symlink_app_bundle_trailing_slash_fixture/verify.log"
+if FAKE_VERIFY_LOG="$verify_log" \
+  LITHEPG_CODESIGN_IDENTITY="$sensitive_identity" \
+  LITHEPG_NOTARY_PROFILE="$sensitive_notary" \
+  LITHEPG_RELEASE_MARKER="$sensitive_release_marker" \
+  run_helper_capture "$symlink_app_bundle_trailing_slash_fixture" "$symlink_app_bundle_trailing_slash_output" "dist/LithePG.app/" "dist/LithePG.app.zip"; then
+  fail "helper unexpectedly packaged a symlinked app bundle input with a trailing slash"
+fi
+symlink_app_bundle_trailing_slash_text="$(<"$symlink_app_bundle_trailing_slash_output")"
+assert_contains "$symlink_app_bundle_trailing_slash_text" "app bundle path must not be a symlink"
+assert_not_contains "$symlink_app_bundle_trailing_slash_text" "$sensitive_identity"
+assert_not_contains "$symlink_app_bundle_trailing_slash_text" "$sensitive_notary"
+assert_not_contains "$symlink_app_bundle_trailing_slash_text" "$sensitive_release_marker"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app/"
+[[ -L "$symlink_app_bundle_trailing_slash_fixture/dist/LithePG.app" ]] || fail "trailing-slash symlinked app bundle input was not preserved"
+[[ "$(readlink "$symlink_app_bundle_trailing_slash_fixture/dist/LithePG.app")" == "$symlink_app_bundle_trailing_slash_target" ]] || fail "trailing-slash symlinked app bundle target changed despite refusal"
+[[ ! -e "$symlink_app_bundle_trailing_slash_fixture/dist/LithePG.app.zip" ]] || fail "zip was created for a trailing-slash symlinked app bundle input"
 
 # The public release helper must only create the canonical public zip basename after verification.
 wrong_output_zip_name_fixture="$fixture_root/wrong-output-zip-name"

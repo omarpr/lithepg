@@ -846,3 +846,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-output-basename-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 15:04 EDT — v1.0 release zip symlink app-bundle gate
+
+- Hardened `script/create_release_zip.sh` so the public release zip helper refuses a symlinked input app-bundle path named `LithePG.app`, including trailing-slash variants such as `dist/LithePG.app/`, after package verification and before any public zip is created.
+- Added strict-TDD coverage proving both direct and trailing-slash symlinked app inputs are rejected with a generic message, package verification still runs first, the symlink is preserved, no output zip is created, and sentinel signing/notary/release env values are not printed.
+- RED verification: `bash script/test_create_release_zip.sh` first failed with `test_create_release_zip failed: helper unexpectedly packaged a symlinked app bundle input`; review follow-up then failed with `test_create_release_zip failed: helper unexpectedly packaged a symlinked app bundle input with a trailing slash`.
+- GREEN verification: `bash script/test_create_release_zip.sh` passed; `bash -n script/create_release_zip.sh script/test_create_release_zip.sh` passed; `git diff --check` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED after the trailing-slash bypass was fixed.
+- Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-symlink-app-bundle-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.

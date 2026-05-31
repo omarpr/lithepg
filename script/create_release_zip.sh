@@ -59,6 +59,14 @@ if [[ "$(basename "$APP_BUNDLE")" != "LithePG.app" ]]; then
   fail "app bundle basename must be LithePG.app"
 fi
 
+app_bundle_symlink_check="$APP_BUNDLE"
+while [[ "$app_bundle_symlink_check" != "/" && "$app_bundle_symlink_check" == */ ]]; do
+  app_bundle_symlink_check="${app_bundle_symlink_check%/}"
+done
+if [[ -L "$app_bundle_symlink_check" ]]; then
+  fail "app bundle path must not be a symlink"
+fi
+
 if [[ "$(basename "$OUTPUT_ZIP")" != "LithePG.app.zip" ]]; then
   fail "output zip basename must be LithePG.app.zip"
 fi
