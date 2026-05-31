@@ -483,6 +483,43 @@ release_zip_bundle_file_types_status() {
   return 0
 }
 
+release_zip_essential_entries_unique_status() {
+  local zip_file="$1"
+  local zip_entries=""
+  local entry=""
+  local info_plist_count=0
+  local app_executable_count=0
+  local code_resources_count=0
+
+  if [[ ! -x /usr/bin/zipinfo ]]; then
+    return 2
+  fi
+
+  if ! zip_entries="$(/usr/bin/zipinfo -1 "$zip_file" 2>/dev/null)"; then
+    return 2
+  fi
+
+  while IFS= read -r entry || [[ -n "$entry" ]]; do
+    case "$entry" in
+      LithePG.app/Contents/Info.plist)
+        info_plist_count=$((info_plist_count + 1))
+        ;;
+      LithePG.app/Contents/MacOS/LithePGApp)
+        app_executable_count=$((app_executable_count + 1))
+        ;;
+      LithePG.app/Contents/_CodeSignature/CodeResources)
+        code_resources_count=$((code_resources_count + 1))
+        ;;
+    esac
+  done <<<"$zip_entries"
+
+  if [[ "$info_plist_count" -gt 1 || "$app_executable_count" -gt 1 || "$code_resources_count" -gt 1 ]]; then
+    return 1
+  fi
+
+  return 0
+}
+
 plist_key_matches() {
   local plist_file="$1"
   local key="$2"
@@ -589,6 +626,7 @@ release_zip_bundle_executable_permission_status() {
 
 release_zip_app_executable_format_status() {
   local zip_file="$1"
+  local executable_temp_dir=""
   local executable_file=""
   local file_output=""
 
@@ -596,21 +634,22 @@ release_zip_app_executable_format_status() {
     return 2
   fi
 
-  if ! executable_file="$(/usr/bin/mktemp "${TMPDIR:-/tmp}/lithepg-app-executable.XXXXXX")"; then
+  if ! executable_temp_dir="$(/usr/bin/mktemp -d "${TMPDIR:-/tmp}/lithepg-app-executable.XXXXXX")"; then
     return 2
   fi
+  executable_file="$executable_temp_dir/LithePGApp"
 
   if ! /usr/bin/unzip -p "$zip_file" "LithePG.app/Contents/MacOS/LithePGApp" >"$executable_file" 2>/dev/null; then
-    /bin/rm -f "$executable_file"
+    /bin/rm -rf "$executable_temp_dir"
     return 2
   fi
 
   if ! file_output="$(/usr/bin/file -b "$executable_file" 2>/dev/null)"; then
-    /bin/rm -f "$executable_file"
+    /bin/rm -rf "$executable_temp_dir"
     return 2
   fi
 
-  /bin/rm -f "$executable_file"
+  /bin/rm -rf "$executable_temp_dir"
 
   case "$file_output" in
     *Mach-O*executable*)
@@ -1168,7 +1207,26 @@ if [[ "$release_zip_present" -eq 1 ]]; then
       mark_blocker
     fi
 
+    release_zip_essential_entries_ready=0
     if [[ "$release_zip_file_types_ready" -eq 1 ]]; then
+      if release_zip_essential_entries_unique_status "$release_zip_file"; then
+        printf 'Release artifact essential entries: unique\n'
+        release_zip_essential_entries_ready=1
+      else
+        release_zip_essential_entries_status=$?
+        case "$release_zip_essential_entries_status" in
+          1)
+            printf 'Release artifact essential entries: duplicate\n'
+            ;;
+          *)
+            printf 'Release artifact essential entries: could not inspect\n'
+            ;;
+        esac
+        mark_blocker
+      fi
+    fi
+
+    if [[ "$release_zip_file_types_ready" -eq 1 && "$release_zip_essential_entries_ready" -eq 1 ]]; then
       if release_zip_info_plist_metadata_status "$release_zip_file" "$VERSION"; then
         printf 'Release artifact Info.plist metadata: matches\n'
       else

@@ -582,3 +582,11 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Output stays redacted: the gate reports only `Release artifact executable format: Mach-O`, `invalid`, or `could not inspect` and does not print archive contents, extracted paths, `/usr/bin/file` output, SHA values, or fixture marker strings.
 - No codesign, notarization, upload, Homebrew publication, `v1.0` tag, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-executable-format-gate.svg`.
+
+## 2026-05-31 — v1.0 release zip duplicate essential entry gate follow-up
+
+- Hardened `script/v10_release_gate.sh` so a present public `LithePG.app.zip` is blocked when any essential app-bundle entry appears more than once in the zip directory: `Info.plist`, `LithePGApp`, or `_CodeSignature/CodeResources`.
+- Added redacted shell TDD coverage for an otherwise valid release zip with a duplicate app executable entry that previously passed the Mach-O executable-format check; output reports only `Release artifact essential entries: duplicate` and does not print duplicate names, archive contents, file output, or SHA values.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with duplicate essential release artifact entries`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed after the minimal unique-entry check was added; final syntax, whitespace, and fast-preflight blocked-prerequisite checks were run for this shell/docs slice.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-duplicate-entry-gate.svg`.
