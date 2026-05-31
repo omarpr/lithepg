@@ -918,3 +918,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-help-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 17:55 EDT — v1.0 sign/notarize public release zip casefold basename gate
+
+- Hardened `script/sign_and_notarize.sh` so `LITHEPG_NOTARY_ZIP` is rejected when its basename case-folds to the reserved public release artifact name `LithePG.app.zip`, preventing notary-submission intermediates such as `lithepg.app.zip` from masquerading as the final public artifact on case-insensitive macOS filesystems.
+- Added strict-TDD dry-run coverage proving a case-variant public release artifact notary zip basename exits nonzero with `notary zip must not use public release artifact name`, keeps signing/notary sentinel values redacted, and creates no notary zip.
+- RED verification: `bash script/test_sign_and_notarize.sh` failed first with `test_sign_and_notarize failed: dry run unexpectedly passed with case-variant public release artifact notary zip basename`.
+- GREEN verification: `bash script/test_sign_and_notarize.sh` passed; `bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh` passed; adjacent release helper tests `bash script/test_create_release_zip.sh` and `bash script/test_v10_release_gate.sh` passed; `git diff --check` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed.
+- `./script/v10_release_gate.sh --check-remote` confirmed origin has `v0.5` and does not have `v1.0`, then remained safely blocked on expected local/external publication prerequisites.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-public-release-zip-casefold-basename-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.

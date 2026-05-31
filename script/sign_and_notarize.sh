@@ -203,7 +203,11 @@ validate_notary_zip_location() {
 }
 
 validate_notary_zip_public_release_name() {
-  [[ "$(basename "$ZIP_PATH")" != "LithePG.app.zip" ]] || fail "notary zip must not use public release artifact name"
+  local zip_basename
+  local zip_basename_lower
+  zip_basename="$(basename "$ZIP_PATH")"
+  zip_basename_lower="$(printf '%s' "$zip_basename" | LC_ALL=C /usr/bin/tr '[:upper:]' '[:lower:]')"
+  [[ "$zip_basename_lower" != "lithepg.app.zip" ]] || fail "notary zip must not use public release artifact name"
 }
 
 validate_notary_zip_parent_dir() {

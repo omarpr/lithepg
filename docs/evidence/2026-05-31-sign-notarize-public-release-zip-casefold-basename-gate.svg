@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 signing/notarization public release zip casefold basename gate evidence</title>
+  <desc id="desc">Evidence screenshot artifact showing TDD verification and release preflight blocker status for the signing/notarization notary zip casefold public artifact basename gate.</desc>
+  <rect width="1200" height="700" fill="#0b1020"/>
+  <rect x="36" y="32" width="1128" height="636" rx="18" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="64" y="78" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="27" font-weight="700">LithePG v1.0 — sign/notarize public zip casefold gate</text>
+  <text x="64" y="118" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="18">Artifact: docs/evidence/2026-05-31-sign-notarize-public-release-zip-casefold-basename-gate.svg</text>
+
+  <rect x="64" y="152" width="1072" height="120" rx="12" fill="#1f2937" stroke="#475569"/>
+  <text x="88" y="188" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">RED</text>
+  <text x="160" y="188" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="18">bash script/test_sign_and_notarize.sh</text>
+  <text x="88" y="224" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="16">failed first:</text>
+  <text x="216" y="224" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="15">dry run unexpectedly passed with case-variant public release artifact notary zip basename</text>
+
+  <rect x="64" y="296" width="1072" height="164" rx="12" fill="#1f2937" stroke="#475569"/>
+  <text x="88" y="332" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">GREEN</text>
+  <text x="184" y="332" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="18">case-folded basename rejection implemented</text>
+  <text x="88" y="368" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="16">test_sign_and_notarize, create_release_zip, and v10_release_gate shell suites passed</text>
+  <text x="88" y="404" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="16">bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh &amp;&amp; git diff --check</text>
+  <text x="88" y="434" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="16">passed; DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build passed</text>
+
+  <rect x="64" y="484" width="1072" height="110" rx="12" fill="#1f2937" stroke="#475569"/>
+  <text x="88" y="520" fill="#fbbf24" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">PRE-FLIGHT</text>
+  <text x="224" y="520" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="18">./script/v10_release_gate.sh --check-remote</text>
+  <text x="88" y="556" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="16">origin has v0.5; origin has no v1.0; publication remains blocked on expected local/external prerequisites.</text>
+  <text x="88" y="582" fill="#fbbf24" font-family="Menlo, Consolas, monospace" font-size="16">No signing, notarization, upload, Homebrew publication, tag, cron change, or external publication attempted.</text>
+
+  <text x="64" y="642" fill="#94a3b8" font-family="Menlo, Consolas, monospace" font-size="15">Scope: reject LITHEPG_NOTARY_ZIP basename variants such as lithepg.app.zip so notary intermediates cannot masquerade as public artifacts on case-insensitive filesystems.</text>
+</svg>
