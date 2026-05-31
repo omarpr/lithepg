@@ -110,6 +110,7 @@ wrong_app_bundle_name_output="$(mktemp)"
 symlink_app_bundle_output="$(mktemp)"
 symlink_app_bundle_trailing_slash_output="$(mktemp)"
 wrong_output_zip_name_output="$(mktemp)"
+approved_directory_output="$(mktemp)"
 refuse_output="$(mktemp)"
 uppercase_overwrite_output="$(mktemp)"
 dangling_symlink_output="$(mktemp)"
@@ -124,7 +125,7 @@ success_output="$(mktemp)"
 outside_cwd_output="$(mktemp)"
 help_output="$(mktemp)"
 fixture_root="$(mktemp -d)"
-trap 'rm -f "$missing_verify_output" "$wrong_app_bundle_name_output" "$symlink_app_bundle_output" "$symlink_app_bundle_trailing_slash_output" "$wrong_output_zip_name_output" "$refuse_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$inside_bundle_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$success_output" "$outside_cwd_output" "$help_output"; rm -rf "$fixture_root"' EXIT
+trap 'rm -f "$missing_verify_output" "$wrong_app_bundle_name_output" "$symlink_app_bundle_output" "$symlink_app_bundle_trailing_slash_output" "$wrong_output_zip_name_output" "$approved_directory_output" "$refuse_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$inside_bundle_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$success_output" "$outside_cwd_output" "$help_output"; rm -rf "$fixture_root"' EXIT
 
 sensitive_identity="SENSITIVE_CODESIGN_IDENTITY_DO_NOT_PRINT"
 sensitive_notary="SENSITIVE_NOTARY_PROFILE_DO_NOT_PRINT"
@@ -232,6 +233,32 @@ assert_not_contains "$wrong_output_zip_name_text" "$sensitive_notary"
 assert_not_contains "$wrong_output_zip_name_text" "$sensitive_release_marker"
 assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
 [[ ! -e "$wrong_output_zip_name_fixture/dist/NotLithePG.zip" ]] || fail "non-canonical output zip was created"
+
+# Existing output directory at the canonical zip path is refused even with explicit overwrite approval.
+approved_directory_fixture="$fixture_root/refuse-approved-directory-output"
+make_fixture "$approved_directory_fixture"
+approved_directory_path="$approved_directory_fixture/dist/LithePG.app.zip"
+approved_directory_marker="directory output marker"
+mkdir -p "$approved_directory_path"
+printf '%s\n' "$approved_directory_marker" >"$approved_directory_path/marker.txt"
+verify_log="$approved_directory_fixture/verify.log"
+if FAKE_VERIFY_LOG="$verify_log" \
+  LITHEPG_RELEASE_ZIP_OVERWRITE="approved" \
+  LITHEPG_CODESIGN_IDENTITY="$sensitive_identity" \
+  LITHEPG_NOTARY_PROFILE="$sensitive_notary" \
+  LITHEPG_RELEASE_MARKER="$sensitive_release_marker" \
+  run_helper_capture "$approved_directory_fixture" "$approved_directory_output" "dist/LithePG.app" "dist/LithePG.app.zip"; then
+  fail "helper unexpectedly accepted an existing output directory with overwrite approval"
+fi
+approved_directory_text="$(<"$approved_directory_output")"
+assert_contains "$approved_directory_text" "output zip path must not be a directory"
+assert_not_contains "$approved_directory_text" "$sensitive_identity"
+assert_not_contains "$approved_directory_text" "$sensitive_notary"
+assert_not_contains "$approved_directory_text" "$sensitive_release_marker"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+[[ -d "$approved_directory_path" ]] || fail "existing output directory was removed"
+[[ "$(<"$approved_directory_path/marker.txt")" == "$approved_directory_marker" ]] || fail "existing output directory contents changed"
+[[ ! -e "$approved_directory_path/LithePG.app.zip" ]] || fail "zip was created inside the existing output directory"
 
 # Existing output zip is refused by default after verification.
 refuse_fixture="$fixture_root/refuse-existing"

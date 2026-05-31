@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release zip directory-output gate evidence</title>
+  <desc id="desc">Terminal-style evidence showing release zip helper tests, adjacent release helper tests, Swift tests, and dogfood gate passing.</desc>
+  <rect width="1280" height="720" fill="#0b1020"/>
+  <rect x="24" y="24" width="1232" height="672" rx="18" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <circle cx="56" cy="56" r="8" fill="#ef4444"/>
+  <circle cx="82" cy="56" r="8" fill="#f59e0b"/>
+  <circle cx="108" cy="56" r="8" fill="#22c55e"/>
+  <text x="134" y="62" fill="#cbd5e1" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">2026-05-31-create-release-zip-directory-output-gate</text>
+
+  <text x="48" y="108" fill="#93c5fd" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">$ bash script/test_create_release_zip.sh</text>
+  <text x="48" y="138" fill="#86efac" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">test_create_release_zip passed</text>
+
+  <text x="48" y="184" fill="#93c5fd" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">$ bash script/test_sign_and_notarize.sh &amp;&amp; bash script/test_v10_release_gate.sh</text>
+  <text x="48" y="214" fill="#86efac" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">test_sign_and_notarize passed; test_v10_release_gate passed</text>
+
+  <text x="48" y="260" fill="#93c5fd" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">$ bash -n release helper scripts &amp;&amp; git diff --check</text>
+  <text x="48" y="290" fill="#86efac" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">syntax checks passed; diff whitespace check passed</text>
+
+  <text x="48" y="336" fill="#93c5fd" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">$ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test</text>
+  <text x="48" y="366" fill="#86efac" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">Test run with 127 tests in 20 suites passed</text>
+
+  <text x="48" y="412" fill="#93c5fd" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">$ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh</text>
+  <text x="48" y="442" fill="#86efac" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">defaultSwiftTest=passed; liveSwiftTest=passed; v04Measure=passed</text>
+  <text x="48" y="472" fill="#e5e7eb" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">artifacts: .build/dogfood-checks/20260531-152804/</text>
+  <text x="48" y="502" fill="#e5e7eb" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">shell 134.05 ms; cold start 231.52 ms; raw 21.379 MiB; strip 11.980 MiB</text>
+  <text x="48" y="532" fill="#e5e7eb" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">SELECT 1 overhead 0.034 ms; dogfood query overhead 0.021 ms</text>
+
+  <rect x="48" y="574" width="1184" height="72" rx="12" fill="#172554" stroke="#2563eb" stroke-width="1"/>
+  <text x="72" y="610" fill="#bfdbfe" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">Gate behavior:</text>
+  <text x="72" y="638" fill="#f8fafc" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">existing directory at canonical LithePG.app.zip is rejected before release zip staging/rename.</text>
+</svg>

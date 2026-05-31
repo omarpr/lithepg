@@ -856,3 +856,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED after the trailing-slash bypass was fixed.
 - Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-symlink-app-bundle-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 15:21 EDT — v1.0 release zip directory-output gate
+
+- Hardened `script/create_release_zip.sh` so the public release zip helper rejects an existing directory at the canonical `LithePG.app.zip` output path even when `LITHEPG_RELEASE_ZIP_OVERWRITE=approved` is set.
+- Added strict-TDD coverage proving package verification runs first, the helper exits nonzero with `output zip path must not be a directory`, sentinel release/signing env values stay redacted, the directory and marker remain intact, and no nested zip is created.
+- RED verification: `bash script/test_create_release_zip.sh` failed first with `test_create_release_zip failed: expected output to contain: output zip path must not be a directory`.
+- GREEN verification: `bash script/test_create_release_zip.sh` passed; adjacent release helper tests `bash script/test_sign_and_notarize.sh` and `bash script/test_v10_release_gate.sh` passed; `bash -n` syntax checks passed; `git diff --check` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260531-152804/` with default Swift tests, live dogfood tests, and v0.4 measurement all passed. Metrics: shell readiness 134.05 ms; connected cold start 231.52 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead 0.034 ms; dogfood query median overhead 0.021 ms.
+- Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-directory-output-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
