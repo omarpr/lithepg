@@ -464,3 +464,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Clarified that the fast helper now documents placeholder-free cask checks for token, version, URL, verified URL, public metadata, uninstall quit bundle ID, app stanza, macOS requirement, zap cleanup, and SHA-256 matching.
 - No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-30-v10-release-docs-gate-sync.svg`.
+
+## 2026-05-30 22:47 EDT — v1.0 release copy SHA gate
+
+- Hardened `script/v10_release_gate.sh` so placeholder-free GitHub Release copy must contain the approved `LITHEPG_RELEASE_ZIP_SHA256` as an exact 64-hex digest token before the fast publication preflight can pass.
+- Added redacted shell TDD coverage for missing/wrong release-copy SHA, embedded/partial digest false positives, matching success, and placeholder no-noise behavior.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with mismatched release copy SHA-256`, then the embedded digest regression failed with `gate unexpectedly passed with embedded release copy SHA-256` before the exact-token fix.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed.
+- No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-30-v10-release-copy-sha-gate.svg`.

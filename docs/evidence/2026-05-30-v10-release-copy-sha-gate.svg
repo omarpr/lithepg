@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release copy SHA gate evidence</title>
+  <desc id="desc">Visual receipt for the v1.0 fast preflight release-copy SHA consistency gate.</desc>
+  <rect width="1280" height="720" fill="#0b1020"/>
+  <rect x="48" y="44" width="1184" height="632" rx="24" fill="#121a2e" stroke="#4b5563" stroke-width="2"/>
+  <text x="88" y="108" fill="#f8fafc" font-family="SF Pro Display, Inter, Arial, sans-serif" font-size="40" font-weight="700">LithePG v1.0 release-copy SHA gate</text>
+  <text x="88" y="150" fill="#93c5fd" font-family="SF Mono, Menlo, Consolas, monospace" font-size="20">2026-05-30 22:47 EDT · main@3dfc62e → release preflight hardening</text>
+
+  <rect x="88" y="190" width="520" height="160" rx="16" fill="#172554" stroke="#2563eb"/>
+  <text x="116" y="232" fill="#dbeafe" font-family="SF Pro Display, Inter, Arial, sans-serif" font-size="24" font-weight="700">New gate</text>
+  <text x="116" y="270" fill="#bfdbfe" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">Release copy SHA-256: matches</text>
+  <text x="116" y="302" fill="#bfdbfe" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">Release copy SHA-256: mismatch</text>
+  <text x="116" y="334" fill="#bfdbfe" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">Digest values redacted from output</text>
+
+  <rect x="672" y="190" width="520" height="160" rx="16" fill="#3b1d0b" stroke="#f97316"/>
+  <text x="700" y="232" fill="#ffedd5" font-family="SF Pro Display, Inter, Arial, sans-serif" font-size="24" font-weight="700">Regression covered</text>
+  <text x="700" y="270" fill="#fed7aa" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">Rejects wrong release-copy SHA</text>
+  <text x="700" y="302" fill="#fed7aa" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">Rejects embedded partial SHA token</text>
+  <text x="700" y="334" fill="#fed7aa" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">No SHA noise while placeholders remain</text>
+
+  <rect x="88" y="390" width="1104" height="210" rx="16" fill="#03120d" stroke="#16a34a"/>
+  <text x="116" y="434" fill="#dcfce7" font-family="SF Pro Display, Inter, Arial, sans-serif" font-size="24" font-weight="700">Verification</text>
+  <text x="116" y="476" fill="#bbf7d0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="20">$ bash script/test_v10_release_gate.sh</text>
+  <text x="116" y="508" fill="#86efac" font-family="SF Mono, Menlo, Consolas, monospace" font-size="20">test_v10_release_gate passed</text>
+  <text x="116" y="548" fill="#bbf7d0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="20">$ bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh</text>
+  <text x="116" y="580" fill="#86efac" font-family="SF Mono, Menlo, Consolas, monospace" font-size="20">exit 0 · no output</text>
+
+  <text x="88" y="638" fill="#cbd5e1" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">No signing · no notarization · no upload · no Homebrew publication · no v1.0 tag</text>
+</svg>

@@ -482,6 +482,7 @@ fi
 
 printf '\nRelease copy readiness:\n'
 release_copy_file="$(release_copy_full_path)"
+release_copy_check_ready=0
 if [[ ! -f "$release_copy_file" ]]; then
   printf 'Release copy placeholders: missing release copy at %s\n' "$RELEASE_COPY_PATH"
   mark_blocker
@@ -497,9 +498,31 @@ else
       ;;
     1)
       printf 'Release copy placeholders: none found\n'
+      release_copy_check_ready=1
       ;;
     *)
       printf 'Release copy placeholders: could not scan %s\n' "$RELEASE_COPY_PATH"
+      mark_blocker
+      ;;
+  esac
+fi
+
+if [[ "$release_copy_check_ready" -eq 1 && "$RELEASE_ZIP_SHA256" =~ ^[[:xdigit:]]{64}$ ]]; then
+  expected_sha="$(printf '%s' "$RELEASE_ZIP_SHA256" | /usr/bin/tr '[:upper:]' '[:lower:]')"
+  set +e
+  grep -Eiq -- "(^|[^[:xdigit:]])${expected_sha}([^[:xdigit:]]|$)" "$release_copy_file"
+  grep_status=$?
+  set -e
+  case "$grep_status" in
+    0)
+      printf 'Release copy SHA-256: matches\n'
+      ;;
+    1)
+      printf 'Release copy SHA-256: mismatch\n'
+      mark_blocker
+      ;;
+    *)
+      printf 'Release copy SHA-256: could not scan %s\n' "$RELEASE_COPY_PATH"
       mark_blocker
       ;;
   esac
