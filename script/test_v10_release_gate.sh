@@ -67,6 +67,7 @@ artifact_unicode_zip_path_collision_output="$(mktemp)"
 artifact_malformed_zip_path_encoding_output="$(mktemp)"
 artifact_code_signature_resources_missing_output="$(mktemp)"
 artifact_code_signature_verification_invalid_output="$(mktemp)"
+artifact_code_signature_runtime_missing_output="$(mktemp)"
 artifact_top_level_unexpected_output="$(mktemp)"
 artifact_info_plist_metadata_mismatch_output="$(mktemp)"
 artifact_info_plist_metadata_legacy_mismatch_output="$(mktemp)"
@@ -209,6 +210,10 @@ invalid_code_signature_zip_dir="$(mktemp -d)"
 invalid_code_signature_zip="$invalid_code_signature_zip_dir/LithePG.app.zip"
 invalid_code_signature_release_copy="$(mktemp)"
 invalid_code_signature_homebrew_cask="$(mktemp)"
+missing_runtime_zip_dir="$(mktemp -d)"
+missing_runtime_zip="$missing_runtime_zip_dir/LithePG.app.zip"
+missing_runtime_release_copy="$(mktemp)"
+missing_runtime_homebrew_cask="$(mktemp)"
 unexpected_top_level_zip_dir="$(mktemp -d)"
 unexpected_top_level_zip="$unexpected_top_level_zip_dir/LithePG.app.zip"
 unexpected_top_level_release_copy="$(mktemp)"
@@ -255,6 +260,7 @@ cleanup() {
     "$artifact_malformed_zip_path_encoding_output" \
     "$artifact_code_signature_resources_missing_output" \
     "$artifact_code_signature_verification_invalid_output" \
+    "$artifact_code_signature_runtime_missing_output" \
     "$artifact_top_level_unexpected_output" \
     "$artifact_info_plist_metadata_mismatch_output" \
     "$artifact_info_plist_metadata_legacy_mismatch_output" \
@@ -382,6 +388,9 @@ cleanup() {
     "$invalid_code_signature_zip" \
     "$invalid_code_signature_release_copy" \
     "$invalid_code_signature_homebrew_cask" \
+    "$missing_runtime_zip" \
+    "$missing_runtime_release_copy" \
+    "$missing_runtime_homebrew_cask" \
     "$unexpected_top_level_zip" \
     "$unexpected_top_level_release_copy" \
     "$unexpected_top_level_homebrew_cask" \
@@ -397,7 +406,7 @@ cleanup() {
     "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$release_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$release_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$missing_runtime_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
@@ -550,7 +559,7 @@ mkdir -p "$release_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
 write_valid_info_plist "$release_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 /bin/cp /usr/bin/true "$release_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
 /bin/chmod 755 "$release_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
-/usr/bin/codesign --force --sign - "$release_zip_dir/fixture-root/LithePG.app" >/dev/null 2>&1
+/usr/bin/codesign --force --sign - --options runtime "$release_zip_dir/fixture-root/LithePG.app" >/dev/null 2>&1
 (
   cd "$release_zip_dir/fixture-root"
   /usr/bin/zip -qr "$release_zip_fixture" LithePG.app
@@ -685,6 +694,17 @@ printf '%s\n' "$invalid_code_signature_marker" >>"$invalid_code_signature_zip_di
 )
 invalid_code_signature_zip_sha="$(/usr/bin/shasum -a 256 "$invalid_code_signature_zip" | /usr/bin/cut -d ' ' -f 1)"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$invalid_code_signature_zip_sha" >"$invalid_code_signature_release_copy"
+mkdir -p "$missing_runtime_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
+write_valid_info_plist "$missing_runtime_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
+/bin/cp /usr/bin/true "$missing_runtime_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+/bin/chmod 755 "$missing_runtime_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+/usr/bin/codesign --force --sign - "$missing_runtime_zip_dir/fixture-root/LithePG.app" >/dev/null 2>&1
+(
+  cd "$missing_runtime_zip_dir/fixture-root"
+  /usr/bin/zip -qr "$missing_runtime_zip" LithePG.app
+)
+missing_runtime_zip_sha="$(/usr/bin/shasum -a 256 "$missing_runtime_zip" | /usr/bin/cut -d ' ' -f 1)"
+printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$missing_runtime_zip_sha" >"$missing_runtime_release_copy"
 mkdir -p "$text_executable_bundle_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
 write_valid_info_plist "$text_executable_bundle_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 text_executable_marker="TEXT_EXECUTABLE_FORMAT_FIXTURE_SHOULD_NOT_LEAK"
@@ -1203,6 +1223,28 @@ cat >"$invalid_code_signature_homebrew_cask" <<CASK
 cask "lithepg" do
   version "1.0"
   sha256 "$invalid_code_signature_zip_sha"
+
+  url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
+      verified: "github.com/omarpr/lithepg/"
+  name "LithePG"
+  desc "Lean PostgreSQL client with local-first AI"
+  homepage "https://github.com/omarpr/lithepg"
+  uninstall quit: "dev.omarpr.lithepg"
+
+  depends_on macos: ">= :sonoma"
+
+  app "LithePG.app"
+
+  zap trash: [
+    "~/Library/Application Support/LithePG",
+    "~/Library/Preferences/dev.omarpr.lithepg.plist",
+  ]
+end
+CASK
+cat >"$missing_runtime_homebrew_cask" <<CASK
+cask "lithepg" do
+  version "1.0"
+  sha256 "$missing_runtime_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
@@ -2606,8 +2648,56 @@ assert_not_contains "$artifact_code_signature_verification_invalid_text" "$inval
 assert_not_contains "$artifact_code_signature_verification_invalid_text" "LithePG.app/Contents/MacOS/LithePGApp"
 assert_not_contains "$artifact_code_signature_verification_invalid_text" "a sealed resource is missing or invalid"
 assert_not_contains "$artifact_code_signature_verification_invalid_text" "not valid for use in process"
+assert_not_contains "$artifact_code_signature_verification_invalid_text" "Release artifact code signature runtime:"
 assert_not_contains "$artifact_code_signature_verification_invalid_text" "codesign"
 assert_not_contains "$artifact_code_signature_verification_invalid_text" "fast preflight is clear"
+
+if run_gate_capture "$artifact_code_signature_runtime_missing_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$missing_runtime_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$missing_runtime_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$missing_runtime_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$missing_runtime_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  artifact_code_signature_runtime_missing_text="$(<"$artifact_code_signature_runtime_missing_output")"
+  assert_not_contains "$artifact_code_signature_runtime_missing_text" "$missing_runtime_zip_sha"
+  assert_not_contains "$artifact_code_signature_runtime_missing_text" "$missing_runtime_zip"
+  fail "gate unexpectedly passed with release artifact code signature missing Hardened Runtime"
+fi
+artifact_code_signature_runtime_missing_text="$(<"$artifact_code_signature_runtime_missing_output")"
+assert_contains "$artifact_code_signature_runtime_missing_text" "Release artifact filename: matches"
+assert_contains "$artifact_code_signature_runtime_missing_text" "Release artifact zip: present"
+assert_contains "$artifact_code_signature_runtime_missing_text" "Release artifact app wrapper: present"
+assert_contains "$artifact_code_signature_runtime_missing_text" "Release artifact bundle contents: present"
+assert_contains "$artifact_code_signature_runtime_missing_text" "Release artifact bundle file types: regular"
+assert_contains "$artifact_code_signature_runtime_missing_text" "Release artifact entry paths: canonical"
+assert_contains "$artifact_code_signature_runtime_missing_text" "Release artifact essential entries: unique"
+assert_contains "$artifact_code_signature_runtime_missing_text" "Release artifact Info.plist metadata: matches"
+assert_contains "$artifact_code_signature_runtime_missing_text" "Release artifact bundle executable: executable"
+assert_contains "$artifact_code_signature_runtime_missing_text" "Release artifact executable format: Mach-O"
+assert_contains "$artifact_code_signature_runtime_missing_text" "Release artifact code signature resources: present"
+assert_contains "$artifact_code_signature_runtime_missing_text" "Release artifact code signature verification: valid"
+assert_contains "$artifact_code_signature_runtime_missing_text" "Release artifact code signature runtime: missing"
+assert_contains "$artifact_code_signature_runtime_missing_text" "Release artifact top-level entries: clean"
+assert_contains "$artifact_code_signature_runtime_missing_text" "Release artifact SHA-256: matches"
+assert_contains "$artifact_code_signature_runtime_missing_text" "v1.0 publication blocked"
+assert_not_contains "$artifact_code_signature_runtime_missing_text" "$missing_runtime_zip_sha"
+assert_not_contains "$artifact_code_signature_runtime_missing_text" "$missing_runtime_zip"
+assert_not_contains "$artifact_code_signature_runtime_missing_text" "LithePG.app/Contents/MacOS/LithePGApp"
+assert_not_contains "$artifact_code_signature_runtime_missing_text" "Executable="
+assert_not_contains "$artifact_code_signature_runtime_missing_text" "Authority="
+assert_not_contains "$artifact_code_signature_runtime_missing_text" "TeamIdentifier="
+assert_not_contains "$artifact_code_signature_runtime_missing_text" "Runtime Version"
+assert_not_contains "$artifact_code_signature_runtime_missing_text" "codesign"
+assert_not_contains "$artifact_code_signature_runtime_missing_text" "fast preflight is clear"
 
 if run_gate_capture "$artifact_top_level_unexpected_output" env -i \
   PATH="$fake_path" \
@@ -3897,6 +3987,7 @@ assert_contains "$no_remote_lookup_text" "Release artifact bundle executable: ex
 assert_contains "$no_remote_lookup_text" "Release artifact executable format: Mach-O"
 assert_contains "$no_remote_lookup_text" "Release artifact code signature resources: present"
 assert_contains "$no_remote_lookup_text" "Release artifact code signature verification: valid"
+assert_contains "$no_remote_lookup_text" "Release artifact code signature runtime: present"
 assert_contains "$no_remote_lookup_text" "Release artifact top-level entries: clean"
 assert_contains "$no_remote_lookup_text" "Release artifact SHA-256: matches"
 assert_contains "$no_remote_lookup_text" "Remote origin tag v1.0: not checked (set LITHEPG_CHECK_REMOTE_TAGS=1 or pass --check-remote)"

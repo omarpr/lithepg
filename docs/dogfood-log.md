@@ -635,3 +635,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed after adding the minimal extracted-bundle codesign check; final syntax, whitespace, and fast-preflight blocked-prerequisite checks were run for this shell/docs slice.
 - Output stays redacted: the gate reports only `Release artifact code signature verification: valid`, `invalid`, or `could not inspect` and does not print archive contents, extracted temp paths, codesign stderr, SHA values, signing identities, or fixture marker strings.
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-codesign-verification-gate.svg`.
+
+## 2026-05-31 — v1.0 release zip Hardened Runtime signature gate
+
+- Hardened `script/v10_release_gate.sh` so a present public `LithePG.app.zip` is blocked unless the extracted `LithePG.app` first passes strict codesign verification and then `codesign --display --verbose=4` shows the Hardened Runtime flag.
+- Updated the valid shell release-zip fixture to ad-hoc sign with `--options runtime`, and added an otherwise valid signed fixture without Hardened Runtime to prove the new blocker.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with release artifact code signature missing Hardened Runtime`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed after adding the runtime inspection gate; final syntax and whitespace checks were run for this shell/docs slice.
+- Build/release-impact verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed, `./script/v10_release_gate.sh --check-remote` remained safely blocked on the expected local/publication prerequisites, and `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` passed with artifacts at `.build/dogfood-checks/20260531-053230/`.
+- Output stays redacted: the gate reports only `Release artifact code signature runtime: present`, `missing`, or `could not inspect` and does not print codesign output, archive contents, extracted temp paths, SHA values, or signing identities.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-hardened-runtime-gate.svg`.
