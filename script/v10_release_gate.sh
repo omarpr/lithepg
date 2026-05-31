@@ -227,6 +227,78 @@ extract_homebrew_cask_macos_requirement() {
   return 1
 }
 
+strip_ruby_inline_comment() {
+  local input="$1"
+  local output=""
+  local char=""
+  local escaped=0
+  local in_double=0
+  local i=0
+  local length=${#input}
+
+  while [[ "$i" -lt "$length" ]]; do
+    char="${input:$i:1}"
+    if [[ "$in_double" -eq 1 ]]; then
+      output="${output}${char}"
+      if [[ "$escaped" -eq 1 ]]; then
+        escaped=0
+      elif [[ "$char" == "\\" ]]; then
+        escaped=1
+      elif [[ "$char" == "\"" ]]; then
+        in_double=0
+      fi
+    else
+      case "$char" in
+        '#')
+          break
+          ;;
+        '"')
+          in_double=1
+          escaped=0
+          output="${output}${char}"
+          ;;
+        *)
+          output="${output}${char}"
+          ;;
+      esac
+    fi
+    i=$((i + 1))
+  done
+
+  printf '%s\n' "$output"
+}
+
+extract_homebrew_cask_zap_trash_paths() {
+  local cask_file="$1"
+  local line=""
+  local remaining=""
+  local in_zap=0
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="$(strip_ruby_inline_comment "$line")"
+
+    if [[ "$in_zap" -eq 0 ]]; then
+      if [[ "$line" =~ ^[[:space:]]*zap[[:space:]]+trash:[[:space:]]*\[ ]]; then
+        in_zap=1
+      else
+        continue
+      fi
+    fi
+
+    remaining="$line"
+    while [[ "$remaining" =~ \"([^\"]+)\" ]]; do
+      printf '%s\n' "${BASH_REMATCH[1]}"
+      remaining="${remaining#*\"${BASH_REMATCH[1]}\"}"
+    done
+
+    if [[ "$line" =~ \] ]]; then
+      return 0
+    fi
+  done <"$cask_file"
+
+  return 1
+}
+
 security_doc_full_path() {
   local security_doc_path="$1"
   case "$security_doc_path" in
@@ -458,6 +530,33 @@ if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
     fi
   else
     printf 'Homebrew cask macOS requirement: missing\n'
+    mark_blocker
+  fi
+fi
+
+if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
+  if cask_zap_paths="$(extract_homebrew_cask_zap_trash_paths "$homebrew_cask_file")"; then
+    cask_zap_has_app_support=0
+    cask_zap_has_preferences=0
+    while IFS= read -r cask_zap_path || [[ -n "$cask_zap_path" ]]; do
+      case "$cask_zap_path" in
+        "~/Library/Application Support/LithePG")
+          cask_zap_has_app_support=1
+          ;;
+        "~/Library/Preferences/dev.omarpr.lithepg.plist")
+          cask_zap_has_preferences=1
+          ;;
+      esac
+    done <<<"$cask_zap_paths"
+
+    if [[ "$cask_zap_has_app_support" -eq 1 && "$cask_zap_has_preferences" -eq 1 ]]; then
+      printf 'Homebrew cask zap stanza: matches\n'
+    else
+      printf 'Homebrew cask zap stanza: mismatch\n'
+      mark_blocker
+    fi
+  else
+    printf 'Homebrew cask zap stanza: missing\n'
     mark_blocker
   fi
 fi

@@ -404,3 +404,11 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - TDD receipt: `bash script/test_v10_release_gate.sh` failed first with `gate unexpectedly passed with mismatched Homebrew cask macOS requirement`, then passed after the minimal parser/readiness check was added.
 - Verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed. No signing, notarization, upload, Homebrew publication, tag, push, commit, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-30-v10-homebrew-cask-macos-requirement-gate.svg`.
+
+## 2026-05-30 19:44 EDT — v1.0 Homebrew cask zap stanza gate
+
+- Hardened `script/v10_release_gate.sh` so placeholder-free Homebrew casks must include the expected `zap trash:` cleanup paths for LithePG Application Support data and preferences before the fast publication preflight can pass.
+- Added redacted shell TDD coverage for mismatched and missing zap stanzas, the valid `Homebrew cask zap stanza: matches` pass path, and placeholder-cask no-noise behavior.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `gate unexpectedly passed with mismatched Homebrew cask zap stanza`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed after the minimal parser/readiness check was added; final syntax/whitespace checks were run for this slice.
+- Evidence artifact: `docs/evidence/2026-05-30-v10-homebrew-cask-zap-stanza-gate.svg`.
