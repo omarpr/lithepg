@@ -434,6 +434,42 @@ release_zip_app_bundle_structure_status() {
   return 0
 }
 
+release_zip_top_level_entries_status() {
+  local zip_file="$1"
+  local zip_entries=""
+  local entry=""
+  local unexpected_top_level_entry=0
+
+  if [[ ! -x /usr/bin/zipinfo ]]; then
+    return 2
+  fi
+
+  if ! zip_entries="$(/usr/bin/zipinfo -1 "$zip_file" 2>/dev/null)"; then
+    return 2
+  fi
+
+  while IFS= read -r entry || [[ -n "$entry" ]]; do
+    case "$entry" in
+      LithePG.app|LithePG.app/*)
+        case "$entry" in
+          ..|../*|*/..|*/../*|.|./*|*/.|*/./*)
+            unexpected_top_level_entry=1
+            ;;
+        esac
+        ;;
+      *)
+        unexpected_top_level_entry=1
+        ;;
+    esac
+  done <<<"$zip_entries"
+
+  if [[ "$unexpected_top_level_entry" -eq 1 ]]; then
+    return 1
+  fi
+
+  return 0
+}
+
 cd "$ROOT_DIR"
 
 printf 'LithePG %s fast publication preflight\n' "$TAG"
@@ -875,6 +911,21 @@ if [[ "$release_zip_present" -eq 1 ]]; then
         ;;
       *)
         printf 'Release artifact app wrapper: could not inspect\n'
+        ;;
+    esac
+    mark_blocker
+  fi
+
+  if release_zip_top_level_entries_status "$release_zip_file"; then
+    printf 'Release artifact top-level entries: clean\n'
+  else
+    release_zip_top_level_status=$?
+    case "$release_zip_top_level_status" in
+      1)
+        printf 'Release artifact top-level entries: unexpected\n'
+        ;;
+      *)
+        printf 'Release artifact top-level entries: could not inspect\n'
         ;;
     esac
     mark_blocker

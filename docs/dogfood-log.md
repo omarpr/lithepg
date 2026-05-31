@@ -508,3 +508,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh`, `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh`, and `git diff --check` passed.
 - No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-bundle-contents-gate.svg`.
+
+## 2026-05-31 — v1.0 release zip top-level entries gate
+
+- Hardened `script/v10_release_gate.sh` so a present public `LithePG.app.zip` must not contain any unexpected top-level archive entries outside `LithePG.app`; examples such as `README.txt`, nested `dist/LithePG.app/...`, path traversal, absolute paths, or another app/directory now block publication.
+- Added redacted shell TDD coverage for a zip that contains the essential `LithePG.app` bundle entries plus an extra top-level `README.txt`; output reports only `Release artifact top-level entries: unexpected` and does not print archive contents.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with unexpected top-level release artifact entry`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed.
+- No signing, notarization, upload, Homebrew publication, tag, commit, push, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-top-level-entries-gate.svg`.
