@@ -295,6 +295,71 @@ assert_not_contains "$helper_output" "$codesign_sentinel"
 assert_not_contains "$helper_output" "$notary_sentinel"
 [[ ! -e "$inside_bundle_notary_zip" ]] || fail "dry run created inside-bundle notary zip: $inside_bundle_notary_zip"
 
+mkdir -p "$app_bundle/Contents/Resources"
+final_symlink_outside_target_marker='FINAL_SYMLINK_OUTSIDE_TARGET_SHOULD_SURVIVE'
+final_symlink_outside_target="$fixture_root/final-symlink-outside-target.zip"
+final_symlink_inside_bundle_zip="$app_bundle/Contents/Resources/LithePG-final-symlink-notary.zip"
+printf '%s\n' "$final_symlink_outside_target_marker" >"$final_symlink_outside_target"
+ln -s "$final_symlink_outside_target" "$final_symlink_inside_bundle_zip"
+[[ -L "$final_symlink_inside_bundle_zip" ]] || fail "failed to create inside-bundle final notary zip symlink fixture"
+
+if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$final_symlink_inside_bundle_zip" \
+  LITHEPG_NOTARY_ZIP_OVERWRITE=approved \
+  run_helper_capture "$output_file" --dry-run "$app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "dry run unexpectedly passed with final notary zip symlink inside app bundle pointing outside"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "notary zip must not be inside app bundle"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+[[ -L "$final_symlink_inside_bundle_zip" ]] || fail "dry run changed inside-bundle final notary zip symlink: $final_symlink_inside_bundle_zip"
+[[ "$(readlink "$final_symlink_inside_bundle_zip")" == "$final_symlink_outside_target" ]] || fail "dry run retargeted inside-bundle final notary zip symlink: $final_symlink_inside_bundle_zip"
+[[ "$(<"$final_symlink_outside_target")" == "$final_symlink_outside_target_marker" ]] || fail "dry run changed outside final symlink target: $final_symlink_outside_target"
+
+symlink_parent_traversal_link="$fixture_root/notary-link-to-app-resources"
+ln -s "$app_bundle/Contents/Resources" "$symlink_parent_traversal_link"
+symlink_parent_traversal_notary_zip="$symlink_parent_traversal_link/../LithePG-notary.zip"
+if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$symlink_parent_traversal_notary_zip" \
+  run_helper_capture "$output_file" --dry-run "$app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "dry run unexpectedly passed with symlink-plus-parent-traversal notary zip inside app bundle"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "notary zip must not be inside app bundle"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+[[ ! -e "$app_bundle/Contents/LithePG-notary.zip" ]] || fail "dry run created notary zip through symlink-plus-parent traversal: $app_bundle/Contents/LithePG-notary.zip"
+
+case_variant_inside_bundle_parent="$fixture_root/lithepg.app/Contents"
+case_variant_inside_notary_zip="$case_variant_inside_bundle_parent/LithePG-notary.zip"
+if [[ -d "$case_variant_inside_bundle_parent" && "$case_variant_inside_bundle_parent" -ef "$app_bundle/Contents" ]]; then
+  if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+    LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+    LITHEPG_NOTARY_ZIP="$case_variant_inside_notary_zip" \
+    run_helper_capture "$output_file" --dry-run "$app_bundle"; then
+    helper_output="$(<"$output_file")"
+    printf '%s\n' "$helper_output" >&2
+    fail "dry run unexpectedly passed with case-variant notary zip inside app bundle"
+  fi
+
+  helper_output="$(<"$output_file")"
+  assert_contains "$helper_output" "notary zip must not be inside app bundle"
+  assert_not_contains "$helper_output" "$codesign_sentinel"
+  assert_not_contains "$helper_output" "$notary_sentinel"
+  [[ ! -e "$app_bundle/Contents/LithePG-notary.zip" ]] || fail "dry run created notary zip through case-variant app bundle path: $app_bundle/Contents/LithePG-notary.zip"
+else
+  printf 'Skipping case-variant inside-bundle notary zip assertion on case-sensitive filesystem\n'
+fi
+
 missing_parent_notary_zip="$fixture_root/missing-parent/LithePG-notary.zip"
 if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
   LITHEPG_NOTARY_PROFILE="$notary_sentinel" \

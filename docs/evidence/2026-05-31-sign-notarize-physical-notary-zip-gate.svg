@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG signing/notarization notary zip physical path gate evidence</title>
+  <desc id="desc">Visual receipt for the 2026-05-31 sign_and_notarize notary zip hardening tests and verification commands.</desc>
+  <rect width="1280" height="720" fill="#0d1117"/>
+  <rect x="48" y="48" width="1184" height="624" rx="18" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+  <text x="84" y="104" fill="#58a6ff" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="30" font-weight="700">LithePG v1.0 release helper hardening</text>
+  <text x="84" y="146" fill="#c9d1d9" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20">2026-05-31 12:08 EDT · script/sign_and_notarize.sh</text>
+
+  <rect x="84" y="184" width="1112" height="198" rx="12" fill="#0d1117" stroke="#30363d"/>
+  <text x="112" y="225" fill="#f0f6fc" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="22">New blocked notary zip destinations:</text>
+  <text x="112" y="264" fill="#7ee787" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20">✓ final zip symlink located inside LithePG.app, pointing outside</text>
+  <text x="112" y="302" fill="#7ee787" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20">✓ symlink-to-bundle parent followed by ../ traversal</text>
+  <text x="112" y="340" fill="#7ee787" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20">✓ case-variant .app component on case-insensitive macOS filesystems</text>
+
+  <rect x="84" y="414" width="1112" height="178" rx="12" fill="#010409" stroke="#30363d"/>
+  <text x="112" y="454" fill="#8b949e" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">$ bash script/test_sign_and_notarize.sh</text>
+  <text x="112" y="486" fill="#7ee787" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">test_sign_and_notarize passed</text>
+  <text x="112" y="528" fill="#8b949e" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">$ bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh</text>
+  <text x="112" y="560" fill="#7ee787" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">passed with no output</text>
+
+  <text x="84" y="632" fill="#f85149" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">No real signing, notarization, upload, Homebrew publication, tag, cron, or external publication performed.</text>
+</svg>

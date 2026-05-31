@@ -788,3 +788,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_sign_and_notarize.sh` passed; `bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh` passed; `git diff --check` passed.
 - Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-directory-zip-gate.svg`.
 - No real signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 12:08 EDT — v1.0 notary zip physical-location hardening
+
+- Hardened `script/sign_and_notarize.sh` so `LITHEPG_NOTARY_ZIP` location validation resolves physical parent components, symlink traversal, and case-variant path components while preserving the final output path itself for overwrite semantics.
+- Added strict-TDD coverage proving `--dry-run` rejects a final notary zip symlink located inside `LithePG.app` but pointing outside when `LITHEPG_NOTARY_ZIP_OVERWRITE=approved`, plus symlink-plus-parent traversal and case-variant inside-bundle paths. All cases keep signing/notary sentinel values redacted and leave fixture targets unchanged.
+- RED verification: `bash script/test_sign_and_notarize.sh` failed first with `test_sign_and_notarize failed: dry run unexpectedly passed with symlink-plus-parent-traversal notary zip inside app bundle`, then the independent review follow-up reproduced the final-symlink bypass before the preserve-final-symlink fix.
+- GREEN verification: `bash script/test_sign_and_notarize.sh` passed; `bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh` passed; `git diff --check` passed.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-physical-notary-zip-gate.svg`.
+- No real signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.

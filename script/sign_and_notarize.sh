@@ -48,30 +48,79 @@ make_absolute_path() {
 
 canonicalize_path_for_location_check() {
   local path="$1"
-  local absolute_path
-  absolute_path="$(make_absolute_path "$path")"
+  local final_symlink_mode="${2:-follow-final-symlink}"
+  /usr/bin/perl -MCwd=abs_path -e '
+use strict;
+use warnings;
 
-  local dir
-  local tail
-  dir="$(dirname "$absolute_path")"
-  tail="$(basename "$absolute_path")"
+sub path_parts {
+  my ($path) = @_;
+  return grep { length($_) && $_ ne "." } split m{/+}, $path;
+}
 
-  while [[ "$dir" != "/" && ! -d "$dir" ]]; do
-    tail="$(basename "$dir")/$tail"
-    dir="$(dirname "$dir")"
-  done
+my ($path, $root_dir, $final_symlink_mode) = @ARGV;
+my $follow_final_symlink = $final_symlink_mode ne "preserve-final-symlink";
+my @parts;
+my @queue;
 
-  if [[ -d "$dir" ]]; then
-    local physical_dir
-    physical_dir="$(cd "$dir" && pwd -P)"
-    if [[ "$physical_dir" == "/" ]]; then
-      printf '/%s\n' "$tail"
-    else
-      printf '%s/%s\n' "$physical_dir" "$tail"
-    fi
-  else
-    printf '%s\n' "$absolute_path"
-  fi
+if ($path =~ m{\A/}) {
+  @parts = ();
+  @queue = path_parts($path);
+} else {
+  my $physical_root = abs_path($root_dir);
+  die "could not resolve repository root: $root_dir\n" unless defined $physical_root;
+  @parts = path_parts($physical_root);
+  @queue = path_parts($path);
+}
+
+my $symlink_count = 0;
+while (@queue) {
+  my $part = shift @queue;
+  next if $part eq "" || $part eq ".";
+  if ($part eq "..") {
+    pop @parts if @parts;
+    next;
+  }
+
+  my $parent = "/" . join("/", @parts);
+  my $candidate = "/" . join("/", @parts, $part);
+  my $is_final_part = !@queue;
+  if ((-e $candidate || -l $candidate) && opendir(my $dh, $parent)) {
+    my $case_insensitive_match;
+    while (defined(my $entry = readdir($dh))) {
+      next if $entry eq "." || $entry eq "..";
+      if ($entry eq $part) {
+        $part = $entry;
+        undef $case_insensitive_match;
+        last;
+      }
+      $case_insensitive_match = $entry if !defined($case_insensitive_match) && lc($entry) eq lc($part);
+    }
+    closedir($dh);
+    $part = $case_insensitive_match if defined($case_insensitive_match);
+    $candidate = "/" . join("/", @parts, $part);
+  }
+
+  if ($follow_final_symlink || !$is_final_part) {
+    if (-l $candidate) {
+      die "too many symlinks while resolving path: $path\n" if ++$symlink_count > 40;
+      my $target = readlink($candidate);
+      die "could not read symlink: $candidate\n" unless defined $target;
+      if ($target =~ m{\A/}) {
+        @parts = ();
+        unshift @queue, path_parts($target);
+      } else {
+        unshift @queue, path_parts($target);
+      }
+      next;
+    }
+  }
+
+  push @parts, $part;
+}
+
+print "/" . join("/", @parts) . "\n";
+' "$path" "$ROOT_DIR" "$final_symlink_mode"
 }
 
 require_config() {
@@ -84,7 +133,7 @@ validate_notary_zip_location() {
   local app_bundle_check_path
   local zip_check_path
   app_bundle_check_path="$(canonicalize_path_for_location_check "$APP_BUNDLE_ABS")"
-  zip_check_path="$(canonicalize_path_for_location_check "$ZIP_PATH")"
+  zip_check_path="$(canonicalize_path_for_location_check "$ZIP_PATH" preserve-final-symlink)"
 
   if [[ "$zip_check_path" == "$app_bundle_check_path" || "$zip_check_path" == "$app_bundle_check_path/"* ]]; then
     fail "notary zip must not be inside app bundle"
