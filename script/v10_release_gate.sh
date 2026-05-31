@@ -496,6 +496,18 @@ plist_key_matches() {
   [[ "$actual_value" == "$expected_value" ]]
 }
 
+plist_key_is_numeric() {
+  local plist_file="$1"
+  local key="$2"
+  local actual_value=""
+
+  if ! actual_value="$(/usr/libexec/PlistBuddy -c "Print :$key" "$plist_file" 2>/dev/null)"; then
+    return 1
+  fi
+
+  [[ "$actual_value" =~ ^[0-9]+$ ]]
+}
+
 release_zip_info_plist_metadata_status() {
   local zip_file="$1"
   local expected_version="$2"
@@ -523,7 +535,10 @@ release_zip_info_plist_metadata_status() {
     plist_key_matches "$plist_file" CFBundleIdentifier "dev.omarpr.lithepg" && \
     plist_key_matches "$plist_file" CFBundleName "LithePG" && \
     plist_key_matches "$plist_file" CFBundlePackageType "APPL" && \
-    plist_key_matches "$plist_file" CFBundleShortVersionString "$expected_version"; then
+    plist_key_matches "$plist_file" CFBundleShortVersionString "$expected_version" && \
+    plist_key_is_numeric "$plist_file" CFBundleVersion && \
+    plist_key_matches "$plist_file" LSMinimumSystemVersion "14.0" && \
+    plist_key_matches "$plist_file" NSPrincipalClass "NSApplication"; then
     rm -f "$plist_file"
     return 0
   fi

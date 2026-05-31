@@ -561,3 +561,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed after the minimal structural check and valid fixtures were updated to include `CodeResources`; final syntax/whitespace/fast-preflight checks were run for this shell/docs slice.
 - No codesign, notarization, upload, network publication, tag, commit, push, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-code-signature-resources-gate.svg`.
+
+## 2026-05-31 03:18 EDT — v1.0 release zip Info.plist core metadata gate
+
+- Hardened `script/v10_release_gate.sh` so a present public `LithePG.app.zip` only reports `Release artifact Info.plist metadata: matches` when the embedded `Info.plist` also has numeric `CFBundleVersion`, `LSMinimumSystemVersion=14.0`, and `NSPrincipalClass=NSApplication`, in addition to the previously checked executable, bundle ID, bundle name, package type, and release version.
+- Added redacted shell TDD coverage for a legacy-style fixture that previously satisfied the metadata gate but omits/mismatches the new non-secret core bundle metadata; output stays generic and does not print plist keys/values, archive contents, or SHA values.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with release artifact Info.plist missing non-secret core bundle metadata`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed; `./script/v10_release_gate.sh --check-remote` confirmed remote `v0.5` is present and remote `v1.0` is absent, then remained blocked on expected local/external publication prerequisites.
+- Independent spec review passed and code-quality/security review approved the diff. Swift tests were not required for this shell/docs-only slice.
+- No codesign, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-info-plist-core-metadata-gate.svg`.
