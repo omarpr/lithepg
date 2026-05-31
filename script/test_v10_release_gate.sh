@@ -64,6 +64,7 @@ artifact_duplicate_essential_entries_output="$(mktemp)"
 artifact_noncanonical_zip_path_output="$(mktemp)"
 artifact_casefold_zip_path_collision_output="$(mktemp)"
 artifact_unicode_zip_path_collision_output="$(mktemp)"
+artifact_malformed_zip_path_encoding_output="$(mktemp)"
 artifact_code_signature_resources_missing_output="$(mktemp)"
 artifact_top_level_unexpected_output="$(mktemp)"
 artifact_info_plist_metadata_mismatch_output="$(mktemp)"
@@ -195,6 +196,10 @@ unicode_zip_path_collision_dir="$(mktemp -d)"
 unicode_zip_path_collision_zip="$unicode_zip_path_collision_dir/LithePG.app.zip"
 unicode_zip_path_collision_release_copy="$(mktemp)"
 unicode_zip_path_collision_homebrew_cask="$(mktemp)"
+malformed_zip_path_encoding_dir="$(mktemp -d)"
+malformed_zip_path_encoding_zip="$malformed_zip_path_encoding_dir/LithePG.app.zip"
+malformed_zip_path_encoding_release_copy="$(mktemp)"
+malformed_zip_path_encoding_homebrew_cask="$(mktemp)"
 missing_code_resources_zip_dir="$(mktemp -d)"
 missing_code_resources_zip="$missing_code_resources_zip_dir/LithePG.app.zip"
 missing_code_resources_release_copy="$(mktemp)"
@@ -242,6 +247,7 @@ cleanup() {
     "$artifact_noncanonical_zip_path_output" \
     "$artifact_casefold_zip_path_collision_output" \
     "$artifact_unicode_zip_path_collision_output" \
+    "$artifact_malformed_zip_path_encoding_output" \
     "$artifact_code_signature_resources_missing_output" \
     "$artifact_top_level_unexpected_output" \
     "$artifact_info_plist_metadata_mismatch_output" \
@@ -361,6 +367,9 @@ cleanup() {
     "$unicode_zip_path_collision_zip" \
     "$unicode_zip_path_collision_release_copy" \
     "$unicode_zip_path_collision_homebrew_cask" \
+    "$malformed_zip_path_encoding_zip" \
+    "$malformed_zip_path_encoding_release_copy" \
+    "$malformed_zip_path_encoding_homebrew_cask" \
     "$missing_code_resources_zip" \
     "$missing_code_resources_release_copy" \
     "$missing_code_resources_homebrew_cask" \
@@ -379,7 +388,7 @@ cleanup() {
     "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$release_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$missing_code_resources_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$release_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
@@ -861,6 +870,87 @@ with zipfile.ZipFile(zip_path, "w") as archive:
 PY
 unicode_zip_path_collision_zip_sha="$(/usr/bin/shasum -a 256 "$unicode_zip_path_collision_zip" | /usr/bin/cut -d ' ' -f 1)"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$unicode_zip_path_collision_zip_sha" >"$unicode_zip_path_collision_release_copy"
+malformed_zip_path_encoding_marker="MALFORMED_ZIP_PATH_ENCODING_FIXTURE_SHOULD_NOT_LEAK"
+/usr/bin/python3 - "$malformed_zip_path_encoding_zip" "/usr/bin/true" "$malformed_zip_path_encoding_marker" <<'PY'
+import binascii
+import struct
+import sys
+
+zip_path, macho_path, marker = sys.argv[1:4]
+
+valid_info_plist = b'''<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleExecutable</key>
+  <string>LithePGApp</string>
+  <key>CFBundleIdentifier</key>
+  <string>dev.omarpr.lithepg</string>
+  <key>CFBundleName</key>
+  <string>LithePG</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>1.0</string>
+  <key>CFBundleVersion</key>
+  <string>100</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>14.0</string>
+  <key>NSPrincipalClass</key>
+  <string>NSApplication</string>
+</dict>
+</plist>
+'''
+
+with open(macho_path, "rb") as executable:
+    macho_bytes = executable.read()
+
+entries = [
+    (b"LithePG.app/Contents/Info.plist", valid_info_plist, 0o100644, 0),
+    (b"LithePG.app/Contents/MacOS/LithePGApp", macho_bytes, 0o100755, 0),
+    (b"LithePG.app/Contents/Resources/\xff.txt", (marker + "\n").encode("utf-8"), 0o100644, 0x0800),
+    (b"LithePG.app/Contents/_CodeSignature/CodeResources", b"fake code signature resources fixture\n", 0o100644, 0),
+]
+
+payload = bytearray()
+central_directory = bytearray()
+for name, data, mode, flags in entries:
+    crc = binascii.crc32(data) & 0xFFFFFFFF
+    local_offset = len(payload)
+    payload += struct.pack("<IHHHHHIIIHH", 0x04034B50, 20, flags, 0, 0, 0, crc, len(data), len(data), len(name), 0)
+    payload += name
+    payload += data
+    central_directory += struct.pack(
+        "<IHHHHHHIIIHHHHHII",
+        0x02014B50,
+        0x031E,
+        20,
+        flags,
+        0,
+        0,
+        0,
+        crc,
+        len(data),
+        len(data),
+        len(name),
+        0,
+        0,
+        0,
+        0,
+        (mode & 0xFFFF) << 16,
+        local_offset,
+    )
+    central_directory += name
+
+central_offset = len(payload)
+payload += central_directory
+payload += struct.pack("<IHHHHIIH", 0x06054B50, 0, 0, len(entries), len(entries), len(central_directory), central_offset, 0)
+
+with open(zip_path, "wb") as output:
+    output.write(payload)
+PY
+malformed_zip_path_encoding_zip_sha="$(/usr/bin/shasum -a 256 "$malformed_zip_path_encoding_zip" | /usr/bin/cut -d ' ' -f 1)"
+printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$malformed_zip_path_encoding_zip_sha" >"$malformed_zip_path_encoding_release_copy"
 printf 'LithePG v1.0 release copy with REPLACE_WITH_FINAL_VALUE placeholder.\n' >"$placeholder_release_copy"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$release_zip_sha" >"$placeholder_free_release_copy"
 wrong_release_copy_sha="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
@@ -1179,6 +1269,28 @@ cat >"$unicode_zip_path_collision_homebrew_cask" <<CASK
 cask "lithepg" do
   version "1.0"
   sha256 "$unicode_zip_path_collision_zip_sha"
+
+  url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
+      verified: "github.com/omarpr/lithepg/"
+  name "LithePG"
+  desc "Lean PostgreSQL client with local-first AI"
+  homepage "https://github.com/omarpr/lithepg"
+  uninstall quit: "dev.omarpr.lithepg"
+
+  depends_on macos: ">= :sonoma"
+
+  app "LithePG.app"
+
+  zap trash: [
+    "~/Library/Application Support/LithePG",
+    "~/Library/Preferences/dev.omarpr.lithepg.plist",
+  ]
+end
+CASK
+cat >"$malformed_zip_path_encoding_homebrew_cask" <<CASK
+cask "lithepg" do
+  version "1.0"
+  sha256 "$malformed_zip_path_encoding_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
@@ -2333,6 +2445,44 @@ assert_not_contains "$artifact_unicode_zip_path_collision_text" "LithePG.app/Con
 assert_not_contains "$artifact_unicode_zip_path_collision_text" "Release artifact essential entries: unique"
 assert_not_contains "$artifact_unicode_zip_path_collision_text" "Release artifact executable format: Mach-O"
 assert_not_contains "$artifact_unicode_zip_path_collision_text" "fast preflight is clear"
+
+if run_gate_capture "$artifact_malformed_zip_path_encoding_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$malformed_zip_path_encoding_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$malformed_zip_path_encoding_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$malformed_zip_path_encoding_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$malformed_zip_path_encoding_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  artifact_malformed_zip_path_encoding_text="$(<"$artifact_malformed_zip_path_encoding_output")"
+  assert_not_contains "$artifact_malformed_zip_path_encoding_text" "$malformed_zip_path_encoding_marker"
+  assert_not_contains "$artifact_malformed_zip_path_encoding_text" "$malformed_zip_path_encoding_zip_sha"
+  fail "gate unexpectedly passed with malformed release artifact zip path encoding"
+fi
+artifact_malformed_zip_path_encoding_text="$(<"$artifact_malformed_zip_path_encoding_output")"
+assert_contains "$artifact_malformed_zip_path_encoding_text" "Release artifact filename: matches"
+assert_contains "$artifact_malformed_zip_path_encoding_text" "Release artifact zip: present"
+assert_contains "$artifact_malformed_zip_path_encoding_text" "Release artifact app wrapper: present"
+assert_contains "$artifact_malformed_zip_path_encoding_text" "Release artifact bundle contents: present"
+assert_contains "$artifact_malformed_zip_path_encoding_text" "Release artifact bundle file types: regular"
+assert_contains "$artifact_malformed_zip_path_encoding_text" "Release artifact entry paths: non-canonical"
+assert_contains "$artifact_malformed_zip_path_encoding_text" "Release artifact SHA-256: matches"
+assert_contains "$artifact_malformed_zip_path_encoding_text" "v1.0 publication blocked"
+assert_not_contains "$artifact_malformed_zip_path_encoding_text" "$malformed_zip_path_encoding_marker"
+assert_not_contains "$artifact_malformed_zip_path_encoding_text" "$malformed_zip_path_encoding_zip_sha"
+assert_not_contains "$artifact_malformed_zip_path_encoding_text" "Traceback"
+assert_not_contains "$artifact_malformed_zip_path_encoding_text" "UnicodeDecodeError"
+assert_not_contains "$artifact_malformed_zip_path_encoding_text" "zipfile.py"
+assert_not_contains "$artifact_malformed_zip_path_encoding_text" "Release artifact essential entries: unique"
+assert_not_contains "$artifact_malformed_zip_path_encoding_text" "Release artifact executable format: Mach-O"
+assert_not_contains "$artifact_malformed_zip_path_encoding_text" "fast preflight is clear"
 
 if run_gate_capture "$artifact_code_signature_resources_missing_output" env -i \
   PATH="$fake_path" \

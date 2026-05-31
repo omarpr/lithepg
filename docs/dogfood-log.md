@@ -617,3 +617,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed; final syntax, whitespace, and fast-preflight blocked-prerequisite checks were run for this shell/docs slice.
 - Output stays redacted: the gate reports non-ASCII entry paths as `Release artifact entry paths: non-canonical` and does not print archive paths, marker text, or SHA values.
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-ascii-path-gate.svg`.
+
+## 2026-05-31 04:54 EDT — v1.0 release zip malformed path encoding redaction follow-up
+
+- Hardened `script/v10_release_gate.sh` so malformed ZIP filename encodings are treated as redacted non-canonical entry paths instead of allowing the Python ZIP inspection helper to print implementation tracebacks.
+- Added a regression fixture that builds a ZIP with an invalid UTF-8 filename byte flagged as UTF-8, while keeping the required app bundle entries otherwise valid enough to reach the path gate.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: output leaked forbidden value: Traceback`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed; final syntax, whitespace, and fast-preflight blocked-prerequisite checks were run for this shell/docs slice.
+- Output stays redacted: the gate reports malformed filename encodings as `Release artifact entry paths: non-canonical` and does not print tracebacks, exception names, archive paths, marker text, or SHA values.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-malformed-encoding-redaction-gate.svg`.

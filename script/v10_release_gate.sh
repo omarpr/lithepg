@@ -566,10 +566,10 @@ try:
         for entry in archive.infolist():
             if any(ord(character) < 0x20 or ord(character) > 0x7E for character in entry.filename):
                 sys.exit(1)
-except zipfile.BadZipFile:
+except (zipfile.BadZipFile, OSError):
     sys.exit(2)
-except OSError:
-    sys.exit(2)
+except UnicodeDecodeError:
+    sys.exit(1)
 
 sys.exit(0)
 PY
@@ -586,7 +586,7 @@ release_zip_entry_paths_status() {
     return 2
   fi
 
-  if release_zip_entry_paths_ascii_status "$zip_file"; then
+  if release_zip_entry_paths_ascii_status "$zip_file" 2>/dev/null; then
     :
   else
     ascii_status=$?
