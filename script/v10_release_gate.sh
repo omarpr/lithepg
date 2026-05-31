@@ -572,6 +572,49 @@ release_zip_bundle_executable_permission_status() {
   return 1
 }
 
+release_zip_code_signature_resources_status() {
+  local zip_file="$1"
+  local zip_listing=""
+  local line=""
+  local mode=""
+  local entry_rest=""
+  local entry_name=""
+  local has_code_resources=0
+  local invalid_code_resources=0
+
+  if [[ ! -x /usr/bin/zipinfo ]]; then
+    return 2
+  fi
+
+  if ! zip_listing="$(/usr/bin/zipinfo -l "$zip_file" 2>/dev/null)"; then
+    return 2
+  fi
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    mode=""
+    entry_rest=""
+    read -r mode _zip_version _zip_system _uncompressed_size _entry_type _compressed_size _method _date _time entry_rest <<<"$line" || true
+    entry_name="${entry_rest%% -> *}"
+
+    if [[ "$entry_name" == "LithePG.app/Contents/_CodeSignature/CodeResources" ]]; then
+      has_code_resources=1
+      if [[ "$mode" != -* ]]; then
+        invalid_code_resources=1
+      fi
+    fi
+  done <<<"$zip_listing"
+
+  if [[ "$invalid_code_resources" -eq 1 ]]; then
+    return 3
+  fi
+
+  if [[ "$has_code_resources" -ne 1 ]]; then
+    return 1
+  fi
+
+  return 0
+}
+
 release_zip_top_level_entries_status() {
   local zip_file="$1"
   local zip_entries=""
@@ -1101,6 +1144,24 @@ if [[ "$release_zip_present" -eq 1 ]]; then
             ;;
           *)
             printf 'Release artifact bundle executable: could not inspect\n'
+            ;;
+        esac
+        mark_blocker
+      fi
+
+      if release_zip_code_signature_resources_status "$release_zip_file"; then
+        printf 'Release artifact code signature resources: present\n'
+      else
+        release_zip_code_signature_resources_status=$?
+        case "$release_zip_code_signature_resources_status" in
+          1)
+            printf 'Release artifact code signature resources: missing\n'
+            ;;
+          3)
+            printf 'Release artifact code signature resources: invalid\n'
+            ;;
+          *)
+            printf 'Release artifact code signature resources: could not inspect\n'
             ;;
         esac
         mark_blocker

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="520" viewBox="0 0 1180 520" role="img" aria-labelledby="title desc">
+  <title id="title">v1.0 release zip CodeResources gate evidence</title>
+  <desc id="desc">Text-only receipt showing the red and green outputs for the release zip code signature resources preflight gate.</desc>
+  <rect width="1180" height="520" fill="#0f172a"/>
+  <rect x="32" y="28" width="1116" height="464" rx="18" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="56" y="72" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="24" font-weight="700">LithePG v1.0 release gate hardening</text>
+  <text x="56" y="112" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="16">Slice: public LithePG.app.zip must carry app bundle code-signature resources</text>
+
+  <rect x="56" y="142" width="1068" height="112" rx="12" fill="#2a1216" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="78" y="174" fill="#fecaca" font-family="Menlo, Consolas, monospace" font-size="16" font-weight="700">RED — failing test added first</text>
+  <text x="78" y="204" fill="#fee2e2" font-family="Menlo, Consolas, monospace" font-size="14">$ bash script/test_v10_release_gate.sh</text>
+  <text x="78" y="232" fill="#fee2e2" font-family="Menlo, Consolas, monospace" font-size="14">test_v10_release_gate failed: gate unexpectedly passed with release artifact missing code signature resources</text>
+
+  <rect x="56" y="276" width="1068" height="152" rx="12" fill="#10251a" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="78" y="308" fill="#bbf7d0" font-family="Menlo, Consolas, monospace" font-size="16" font-weight="700">GREEN — structural preflight implemented</text>
+  <text x="78" y="338" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="14">$ bash script/test_v10_release_gate.sh</text>
+  <text x="78" y="364" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="14">test_v10_release_gate passed</text>
+  <text x="78" y="392" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="14">$ bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh  # passed</text>
+  <text x="78" y="418" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="14">$ git diff --check  # passed</text>
+
+  <text x="56" y="464" fill="#cbd5e1" font-family="Menlo, Consolas, monospace" font-size="14">Credential-safe: no codesign, notarization, upload, tag, push, or archive contents/SHA values printed.</text>
+</svg>

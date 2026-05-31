@@ -552,3 +552,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed. Independent spec review passed and code-quality/security re-review approved the fixed diff.
 - No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-info-plist-metadata-gate.svg`.
+
+## 2026-05-31 02:52 EDT — v1.0 release zip code-signature resources gate
+
+- Hardened `script/v10_release_gate.sh` so a present public `LithePG.app.zip` is blocked unless it includes `LithePG.app/Contents/_CodeSignature/CodeResources` as a regular archive entry.
+- Added redacted shell TDD coverage for an otherwise valid release zip missing `CodeResources`; output reports only `Release artifact code signature resources: missing` and keeps publication blocked without printing archive contents or SHA values.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with release artifact missing code signature resources`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed after the minimal structural check and valid fixtures were updated to include `CodeResources`; final syntax/whitespace/fast-preflight checks were run for this shell/docs slice.
+- No codesign, notarization, upload, network publication, tag, commit, push, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-code-signature-resources-gate.svg`.
