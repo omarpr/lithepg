@@ -654,3 +654,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed.
 - No release signing, notarization, upload, Homebrew publication, tag, cron, push, or external publication changes were attempted.
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-metadata-files-gate.svg`.
+
+## 2026-05-31 06:19 EDT — v1.0 release zip symlink-entry gate
+
+- Hardened `script/v10_release_gate.sh` so a present public `LithePG.app.zip` is blocked when any archive entry mode is a symlink, not only when essential bundle entries are symlinks.
+- Added a strict-TDD fixture with an otherwise valid, ad-hoc-signed `LithePG.app` containing a non-essential resource symlink preserved with `zip -y`; the gate reports only `Release artifact symlinks: present` and does not print symlink paths, targets, marker payloads, zip paths, temp paths, codesign output, archive contents, or SHA values.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with non-essential symlink in release artifact`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed.
+- No release signing beyond local ad-hoc test fixtures, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron, or external publication changes were attempted.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-symlink-gate.svg`.

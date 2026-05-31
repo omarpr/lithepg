@@ -483,6 +483,33 @@ release_zip_bundle_file_types_status() {
   return 0
 }
 
+release_zip_symlinks_status() {
+  local zip_file="$1"
+  local zip_listing=""
+  local line=""
+  local mode=""
+
+  if [[ ! -x /usr/bin/zipinfo ]]; then
+    return 2
+  fi
+
+  if ! zip_listing="$(/usr/bin/zipinfo -l "$zip_file" 2>/dev/null)"; then
+    return 2
+  fi
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    mode=""
+    read -r mode _rest <<<"$line" || true
+    case "$mode" in
+      l*)
+        return 1
+        ;;
+    esac
+  done <<<"$zip_listing"
+
+  return 0
+}
+
 release_zip_essential_entries_unique_status() {
   local zip_file="$1"
   local zip_entries=""
@@ -1372,6 +1399,21 @@ else
 fi
 
 if [[ "$release_zip_present" -eq 1 ]]; then
+  if release_zip_symlinks_status "$release_zip_file"; then
+    printf 'Release artifact symlinks: absent\n'
+  else
+    release_zip_symlinks_status=$?
+    case "$release_zip_symlinks_status" in
+      1)
+        printf 'Release artifact symlinks: present\n'
+        ;;
+      *)
+        printf 'Release artifact symlinks: could not inspect\n'
+        ;;
+    esac
+    mark_blocker
+  fi
+
   if release_zip_metadata_files_status "$release_zip_file"; then
     printf 'Release artifact metadata files: absent\n'
   else

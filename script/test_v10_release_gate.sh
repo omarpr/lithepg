@@ -84,6 +84,7 @@ artifact_code_signature_resources_missing_output="$(mktemp)"
 artifact_code_signature_verification_invalid_output="$(mktemp)"
 artifact_code_signature_runtime_missing_output="$(mktemp)"
 artifact_metadata_files_present_output="$(mktemp)"
+artifact_symlinks_present_output="$(mktemp)"
 artifact_top_level_unexpected_output="$(mktemp)"
 artifact_info_plist_metadata_mismatch_output="$(mktemp)"
 artifact_info_plist_metadata_legacy_mismatch_output="$(mktemp)"
@@ -186,6 +187,10 @@ symlink_bundle_zip_dir="$(mktemp -d)"
 symlink_bundle_zip="$symlink_bundle_zip_dir/LithePG.app.zip"
 symlink_bundle_release_copy="$(mktemp)"
 symlink_bundle_homebrew_cask="$(mktemp)"
+nonessential_symlink_zip_dir="$(mktemp -d)"
+nonessential_symlink_zip="$nonessential_symlink_zip_dir/LithePG.app.zip"
+nonessential_symlink_release_copy="$(mktemp)"
+nonessential_symlink_homebrew_cask="$(mktemp)"
 non_executable_bundle_zip_dir="$(mktemp -d)"
 non_executable_bundle_zip="$non_executable_bundle_zip_dir/LithePG.app.zip"
 non_executable_bundle_release_copy="$(mktemp)"
@@ -282,6 +287,7 @@ cleanup() {
     "$artifact_code_signature_verification_invalid_output" \
     "$artifact_code_signature_runtime_missing_output" \
     "$artifact_metadata_files_present_output" \
+    "$artifact_symlinks_present_output" \
     "$artifact_top_level_unexpected_output" \
     "$artifact_info_plist_metadata_mismatch_output" \
     "$artifact_info_plist_metadata_legacy_mismatch_output" \
@@ -379,6 +385,9 @@ cleanup() {
     "$symlink_bundle_zip" \
     "$symlink_bundle_release_copy" \
     "$symlink_bundle_homebrew_cask" \
+    "$nonessential_symlink_zip" \
+    "$nonessential_symlink_release_copy" \
+    "$nonessential_symlink_homebrew_cask" \
     "$non_executable_bundle_zip" \
     "$non_executable_bundle_release_copy" \
     "$non_executable_bundle_homebrew_cask" \
@@ -430,7 +439,7 @@ cleanup() {
     "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$release_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$release_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
@@ -627,6 +636,23 @@ write_code_signature_resources "$symlink_bundle_zip_dir/fixture-root/LithePG.app
 )
 symlink_bundle_zip_sha="$(/usr/bin/shasum -a 256 "$symlink_bundle_zip" | /usr/bin/cut -d ' ' -f 1)"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$symlink_bundle_zip_sha" >"$symlink_bundle_release_copy"
+mkdir -p "$nonessential_symlink_zip_dir/fixture-root/LithePG.app/Contents/MacOS" "$nonessential_symlink_zip_dir/fixture-root/LithePG.app/Contents/Resources"
+write_valid_info_plist "$nonessential_symlink_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
+/bin/cp /usr/bin/true "$nonessential_symlink_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+/bin/chmod 755 "$nonessential_symlink_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+nonessential_symlink_marker="NONESSENTIAL_SYMLINK_FIXTURE_SHOULD_NOT_LEAK"
+printf '%s\n' "$nonessential_symlink_marker" >"$nonessential_symlink_zip_dir/fixture-root/LithePG.app/Contents/Resources/safe-target.txt"
+(
+  cd "$nonessential_symlink_zip_dir/fixture-root/LithePG.app/Contents/Resources"
+  /bin/ln -s safe-target.txt symlinked-resource
+)
+/usr/bin/codesign --force --sign - --options runtime "$nonessential_symlink_zip_dir/fixture-root/LithePG.app" >/dev/null 2>&1
+(
+  cd "$nonessential_symlink_zip_dir/fixture-root"
+  /usr/bin/zip -qr -y "$nonessential_symlink_zip" LithePG.app
+)
+nonessential_symlink_zip_sha="$(/usr/bin/shasum -a 256 "$nonessential_symlink_zip" | /usr/bin/cut -d ' ' -f 1)"
+printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$nonessential_symlink_zip_sha" >"$nonessential_symlink_release_copy"
 mkdir -p "$unexpected_top_level_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
 write_valid_info_plist "$unexpected_top_level_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 printf 'fake public release app executable fixture\n' >"$unexpected_top_level_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
@@ -1150,6 +1176,28 @@ cat >"$symlink_bundle_homebrew_cask" <<CASK
 cask "lithepg" do
   version "1.0"
   sha256 "$symlink_bundle_zip_sha"
+
+  url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
+      verified: "github.com/omarpr/lithepg/"
+  name "LithePG"
+  desc "Lean PostgreSQL client with local-first AI"
+  homepage "https://github.com/omarpr/lithepg"
+  uninstall quit: "dev.omarpr.lithepg"
+
+  depends_on macos: ">= :sonoma"
+
+  app "LithePG.app"
+
+  zap trash: [
+    "~/Library/Application Support/LithePG",
+    "~/Library/Preferences/dev.omarpr.lithepg.plist",
+  ]
+end
+CASK
+cat >"$nonessential_symlink_homebrew_cask" <<CASK
+cask "lithepg" do
+  version "1.0"
+  sha256 "$nonessential_symlink_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
@@ -2271,6 +2319,7 @@ fi
 artifact_bundle_file_type_inspect_failure_text="$(<"$artifact_bundle_file_type_inspect_failure_output")"
 assert_contains "$artifact_bundle_file_type_inspect_failure_text" "Release artifact filename: matches"
 assert_contains "$artifact_bundle_file_type_inspect_failure_text" "Release artifact zip: present"
+assert_contains "$artifact_bundle_file_type_inspect_failure_text" "Release artifact symlinks: could not inspect"
 assert_contains "$artifact_bundle_file_type_inspect_failure_text" "Release artifact metadata files: could not inspect"
 assert_occurrences "$artifact_bundle_file_type_inspect_failure_text" "Release artifact metadata files:" 1
 assert_contains "$artifact_bundle_file_type_inspect_failure_text" "Release artifact app wrapper: could not inspect"
@@ -2345,6 +2394,55 @@ assert_not_contains "$artifact_bundle_file_type_invalid_text" "Info.target"
 assert_not_contains "$artifact_bundle_file_type_invalid_text" "LithePGApp.target"
 assert_not_contains "$artifact_bundle_file_type_invalid_text" "$symlink_bundle_zip_sha"
 assert_not_contains "$artifact_bundle_file_type_invalid_text" "fast preflight is clear"
+
+if run_gate_capture "$artifact_symlinks_present_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$nonessential_symlink_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$nonessential_symlink_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$nonessential_symlink_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$nonessential_symlink_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  artifact_symlinks_present_text="$(<"$artifact_symlinks_present_output")"
+  assert_not_contains "$artifact_symlinks_present_text" "symlinked-resource"
+  assert_not_contains "$artifact_symlinks_present_text" "safe-target.txt"
+  assert_not_contains "$artifact_symlinks_present_text" "$nonessential_symlink_marker"
+  assert_not_contains "$artifact_symlinks_present_text" "$nonessential_symlink_zip_sha"
+  assert_not_contains "$artifact_symlinks_present_text" "$nonessential_symlink_zip"
+  fail "gate unexpectedly passed with non-essential symlink in release artifact"
+fi
+artifact_symlinks_present_text="$(<"$artifact_symlinks_present_output")"
+assert_contains "$artifact_symlinks_present_text" "Release artifact filename: matches"
+assert_contains "$artifact_symlinks_present_text" "Release artifact zip: present"
+assert_contains "$artifact_symlinks_present_text" "Release artifact symlinks: present"
+assert_occurrences "$artifact_symlinks_present_text" "Release artifact symlinks:" 1
+assert_contains "$artifact_symlinks_present_text" "Release artifact app wrapper: present"
+assert_contains "$artifact_symlinks_present_text" "Release artifact bundle contents: present"
+assert_contains "$artifact_symlinks_present_text" "Release artifact bundle file types: regular"
+assert_contains "$artifact_symlinks_present_text" "Release artifact entry paths: canonical"
+assert_contains "$artifact_symlinks_present_text" "Release artifact essential entries: unique"
+assert_contains "$artifact_symlinks_present_text" "Release artifact Info.plist metadata: matches"
+assert_contains "$artifact_symlinks_present_text" "Release artifact bundle executable: executable"
+assert_contains "$artifact_symlinks_present_text" "Release artifact executable format: Mach-O"
+assert_contains "$artifact_symlinks_present_text" "Release artifact code signature resources: present"
+assert_contains "$artifact_symlinks_present_text" "Release artifact code signature verification: valid"
+assert_contains "$artifact_symlinks_present_text" "Release artifact code signature runtime: present"
+assert_contains "$artifact_symlinks_present_text" "Release artifact top-level entries: clean"
+assert_contains "$artifact_symlinks_present_text" "Release artifact SHA-256: matches"
+assert_contains "$artifact_symlinks_present_text" "v1.0 publication blocked"
+assert_not_contains "$artifact_symlinks_present_text" "symlinked-resource"
+assert_not_contains "$artifact_symlinks_present_text" "safe-target.txt"
+assert_not_contains "$artifact_symlinks_present_text" "$nonessential_symlink_marker"
+assert_not_contains "$artifact_symlinks_present_text" "$nonessential_symlink_zip_sha"
+assert_not_contains "$artifact_symlinks_present_text" "$nonessential_symlink_zip"
+assert_not_contains "$artifact_symlinks_present_text" "fast preflight is clear"
 
 if run_gate_capture "$artifact_bundle_executable_permission_output" env -i \
   PATH="$fake_path" \
@@ -4085,6 +4183,7 @@ assert_contains "$no_remote_lookup_text" "Homebrew cask Ruby syntax: valid"
 assert_contains "$no_remote_lookup_text" "Homebrew cask SHA-256: matches"
 assert_contains "$no_remote_lookup_text" "Release artifact filename: matches"
 assert_contains "$no_remote_lookup_text" "Release artifact zip: present"
+assert_contains "$no_remote_lookup_text" "Release artifact symlinks: absent"
 assert_contains "$no_remote_lookup_text" "Release artifact metadata files: absent"
 assert_occurrences "$no_remote_lookup_text" "Release artifact metadata files:" 1
 assert_contains "$no_remote_lookup_text" "Release artifact app wrapper: present"
@@ -4127,6 +4226,7 @@ fi
 remote_opt_in_text="$(<"$remote_opt_in_output")"
 assert_contains "$remote_opt_in_text" "Release copy placeholders: none found"
 assert_contains "$remote_opt_in_text" "Homebrew cask placeholders: none found"
+assert_contains "$remote_opt_in_text" "Release artifact symlinks: absent"
 assert_contains "$remote_opt_in_text" "Release artifact metadata files: absent"
 assert_contains "$remote_opt_in_text" "Release artifact essential entries: unique"
 assert_contains "$remote_opt_in_text" "Release artifact executable format: Mach-O"
