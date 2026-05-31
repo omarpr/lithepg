@@ -37,6 +37,8 @@ is_approved() {
   esac
 }
 
+[[ "$#" -le 1 ]] || fail "too many arguments"
+
 make_absolute_path() {
   local path="$1"
   if [[ "$path" == /* ]]; then

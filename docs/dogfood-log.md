@@ -887,3 +887,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-app-bundle-basename-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 16:52 EDT — v1.0 sign/notarize extra-argument gate
+
+- Hardened `script/sign_and_notarize.sh` so the credential-gated signing/notarization helper rejects extra positional arguments after optional `--dry-run` parsing and before package verification, dry-run success, or real signing/notarization can proceed.
+- Added strict-TDD coverage proving `--dry-run "$app_bundle" "$ignored_extra_arg"` exits nonzero with `too many arguments`, does not print package-verification or dry-run success output, keeps signing/notary sentinel values redacted, and creates no notary zip.
+- RED verification: `bash script/test_sign_and_notarize.sh` failed first with `test_sign_and_notarize failed: dry run unexpectedly passed with an extra positional argument`.
+- GREEN verification: `bash script/test_sign_and_notarize.sh` passed; adjacent release helper tests `bash script/test_create_release_zip.sh` and `bash script/test_v10_release_gate.sh` passed; `bash -n` syntax checks passed; `git diff --check` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed. Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260531-165349/` with default Swift tests, live dogfood tests, and v0.4 measurement all passed. Metrics: shell readiness 132.83 ms; connected cold start 224.11 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead 0.030 ms; dogfood query median overhead 0.004 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-extra-argument-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
