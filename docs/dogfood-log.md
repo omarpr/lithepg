@@ -798,3 +798,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-physical-notary-zip-gate.svg`.
 - No real signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 12:35 EDT — v1.0 release zip symlink artifact gate
+
+- Hardened `script/v10_release_gate.sh` so a configured final public `LithePG.app.zip` path is blocked when the path itself is a symlink, even if the symlink target is an otherwise valid release zip with a matching approved SHA-256.
+- Added strict-TDD coverage with an otherwise-valid fixture release copy, Homebrew cask, security doc, and release zip, then pointed `LITHEPG_RELEASE_ZIP_PATH` at a symlink named `LithePG.app.zip`; output reports only `Release artifact zip: symlink` and does not print symlink targets, SHA values, archive contents, or temp paths.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with symlink release artifact zip`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed; adjacent release helper tests `bash script/test_create_release_zip.sh && bash script/test_sign_and_notarize.sh` passed.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-symlink-artifact-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

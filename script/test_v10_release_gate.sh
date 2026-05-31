@@ -66,6 +66,7 @@ run_specific_gate_capture() {
 missing_output="$(mktemp)"
 redaction_output="$(mktemp)"
 missing_artifact_output="$(mktemp)"
+symlink_artifact_output="$(mktemp)"
 missing_artifact_zip="$(mktemp)"
 artifact_filename_mismatch_output="$(mktemp)"
 artifact_app_wrapper_missing_output="$(mktemp)"
@@ -172,6 +173,8 @@ placeholder_security_doc="$(mktemp)"
 placeholder_free_security_doc="$(mktemp)"
 release_zip_dir="$(mktemp -d)"
 release_zip_fixture="$release_zip_dir/LithePG.app.zip"
+symlink_artifact_zip_dir="$(mktemp -d)"
+symlink_artifact_zip="$symlink_artifact_zip_dir/LithePG.app.zip"
 missing_wrapper_zip_dir="$(mktemp -d)"
 missing_wrapper_zip="$missing_wrapper_zip_dir/LithePG.app.zip"
 missing_wrapper_release_copy="$(mktemp)"
@@ -274,6 +277,7 @@ cleanup() {
     "$missing_output" \
     "$redaction_output" \
     "$missing_artifact_output" \
+    "$symlink_artifact_output" \
     "$missing_artifact_zip" \
     "$artifact_filename_mismatch_output" \
     "$artifact_app_wrapper_missing_output" \
@@ -379,6 +383,7 @@ cleanup() {
     "$placeholder_security_doc" \
     "$placeholder_free_security_doc" \
     "$release_zip_fixture" \
+    "$symlink_artifact_zip" \
     "$missing_wrapper_zip" \
     "$missing_wrapper_release_copy" \
     "$missing_wrapper_homebrew_cask" \
@@ -448,7 +453,7 @@ cleanup() {
     "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$release_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
@@ -608,6 +613,7 @@ write_valid_info_plist "$release_zip_dir/fixture-root/LithePG.app/Contents/Info.
 )
 release_zip_sha="$(/usr/bin/shasum -a 256 "$release_zip_fixture" | /usr/bin/cut -d ' ' -f 1)"
 release_zip_sha_upper="$(printf '%s' "$release_zip_sha" | /usr/bin/tr '[:lower:]' '[:upper:]')"
+/bin/ln -s "$release_zip_fixture" "$symlink_artifact_zip"
 /bin/cp "$release_zip_fixture" "$wrong_basename_zip"
 mkdir -p "$missing_wrapper_zip_dir/fixture-root/NotLithePG.app/Contents/MacOS"
 printf 'fake wrong release app executable fixture\n' >"$missing_wrapper_zip_dir/fixture-root/NotLithePG.app/Contents/MacOS/NotLithePG"
@@ -2279,6 +2285,40 @@ missing_artifact_text="$(<"$missing_artifact_output")"
 assert_contains "$missing_artifact_text" "Release artifact zip: missing at $missing_artifact_zip"
 assert_contains "$missing_artifact_text" "v1.0 publication blocked"
 assert_not_contains "$missing_artifact_text" "fast preflight is clear"
+
+if run_gate_capture "$symlink_artifact_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$symlink_artifact_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  symlink_artifact_text="$(<"$symlink_artifact_output")"
+  assert_not_contains "$symlink_artifact_text" "$release_zip_fixture"
+  assert_not_contains "$symlink_artifact_text" "$release_zip_sha"
+  assert_not_contains "$symlink_artifact_text" "$symlink_artifact_zip"
+  fail "gate unexpectedly passed with symlink release artifact zip"
+fi
+symlink_artifact_text="$(<"$symlink_artifact_output")"
+assert_contains "$symlink_artifact_text" "Release artifact filename: matches"
+assert_contains "$symlink_artifact_text" "Release artifact zip: symlink"
+assert_contains "$symlink_artifact_text" "v1.0 publication blocked"
+assert_not_contains "$symlink_artifact_text" "Release artifact zip: present"
+assert_not_contains "$symlink_artifact_text" "Release artifact app wrapper:"
+assert_not_contains "$symlink_artifact_text" "Release artifact SHA-256:"
+assert_not_contains "$symlink_artifact_text" "LithePG.app/Contents"
+assert_not_contains "$symlink_artifact_text" "$release_zip_fixture"
+assert_not_contains "$symlink_artifact_text" "$release_zip_sha"
+assert_not_contains "$symlink_artifact_text" "$symlink_artifact_zip"
+assert_not_contains "$symlink_artifact_text" "fast preflight is clear"
 
 if run_gate_capture "$artifact_filename_mismatch_output" env -i \
   PATH="$fake_path" \

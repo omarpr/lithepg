@@ -24,7 +24,8 @@ LITHEPG_SECURITY_DOC_PATH to scan one alternate security policy file instead of
 the default SECURITY.md and docs/SECURITY.md files (paths may be relative to the
 repository root or absolute). Set LITHEPG_RELEASE_ZIP_PATH to the final public
 release zip artifact path (default: dist/LithePG.app.zip; basename must be
-LithePG.app.zip) and LITHEPG_RELEASE_ZIP_SHA256 to the approved expected
+LithePG.app.zip; path itself must be a regular file, not a symlink) and
+LITHEPG_RELEASE_ZIP_SHA256 to the approved expected
 64-hex SHA-256 digest.
 USAGE
 }
@@ -1430,7 +1431,10 @@ else
   mark_blocker
 fi
 
-if [[ ! -f "$release_zip_file" ]]; then
+if [[ -L "$release_zip_file" ]]; then
+  printf 'Release artifact zip: symlink\n'
+  mark_blocker
+elif [[ ! -f "$release_zip_file" ]]; then
   printf 'Release artifact zip: missing at %s\n' "$RELEASE_ZIP_PATH"
   mark_blocker
 else

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="720" viewBox="0 0 1240 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release gate symlink artifact evidence</title>
+  <desc id="desc">Visual evidence that the v1.0 release preflight blocks symlinked public release artifact paths and that focused shell verification passed.</desc>
+  <rect width="1240" height="720" fill="#0f172a"/>
+  <rect x="48" y="44" width="1144" height="632" rx="18" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="84" y="98" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="30" font-weight="700">LithePG v1.0 release gate</text>
+  <text x="84" y="136" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="18">Slice: reject symlinked final public release artifact paths</text>
+  <rect x="84" y="172" width="1072" height="132" rx="10" fill="#020617" stroke="#1e293b"/>
+  <text x="112" y="210" fill="#38bdf8" font-family="Menlo, Consolas, monospace" font-size="18">$ bash script/test_v10_release_gate.sh</text>
+  <text x="112" y="246" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="18">test_v10_release_gate passed</text>
+  <text x="112" y="282" fill="#f8fafc" font-family="Menlo, Consolas, monospace" font-size="16">New gate status under test: Release artifact zip: symlink</text>
+  <rect x="84" y="328" width="1072" height="172" rx="10" fill="#020617" stroke="#1e293b"/>
+  <text x="112" y="366" fill="#38bdf8" font-family="Menlo, Consolas, monospace" font-size="18">$ bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh</text>
+  <text x="112" y="402" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="18">exit 0, no output</text>
+  <text x="112" y="442" fill="#38bdf8" font-family="Menlo, Consolas, monospace" font-size="18">$ git diff --check</text>
+  <text x="112" y="478" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="18">exit 0, no output</text>
+  <rect x="84" y="524" width="1072" height="96" rx="10" fill="#0b1220" stroke="#1e40af"/>
+  <text x="112" y="562" fill="#fde68a" font-family="Menlo, Consolas, monospace" font-size="17">Redaction invariant:</text>
+  <text x="112" y="596" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="16">No symlink targets, SHA-256 values, archive contents, credentials, or temp paths are printed.</text>
+  <text x="84" y="650" fill="#94a3b8" font-family="Menlo, Consolas, monospace" font-size="14">Generated 2026-05-31 12:35 EDT for commit evidence.</text>
+</svg>
