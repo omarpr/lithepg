@@ -520,6 +520,52 @@ release_zip_essential_entries_unique_status() {
   return 0
 }
 
+release_zip_entry_path_is_canonical() {
+  local entry="$1"
+  local entry_without_trailing_slash=""
+
+  if [[ -z "$entry" ]]; then
+    return 1
+  fi
+
+  case "$entry" in
+    /*|./*|../*|.|..|*//*|*\\*)
+      return 1
+      ;;
+  esac
+
+  entry_without_trailing_slash="${entry%/}"
+  case "$entry_without_trailing_slash" in
+    ""|*/.|*/..|*/./*|*/../*)
+      return 1
+      ;;
+  esac
+
+  return 0
+}
+
+release_zip_entry_paths_status() {
+  local zip_file="$1"
+  local zip_entries=""
+  local entry=""
+
+  if [[ ! -x /usr/bin/zipinfo ]]; then
+    return 2
+  fi
+
+  if ! zip_entries="$(/usr/bin/zipinfo -1 "$zip_file" 2>/dev/null)"; then
+    return 2
+  fi
+
+  while IFS= read -r entry || [[ -n "$entry" ]]; do
+    if ! release_zip_entry_path_is_canonical "$entry"; then
+      return 1
+    fi
+  done <<<"$zip_entries"
+
+  return 0
+}
+
 plist_key_matches() {
   local plist_file="$1"
   local key="$2"
@@ -1208,7 +1254,26 @@ if [[ "$release_zip_present" -eq 1 ]]; then
     fi
 
     release_zip_essential_entries_ready=0
+    release_zip_entry_paths_ready=0
     if [[ "$release_zip_file_types_ready" -eq 1 ]]; then
+      if release_zip_entry_paths_status "$release_zip_file"; then
+        printf 'Release artifact entry paths: canonical\n'
+        release_zip_entry_paths_ready=1
+      else
+        release_zip_entry_paths_status=$?
+        case "$release_zip_entry_paths_status" in
+          1)
+            printf 'Release artifact entry paths: non-canonical\n'
+            ;;
+          *)
+            printf 'Release artifact entry paths: could not inspect\n'
+            ;;
+        esac
+        mark_blocker
+      fi
+    fi
+
+    if [[ "$release_zip_file_types_ready" -eq 1 && "$release_zip_entry_paths_ready" -eq 1 ]]; then
       if release_zip_essential_entries_unique_status "$release_zip_file"; then
         printf 'Release artifact essential entries: unique\n'
         release_zip_essential_entries_ready=1
