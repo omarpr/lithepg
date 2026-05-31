@@ -608,3 +608,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with case-folded release artifact zip path collision`.
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed; final syntax, whitespace, and fast-preflight blocked-prerequisite checks were run for this shell/docs slice.
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-casefold-collision-gate.svg`.
+
+## 2026-05-31 04:26 EDT — v1.0 release zip ASCII path gate follow-up
+
+- Hardened `script/v10_release_gate.sh` so a present public `LithePG.app.zip` is blocked when any zip entry path is not printable ASCII before extraction-sensitive checks continue. This avoids macOS Unicode normalization/casefold ambiguity for the release artifact, whose bundle wrapper and known bundle paths are expected to be ASCII.
+- Added a separate redacted path-collision TDD fixture with otherwise valid entries plus both `LithePG.app/Contents/Resources/ß.txt` and `LithePG.app/Contents/Resources/SS.txt`, covering the Unicode collision bypass that passed the prior `LC_ALL=C awk tolower()` collision check.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first while the Unicode collision fixture still passed the gate before the ASCII-path policy was added.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed; final syntax, whitespace, and fast-preflight blocked-prerequisite checks were run for this shell/docs slice.
+- Output stays redacted: the gate reports non-ASCII entry paths as `Release artifact entry paths: non-canonical` and does not print archive paths, marker text, or SHA values.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-ascii-path-gate.svg`.

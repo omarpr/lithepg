@@ -528,6 +528,10 @@ release_zip_entry_path_is_canonical() {
     return 1
   fi
 
+  if ! printf '%s' "$entry" | LC_ALL=C /usr/bin/awk '/[^ -~]/ { found = 1 } END { exit found ? 1 : 0 }'; then
+    return 1
+  fi
+
   case "$entry" in
     /*|./*|../*|.|..|*//*|*\\*)
       return 1
@@ -544,14 +548,56 @@ release_zip_entry_path_is_canonical() {
   return 0
 }
 
+release_zip_entry_paths_ascii_status() {
+  local zip_file="$1"
+
+  if [[ ! -x /usr/bin/python3 ]]; then
+    return 2
+  fi
+
+  /usr/bin/python3 - "$zip_file" <<'PY'
+import sys
+import zipfile
+
+zip_path = sys.argv[1]
+
+try:
+    with zipfile.ZipFile(zip_path) as archive:
+        for entry in archive.infolist():
+            if any(ord(character) < 0x20 or ord(character) > 0x7E for character in entry.filename):
+                sys.exit(1)
+except zipfile.BadZipFile:
+    sys.exit(2)
+except OSError:
+    sys.exit(2)
+
+sys.exit(0)
+PY
+}
+
 release_zip_entry_paths_status() {
   local zip_file="$1"
   local zip_entries=""
   local entry=""
   local duplicate_entry_path_count=""
+  local ascii_status=0
 
   if [[ ! -x /usr/bin/zipinfo || ! -x /usr/bin/awk || ! -x /usr/bin/sort || ! -x /usr/bin/uniq || ! -x /usr/bin/wc ]]; then
     return 2
+  fi
+
+  if release_zip_entry_paths_ascii_status "$zip_file"; then
+    :
+  else
+    ascii_status=$?
+    case "$ascii_status" in
+      1)
+        return 1
+        ;;
+      *)
+        return 2
+        ;;
+    esac
   fi
 
   if ! zip_entries="$(/usr/bin/zipinfo -1 "$zip_file" 2>/dev/null)"; then
