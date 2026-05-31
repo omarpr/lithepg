@@ -77,6 +77,7 @@ absolute_lexical_path() {
 
 canonicalize_path_for_location_check() {
   local path="$1"
+  local final_symlink_mode="${2:-follow-final-symlink}"
   /usr/bin/perl -MCwd=abs_path -e '
 use strict;
 use warnings;
@@ -86,7 +87,8 @@ sub path_parts {
   return grep { length($_) && $_ ne "." } split m{/+}, $path;
 }
 
-my ($path, $root_dir) = @ARGV;
+my ($path, $root_dir, $final_symlink_mode) = @ARGV;
+my $follow_final_symlink = $final_symlink_mode ne "preserve-final-symlink";
 my @parts;
 my @queue;
 
@@ -111,6 +113,7 @@ while (@queue) {
 
   my $parent = "/" . join("/", @parts);
   my $candidate = "/" . join("/", @parts, $part);
+  my $is_final_part = !@queue;
   if ((-e $candidate || -l $candidate) && opendir(my $dh, $parent)) {
     my $case_insensitive_match;
     while (defined(my $entry = readdir($dh))) {
@@ -127,24 +130,26 @@ while (@queue) {
     $candidate = "/" . join("/", @parts, $part);
   }
 
-  if (-l $candidate) {
-    die "too many symlinks while resolving path: $path\n" if ++$symlink_count > 40;
-    my $target = readlink($candidate);
-    die "could not read symlink: $candidate\n" unless defined $target;
-    if ($target =~ m{\A/}) {
-      @parts = ();
-      unshift @queue, path_parts($target);
-    } else {
-      unshift @queue, path_parts($target);
+  if ($follow_final_symlink || !$is_final_part) {
+    if (-l $candidate) {
+      die "too many symlinks while resolving path: $path\n" if ++$symlink_count > 40;
+      my $target = readlink($candidate);
+      die "could not read symlink: $candidate\n" unless defined $target;
+      if ($target =~ m{\A/}) {
+        @parts = ();
+        unshift @queue, path_parts($target);
+      } else {
+        unshift @queue, path_parts($target);
+      }
+      next;
     }
-    next;
   }
 
   push @parts, $part;
 }
 
 print "/" . join("/", @parts) . "\n";
-' "$path" "$ROOT_DIR"
+' "$path" "$ROOT_DIR" "$final_symlink_mode"
 }
 
 APP_BUNDLE_ABS="$(absolute_lexical_path "$APP_BUNDLE")"
@@ -156,7 +161,7 @@ case "$OUTPUT_ZIP_ABS" in
 esac
 
 APP_BUNDLE_PHYSICAL="$(canonicalize_path_for_location_check "$APP_BUNDLE")"
-OUTPUT_ZIP_PHYSICAL="$(canonicalize_path_for_location_check "$OUTPUT_ZIP")"
+OUTPUT_ZIP_PHYSICAL="$(canonicalize_path_for_location_check "$OUTPUT_ZIP" preserve-final-symlink)"
 case "$OUTPUT_ZIP_PHYSICAL" in
   "$APP_BUNDLE_PHYSICAL"|"$APP_BUNDLE_PHYSICAL"/*)
     fail "output zip must not be inside the app bundle: $OUTPUT_ZIP"

@@ -897,3 +897,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-extra-argument-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 17:13 EDT — v1.0 release zip final symlink inside-bundle gate
+
+- Hardened `script/create_release_zip.sh` so a final output path symlink that is physically located inside `LithePG.app` is rejected even when it points outside the app bundle and `LITHEPG_RELEASE_ZIP_OVERWRITE=approved` is set.
+- The public release zip helper now preserves the final output symlink during the physical inside-bundle location check, while continuing to resolve parent symlinks and case-variant path components.
+- RED verification: `bash script/test_create_release_zip.sh` failed first with `test_create_release_zip failed: helper unexpectedly allowed a final output symlink inside the app bundle pointing outside`.
+- GREEN verification: `bash script/test_create_release_zip.sh` passed; `bash -n script/create_release_zip.sh script/test_create_release_zip.sh` passed; adjacent release helper tests `bash script/test_sign_and_notarize.sh` and `bash script/test_v10_release_gate.sh` passed; `git diff --check` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260531-171450/` with default Swift tests, live dogfood tests, and v0.4 measurement all passed. Metrics: shell readiness 128.10 ms; connected cold start 230.08 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead 0.041 ms; dogfood query median overhead 0.026 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-final-symlink-inside-bundle-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
