@@ -457,3 +457,10 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed; final syntax/whitespace/Ruby template and Homebrew CaskLoader checks were run for this shell/docs/template slice.
 - No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-30-v10-homebrew-cask-uninstall-quit-bundle-id-gate.svg`.
+
+## 2026-05-30 22:22 EDT — v1.0 release docs gate sync
+
+- Synced `docs/RELEASING.md` and `CHANGELOG.md` with the current fast preflight scope after the Homebrew cask token/name/description/homepage/uninstall/app/macOS/zap/SHA gates landed.
+- Clarified that the fast helper now documents placeholder-free cask checks for token, version, URL, verified URL, public metadata, uninstall quit bundle ID, app stanza, macOS requirement, zap cleanup, and SHA-256 matching.
+- No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-30-v10-release-docs-gate-sync.svg`.
