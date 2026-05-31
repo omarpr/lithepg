@@ -587,6 +587,41 @@ release_zip_bundle_executable_permission_status() {
   return 1
 }
 
+release_zip_app_executable_format_status() {
+  local zip_file="$1"
+  local executable_file=""
+  local file_output=""
+
+  if [[ ! -x /usr/bin/unzip || ! -x /usr/bin/file || ! -x /usr/bin/mktemp || ! -x /bin/rm ]]; then
+    return 2
+  fi
+
+  if ! executable_file="$(/usr/bin/mktemp "${TMPDIR:-/tmp}/lithepg-app-executable.XXXXXX")"; then
+    return 2
+  fi
+
+  if ! /usr/bin/unzip -p "$zip_file" "LithePG.app/Contents/MacOS/LithePGApp" >"$executable_file" 2>/dev/null; then
+    /bin/rm -f "$executable_file"
+    return 2
+  fi
+
+  if ! file_output="$(/usr/bin/file -b "$executable_file" 2>/dev/null)"; then
+    /bin/rm -f "$executable_file"
+    return 2
+  fi
+
+  /bin/rm -f "$executable_file"
+
+  case "$file_output" in
+    *Mach-O*executable*)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
 release_zip_code_signature_resources_status() {
   local zip_file="$1"
   local zip_listing=""
@@ -1151,8 +1186,10 @@ if [[ "$release_zip_present" -eq 1 ]]; then
 
       if release_zip_bundle_executable_permission_status "$release_zip_file"; then
         printf 'Release artifact bundle executable: executable\n'
+        release_zip_executable_permission_ready=1
       else
         release_zip_executable_status=$?
+        release_zip_executable_permission_ready=0
         case "$release_zip_executable_status" in
           1)
             printf 'Release artifact bundle executable: not executable\n'
@@ -1162,6 +1199,23 @@ if [[ "$release_zip_present" -eq 1 ]]; then
             ;;
         esac
         mark_blocker
+      fi
+
+      if [[ "$release_zip_executable_permission_ready" -eq 1 ]]; then
+        if release_zip_app_executable_format_status "$release_zip_file"; then
+          printf 'Release artifact executable format: Mach-O\n'
+        else
+          release_zip_executable_format_status=$?
+          case "$release_zip_executable_format_status" in
+            1)
+              printf 'Release artifact executable format: invalid\n'
+              ;;
+            *)
+              printf 'Release artifact executable format: could not inspect\n'
+              ;;
+          esac
+          mark_blocker
+        fi
       fi
 
       if release_zip_code_signature_resources_status "$release_zip_file"; then

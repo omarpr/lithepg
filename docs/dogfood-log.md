@@ -571,3 +571,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent spec review passed and code-quality/security review approved the diff. Swift tests were not required for this shell/docs-only slice.
 - No codesign, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-info-plist-core-metadata-gate.svg`.
+
+## 2026-05-31 — v1.0 release zip executable format gate
+
+- Hardened `script/v10_release_gate.sh` so a present public `LithePG.app.zip` is blocked unless `LithePG.app/Contents/MacOS/LithePGApp` is a real Mach-O executable, not merely a regular file with the executable bit set.
+- The check runs only after bundle structure, essential regular-file entries, and owner executable permission are inspectable; it extracts the app executable to a temp file for `/usr/bin/file` inspection, then cleans it up.
+- Updated shell fixtures so the valid release zip uses a real system Mach-O (`/usr/bin/true`) while the new negative fixture uses a text executable with otherwise-valid wrapper, Info.plist, code-signature resources, SHA, release copy, and cask metadata.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with text executable release artifact`.
+- GREEN verification: `bash script/test_v10_release_gate.sh`, `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh`, `git diff --check`, and `./script/v10_release_gate.sh --check-remote` were run locally; the fast preflight remained safely blocked on expected local/external publication prerequisites.
+- Output stays redacted: the gate reports only `Release artifact executable format: Mach-O`, `invalid`, or `could not inspect` and does not print archive contents, extracted paths, `/usr/bin/file` output, SHA values, or fixture marker strings.
+- No codesign, notarization, upload, Homebrew publication, `v1.0` tag, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-executable-format-gate.svg`.
