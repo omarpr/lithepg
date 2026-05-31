@@ -929,3 +929,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-public-release-zip-casefold-basename-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 18:18 EDT — v1.0 sign/notarize trailing-slash notary zip gate
+
+- Hardened `script/sign_and_notarize.sh` so `LITHEPG_NOTARY_ZIP` values ending in trailing slash(es) are rejected explicitly before dry-run success or real signing/notarization can proceed.
+- Added strict-TDD dry-run coverage proving a trailing-slash notary zip path exits nonzero with `notary zip path must not end with a slash`, keeps signing/notary sentinel values redacted, creates no zip/directory, and does not invoke fake signing/notary operation shims.
+- RED verification: `bash script/test_sign_and_notarize.sh` failed first with `test_sign_and_notarize failed: dry run unexpectedly passed with trailing-slash notary zip path`.
+- GREEN verification: `bash script/test_sign_and_notarize.sh`, adjacent release helper tests `bash script/test_create_release_zip.sh` and `bash script/test_v10_release_gate.sh`, release-helper `bash -n` syntax checks, `git diff --check`, and `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` all passed.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260531-181737/` with default Swift tests, live dogfood tests, and v0.4 measurement all passed. Metrics: shell readiness 130.59 ms; connected cold start 244.81 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead 0.023 ms; dogfood query median overhead 0.031 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-trailing-slash-notary-zip-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.

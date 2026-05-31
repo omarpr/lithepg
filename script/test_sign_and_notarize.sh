@@ -144,6 +144,43 @@ assert_contains "$helper_output" "Codesign identity: present (redacted)"
 assert_contains "$helper_output" "Notary profile: present (redacted)"
 [[ ! -e "$notary_zip" ]] || fail "dry run created notary zip: $notary_zip"
 
+trailing_slash_notary_zip_base="$fixture_root/LithePG-trailing-slash-notary.zip"
+trailing_slash_notary_zip="$trailing_slash_notary_zip_base///"
+trailing_slash_fake_bin="$fixture_root/trailing-slash-fake-bin"
+trailing_slash_ops_marker="$fixture_root/trailing-slash-signing-ops-ran"
+mkdir -p "$trailing_slash_fake_bin"
+for signing_op in codesign ditto spctl xcrun; do
+  cat >"$trailing_slash_fake_bin/$signing_op" <<SHIM
+#!/usr/bin/env bash
+printf '%s\n' "$signing_op" >>"$trailing_slash_ops_marker"
+printf 'unexpected signing/notary operation invoked\n' >&2
+exit 97
+SHIM
+  chmod +x "$trailing_slash_fake_bin/$signing_op"
+done
+
+if PATH="$trailing_slash_fake_bin:$PATH" \
+  LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$trailing_slash_notary_zip" \
+  run_helper_capture "$output_file" --dry-run "$app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  [[ ! -e "$trailing_slash_notary_zip_base" ]] || fail "dry run created trailing-slash notary zip path before passing: $trailing_slash_notary_zip_base"
+  [[ ! -e "$trailing_slash_ops_marker" ]] || fail "dry run invoked signing/notary operation before passing with trailing-slash notary zip path"
+  fail "dry run unexpectedly passed with trailing-slash notary zip path"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "notary zip path must not end with a slash"
+assert_not_contains "$helper_output" "Signing/notarization dry run OK"
+assert_not_contains "$helper_output" "unexpected signing/notary operation invoked"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+[[ ! -e "$trailing_slash_notary_zip_base" ]] || fail "dry run created trailing-slash notary zip path: $trailing_slash_notary_zip_base"
+[[ ! -e "$trailing_slash_notary_zip" ]] || fail "dry run created trailing-slash notary zip directory: $trailing_slash_notary_zip"
+[[ ! -e "$trailing_slash_ops_marker" ]] || fail "dry run invoked signing/notary operation with trailing-slash notary zip path"
+
 extra_arg_notary_zip="$fixture_root/LithePG-extra-arg-notary.zip"
 if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
   LITHEPG_NOTARY_PROFILE="$notary_sentinel" \

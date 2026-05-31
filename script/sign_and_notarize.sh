@@ -202,6 +202,10 @@ validate_notary_zip_location() {
   fi
 }
 
+validate_notary_zip_no_trailing_slash() {
+  [[ "$ZIP_PATH" != */ ]] || fail "notary zip path must not end with a slash"
+}
+
 validate_notary_zip_public_release_name() {
   local zip_basename
   local zip_basename_lower
@@ -233,6 +237,7 @@ validate_app_bundle_canonical_basename
 validate_app_bundle_not_symlink
 "$ROOT_DIR/script/package_verify.sh" "$APP_BUNDLE_ABS"
 require_config
+validate_notary_zip_no_trailing_slash
 validate_notary_zip_location
 validate_notary_zip_public_release_name
 validate_notary_zip_parent_dir
