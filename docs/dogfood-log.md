@@ -681,3 +681,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_sign_and_notarize.sh` passed after redacting dry-run config output; `bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh` passed; `git diff --check` passed; `./script/v10_release_gate.sh --check-remote` remained safely blocked on 14 expected local/external publication prerequisites.
 - No release signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-dry-run-redaction.svg`.
+
+## 2026-05-31 07:39 EDT — v1.0 signing/notarization inside-bundle zip gate
+
+- Hardened `script/sign_and_notarize.sh` so `LITHEPG_NOTARY_ZIP` is rejected when its resolved location is the app bundle itself or nested under the `.app` bundle, including `--dry-run`.
+- Added strict-TDD coverage proving an inside-bundle dry-run zip path exits non-zero with `notary zip must not be inside app bundle`, creates no zip, and does not print the sentinel code-signing identity or notarytool profile.
+- RED verification: `bash script/test_sign_and_notarize.sh` failed first with `test_sign_and_notarize failed: dry run unexpectedly passed with inside-bundle notary zip`, confirming the missing guard.
+- GREEN verification: `bash script/test_sign_and_notarize.sh` passed; `bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh` passed; `git diff --check` passed.
+- No release signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-inside-bundle-zip-gate.svg`.

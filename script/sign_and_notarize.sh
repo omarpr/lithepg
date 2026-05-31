@@ -26,15 +26,64 @@ fail() {
   exit 1
 }
 
+make_absolute_path() {
+  local path="$1"
+  if [[ "$path" == /* ]]; then
+    printf '%s\n' "$path"
+  else
+    printf '%s/%s\n' "$ROOT_DIR" "$path"
+  fi
+}
+
+canonicalize_path_for_location_check() {
+  local path="$1"
+  local absolute_path
+  absolute_path="$(make_absolute_path "$path")"
+
+  local dir
+  local tail
+  dir="$(dirname "$absolute_path")"
+  tail="$(basename "$absolute_path")"
+
+  while [[ "$dir" != "/" && ! -d "$dir" ]]; do
+    tail="$(basename "$dir")/$tail"
+    dir="$(dirname "$dir")"
+  done
+
+  if [[ -d "$dir" ]]; then
+    local physical_dir
+    physical_dir="$(cd "$dir" && pwd -P)"
+    if [[ "$physical_dir" == "/" ]]; then
+      printf '/%s\n' "$tail"
+    else
+      printf '%s/%s\n' "$physical_dir" "$tail"
+    fi
+  else
+    printf '%s\n' "$absolute_path"
+  fi
+}
+
 require_config() {
   [[ -n "$CODESIGN_IDENTITY" ]] || fail "missing LITHEPG_CODESIGN_IDENTITY (Apple Developer Application signing identity)"
   [[ -n "$NOTARY_PROFILE" ]] || fail "missing LITHEPG_NOTARY_PROFILE (xcrun notarytool keychain profile name)"
   [[ -f "$ENTITLEMENTS" ]] || fail "missing entitlements file: $ENTITLEMENTS"
 }
 
+validate_notary_zip_location() {
+  local app_bundle_check_path
+  local zip_check_path
+  app_bundle_check_path="$(canonicalize_path_for_location_check "$APP_BUNDLE_ABS")"
+  zip_check_path="$(canonicalize_path_for_location_check "$ZIP_PATH")"
+
+  if [[ "$zip_check_path" == "$app_bundle_check_path" || "$zip_check_path" == "$app_bundle_check_path/"* ]]; then
+    fail "notary zip must not be inside app bundle"
+  fi
+}
+
 cd "$ROOT_DIR"
 "$ROOT_DIR/script/package_verify.sh" "$APP_BUNDLE_ABS"
 require_config
+validate_notary_zip_location
 
 if [[ "$MODE" == "dry-run" ]]; then
   printf 'Signing/notarization dry run OK. No changes made.\n'
