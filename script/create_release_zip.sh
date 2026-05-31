@@ -183,6 +183,9 @@ if [[ ( -e "$OUTPUT_ZIP" || -L "$OUTPUT_ZIP" ) ]] && ! is_approved "${LITHEPG_RE
 fi
 
 output_parent="$(dirname "$OUTPUT_ZIP")"
+if [[ ( -e "$output_parent" || -L "$output_parent" ) && ! -d "$output_parent" ]]; then
+  fail "output zip parent path must be a directory"
+fi
 mkdir -p "$output_parent"
 
 temp_dir=""

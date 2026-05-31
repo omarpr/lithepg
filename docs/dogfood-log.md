@@ -960,3 +960,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed; optional `./script/v10_release_gate.sh --check-remote` confirmed remote `v0.5` present and remote `v1.0` absent, then remained safely blocked on expected local/external release prerequisites.
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-trailing-slash-artifact-path-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 19:26 EDT — v1.0 release zip output-parent gate
+
+- Hardened `script/create_release_zip.sh` so the public release zip helper rejects an output parent path that already exists but is not a directory, before `mkdir`, `mktemp`, `ditto`, or final rename operations can run.
+- Added strict-TDD coverage proving both a regular-file output parent and a dangling-symlink output parent fail with `output zip parent path must be a directory`, keep sentinel release/signing env values redacted, preserve the file/symlink, and create no zip or symlink target.
+- RED verification: `bash script/test_create_release_zip.sh` failed first with `test_create_release_zip failed: expected output to contain: output zip parent path must be a directory`.
+- GREEN verification: `bash script/test_create_release_zip.sh`, adjacent release helper tests `bash script/test_sign_and_notarize.sh` and `bash script/test_v10_release_gate.sh`, release-helper `bash -n` syntax checks, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` all passed; Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260531-192614/` with default Swift tests, live dogfood tests, and v0.4 measurement all passed. Metrics: shell readiness 131.94 ms; connected cold start 235.29 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead 0.022 ms; dogfood query median overhead 0.031 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-output-parent-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.

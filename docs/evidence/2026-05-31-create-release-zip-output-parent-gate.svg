@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release zip output-parent gate evidence</title>
+  <desc id="desc">Verification evidence for the create_release_zip output parent file and dangling symlink hardening slice.</desc>
+  <rect width="1200" height="760" fill="#0d1117"/>
+  <rect x="32" y="32" width="1136" height="696" rx="18" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+  <text x="64" y="82" font-family="Menlo, Consolas, monospace" font-size="28" fill="#f0f6fc">LithePG release zip output-parent gate</text>
+  <text x="64" y="124" font-family="Menlo, Consolas, monospace" font-size="17" fill="#8b949e">2026-05-31 · public release helper hardening · no external publication</text>
+
+  <rect x="64" y="158" width="1072" height="210" rx="12" fill="#0d1117" stroke="#30363d"/>
+  <text x="88" y="198" font-family="Menlo, Consolas, monospace" font-size="18" fill="#79c0ff">Behavior added</text>
+  <text x="88" y="236" font-family="Menlo, Consolas, monospace" font-size="16" fill="#c9d1d9">script/create_release_zip.sh now rejects output parents that already exist</text>
+  <text x="88" y="264" font-family="Menlo, Consolas, monospace" font-size="16" fill="#c9d1d9">but are not directories, before mkdir, mktemp, ditto, or rename.</text>
+  <text x="88" y="304" font-family="Menlo, Consolas, monospace" font-size="16" fill="#ffdf5d">Failure text: output zip parent path must be a directory</text>
+  <text x="88" y="334" font-family="Menlo, Consolas, monospace" font-size="16" fill="#c9d1d9">Covered cases: regular-file parent and dangling-symlink parent.</text>
+
+  <rect x="64" y="396" width="1072" height="256" rx="12" fill="#0d1117" stroke="#30363d"/>
+  <text x="88" y="436" font-family="Menlo, Consolas, monospace" font-size="18" fill="#7ee787">Verification passed</text>
+  <text x="88" y="474" font-family="Menlo, Consolas, monospace" font-size="16" fill="#c9d1d9">✓ bash script/test_create_release_zip.sh</text>
+  <text x="88" y="502" font-family="Menlo, Consolas, monospace" font-size="16" fill="#c9d1d9">✓ bash script/test_sign_and_notarize.sh</text>
+  <text x="88" y="530" font-family="Menlo, Consolas, monospace" font-size="16" fill="#c9d1d9">✓ bash script/test_v10_release_gate.sh</text>
+  <text x="88" y="558" font-family="Menlo, Consolas, monospace" font-size="16" fill="#c9d1d9">✓ bash -n release helper scripts</text>
+  <text x="88" y="586" font-family="Menlo, Consolas, monospace" font-size="16" fill="#c9d1d9">✓ git diff --check</text>
+  <text x="88" y="614" font-family="Menlo, Consolas, monospace" font-size="16" fill="#c9d1d9">✓ swift build; swift test passed 127 tests across 20 suites</text>
+  <text x="88" y="642" font-family="Menlo, Consolas, monospace" font-size="16" fill="#c9d1d9">✓ dogfood_check passed: .build/dogfood-checks/20260531-192614</text>
+
+  <text x="64" y="696" font-family="Menlo, Consolas, monospace" font-size="15" fill="#8b949e">No signing, notarization, upload, Homebrew publication, v1.0 tag, or cron changes were attempted.</text>
+</svg>
