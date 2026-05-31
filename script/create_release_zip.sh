@@ -74,16 +74,29 @@ fi
 output_parent="$(dirname "$OUTPUT_ZIP")"
 mkdir -p "$output_parent"
 
-/usr/bin/ditto -c -k --keepParent "$APP_BUNDLE" "$OUTPUT_ZIP"
+temp_dir=""
+cleanup_temp_dir() {
+  if [[ -n "$temp_dir" ]]; then
+    rm -rf -- "$temp_dir"
+  fi
+}
+trap cleanup_temp_dir EXIT
 
-sha_line="$(/usr/bin/shasum -a 256 "$OUTPUT_ZIP")"
+temp_dir="$(mktemp -d "${output_parent%/}/.release-zip.XXXXXX")" || fail "could not create temporary output directory under $output_parent"
+temp_zip="$temp_dir/LithePG.app.zip"
+
+/usr/bin/ditto -c -k --keepParent "$APP_BUNDLE" "$temp_zip"
+
+sha_line="$(/usr/bin/shasum -a 256 "$temp_zip")"
 sha_digest="${sha_line%%[[:space:]]*}"
 [[ -n "$sha_digest" ]] || fail "could not compute SHA-256 for $OUTPUT_ZIP"
 
-if ! zip_size_bytes="$(/usr/bin/stat -f%z "$OUTPUT_ZIP" 2>/dev/null)"; then
+if ! zip_size_bytes="$(/usr/bin/stat -f%z "$temp_zip" 2>/dev/null)"; then
   fail "could not compute byte size for $OUTPUT_ZIP"
 fi
 [[ "$zip_size_bytes" =~ ^[0-9]+$ ]] || fail "computed byte size for $OUTPUT_ZIP was empty or non-numeric"
+
+/usr/bin/perl -e 'use strict; use warnings; rename($ARGV[0], $ARGV[1]) or die "rename failed: $!\n";' "$temp_zip" "$OUTPUT_ZIP" || fail "could not replace output zip: $OUTPUT_ZIP"
 
 printf 'Created release zip: %s\n' "$OUTPUT_ZIP"
 printf 'SHA-256: %s\n' "$sha_digest"

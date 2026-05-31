@@ -730,3 +730,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-dangling-symlink-gate.svg`.
 - No release signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 09:26 EDT — v1.0 release zip approved symlink overwrite gate
+
+- Hardened `script/create_release_zip.sh` so approved output replacement stages the public zip in a secure temporary directory under the output parent, computes SHA-256/size from that staged zip, then uses POSIX `rename($ARGV[0], $ARGV[1])` to replace the destination without following an output symlink target.
+- Added strict-TDD coverage proving an approved dangling `dist/LithePG.app.zip` symlink is replaced with a regular zip at the output path, preserves the app wrapper, prints SHA-256/size output, runs package verification, and does not create the symlink target; added a focused security-invariant test proving `ditto` writes to the staged temp zip instead of directly to `$OUTPUT_ZIP`.
+- RED verification: `bash script/test_create_release_zip.sh` first failed with `test_create_release_zip failed: approved dangling output symlink was not replaced with a regular zip`, then the security follow-up failed with `test_create_release_zip failed: expected output to contain: mktemp -d "${output_parent%/}/.release-zip.XXXXXX"` before the temp-staging/rename fix.
+- GREEN verification: `bash script/test_create_release_zip.sh` passed; `bash -n script/create_release_zip.sh` and `bash -n script/test_create_release_zip.sh` passed; `git diff --check` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed; `./script/v10_release_gate.sh --check-remote` remained safely blocked on expected local/external publication prerequisites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260531-094208/` with default Swift tests, live dogfood tests, and v0.4 measurement all passed. Metrics: shell readiness 124.98 ms; connected cold start 223.66 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead 0.045 ms; dogfood query median overhead 0.027 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-approved-symlink-overwrite-gate.svg`.
+- No release signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

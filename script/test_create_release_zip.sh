@@ -100,17 +100,22 @@ run_helper_from_cwd_capture() {
 helper_contents="$(<"$HELPER")"
 assert_contains "$helper_contents" "/usr/bin/ditto -c -k --keepParent"
 assert_contains "$helper_contents" "/usr/bin/shasum -a 256"
+assert_contains "$helper_contents" 'mktemp -d "${output_parent%/}/.release-zip.XXXXXX"'
+assert_contains "$helper_contents" '/usr/bin/ditto -c -k --keepParent "$APP_BUNDLE" "$temp_zip"'
+assert_contains "$helper_contents" 'rename($ARGV[0], $ARGV[1])'
+assert_not_contains "$helper_contents" '/usr/bin/ditto -c -k --keepParent "$APP_BUNDLE" "$OUTPUT_ZIP"'
 
 missing_verify_output="$(mktemp)"
 refuse_output="$(mktemp)"
 dangling_symlink_output="$(mktemp)"
 overwrite_output="$(mktemp)"
+approved_symlink_output="$(mktemp)"
 inside_bundle_output="$(mktemp)"
 success_output="$(mktemp)"
 outside_cwd_output="$(mktemp)"
 help_output="$(mktemp)"
 fixture_root="$(mktemp -d)"
-trap 'rm -f "$missing_verify_output" "$refuse_output" "$dangling_symlink_output" "$overwrite_output" "$inside_bundle_output" "$success_output" "$outside_cwd_output" "$help_output"; rm -rf "$fixture_root"' EXIT
+trap 'rm -f "$missing_verify_output" "$refuse_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$inside_bundle_output" "$success_output" "$outside_cwd_output" "$help_output"; rm -rf "$fixture_root"' EXIT
 
 sensitive_identity="SENSITIVE_CODESIGN_IDENTITY_DO_NOT_PRINT"
 sensitive_notary="SENSITIVE_NOTARY_PROFILE_DO_NOT_PRINT"
@@ -177,6 +182,29 @@ assert_contains "$overwrite_text" "Created release zip: dist/LithePG.app.zip"
 assert_matches_sha_line "$overwrite_text"
 assert_size_line_for_zip "$overwrite_text" "$overwrite_fixture/dist/LithePG.app.zip"
 assert_zip_contains_app_wrapper "$overwrite_fixture/dist/LithePG.app.zip" "$overwrite_fixture/extracted-overwrite"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+
+# Explicit overwrite approval replaces an output symlink at the output path without following it.
+approved_symlink_fixture="$fixture_root/overwrite-dangling-symlink"
+make_fixture "$approved_symlink_fixture"
+approved_symlink_target_dir="$approved_symlink_fixture/missing-target"
+approved_symlink_target="$approved_symlink_target_dir/LithePG.app.zip"
+mkdir -p "$approved_symlink_target_dir"
+ln -s "$approved_symlink_target" "$approved_symlink_fixture/dist/LithePG.app.zip"
+verify_log="$approved_symlink_fixture/verify.log"
+if ! FAKE_VERIFY_LOG="$verify_log" \
+  LITHEPG_RELEASE_ZIP_OVERWRITE="approved" \
+  run_helper_capture "$approved_symlink_fixture" "$approved_symlink_output" "dist/LithePG.app" "dist/LithePG.app.zip"; then
+  fail "helper failed despite explicit overwrite approval for dangling output symlink"
+fi
+approved_symlink_text="$(<"$approved_symlink_output")"
+assert_contains "$approved_symlink_text" "Created release zip: dist/LithePG.app.zip"
+assert_matches_sha_line "$approved_symlink_text"
+assert_size_line_for_zip "$approved_symlink_text" "$approved_symlink_fixture/dist/LithePG.app.zip"
+[[ -f "$approved_symlink_fixture/dist/LithePG.app.zip" && ! -L "$approved_symlink_fixture/dist/LithePG.app.zip" ]] || fail "approved dangling output symlink was not replaced with a regular zip"
+[[ ! -e "$approved_symlink_target" ]] || fail "approved dangling output symlink target was created"
+assert_zip_contains_app_wrapper "$approved_symlink_fixture/dist/LithePG.app.zip" "$approved_symlink_fixture/extracted-approved-symlink"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
 
 # Output paths inside the app bundle are refused to avoid recursive/self-embedding artifacts.
 inside_fixture="$fixture_root/inside-app-output"
