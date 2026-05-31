@@ -951,3 +951,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED; fail-closed pre-commit JSON review passed.
 - Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-trailing-slash-output-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-05-31 18:56 EDT — v1.0 release gate trailing-slash artifact path gate
+
+- Hardened `script/v10_release_gate.sh` so a configured final public release artifact path ending in slash, such as `LITHEPG_RELEASE_ZIP_PATH=$release_zip_fixture/`, is blocked explicitly before artifact existence checks, zip inspection, or digest computation.
+- Added strict-TDD coverage proving the fast v1.0 gate reports `Release artifact filename: trailing slash`, keeps publication blocked, and does not print SHA values, archive contents, fixture paths, or sentinel values.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: expected output to contain: Release artifact filename: trailing slash`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed; optional `./script/v10_release_gate.sh --check-remote` confirmed remote `v0.5` present and remote `v1.0` absent, then remained safely blocked on expected local/external release prerequisites.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-trailing-slash-artifact-path-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release gate trailing-slash artifact path evidence</title>
+  <desc id="desc">Visual receipt for the v10 release gate hardening that blocks final public release zip paths ending in a slash.</desc>
+  <rect width="1200" height="760" fill="#0f172a"/>
+  <rect x="40" y="40" width="1120" height="680" rx="22" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="80" y="100" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="30" font-weight="700">LithePG v1.0 release gate evidence</text>
+  <text x="80" y="145" fill="#93c5fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20">2026-05-31 18:56 EDT · trailing-slash public artifact path gate</text>
+
+  <rect x="80" y="185" width="1040" height="140" rx="14" fill="#082f49" stroke="#0ea5e9"/>
+  <text x="110" y="225" fill="#f8fafc" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="22">Behavior hardened</text>
+  <text x="110" y="262" fill="#bae6fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">script/v10_release_gate.sh explicitly blocks LITHEPG_RELEASE_ZIP_PATH values ending in slash.</text>
+  <text x="110" y="290" fill="#bae6fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">Redacted status: Release artifact filename: trailing slash</text>
+  <text x="110" y="316" fill="#bae6fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">No artifact existence check, zip inspection, archive listing, or digest value is printed for that path.</text>
+
+  <rect x="80" y="355" width="1040" height="225" rx="14" fill="#020617" stroke="#334155"/>
+  <text x="110" y="395" fill="#fca5a5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="21">RED</text>
+  <text x="190" y="395" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">bash script/test_v10_release_gate.sh → missing explicit trailing-slash status</text>
+  <text x="110" y="440" fill="#86efac" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="21">GREEN</text>
+  <text x="210" y="440" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">bash script/test_v10_release_gate.sh → test_v10_release_gate passed</text>
+  <text x="210" y="475" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh → passed</text>
+  <text x="210" y="510" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">git diff --check → passed</text>
+  <text x="210" y="545" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">Optional --check-remote remained safely blocked on release prerequisites</text>
+
+  <rect x="80" y="610" width="1040" height="70" rx="14" fill="#14532d" stroke="#22c55e"/>
+  <text x="110" y="653" fill="#dcfce7" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">No signing · no notarization · no upload · no Homebrew publication · no tag · no cron changes</text>
+</svg>

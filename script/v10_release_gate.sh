@@ -1507,22 +1507,34 @@ done
 printf '\nRelease artifact readiness:\n'
 release_zip_file="$(release_zip_full_path)"
 release_zip_present=0
-if [[ "${RELEASE_ZIP_PATH##*/}" == "LithePG.app.zip" ]]; then
-  printf 'Release artifact filename: matches\n'
-else
-  printf 'Release artifact filename: mismatch\n'
-  mark_blocker
-fi
+release_zip_path_has_trailing_slash=0
+case "$RELEASE_ZIP_PATH" in
+  */)
+    printf 'Release artifact filename: trailing slash\n'
+    release_zip_path_has_trailing_slash=1
+    mark_blocker
+    ;;
+  *)
+    if [[ "${RELEASE_ZIP_PATH##*/}" == "LithePG.app.zip" ]]; then
+      printf 'Release artifact filename: matches\n'
+    else
+      printf 'Release artifact filename: mismatch\n'
+      mark_blocker
+    fi
+    ;;
+esac
 
-if [[ -L "$release_zip_file" ]]; then
-  printf 'Release artifact zip: symlink\n'
-  mark_blocker
-elif [[ ! -f "$release_zip_file" ]]; then
-  printf 'Release artifact zip: missing at %s\n' "$RELEASE_ZIP_PATH"
-  mark_blocker
-else
-  printf 'Release artifact zip: present\n'
-  release_zip_present=1
+if [[ "$release_zip_path_has_trailing_slash" -eq 0 ]]; then
+  if [[ -L "$release_zip_file" ]]; then
+    printf 'Release artifact zip: symlink\n'
+    mark_blocker
+  elif [[ ! -f "$release_zip_file" ]]; then
+    printf 'Release artifact zip: missing at %s\n' "$RELEASE_ZIP_PATH"
+    mark_blocker
+  else
+    printf 'Release artifact zip: present\n'
+    release_zip_present=1
+  fi
 fi
 
 if [[ "$release_zip_present" -eq 1 ]]; then

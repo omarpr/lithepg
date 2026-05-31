@@ -68,6 +68,7 @@ redaction_output="$(mktemp)"
 missing_artifact_output="$(mktemp)"
 symlink_artifact_output="$(mktemp)"
 missing_artifact_zip="$(mktemp)"
+artifact_trailing_slash_output="$(mktemp)"
 artifact_filename_mismatch_output="$(mktemp)"
 artifact_app_wrapper_missing_output="$(mktemp)"
 artifact_bundle_file_type_inspect_failure_output="$(mktemp)"
@@ -299,6 +300,7 @@ cleanup() {
     "$missing_artifact_output" \
     "$symlink_artifact_output" \
     "$missing_artifact_zip" \
+    "$artifact_trailing_slash_output" \
     "$artifact_filename_mismatch_output" \
     "$artifact_app_wrapper_missing_output" \
     "$artifact_bundle_file_type_inspect_failure_output" \
@@ -2521,6 +2523,37 @@ assert_not_contains "$symlink_artifact_text" "$release_zip_fixture"
 assert_not_contains "$symlink_artifact_text" "$release_zip_sha"
 assert_not_contains "$symlink_artifact_text" "$symlink_artifact_zip"
 assert_not_contains "$symlink_artifact_text" "fast preflight is clear"
+
+if run_gate_capture "$artifact_trailing_slash_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture/" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  artifact_trailing_slash_text="$(<"$artifact_trailing_slash_output")"
+  assert_not_contains "$artifact_trailing_slash_text" "$release_zip_fixture"
+  assert_not_contains "$artifact_trailing_slash_text" "$release_zip_sha"
+  fail "gate unexpectedly passed with trailing-slash release artifact zip path"
+fi
+artifact_trailing_slash_text="$(<"$artifact_trailing_slash_output")"
+assert_contains "$artifact_trailing_slash_text" "Release artifact filename: trailing slash"
+assert_contains "$artifact_trailing_slash_text" "v1.0 publication blocked"
+assert_not_contains "$artifact_trailing_slash_text" "Release artifact zip: present"
+assert_not_contains "$artifact_trailing_slash_text" "Release artifact app wrapper:"
+assert_not_contains "$artifact_trailing_slash_text" "Release artifact SHA-256:"
+assert_not_contains "$artifact_trailing_slash_text" "LithePG.app/Contents"
+assert_not_contains "$artifact_trailing_slash_text" "$release_zip_fixture"
+assert_not_contains "$artifact_trailing_slash_text" "$release_zip_sha"
+assert_not_contains "$artifact_trailing_slash_text" "fast preflight is clear"
 
 if run_gate_capture "$artifact_filename_mismatch_output" env -i \
   PATH="$fake_path" \
