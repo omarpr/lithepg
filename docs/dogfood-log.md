@@ -808,3 +808,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-symlink-artifact-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-05-31 12:58 EDT — v1.0 release zip executable special-mode gate
+
+- Hardened `script/v10_release_gate.sh` so the final public `LithePG.app.zip` is blocked when the archived `LithePG.app/Contents/MacOS/LithePGApp` mode contains setuid, setgid, or sticky execute-position markers.
+- Added strict-TDD coverage by rewriting an otherwise-valid signed fixture zip so only the archived executable mode is unsafe while owner execute remains present; output reports only the generic safe/unsafe status and keeps paths, modes, and SHA values redacted.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with unsafe release artifact executable mode`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed.
+- Evidence artifact: `docs/evidence/2026-05-31-v10-release-zip-special-mode-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

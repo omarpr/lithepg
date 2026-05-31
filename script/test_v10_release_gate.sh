@@ -75,6 +75,7 @@ artifact_bundle_contents_missing_output="$(mktemp)"
 artifact_bundle_file_type_invalid_output="$(mktemp)"
 artifact_bundle_executable_permission_output="$(mktemp)"
 artifact_bundle_owner_execute_permission_output="$(mktemp)"
+artifact_bundle_special_mode_output="$(mktemp)"
 artifact_executable_format_invalid_output="$(mktemp)"
 artifact_duplicate_essential_entries_output="$(mktemp)"
 artifact_noncanonical_zip_path_output="$(mktemp)"
@@ -203,6 +204,10 @@ owner_execute_missing_bundle_zip_dir="$(mktemp -d)"
 owner_execute_missing_bundle_zip="$owner_execute_missing_bundle_zip_dir/LithePG.app.zip"
 owner_execute_missing_bundle_release_copy="$(mktemp)"
 owner_execute_missing_bundle_homebrew_cask="$(mktemp)"
+special_mode_bundle_zip_dir="$(mktemp -d)"
+special_mode_bundle_zip="$special_mode_bundle_zip_dir/LithePG.app.zip"
+special_mode_bundle_release_copy="$(mktemp)"
+special_mode_bundle_homebrew_cask="$(mktemp)"
 text_executable_bundle_zip_dir="$(mktemp -d)"
 text_executable_bundle_zip="$text_executable_bundle_zip_dir/LithePG.app.zip"
 text_executable_bundle_release_copy="$(mktemp)"
@@ -286,6 +291,7 @@ cleanup() {
     "$artifact_bundle_file_type_invalid_output" \
     "$artifact_bundle_executable_permission_output" \
     "$artifact_bundle_owner_execute_permission_output" \
+    "$artifact_bundle_special_mode_output" \
     "$artifact_executable_format_invalid_output" \
     "$artifact_duplicate_essential_entries_output" \
     "$artifact_noncanonical_zip_path_output" \
@@ -405,6 +411,9 @@ cleanup() {
     "$owner_execute_missing_bundle_zip" \
     "$owner_execute_missing_bundle_release_copy" \
     "$owner_execute_missing_bundle_homebrew_cask" \
+    "$special_mode_bundle_zip" \
+    "$special_mode_bundle_release_copy" \
+    "$special_mode_bundle_homebrew_cask" \
     "$text_executable_bundle_zip" \
     "$text_executable_bundle_release_copy" \
     "$text_executable_bundle_homebrew_cask" \
@@ -453,7 +462,7 @@ cleanup() {
     "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
@@ -736,6 +745,24 @@ write_code_signature_resources "$owner_execute_missing_bundle_zip_dir/fixture-ro
 )
 owner_execute_missing_bundle_zip_sha="$(/usr/bin/shasum -a 256 "$owner_execute_missing_bundle_zip" | /usr/bin/cut -d ' ' -f 1)"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$owner_execute_missing_bundle_zip_sha" >"$owner_execute_missing_bundle_release_copy"
+/usr/bin/python3 - "$release_zip_fixture" "$special_mode_bundle_zip" <<'PY'
+import sys
+import zipfile
+
+source_zip, destination_zip = sys.argv[1:3]
+
+with zipfile.ZipFile(source_zip, "r") as source:
+    entries = [(entry, source.read(entry.filename)) for entry in source.infolist()]
+
+with zipfile.ZipFile(destination_zip, "w") as destination:
+    for entry, payload in entries:
+        if entry.filename == "LithePG.app/Contents/MacOS/LithePGApp":
+            entry.create_system = 3
+            entry.external_attr = (0o102755 & 0xFFFF) << 16
+        destination.writestr(entry, payload)
+PY
+special_mode_bundle_zip_sha="$(/usr/bin/shasum -a 256 "$special_mode_bundle_zip" | /usr/bin/cut -d ' ' -f 1)"
+printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$special_mode_bundle_zip_sha" >"$special_mode_bundle_release_copy"
 mkdir -p "$missing_code_resources_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
 write_valid_info_plist "$missing_code_resources_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 /bin/cp /usr/bin/true "$missing_code_resources_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
@@ -1291,6 +1318,28 @@ cat >"$owner_execute_missing_bundle_homebrew_cask" <<CASK
 cask "lithepg" do
   version "1.0"
   sha256 "$owner_execute_missing_bundle_zip_sha"
+
+  url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
+      verified: "github.com/omarpr/lithepg/"
+  name "LithePG"
+  desc "Lean PostgreSQL client with local-first AI"
+  homepage "https://github.com/omarpr/lithepg"
+  uninstall quit: "dev.omarpr.lithepg"
+
+  depends_on macos: ">= :sonoma"
+
+  app "LithePG.app"
+
+  zap trash: [
+    "~/Library/Application Support/LithePG",
+    "~/Library/Preferences/dev.omarpr.lithepg.plist",
+  ]
+end
+CASK
+cat >"$special_mode_bundle_homebrew_cask" <<CASK
+cask "lithepg" do
+  version "1.0"
+  sha256 "$special_mode_bundle_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
@@ -2259,6 +2308,7 @@ assert_contains "$redaction_text" "LITHEPG_HOMEBREW_TAP: configured"
 assert_contains "$redaction_text" "LITHEPG_GITHUB_ACTIONS_READY: not approved"
 assert_contains "$redaction_text" "LITHEPG_RELEASE_COPY_APPROVED: not approved"
 assert_contains "$redaction_text" "LITHEPG_PUBLICATION_APPROVED: not approved"
+assert_contains "$redaction_text" "Release artifact bundle executable mode: safe"
 assert_not_contains "$redaction_text" "$secret_identity"
 assert_not_contains "$redaction_text" "$secret_notary"
 assert_not_contains "$redaction_text" "$secret_contact"
@@ -2592,6 +2642,52 @@ assert_contains "$artifact_bundle_owner_execute_permission_text" "v1.0 publicati
 assert_not_contains "$artifact_bundle_owner_execute_permission_text" "owner-execute-missing app executable fixture"
 assert_not_contains "$artifact_bundle_owner_execute_permission_text" "$owner_execute_missing_bundle_zip_sha"
 assert_not_contains "$artifact_bundle_owner_execute_permission_text" "fast preflight is clear"
+
+if run_gate_capture "$artifact_bundle_special_mode_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$special_mode_bundle_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$special_mode_bundle_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$special_mode_bundle_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$special_mode_bundle_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  artifact_bundle_special_mode_text="$(<"$artifact_bundle_special_mode_output")"
+  assert_not_contains "$artifact_bundle_special_mode_text" "$special_mode_bundle_zip_sha"
+  assert_not_contains "$artifact_bundle_special_mode_text" "$special_mode_bundle_zip"
+  assert_not_contains "$artifact_bundle_special_mode_text" "-rwxr-sr-x"
+  fail "gate unexpectedly passed with unsafe release artifact executable mode"
+fi
+artifact_bundle_special_mode_text="$(<"$artifact_bundle_special_mode_output")"
+assert_contains "$artifact_bundle_special_mode_text" "Release artifact filename: matches"
+assert_contains "$artifact_bundle_special_mode_text" "Release artifact zip: present"
+assert_contains "$artifact_bundle_special_mode_text" "Release artifact app wrapper: present"
+assert_contains "$artifact_bundle_special_mode_text" "Release artifact bundle contents: present"
+assert_contains "$artifact_bundle_special_mode_text" "Release artifact bundle file types: regular"
+assert_contains "$artifact_bundle_special_mode_text" "Release artifact entry paths: canonical"
+assert_contains "$artifact_bundle_special_mode_text" "Release artifact essential entries: unique"
+assert_contains "$artifact_bundle_special_mode_text" "Release artifact Info.plist metadata: matches"
+assert_contains "$artifact_bundle_special_mode_text" "Release artifact bundle executable: executable"
+assert_contains "$artifact_bundle_special_mode_text" "Release artifact bundle executable mode: unsafe"
+assert_contains "$artifact_bundle_special_mode_text" "Release artifact executable format: Mach-O"
+assert_contains "$artifact_bundle_special_mode_text" "Release artifact code signature resources: present"
+assert_contains "$artifact_bundle_special_mode_text" "Release artifact code signature verification: valid"
+assert_contains "$artifact_bundle_special_mode_text" "Release artifact code signature runtime: present"
+assert_contains "$artifact_bundle_special_mode_text" "Release artifact top-level entries: clean"
+assert_contains "$artifact_bundle_special_mode_text" "Release artifact SHA-256: matches"
+assert_contains "$artifact_bundle_special_mode_text" "v1.0 publication blocked"
+assert_not_contains "$artifact_bundle_special_mode_text" "$special_mode_bundle_zip_sha"
+assert_not_contains "$artifact_bundle_special_mode_text" "$special_mode_bundle_zip"
+assert_not_contains "$artifact_bundle_special_mode_text" "LithePG.app/Contents/MacOS/LithePGApp"
+assert_not_contains "$artifact_bundle_special_mode_text" "-rwxr-sr-x"
+assert_not_contains "$artifact_bundle_special_mode_text" "102755"
+assert_not_contains "$artifact_bundle_special_mode_text" "fast preflight is clear"
 
 if run_gate_capture "$artifact_executable_format_invalid_output" env -i \
   PATH="$fake_path" \
