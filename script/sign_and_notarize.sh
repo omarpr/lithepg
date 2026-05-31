@@ -80,6 +80,10 @@ validate_notary_zip_location() {
   fi
 }
 
+validate_notary_zip_public_release_name() {
+  [[ "$(basename "$ZIP_PATH")" != "LithePG.app.zip" ]] || fail "notary zip must not use public release artifact name"
+}
+
 validate_notary_zip_parent_dir() {
   local zip_parent
   zip_parent="$(dirname "$ZIP_PATH")"
@@ -92,6 +96,7 @@ cd "$ROOT_DIR"
 "$ROOT_DIR/script/package_verify.sh" "$APP_BUNDLE_ABS"
 require_config
 validate_notary_zip_location
+validate_notary_zip_public_release_name
 validate_notary_zip_parent_dir
 
 if [[ "$MODE" == "dry-run" ]]; then

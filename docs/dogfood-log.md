@@ -700,3 +700,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - No release signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-notary-zip-parent-gate.svg`.
+
+## 2026-05-31 08:24 EDT — v1.0 signing/notarization public release zip basename gate
+
+- Hardened `script/sign_and_notarize.sh` so `LITHEPG_NOTARY_ZIP` is rejected when its basename is the public release artifact name `LithePG.app.zip`, including `--dry-run`, to keep credential-gated notary-submission zips distinct from public release artifacts.
+- Added strict-TDD coverage proving a dry-run `LITHEPG_NOTARY_ZIP="$fixture_root/LithePG.app.zip"` exits non-zero with `notary zip must not use public release artifact name`, creates no zip, and does not print the sentinel code-signing identity or notarytool profile.
+- RED verification: `bash script/test_sign_and_notarize.sh` failed first with `test_sign_and_notarize failed: dry run unexpectedly passed with public release artifact notary zip basename`.
+- GREEN verification: `bash script/test_sign_and_notarize.sh` passed; `bash -n script/sign_and_notarize.sh && bash -n script/test_sign_and_notarize.sh` passed; `git diff --check` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 127 tests across 20 suites; `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` passed with artifacts at `.build/dogfood-checks/20260531-082848/`.
+- No release signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-public-release-zip-basename-gate.svg`.

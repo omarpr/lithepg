@@ -108,6 +108,22 @@ assert_contains "$helper_output" "Codesign identity: present (redacted)"
 assert_contains "$helper_output" "Notary profile: present (redacted)"
 [[ ! -e "$notary_zip" ]] || fail "dry run created notary zip: $notary_zip"
 
+public_release_named_notary_zip="$fixture_root/LithePG.app.zip"
+if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$public_release_named_notary_zip" \
+  run_helper_capture "$output_file" --dry-run "$app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "dry run unexpectedly passed with public release artifact notary zip basename"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "notary zip must not use public release artifact name"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+[[ ! -e "$public_release_named_notary_zip" ]] || fail "dry run created public release named notary zip: $public_release_named_notary_zip"
+
 inside_bundle_notary_zip="$app_bundle/Contents/Resources/LithePG-notary.zip"
 if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
   LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
