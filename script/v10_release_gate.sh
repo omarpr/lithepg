@@ -507,6 +507,26 @@ else
   esac
 fi
 
+if [[ "$release_copy_check_ready" -eq 1 ]]; then
+  set +e
+  grep -Eq '^[[:space:]]*-[[:space:]]\[[[:space:]]\]' "$release_copy_file"
+  grep_status=$?
+  set -e
+  case "$grep_status" in
+    0)
+      printf 'Release copy checklist: unchecked items present\n'
+      mark_blocker
+      ;;
+    1)
+      printf 'Release copy checklist: none unchecked\n'
+      ;;
+    *)
+      printf 'Release copy checklist: could not scan %s\n' "$RELEASE_COPY_PATH"
+      mark_blocker
+      ;;
+  esac
+fi
+
 if [[ "$release_copy_check_ready" -eq 1 && "$RELEASE_ZIP_SHA256" =~ ^[[:xdigit:]]{64}$ ]]; then
   expected_sha="$(printf '%s' "$RELEASE_ZIP_SHA256" | /usr/bin/tr '[:upper:]' '[:lower:]')"
   set +e

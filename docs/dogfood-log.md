@@ -473,3 +473,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed.
 - No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
 - Evidence artifact: `docs/evidence/2026-05-30-v10-release-copy-sha-gate.svg`.
+
+## 2026-05-30 23:04 EDT — v1.0 release copy checklist gate
+
+- Hardened `script/v10_release_gate.sh` so placeholder-free GitHub Release copy is blocked if it still contains unchecked Markdown task-list items (`- [ ]`), without printing release-copy contents.
+- Kept placeholder-present release copy on the existing placeholder blocker path without extra checklist-status noise; clean placeholder-free copy now reports `Release copy checklist: none unchecked`.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: gate unexpectedly passed with unchecked release-copy checklist`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed; `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh` passed; `git diff --check` passed.
+- No signing, notarization, upload, Homebrew publication, tag, cron changes, or external publication was attempted.
+- Evidence artifact: `docs/evidence/2026-05-30-v10-release-copy-checklist-gate.svg`.

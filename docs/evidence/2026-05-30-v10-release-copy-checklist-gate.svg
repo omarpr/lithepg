@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release copy checklist gate evidence</title>
+  <desc id="desc">Visual evidence for the v1.0 fast publication preflight checklist hardening slice.</desc>
+  <rect width="1200" height="720" fill="#0b1020"/>
+  <rect x="36" y="32" width="1128" height="656" rx="22" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="72" y="84" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="26" font-weight="700">LithePG v1.0 — release-copy checklist gate</text>
+  <text x="72" y="126" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="18">Slice: block placeholder-free GitHub Release copy if unchecked Markdown task-list items remain</text>
+
+  <rect x="72" y="160" width="1056" height="178" rx="14" fill="#020617" stroke="#1f2937"/>
+  <text x="96" y="198" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">RED</text>
+  <text x="160" y="198" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="18">bash script/test_v10_release_gate.sh</text>
+  <text x="96" y="234" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="17">failed first:</text>
+  <text x="96" y="268" fill="#f8fafc" font-family="Menlo, Consolas, monospace" font-size="16">test_v10_release_gate failed: gate unexpectedly passed with unchecked release-copy checklist</text>
+  <text x="96" y="304" fill="#94a3b8" font-family="Menlo, Consolas, monospace" font-size="15">The test proved the previous helper could miss draft checklist items after placeholders were resolved.</text>
+
+  <rect x="72" y="364" width="1056" height="174" rx="14" fill="#020617" stroke="#1f2937"/>
+  <text x="96" y="402" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">GREEN</text>
+  <text x="176" y="402" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="18">verification run after minimal implementation</text>
+  <text x="96" y="438" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="17">✓ test_v10_release_gate passed</text>
+  <text x="96" y="472" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="17">✓ bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh passed</text>
+  <text x="96" y="506" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="17">✓ git diff --check passed</text>
+
+  <rect x="72" y="564" width="1056" height="82" rx="14" fill="#0f172a" stroke="#334155"/>
+  <text x="96" y="598" fill="#fde68a" font-family="Menlo, Consolas, monospace" font-size="16">Fast preflight safety check: still blocked locally on expected draft/publication gates.</text>
+  <text x="96" y="626" fill="#cbd5e1" font-family="Menlo, Consolas, monospace" font-size="15">No signing, notarization, upload, Homebrew publication, v1.0 tag, cron, or external messaging was attempted.</text>
+</svg>

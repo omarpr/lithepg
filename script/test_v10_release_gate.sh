@@ -57,6 +57,7 @@ invalid_artifact_sha_output="$(mktemp)"
 mismatched_artifact_sha_output="$(mktemp)"
 mismatched_release_copy_sha_output="$(mktemp)"
 embedded_release_copy_sha_output="$(mktemp)"
+unchecked_release_copy_output="$(mktemp)"
 mismatched_homebrew_cask_sha_output="$(mktemp)"
 homebrew_cask_url_mismatch_output="$(mktemp)"
 homebrew_cask_token_mismatch_output="$(mktemp)"
@@ -98,6 +99,7 @@ placeholder_release_copy="$(mktemp)"
 placeholder_free_release_copy="$(mktemp)"
 mismatched_release_copy_sha="$(mktemp)"
 embedded_release_copy_sha="$(mktemp)"
+unchecked_release_copy="$(mktemp)"
 placeholder_homebrew_cask="$(mktemp)"
 placeholder_free_homebrew_cask="$(mktemp)"
 mismatched_homebrew_cask="$(mktemp)"
@@ -147,6 +149,7 @@ cleanup() {
     "$mismatched_artifact_sha_output" \
     "$mismatched_release_copy_sha_output" \
     "$embedded_release_copy_sha_output" \
+    "$unchecked_release_copy_output" \
     "$mismatched_homebrew_cask_sha_output" \
     "$homebrew_cask_url_mismatch_output" \
     "$homebrew_cask_token_mismatch_output" \
@@ -188,6 +191,7 @@ cleanup() {
     "$placeholder_free_release_copy" \
     "$mismatched_release_copy_sha" \
     "$embedded_release_copy_sha" \
+    "$unchecked_release_copy" \
     "$placeholder_homebrew_cask" \
     "$placeholder_free_homebrew_cask" \
     "$mismatched_homebrew_cask" \
@@ -315,6 +319,7 @@ printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$release_zip_sha
 wrong_release_copy_sha="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 printf 'LithePG v1.0 release copy with stale SHA-256 %s.\n' "$wrong_release_copy_sha" >"$mismatched_release_copy_sha"
 printf 'LithePG v1.0 release copy with malformed SHA-256 %s0.\n' "$release_zip_sha" >"$embedded_release_copy_sha"
+printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n- [ ] Remove draft checklist\n' "$release_zip_sha" >"$unchecked_release_copy"
 cat >"$placeholder_homebrew_cask" <<'CASK'
 cask "lithepg" do
   version "REPLACE_WITH_VERSION"
@@ -1128,6 +1133,32 @@ assert_not_contains "$embedded_release_copy_sha_text" "${release_zip_sha}0"
 assert_contains "$embedded_release_copy_sha_text" "v1.0 publication blocked"
 assert_not_contains "$embedded_release_copy_sha_text" "fast preflight is clear"
 
+if run_gate_capture "$unchecked_release_copy_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$unchecked_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured" \
+  LITHEPG_NOTARY_PROFILE="configured" \
+  LITHEPG_SECURITY_CONTACT="configured" \
+  LITHEPG_HOMEBREW_TAP="configured" \
+  LITHEPG_GITHUB_ACTIONS_READY="approved" \
+  LITHEPG_RELEASE_COPY_APPROVED="approved" \
+  LITHEPG_PUBLICATION_APPROVED="approved"; then
+  fail "gate unexpectedly passed with unchecked release-copy checklist"
+fi
+unchecked_release_copy_text="$(<"$unchecked_release_copy_output")"
+assert_contains "$unchecked_release_copy_text" "Release copy placeholders: none found"
+assert_contains "$unchecked_release_copy_text" "Release copy checklist: unchecked items present"
+assert_contains "$unchecked_release_copy_text" "Release copy SHA-256: matches"
+assert_contains "$unchecked_release_copy_text" "v1.0 publication blocked"
+assert_not_contains "$unchecked_release_copy_text" "Remove draft checklist"
+assert_not_contains "$unchecked_release_copy_text" "$release_zip_sha"
+assert_not_contains "$unchecked_release_copy_text" "fast preflight is clear"
+
 mismatched_cask_sha_marker="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 if run_gate_capture "$mismatched_homebrew_cask_sha_output" env -i \
   PATH="$fake_path" \
@@ -1887,6 +1918,7 @@ fi
 placeholder_text="$(<"$placeholder_output")"
 assert_contains "$placeholder_text" "Release copy placeholders: present in $placeholder_release_copy"
 assert_contains "$placeholder_text" "v1.0 publication blocked"
+assert_not_contains "$placeholder_text" "Release copy checklist:"
 assert_not_contains "$placeholder_text" "Release copy SHA-256:"
 assert_not_contains "$placeholder_text" "fast preflight is clear"
 
@@ -2069,6 +2101,7 @@ if ! run_gate_capture "$no_remote_lookup_output" env -i \
 fi
 no_remote_lookup_text="$(<"$no_remote_lookup_output")"
 assert_contains "$no_remote_lookup_text" "Release copy placeholders: none found"
+assert_contains "$no_remote_lookup_text" "Release copy checklist: none unchecked"
 assert_contains "$no_remote_lookup_text" "Release copy SHA-256: matches"
 assert_contains "$no_remote_lookup_text" "Homebrew cask placeholders: none found"
 assert_contains "$no_remote_lookup_text" "Homebrew cask token: matches"
