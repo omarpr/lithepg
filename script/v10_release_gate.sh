@@ -835,6 +835,41 @@ release_zip_bundle_executable_mode_safety_status() {
   return 0
 }
 
+release_zip_info_plist_mode_safety_status() {
+  local zip_file="$1"
+
+  if [[ ! -x /usr/bin/python3 ]]; then
+    return 2
+  fi
+
+  /usr/bin/python3 - "$zip_file" <<'PY'
+import stat
+import sys
+import zipfile
+
+zip_path = sys.argv[1]
+info_plist_path = "LithePG.app/Contents/Info.plist"
+
+try:
+    with zipfile.ZipFile(zip_path) as archive:
+        matches = [entry for entry in archive.infolist() if entry.filename == info_plist_path]
+except (zipfile.BadZipFile, OSError):
+    sys.exit(2)
+
+if len(matches) != 1:
+    sys.exit(2)
+
+mode = (matches[0].external_attr >> 16) & 0xFFFF
+if mode == 0 or not stat.S_ISREG(mode):
+    sys.exit(2)
+
+if mode & (stat.S_ISUID | stat.S_ISGID | stat.S_ISVTX | 0o022):
+    sys.exit(1)
+
+sys.exit(0)
+PY
+}
+
 release_zip_app_executable_format_status() {
   local zip_file="$1"
   local executable_temp_dir=""
@@ -1614,6 +1649,21 @@ if [[ "$release_zip_present" -eq 1 ]]; then
             ;;
           *)
             printf 'Release artifact Info.plist metadata: could not inspect\n'
+            ;;
+        esac
+        mark_blocker
+      fi
+
+      if release_zip_info_plist_mode_safety_status "$release_zip_file"; then
+        printf 'Release artifact Info.plist mode: safe\n'
+      else
+        release_zip_info_plist_mode_status=$?
+        case "$release_zip_info_plist_mode_status" in
+          1)
+            printf 'Release artifact Info.plist mode: unsafe\n'
+            ;;
+          *)
+            printf 'Release artifact Info.plist mode: could not inspect\n'
             ;;
         esac
         mark_blocker

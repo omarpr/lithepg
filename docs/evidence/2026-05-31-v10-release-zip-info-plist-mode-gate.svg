@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release gate Info.plist mode hardening evidence</title>
+  <desc id="desc">Evidence card showing shell and Swift test verification for the v1.0 release zip Info.plist mode safety gate.</desc>
+  <rect width="1280" height="720" fill="#0b1020"/>
+  <rect x="56" y="56" width="1168" height="608" rx="28" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="96" y="126" fill="#e5f3ff" font-family="SF Pro Display, Arial, sans-serif" font-size="42" font-weight="700">LithePG v1.0 release gate hardening</text>
+  <text x="96" y="174" fill="#93c5fd" font-family="SF Pro Text, Arial, sans-serif" font-size="24">Archived Info.plist mode safety check</text>
+
+  <rect x="96" y="220" width="1088" height="88" rx="16" fill="#06281f" stroke="#34d399" stroke-width="2"/>
+  <text x="126" y="257" fill="#bbf7d0" font-family="SF Mono, Menlo, monospace" font-size="22">RED 1: unsafe Info.plist fixture was accepted before the gate existed</text>
+  <text x="126" y="288" fill="#86efac" font-family="SF Mono, Menlo, monospace" font-size="18">Observed failure: gate unexpectedly passed with group/world-writable Info.plist mode</text>
+
+  <rect x="96" y="328" width="1088" height="88" rx="16" fill="#06281f" stroke="#34d399" stroke-width="2"/>
+  <text x="126" y="365" fill="#bbf7d0" font-family="SF Mono, Menlo, monospace" font-size="22">RED 2: decoy path bypass reproduced before exact-entry inspection</text>
+  <text x="126" y="396" fill="#86efac" font-family="SF Mono, Menlo, monospace" font-size="18">Observed failure: expected output to contain Release artifact Info.plist mode: unsafe</text>
+
+  <rect x="96" y="436" width="1088" height="126" rx="16" fill="#071d2b" stroke="#60a5fa" stroke-width="2"/>
+  <text x="126" y="474" fill="#bfdbfe" font-family="SF Mono, Menlo, monospace" font-size="22">GREEN verification</text>
+  <text x="126" y="508" fill="#dbeafe" font-family="SF Mono, Menlo, monospace" font-size="19">bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh &amp;&amp; script/test_v10_release_gate.sh</text>
+  <text x="126" y="538" fill="#86efac" font-family="SF Mono, Menlo, monospace" font-size="19">test_v10_release_gate passed</text>
+
+  <rect x="96" y="582" width="1088" height="48" rx="16" fill="#172554" stroke="#818cf8" stroke-width="2"/>
+  <text x="126" y="614" fill="#e0e7ff" font-family="SF Mono, Menlo, monospace" font-size="18">DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test → 127 tests passed</text>
+
+  <text x="96" y="654" fill="#94a3b8" font-family="SF Pro Text, Arial, sans-serif" font-size="18">Generated 2026-05-31 14:07:27 EDT. No artifact paths, raw modes, SHAs, credentials, or tokens shown.</text>
+</svg>
