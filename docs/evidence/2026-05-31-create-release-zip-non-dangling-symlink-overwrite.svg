@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG release zip non-dangling symlink overwrite evidence</title>
+  <desc id="desc">Visual receipt for the 2026-05-31 create_release_zip approved non-dangling symlink overwrite coverage slice.</desc>
+  <rect width="1200" height="680" fill="#0d1117"/>
+  <rect x="40" y="40" width="1120" height="600" rx="18" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+  <text x="70" y="92" fill="#f0f6fc" font-family="Menlo, Consolas, monospace" font-size="28" font-weight="700">LithePG v1.0 release zip hardening</text>
+  <text x="70" y="130" fill="#8b949e" font-family="Menlo, Consolas, monospace" font-size="18">2026-05-31 10:43 EDT • test-only coverage receipt</text>
+
+  <rect x="70" y="165" width="1060" height="120" rx="12" fill="#0d1117" stroke="#238636" stroke-width="2"/>
+  <text x="95" y="202" fill="#3fb950" font-family="Menlo, Consolas, monospace" font-size="20" font-weight="700">Scenario covered</text>
+  <text x="95" y="236" fill="#c9d1d9" font-family="Menlo, Consolas, monospace" font-size="17">LITHEPG_RELEASE_ZIP_OVERWRITE=approved with dist/LithePG.app.zip as a non-dangling symlink</text>
+  <text x="95" y="263" fill="#c9d1d9" font-family="Menlo, Consolas, monospace" font-size="17">Expected: replace the symlink path with a regular zip; preserve the original target file unchanged.</text>
+
+  <rect x="70" y="315" width="1060" height="180" rx="12" fill="#010409" stroke="#30363d" stroke-width="2"/>
+  <text x="95" y="350" fill="#58a6ff" font-family="Menlo, Consolas, monospace" font-size="19" font-weight="700">Verification output</text>
+  <text x="95" y="388" fill="#c9d1d9" font-family="Menlo, Consolas, monospace" font-size="17">$ bash script/test_create_release_zip.sh</text>
+  <text x="115" y="416" fill="#3fb950" font-family="Menlo, Consolas, monospace" font-size="17">test_create_release_zip passed</text>
+  <text x="95" y="452" fill="#c9d1d9" font-family="Menlo, Consolas, monospace" font-size="17">$ bash -n script/create_release_zip.sh script/test_create_release_zip.sh</text>
+  <text x="115" y="480" fill="#3fb950" font-family="Menlo, Consolas, monospace" font-size="17">passed</text>
+
+  <rect x="70" y="525" width="1060" height="70" rx="12" fill="#0d1117" stroke="#30363d" stroke-width="2"/>
+  <text x="95" y="568" fill="#f0f6fc" font-family="Menlo, Consolas, monospace" font-size="17">git diff --check: passed • No signing, notarization, upload, tag, cron, or external publication.</text>
+</svg>

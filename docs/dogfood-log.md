@@ -751,3 +751,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Release-impact dogfood verification passed with Docker available after the final case-variant fix: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260531-101741/` with default Swift tests, live dogfood tests, and v0.4 measurement all passed. Metrics: shell readiness 127.37 ms; connected cold start 236.34 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead 0.041 ms; dogfood query median overhead 0.040 ms.
 - Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-physical-inside-bundle-symlink-gate.svg`.
 - No release signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 10:43 EDT — v1.0 release zip non-dangling symlink overwrite coverage
+
+- Added regression coverage for the approved-overwrite path where `dist/LithePG.app.zip` is an existing non-dangling symlink to a regular target file outside `dist`.
+- The test verifies `LITHEPG_RELEASE_ZIP_OVERWRITE=approved` replaces the symlink path itself with a regular release zip, preserves the original symlink target file and contents unchanged, preserves the `.app` wrapper, prints SHA-256/size output, and does not leak sentinel values.
+- RED attempt: the new test passed immediately before any production-code change, proving the safe behavior already existed through the staged-temp-plus-rename implementation; this slice intentionally stayed test-only.
+- GREEN verification: `bash script/test_create_release_zip.sh` passed; `bash -n script/create_release_zip.sh script/test_create_release_zip.sh` passed; `git diff --check` passed.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED after confirming the cleanup-trap quoting concern was only a tool-output escaping artifact.
+- Evidence artifact: `docs/evidence/2026-05-31-create-release-zip-non-dangling-symlink-overwrite.svg`.
+- No release signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.

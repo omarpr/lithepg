@@ -110,6 +110,7 @@ refuse_output="$(mktemp)"
 dangling_symlink_output="$(mktemp)"
 overwrite_output="$(mktemp)"
 approved_symlink_output="$(mktemp)"
+approved_non_dangling_symlink_output="$(mktemp)"
 inside_bundle_output="$(mktemp)"
 case_variant_inside_bundle_output="$(mktemp)"
 symlink_inside_bundle_output="$(mktemp)"
@@ -118,7 +119,7 @@ success_output="$(mktemp)"
 outside_cwd_output="$(mktemp)"
 help_output="$(mktemp)"
 fixture_root="$(mktemp -d)"
-trap 'rm -f "$missing_verify_output" "$refuse_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$inside_bundle_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$success_output" "$outside_cwd_output" "$help_output"; rm -rf "$fixture_root"' EXIT
+trap 'rm -f "$missing_verify_output" "$refuse_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$inside_bundle_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$success_output" "$outside_cwd_output" "$help_output"; rm -rf "$fixture_root"' EXIT
 
 sensitive_identity="SENSITIVE_CODESIGN_IDENTITY_DO_NOT_PRINT"
 sensitive_notary="SENSITIVE_NOTARY_PROFILE_DO_NOT_PRINT"
@@ -207,6 +208,36 @@ assert_size_line_for_zip "$approved_symlink_text" "$approved_symlink_fixture/dis
 [[ -f "$approved_symlink_fixture/dist/LithePG.app.zip" && ! -L "$approved_symlink_fixture/dist/LithePG.app.zip" ]] || fail "approved dangling output symlink was not replaced with a regular zip"
 [[ ! -e "$approved_symlink_target" ]] || fail "approved dangling output symlink target was created"
 assert_zip_contains_app_wrapper "$approved_symlink_fixture/dist/LithePG.app.zip" "$approved_symlink_fixture/extracted-approved-symlink"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+
+# Explicit overwrite approval replaces a non-dangling output symlink without touching its target.
+approved_non_dangling_symlink_fixture="$fixture_root/overwrite-non-dangling-symlink"
+make_fixture "$approved_non_dangling_symlink_fixture"
+approved_non_dangling_target="$approved_non_dangling_symlink_fixture/existing-target.zip"
+approved_non_dangling_target_contents="existing target zip with SENSITIVE_SYMLINK_TARGET_CONTENTS_DO_NOT_PRINT"
+printf '%s\n' "$approved_non_dangling_target_contents" >"$approved_non_dangling_target"
+ln -s "$approved_non_dangling_target" "$approved_non_dangling_symlink_fixture/dist/LithePG.app.zip"
+verify_log="$approved_non_dangling_symlink_fixture/verify.log"
+if ! FAKE_VERIFY_LOG="$verify_log" \
+  LITHEPG_RELEASE_ZIP_OVERWRITE="approved" \
+  LITHEPG_CODESIGN_IDENTITY="$sensitive_identity" \
+  LITHEPG_NOTARY_PROFILE="$sensitive_notary" \
+  LITHEPG_RELEASE_MARKER="$sensitive_release_marker" \
+  run_helper_capture "$approved_non_dangling_symlink_fixture" "$approved_non_dangling_symlink_output" "dist/LithePG.app" "dist/LithePG.app.zip"; then
+  fail "helper failed despite explicit overwrite approval for non-dangling output symlink"
+fi
+approved_non_dangling_symlink_text="$(<"$approved_non_dangling_symlink_output")"
+assert_contains "$approved_non_dangling_symlink_text" "Created release zip: dist/LithePG.app.zip"
+assert_matches_sha_line "$approved_non_dangling_symlink_text"
+assert_size_line_for_zip "$approved_non_dangling_symlink_text" "$approved_non_dangling_symlink_fixture/dist/LithePG.app.zip"
+assert_not_contains "$approved_non_dangling_symlink_text" "$sensitive_identity"
+assert_not_contains "$approved_non_dangling_symlink_text" "$sensitive_notary"
+assert_not_contains "$approved_non_dangling_symlink_text" "$sensitive_release_marker"
+assert_not_contains "$approved_non_dangling_symlink_text" "$approved_non_dangling_target_contents"
+[[ -f "$approved_non_dangling_symlink_fixture/dist/LithePG.app.zip" && ! -L "$approved_non_dangling_symlink_fixture/dist/LithePG.app.zip" ]] || fail "approved non-dangling output symlink was not replaced with a regular zip"
+[[ -f "$approved_non_dangling_target" ]] || fail "approved non-dangling output symlink target was removed"
+[[ "$(<"$approved_non_dangling_target")" == "$approved_non_dangling_target_contents" ]] || fail "approved non-dangling output symlink target contents changed"
+assert_zip_contains_app_wrapper "$approved_non_dangling_symlink_fixture/dist/LithePG.app.zip" "$approved_non_dangling_symlink_fixture/extracted-approved-non-dangling-symlink"
 assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
 
 # Output paths inside the app bundle are refused to avoid recursive/self-embedding artifacts.
