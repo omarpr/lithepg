@@ -18,6 +18,8 @@ cask "lithepg" do
 
   app "LithePG.app"
 
+  uninstall quit: "dev.omarpr.lithepg"
+
   zap trash: [
     "~/Library/Application Support/LithePG",
     "~/Library/Preferences/dev.omarpr.lithepg.plist",

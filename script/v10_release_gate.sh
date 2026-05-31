@@ -251,6 +251,20 @@ extract_homebrew_cask_homepage() {
   return 1
 }
 
+extract_homebrew_cask_uninstall_quit_bundle_id() {
+  local cask_file="$1"
+  local line=""
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" =~ ^[[:space:]]*uninstall[[:space:]]+quit:[[:space:]]*\"([^\"]+)\" ]]; then
+      printf '%s\n' "${BASH_REMATCH[1]}"
+      return 0
+    fi
+  done <"$cask_file"
+
+  return 1
+}
+
 extract_homebrew_cask_app_stanza() {
   local cask_file="$1"
   local line=""
@@ -614,6 +628,20 @@ if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
     fi
   else
     printf 'Homebrew cask homepage: missing\n'
+    mark_blocker
+  fi
+fi
+
+if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
+  if cask_bundle_id="$(extract_homebrew_cask_uninstall_quit_bundle_id "$homebrew_cask_file")"; then
+    if [[ "$cask_bundle_id" == "dev.omarpr.lithepg" ]]; then
+      printf 'Homebrew cask uninstall quit bundle ID: matches\n'
+    else
+      printf 'Homebrew cask uninstall quit bundle ID: mismatch\n'
+      mark_blocker
+    fi
+  else
+    printf 'Homebrew cask uninstall quit bundle ID: missing\n'
     mark_blocker
   fi
 fi
