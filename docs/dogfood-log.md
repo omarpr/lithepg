@@ -1267,3 +1267,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED; pre-commit JSON review passed with no security concerns or logic errors.
 - Evidence artifact: `docs/evidence/2026-06-01-sign-notarize-path-shadow-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 07:48 EDT — v1.0 release gate dirname PATH-shadow hardening
+
+- Hardened `script/v10_release_gate.sh` so helper-owned repository-root setup uses `/usr/bin/dirname` instead of caller-controlled `PATH` resolution.
+- Added strict-TDD coverage in `script/test_v10_release_gate.sh` where a fake PATH-shadowed `dirname` emits the synthetic sentinel `V10_RELEASE_GATE_PATH_SHADOW_DIRNAME_SHOULD_NOT_RUN` and exits non-zero; the gate must still reach the normal blocked v1.0 preflight output without printing the sentinel.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: output leaked forbidden value: V10_RELEASE_GATE_PATH_SHADOW_DIRNAME_SHOULD_NOT_RUN`.
+- GREEN verification: `bash script/test_v10_release_gate.sh`, adjacent release-helper tests (`test_package_verify`, `test_create_release_zip`, `test_sign_and_notarize`), `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh`, `git diff --check`, and `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` all passed.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-06-01-v10-release-gate-dirname-path-shadow-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

@@ -53,7 +53,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [[ -n "$SECURITY_DOC_PATH" ]]; then
   SECURITY_DOC_PATHS=("$SECURITY_DOC_PATH")
 else

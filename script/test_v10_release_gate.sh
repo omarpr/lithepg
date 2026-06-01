@@ -140,6 +140,7 @@ remote_opt_in_output="$(mktemp)"
 remote_v05_missing_output="$(mktemp)"
 status_failure_output="$(mktemp)"
 grep_error_output="$(mktemp)"
+path_shadowed_dirname_output="$(mktemp)"
 placeholder_release_copy="$(mktemp)"
 placeholder_free_release_copy="$(mktemp)"
 mismatched_release_copy_sha="$(mktemp)"
@@ -372,6 +373,7 @@ cleanup() {
     "$remote_v05_missing_output" \
     "$status_failure_output" \
     "$grep_error_output" \
+    "$path_shadowed_dirname_output" \
     "$placeholder_release_copy" \
     "$placeholder_free_release_copy" \
     "$mismatched_release_copy_sha" \
@@ -576,6 +578,14 @@ fi
 exec /usr/bin/grep "$@"
 FAKE_GREP
 chmod +x "$fake_git_dir/grep"
+cat >"$fake_git_dir/dirname" <<'FAKE_DIRNAME'
+#!/usr/bin/env bash
+set -euo pipefail
+
+printf 'V10_RELEASE_GATE_PATH_SHADOW_DIRNAME_SHOULD_NOT_RUN\n' >&2
+exit 43
+FAKE_DIRNAME
+chmod +x "$fake_git_dir/dirname"
 fake_path="$fake_git_dir:${PATH:-/usr/bin:/bin}"
 write_valid_info_plist() {
   local plist_path="$1"
@@ -2415,6 +2425,14 @@ cp "$HELPER" "$default_security_docs_helper"
 chmod +x "$default_security_docs_helper"
 printf 'Report vulnerabilities using the configured private security advisory flow.\n' >"$default_security_docs_repo/SECURITY.md"
 printf 'Report vulnerabilities to [security contact pending].\n' >"$default_security_docs_repo/docs/SECURITY.md"
+
+if run_specific_gate_capture "$path_shadowed_dirname_output" "$default_security_docs_helper" env -i PATH="$fake_path" FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker"; then
+  fail "gate unexpectedly passed with all required external inputs missing under PATH-shadowed dirname"
+fi
+path_shadowed_dirname_text="$(<"$path_shadowed_dirname_output")"
+assert_not_contains "$path_shadowed_dirname_text" "V10_RELEASE_GATE_PATH_SHADOW_DIRNAME_SHOULD_NOT_RUN"
+assert_contains "$path_shadowed_dirname_text" "v1.0 publication blocked"
+assert_contains "$path_shadowed_dirname_text" "LITHEPG_CODESIGN_IDENTITY: missing"
 
 if run_specific_gate_capture "$missing_output" "$default_security_docs_helper" env -i PATH="$fake_path" FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker"; then
   fail "gate unexpectedly passed with all required external inputs missing"
