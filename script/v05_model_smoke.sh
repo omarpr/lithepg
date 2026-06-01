@@ -24,7 +24,7 @@ if /usr/bin/otool -L "$APP_BIN" | /usr/bin/grep -q "CoreML.framework"; then
   COREML_LINKED=1
 fi
 
-python3 - <<PY > "$OUT_DIR/summary.json"
+/usr/bin/python3 - <<PY > "$OUT_DIR/summary.json"
 import json, os
 path = "$APP_BIN"
 size = os.path.getsize(path)

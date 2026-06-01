@@ -88,6 +88,13 @@ SHIM
   /bin/chmod +x "$fake_bin/$tool"
 done
 
+/bin/cat >"$fake_bin/python3" <<SHIM
+#!/bin/bash
+/usr/bin/printf '%s python3 invoked\\n' '$sentinel' >&2
+exit 97
+SHIM
+/bin/chmod +x "$fake_bin/python3"
+
 /bin/cat >"$fake_bin/swift" <<'SWIFT'
 #!/bin/bash
 set -euo pipefail

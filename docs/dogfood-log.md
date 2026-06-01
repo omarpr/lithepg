@@ -1420,3 +1420,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED after the test-side-effect follow-up.
 - Evidence artifact: `screenshots/evidence/2026-06-01-build-and-run-pkill-path-shadow-hardening.svg`.
 - No signing with a real identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 14:38 EDT — v0.5 model smoke python3 PATH-shadow hardening
+
+- Hardened `script/v05_model_smoke.sh` so helper-owned summary JSON generation uses `/usr/bin/python3` instead of caller-controlled `PATH` resolution. `swift` remains intentionally PATH-resolved for developer toolchain selection and test fixtures.
+- Added strict-TDD coverage in `script/test_v05_model_smoke.sh` with a fake PATH-shadowed `python3` that emits `V05_MODEL_SMOKE_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN`; the helper must still complete through fake Swift fixtures, write `summary.json`, and avoid invoking or leaking the sentinel.
+- RED verification: `bash script/test_v05_model_smoke.sh` failed first with `V05_MODEL_SMOKE_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN python3 invoked` and `test_v05_model_smoke failed: v05_model_smoke.sh was affected by PATH-shadowed core utilities`.
+- GREEN verification: `bash script/test_v05_model_smoke.sh`, `bash -n script/v05_model_smoke.sh script/test_v05_model_smoke.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`, and live `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/v05_model_smoke.sh` all passed. Swift Testing reported 127 tests across 20 suites; the live model smoke reported 4 selected `LocalModelAIQueryService` tests passed, release `LithePGApp` build passed, 21.379 MiB binary size, `CoreML.framework` linked, no bundled model artifact, and measurements under `.build/v05-model-smoke/20260601-143802/`.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-01-v05-model-smoke-python3-path-shadow-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
