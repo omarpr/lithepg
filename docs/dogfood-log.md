@@ -992,3 +992,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-05-31-package-verify-extra-arg-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 20:33 EDT — v1.0 package verifier help gate
+
+- Added explicit `-h` / `--help` handling to `script/package_verify.sh` so package verifier help exits 0 before treating help flags as app-bundle paths or evaluating expected-version env checks.
+- Added strict-TDD coverage in `script/test_package_verify.sh` proving both help flags print usage plus `LITHEPG_EXPECTED_MARKETING_VERSION` / `LITHEPG_EXPECTED_BUILD_VERSION`, omit `Package verified:`, and preserve the existing valid-fixture and extra-argument rejection checks.
+- RED verification: `bash script/test_package_verify.sh` failed first with `package verification failed: app bundle not found: --help` and `test_package_verify failed: package verifier --help unexpectedly failed`.
+- GREEN verification: `bash script/test_package_verify.sh`, `bash -n script/package_verify.sh script/test_package_verify.sh`, `git diff --check`, and adjacent release helper tests `bash script/test_create_release_zip.sh && bash script/test_sign_and_notarize.sh && bash script/test_v10_release_gate.sh` passed.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-05-31-package-verify-help-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.

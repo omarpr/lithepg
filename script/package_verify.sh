@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_BUNDLE="${1:-dist/LithePG.app}"
 APP_NAME="LithePGApp"
 BUNDLE_NAME="LithePG"
 EXPECTED_BUNDLE_ID="dev.omarpr.lithepg"
@@ -13,7 +12,27 @@ fail() {
   exit 1
 }
 
+usage() {
+  cat <<'USAGE'
+Usage: script/package_verify.sh [APP_BUNDLE]
+
+Verify a LithePG.app bundle. APP_BUNDLE defaults to dist/LithePG.app.
+
+Optional environment:
+  LITHEPG_EXPECTED_MARKETING_VERSION  Expected CFBundleShortVersionString.
+  LITHEPG_EXPECTED_BUILD_VERSION      Expected CFBundleVersion.
+USAGE
+}
+
 [[ "$#" -le 1 ]] || fail "too many arguments"
+case "${1:-}" in
+  -h|--help)
+    usage
+    exit 0
+    ;;
+esac
+
+APP_BUNDLE="${1:-dist/LithePG.app}"
 
 plist_value() {
   local key="$1"

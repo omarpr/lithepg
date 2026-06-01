@@ -80,6 +80,28 @@ trap 'rm -f "$output_file"; rm -rf "$fixture_root"' EXIT
 app_bundle="$fixture_root/LithePG.app"
 make_minimal_app_bundle "$app_bundle"
 
+if ! run_helper_capture "$output_file" --help; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier --help unexpectedly failed"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "Usage:"
+assert_contains "$helper_output" "LITHEPG_EXPECTED_MARKETING_VERSION"
+assert_contains "$helper_output" "LITHEPG_EXPECTED_BUILD_VERSION"
+assert_not_contains "$helper_output" "Package verified:"
+
+if ! run_helper_capture "$output_file" -h; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier -h unexpectedly failed"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "Usage:"
+assert_contains "$helper_output" "LITHEPG_EXPECTED_MARKETING_VERSION"
+assert_contains "$helper_output" "LITHEPG_EXPECTED_BUILD_VERSION"
+assert_not_contains "$helper_output" "Package verified:"
+
 if ! run_helper_capture "$output_file" "$app_bundle"; then
   helper_output="$(<"$output_file")"
   printf '%s\n' "$helper_output" >&2
