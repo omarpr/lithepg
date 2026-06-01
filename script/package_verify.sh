@@ -13,6 +13,8 @@ fail() {
   exit 1
 }
 
+[[ "$#" -le 1 ]] || fail "too many arguments"
+
 plist_value() {
   local key="$1"
   /usr/libexec/PlistBuddy -c "Print :$key" "$INFO_PLIST" 2>/dev/null || true

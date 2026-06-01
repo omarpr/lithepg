@@ -981,3 +981,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED; fail-closed pre-commit JSON review passed.
 - Evidence artifact: `docs/evidence/2026-05-31-sign-notarize-notary-zip-parent-path-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 20:13 EDT — v1.0 package verifier extra-argument gate
+
+- Hardened `script/package_verify.sh` so accidental extra positional arguments fail explicitly with `package verification failed: too many arguments` before package-verification success output can be printed.
+- Added strict-TDD coverage in `script/test_package_verify.sh` proving a valid minimal `LithePG.app` fixture still verifies, an extra sentinel argument is rejected, success output is suppressed on the rejection path, and the sentinel value is not leaked. The test also unsets release expectation env vars inside its helper subprocess so local `LITHEPG_EXPECTED_MARKETING_VERSION` / `LITHEPG_EXPECTED_BUILD_VERSION` settings cannot create false failures.
+- RED verification: `bash script/test_package_verify.sh` failed first with `test_package_verify failed: package verifier unexpectedly accepted an extra positional argument` after the helper reported the fixture as verified.
+- GREEN verification: release-helper syntax checks, env-contamination stress `LITHEPG_EXPECTED_MARKETING_VERSION=999.999 LITHEPG_EXPECTED_BUILD_VERSION=999999 ./script/test_package_verify.sh`, `./script/test_package_verify.sh`, adjacent release helper tests `./script/test_create_release_zip.sh`, `./script/test_sign_and_notarize.sh`, `./script/test_v10_release_gate.sh`, `git diff --check`, SVG parse, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` all passed. Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260531-201418/` with default Swift tests, live dogfood tests, and v0.4 measurement all passed. Metrics: shell readiness 134.04 ms; connected cold start 231.12 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead 0.052 ms; dogfood query median overhead 0.025 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-05-31-package-verify-extra-arg-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
