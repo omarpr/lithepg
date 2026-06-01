@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG create_release_zip --help PATH-shadow hardening evidence</title>
+  <desc id="desc">Visual evidence for the commit hardening create_release_zip.sh help output against PATH-shadowed cat.</desc>
+  <rect width="1280" height="720" fill="#0b1020"/>
+  <rect x="48" y="44" width="1184" height="632" rx="18" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="80" y="96" fill="#e5f3ff" font-family="Menlo, Consolas, monospace" font-size="30" font-weight="700">LithePG v1.0 release helper hardening</text>
+  <text x="80" y="140" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="20">Slice: create_release_zip.sh --help avoids caller-controlled PATH cat</text>
+  <rect x="80" y="178" width="1120" height="390" rx="12" fill="#020617" stroke="#1f2937"/>
+  <text x="112" y="225" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="20">RED</text>
+  <text x="190" y="225" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="18">bash script/test_create_release_zip.sh</text>
+  <text x="112" y="258" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="17">CREATE_RELEASE_ZIP_HELP_CAT_PATH_SHADOW_SHOULD_NOT_RUN fake cat stdout</text>
+  <text x="112" y="286" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="17">test_create_release_zip failed: --help did not exit 0</text>
+  <text x="112" y="344" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="20">GREEN</text>
+  <text x="208" y="344" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="18">/bin/cat in usage()</text>
+  <text x="112" y="382" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="17">test_create_release_zip passed</text>
+  <text x="112" y="410" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="17">test_package_verify passed</text>
+  <text x="112" y="438" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="17">test_sign_and_notarize passed</text>
+  <text x="112" y="466" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="17">test_v10_release_gate passed</text>
+  <text x="112" y="516" fill="#bfdbfe" font-family="Menlo, Consolas, monospace" font-size="17">swift build + swift test: 127 Swift Testing tests across 20 suites passed</text>
+  <text x="80" y="615" fill="#c4b5fd" font-family="Menlo, Consolas, monospace" font-size="18">No signing, notarization, uploads, tags, cron changes, or external publication attempted.</text>
+  <text x="80" y="646" fill="#64748b" font-family="Menlo, Consolas, monospace" font-size="15">Generated 2026-06-01 12:51 EDT • screenshots/evidence/2026-06-01-create-release-zip-help-cat-path-shadow-hardening.svg</text>
+</svg>

@@ -798,13 +798,33 @@ assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
 help_fixture="$fixture_root/help"
 make_fixture "$help_fixture"
 rm -rf "$help_fixture/dist/LithePG.app"
+help_fake_bin="$help_fixture/fake-bin"
+help_fake_tool_log="$help_fixture/fake-tool.log"
+help_cat_sentinel="CREATE_RELEASE_ZIP_HELP_CAT_PATH_SHADOW_SHOULD_NOT_RUN"
+mkdir -p "$help_fake_bin"
+cat >"$help_fake_bin/cat" <<FAKE_CAT
+#!/usr/bin/env bash
+printf '$help_cat_sentinel fake cat stdout\n'
+printf '$help_cat_sentinel fake cat stderr\n' >&2
+if [[ -n "\${PATH_SHADOW_FAKE_TOOL_LOG:-}" ]]; then
+  printf '$help_cat_sentinel fake cat invoked\n' >>"\$PATH_SHADOW_FAKE_TOOL_LOG"
+fi
+exit 97
+FAKE_CAT
+chmod +x "$help_fake_bin/cat"
 if ! FAKE_VERIFY_LOG="$help_fixture/verify.log" \
+  PATH_SHADOW_FAKE_TOOL_LOG="$help_fake_tool_log" \
+  PATH="$help_fake_bin:$PATH" \
   run_helper_capture "$help_fixture" "$help_output" "--help"; then
+  help_text="$(<"$help_output")"
+  printf '%s\n' "$help_text" >&2
   fail "--help did not exit 0"
 fi
 help_text="$(<"$help_output")"
 assert_contains "$help_text" "Usage:"
 assert_contains "$help_text" "create_release_zip.sh [app-bundle] [output-zip]"
+assert_not_contains "$help_text" "$help_cat_sentinel"
+[[ ! -s "$help_fake_tool_log" ]] || fail "create release zip --help invoked PATH-shadowed cat"
 [[ ! -e "$help_fixture/verify.log" ]] || fail "help unexpectedly ran package verification"
 
 printf 'test_create_release_zip passed\n'

@@ -6,7 +6,7 @@ DEFAULT_APP_BUNDLE="dist/LithePG.app"
 DEFAULT_OUTPUT_ZIP="dist/LithePG.app.zip"
 
 usage() {
-  cat <<'USAGE'
+  /bin/cat <<'USAGE'
 Usage: create_release_zip.sh [app-bundle] [output-zip]
 
 Create the public LithePG.app.zip from an already-built app bundle and print
