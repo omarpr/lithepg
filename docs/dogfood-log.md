@@ -1363,3 +1363,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED; pre-commit JSON review passed with no security concerns or logic errors.
 - Evidence artifact: `screenshots/evidence/2026-06-01-sign-notarize-help-cat-path-shadow-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-06-01 12:32 EDT — v1.0 package verifier help cat PATH-shadow hardening
+
+- Hardened `script/package_verify.sh --help` so `usage()` renders via `/bin/cat` instead of caller-controlled `PATH` resolution.
+- Added strict-TDD coverage in `script/test_package_verify.sh` with a fake PATH-shadowed `cat` that emits `PACKAGE_VERIFY_HELP_CAT_PATH_SHADOW_SHOULD_NOT_RUN` and exits non-zero. The helper must still print usage, must not invoke the fake `cat`, and must not leak sentinel/fake output.
+- RED verification: `bash script/test_package_verify.sh` failed first with the fake `cat` sentinel and `test_package_verify failed: package verifier --help invoked PATH-shadowed cat`.
+- GREEN verification: `bash script/test_package_verify.sh`, adjacent release-helper tests (`test_create_release_zip`, `test_sign_and_notarize`, `test_v10_release_gate`), `bash -n script/package_verify.sh script/test_package_verify.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 127 tests across 20 suites.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED; pre-commit JSON review passed with no security concerns or logic errors.
+- Evidence artifact: `screenshots/evidence/2026-06-01-package-verify-help-cat-path-shadow-hardening.svg`.
+- No package signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

@@ -13,7 +13,7 @@ fail() {
 }
 
 usage() {
-  cat <<'USAGE'
+  /bin/cat <<'USAGE'
 Usage: script/package_verify.sh [APP_BUNDLE]
 
 Verify a LithePG.app bundle. APP_BUNDLE defaults to dist/LithePG.app.

@@ -122,6 +122,35 @@ trap 'rm -f "$output_file"; rm -rf "$fixture_root"' EXIT
 app_bundle="$fixture_root/LithePG.app"
 make_minimal_app_bundle "$app_bundle"
 
+help_cat_path_shadow_sentinel="PACKAGE_VERIFY_HELP_CAT_PATH_SHADOW_SHOULD_NOT_RUN"
+help_cat_path_shadow_fake_bin="$fixture_root/help-cat-path-shadow-fake-bin"
+help_cat_path_shadow_marker="$fixture_root/help-cat-path-shadow-invoked"
+mkdir -p "$help_cat_path_shadow_fake_bin"
+cat >"$help_cat_path_shadow_fake_bin/cat" <<'SHIM'
+#!/usr/bin/env bash
+printf 'fake cat stdout sentinel=%s args=%s\n' "${HELP_CAT_PATH_SHADOW_SENTINEL:-}" "$*"
+printf 'fake cat stderr sentinel=%s args=%s\n' "${HELP_CAT_PATH_SHADOW_SENTINEL:-}" "$*" >&2
+printf 'cat\n' >"${HELP_CAT_PATH_SHADOW_MARKER:?}"
+exit 73
+SHIM
+chmod +x "$help_cat_path_shadow_fake_bin/cat"
+if ! HELP_CAT_PATH_SHADOW_SENTINEL="$help_cat_path_shadow_sentinel" \
+  HELP_CAT_PATH_SHADOW_MARKER="$help_cat_path_shadow_marker" \
+  PATH="$help_cat_path_shadow_fake_bin:$PATH" \
+  run_helper_capture "$output_file" --help; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier --help invoked PATH-shadowed cat"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "Usage:"
+assert_contains "$helper_output" "LITHEPG_EXPECTED_MARKETING_VERSION"
+assert_contains "$helper_output" "LITHEPG_EXPECTED_BUILD_VERSION"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$help_cat_path_shadow_sentinel"
+assert_not_contains "$helper_output" "fake cat"
+[[ ! -e "$help_cat_path_shadow_marker" ]] || fail "package verifier --help invoked PATH-shadowed cat: $(<"$help_cat_path_shadow_marker")"
+
 if ! run_helper_capture "$output_file" --help; then
   helper_output="$(<"$output_file")"
   printf '%s\n' "$helper_output" >&2
