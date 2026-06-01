@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="780" viewBox="0 0 1200 780" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG release zip failure-output redaction evidence</title>
+  <desc id="desc">Visual evidence for hardening create_release_zip failure paths so caller-controlled output paths and local directory values stay redacted.</desc>
+  <rect width="1200" height="780" fill="#101418"/>
+  <rect x="42" y="38" width="1116" height="704" rx="22" fill="#17212b" stroke="#2b4054" stroke-width="2"/>
+  <text x="80" y="94" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" font-size="34" font-weight="700">v1.0 release zip failure-output redaction</text>
+  <text x="80" y="135" fill="#9fb3c8" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="18">2026-06-01 05:38 EDT • Synthetic fixture paths only • No credentials or private schemas</text>
+
+  <rect x="80" y="176" width="1040" height="210" rx="14" fill="#0d1117" stroke="#30363d"/>
+  <text x="108" y="218" fill="#ff7b72" font-family="'SF Mono', Menlo, monospace" font-size="22" font-weight="700">RED</text>
+  <text x="180" y="218" fill="#e6edf3" font-family="'SF Mono', Menlo, monospace" font-size="18">bash script/test_create_release_zip.sh</text>
+  <text x="108" y="258" fill="#ffb4a9" font-family="'SF Mono', Menlo, monospace" font-size="16">existing-output path leak caught by sentinel assertion</text>
+  <text x="108" y="290" fill="#ffb4a9" font-family="'SF Mono', Menlo, monospace" font-size="16">mkdir output-parent diagnostic leak caught by sentinel assertion</text>
+  <text x="108" y="322" fill="#ffb4a9" font-family="'SF Mono', Menlo, monospace" font-size="16">mktemp temporary-directory diagnostic leak caught by sentinel assertion</text>
+  <text x="108" y="354" fill="#ffb4a9" font-family="'SF Mono', Menlo, monospace" font-size="16">inside-app-bundle output path leak caught by sentinel assertion</text>
+
+  <rect x="80" y="414" width="1040" height="198" rx="14" fill="#0d1117" stroke="#30363d"/>
+  <text x="108" y="456" fill="#3fb950" font-family="'SF Mono', Menlo, monospace" font-size="22" font-weight="700">GREEN</text>
+  <text x="204" y="456" fill="#e6edf3" font-family="'SF Mono', Menlo, monospace" font-size="18">Release helper checks passed</text>
+  <text x="108" y="498" fill="#c9d1d9" font-family="'SF Mono', Menlo, monospace" font-size="16">✓ bash script/test_create_release_zip.sh</text>
+  <text x="108" y="530" fill="#c9d1d9" font-family="'SF Mono', Menlo, monospace" font-size="16">✓ bash -n create/test helper scripts + git diff --check</text>
+  <text x="108" y="562" fill="#c9d1d9" font-family="'SF Mono', Menlo, monospace" font-size="16">✓ package_verify + sign_and_notarize + v10_release_gate helper tests</text>
+  <text x="108" y="592" fill="#9fb3c8" font-family="'SF Mono', Menlo, monospace" font-size="14">Independent spec review PASS; code quality/security review APPROVED.</text>
+
+  <rect x="80" y="642" width="1040" height="58" rx="10" fill="#122b1f" stroke="#238636"/>
+  <text x="108" y="676" fill="#d2f8d2" font-family="'SF Mono', Menlo, monospace" font-size="16">Failure output now uses generic stable messages instead of local output paths.</text>
+</svg>

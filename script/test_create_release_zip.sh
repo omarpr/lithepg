@@ -114,7 +114,9 @@ trailing_slash_output_zip_output="$(mktemp)"
 approved_directory_output="$(mktemp)"
 output_parent_file_output="$(mktemp)"
 dangling_output_parent_symlink_output="$(mktemp)"
+output_parent_creation_failure_output="$(mktemp)"
 refuse_output="$(mktemp)"
+refuse_sentinel_output="$(mktemp)"
 uppercase_overwrite_output="$(mktemp)"
 dangling_symlink_output="$(mktemp)"
 overwrite_output="$(mktemp)"
@@ -122,6 +124,8 @@ approved_symlink_output="$(mktemp)"
 approved_non_dangling_symlink_output="$(mktemp)"
 success_path_redaction_output="$(mktemp)"
 inside_bundle_output="$(mktemp)"
+inside_bundle_sentinel_output="$(mktemp)"
+temp_creation_failure_output="$(mktemp)"
 case_variant_inside_bundle_output="$(mktemp)"
 symlink_inside_bundle_output="$(mktemp)"
 symlink_parent_traversal_output="$(mktemp)"
@@ -130,7 +134,7 @@ success_output="$(mktemp)"
 outside_cwd_output="$(mktemp)"
 help_output="$(mktemp)"
 fixture_root="$(mktemp -d)"
-trap 'rm -f "$missing_verify_output" "$wrong_app_bundle_name_output" "$symlink_app_bundle_output" "$symlink_app_bundle_trailing_slash_output" "$wrong_output_zip_name_output" "$trailing_slash_output_zip_output" "$approved_directory_output" "$output_parent_file_output" "$dangling_output_parent_symlink_output" "$refuse_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$success_path_redaction_output" "$inside_bundle_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$final_symlink_inside_bundle_output" "$success_output" "$outside_cwd_output" "$help_output"; rm -rf "$fixture_root"' EXIT
+trap 'rm -f "$missing_verify_output" "$wrong_app_bundle_name_output" "$symlink_app_bundle_output" "$symlink_app_bundle_trailing_slash_output" "$wrong_output_zip_name_output" "$trailing_slash_output_zip_output" "$approved_directory_output" "$output_parent_file_output" "$dangling_output_parent_symlink_output" "$output_parent_creation_failure_output" "$refuse_output" "$refuse_sentinel_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$success_path_redaction_output" "$inside_bundle_output" "$inside_bundle_sentinel_output" "$temp_creation_failure_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$final_symlink_inside_bundle_output" "$success_output" "$outside_cwd_output" "$help_output"; chmod -R u+rwx "$fixture_root" 2>/dev/null || true; rm -rf "$fixture_root"' EXIT
 
 sensitive_identity="SENSITIVE_CODESIGN_IDENTITY_DO_NOT_PRINT"
 sensitive_notary="SENSITIVE_NOTARY_PROFILE_DO_NOT_PRINT"
@@ -334,6 +338,33 @@ assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
 [[ ! -e "$dangling_output_parent_symlink_target" && ! -L "$dangling_output_parent_symlink_target" ]] || fail "dangling output parent symlink target was created"
 [[ ! -e "$dangling_output_parent_symlink_path/LithePG.app.zip" && ! -L "$dangling_output_parent_symlink_path/LithePG.app.zip" ]] || fail "zip was created under dangling output parent symlink"
 
+# Output parent directory creation failures must not echo caller-supplied output parents or mkdir's local-path diagnostics.
+output_parent_creation_failure_sentinel="MKDIR_SENTINEL_DO_NOT_PRINT"
+output_parent_creation_failure_fixture="$fixture_root/output-parent-creation-failure"
+make_fixture "$output_parent_creation_failure_fixture"
+output_parent_creation_failure_blocked_dir="$output_parent_creation_failure_fixture/blocked"
+output_parent_creation_failure_zip="blocked/$output_parent_creation_failure_sentinel/LithePG.app.zip"
+output_parent_creation_failure_parent="$output_parent_creation_failure_fixture/blocked/$output_parent_creation_failure_sentinel"
+mkdir -p "$output_parent_creation_failure_blocked_dir"
+chmod 500 "$output_parent_creation_failure_blocked_dir"
+verify_log="$output_parent_creation_failure_fixture/verify.log"
+if FAKE_VERIFY_LOG="$verify_log" \
+  run_helper_capture "$output_parent_creation_failure_fixture" "$output_parent_creation_failure_output" "dist/LithePG.app" "$output_parent_creation_failure_zip"; then
+  chmod u+rwx "$output_parent_creation_failure_blocked_dir"
+  fail "helper unexpectedly created a zip under an uncreatable sentinel output parent"
+fi
+chmod u+rwx "$output_parent_creation_failure_blocked_dir"
+output_parent_creation_failure_text="$(<"$output_parent_creation_failure_output")"
+assert_contains "$output_parent_creation_failure_text" "could not create output zip parent directory"
+assert_not_contains "$output_parent_creation_failure_text" "$output_parent_creation_failure_zip"
+assert_not_contains "$output_parent_creation_failure_text" "blocked/$output_parent_creation_failure_sentinel"
+assert_not_contains "$output_parent_creation_failure_text" "$output_parent_creation_failure_parent"
+assert_not_contains "$output_parent_creation_failure_text" "$output_parent_creation_failure_sentinel"
+assert_not_contains "$output_parent_creation_failure_text" "mkdir:"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+[[ ! -e "$output_parent_creation_failure_parent" && ! -L "$output_parent_creation_failure_parent" ]] || fail "sentinel output parent was created despite parent creation failure"
+[[ ! -e "$output_parent_creation_failure_fixture/$output_parent_creation_failure_zip" && ! -L "$output_parent_creation_failure_fixture/$output_parent_creation_failure_zip" ]] || fail "zip was created under uncreatable sentinel output parent"
+
 # Existing output zip is refused by default after verification.
 refuse_fixture="$fixture_root/refuse-existing"
 make_fixture "$refuse_fixture"
@@ -348,6 +379,26 @@ assert_contains "$refuse_text" "Refusing to overwrite existing output zip"
 assert_contains "$refuse_text" "LITHEPG_RELEASE_ZIP_OVERWRITE=1"
 assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
 [[ "$(<"$refuse_fixture/dist/LithePG.app.zip")" == "existing zip" ]] || fail "existing zip content changed despite refusal"
+
+# Existing output zip refusal must not echo caller-supplied output directories, which can contain local paths or sentinel values.
+refuse_sentinel="REFUSE_EXISTING_OUTPUT_SENTINEL_DO_NOT_PRINT"
+refuse_sentinel_fixture="$fixture_root/refuse-existing-sentinel"
+make_fixture "$refuse_sentinel_fixture"
+refuse_sentinel_zip="artifacts/$refuse_sentinel/LithePG.app.zip"
+mkdir -p "$(dirname "$refuse_sentinel_fixture/$refuse_sentinel_zip")"
+printf 'existing sentinel zip\n' >"$refuse_sentinel_fixture/$refuse_sentinel_zip"
+verify_log="$refuse_sentinel_fixture/verify.log"
+if FAKE_VERIFY_LOG="$verify_log" \
+  run_helper_capture "$refuse_sentinel_fixture" "$refuse_sentinel_output" "dist/LithePG.app" "$refuse_sentinel_zip"; then
+  fail "helper unexpectedly overwrote existing sentinel output zip by default"
+fi
+refuse_sentinel_text="$(<"$refuse_sentinel_output")"
+assert_contains "$refuse_sentinel_text" "Refusing to overwrite existing output zip"
+assert_contains "$refuse_sentinel_text" "LITHEPG_RELEASE_ZIP_OVERWRITE=1"
+assert_not_contains "$refuse_sentinel_text" "$refuse_sentinel_zip"
+assert_not_contains "$refuse_sentinel_text" "$refuse_sentinel"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+[[ "$(<"$refuse_sentinel_fixture/$refuse_sentinel_zip")" == "existing sentinel zip" ]] || fail "existing sentinel zip content changed despite refusal"
 
 # Undocumented uppercase overwrite approval must be refused and preserve the existing zip.
 uppercase_overwrite_fixture="$fixture_root/refuse-uppercase-overwrite"
@@ -477,6 +528,29 @@ assert_not_contains "$success_path_redaction_text" "$sensitive_release_marker"
 assert_zip_contains_app_wrapper "$success_path_redaction_fixture/$success_path_redaction_zip" "$success_path_redaction_fixture/extracted-success-path-redaction"
 assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
 
+# Temporary output directory creation failures must not echo caller-supplied output parents or mktemp's local-path diagnostics.
+temp_creation_failure_sentinel="TEMP_CREATION_FAILURE_SENTINEL_DO_NOT_PRINT"
+temp_creation_failure_fixture="$fixture_root/temp-creation-failure"
+make_fixture "$temp_creation_failure_fixture"
+temp_creation_failure_parent="$temp_creation_failure_fixture/artifacts/$temp_creation_failure_sentinel"
+temp_creation_failure_zip="artifacts/$temp_creation_failure_sentinel/LithePG.app.zip"
+mkdir -p "$temp_creation_failure_parent"
+chmod 500 "$temp_creation_failure_parent"
+verify_log="$temp_creation_failure_fixture/verify.log"
+if FAKE_VERIFY_LOG="$verify_log" \
+  run_helper_capture "$temp_creation_failure_fixture" "$temp_creation_failure_output" "dist/LithePG.app" "$temp_creation_failure_zip"; then
+  chmod u+rwx "$temp_creation_failure_parent"
+  fail "helper unexpectedly created a zip under an unwritable sentinel output parent"
+fi
+chmod u+rwx "$temp_creation_failure_parent"
+temp_creation_failure_text="$(<"$temp_creation_failure_output")"
+assert_contains "$temp_creation_failure_text" "could not create temporary output directory"
+assert_not_contains "$temp_creation_failure_text" "$temp_creation_failure_zip"
+assert_not_contains "$temp_creation_failure_text" "$temp_creation_failure_parent"
+assert_not_contains "$temp_creation_failure_text" "$temp_creation_failure_sentinel"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+[[ ! -e "$temp_creation_failure_fixture/$temp_creation_failure_zip" ]] || fail "zip was created under unwritable sentinel output parent"
+
 # Output paths inside the app bundle are refused to avoid recursive/self-embedding artifacts.
 inside_fixture="$fixture_root/inside-app-output"
 make_fixture "$inside_fixture"
@@ -489,6 +563,23 @@ inside_bundle_text="$(<"$inside_bundle_output")"
 assert_contains "$inside_bundle_text" "output zip must not be inside the app bundle"
 assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
 [[ ! -e "$inside_fixture/dist/LithePG.app/Contents/LithePG.app.zip" ]] || fail "zip was created inside the app bundle"
+
+# Inside-app-bundle output refusal must not echo caller-supplied path segments.
+inside_bundle_sentinel="INSIDE_APP_OUTPUT_SENTINEL_DO_NOT_PRINT"
+inside_bundle_sentinel_fixture="$fixture_root/inside-app-output-sentinel"
+make_fixture "$inside_bundle_sentinel_fixture"
+inside_bundle_sentinel_zip="dist/LithePG.app/Contents/$inside_bundle_sentinel/LithePG.app.zip"
+verify_log="$inside_bundle_sentinel_fixture/verify.log"
+if FAKE_VERIFY_LOG="$verify_log" \
+  run_helper_capture "$inside_bundle_sentinel_fixture" "$inside_bundle_sentinel_output" "dist/LithePG.app" "$inside_bundle_sentinel_zip"; then
+  fail "helper unexpectedly allowed sentinel output zip inside the app bundle"
+fi
+inside_bundle_sentinel_text="$(<"$inside_bundle_sentinel_output")"
+assert_contains "$inside_bundle_sentinel_text" "output zip must not be inside the app bundle"
+assert_not_contains "$inside_bundle_sentinel_text" "$inside_bundle_sentinel_zip"
+assert_not_contains "$inside_bundle_sentinel_text" "$inside_bundle_sentinel"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+[[ ! -e "$inside_bundle_sentinel_fixture/$inside_bundle_sentinel_zip" ]] || fail "sentinel zip was created inside the app bundle"
 
 absolute_inside_fixture="$fixture_root/absolute-inside-app-output"
 make_fixture "$absolute_inside_fixture"

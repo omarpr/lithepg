@@ -1216,3 +1216,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Updated evidence artifact `docs/evidence/2026-06-01-sign-notarize-output-redaction.svg` to include the mktemp/chmod/cleanup follow-ups with synthetic, secret-free fixture language.
 - Independent follow-up reviews after cleanup hardening: spec compliance PASS; code quality/security APPROVED.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-06-01 05:38 EDT — v1.0 release zip failure-output redaction
+
+- Hardened `script/create_release_zip.sh` so caller-controlled output/local paths are not echoed on release-zip failure paths: existing output overwrite refusal, output-parent creation failure, temporary staging directory creation failure, inside-app-bundle output refusal, SHA/size failure, and final rename failure now use stable generic messages and suppress noisy subprocess diagnostics where needed.
+- Added strict-TDD coverage in `script/test_create_release_zip.sh` proving sentinel-containing output paths remain redacted for existing-output refusal, `mkdir` parent creation failures, `mktemp` staging failures, and inside-app-bundle output refusal.
+- RED verification: `bash script/test_create_release_zip.sh` failed first with `test_create_release_zip failed: output leaked forbidden value: artifacts/REFUSE_EXISTING_OUTPUT_SENTINEL_DO_NOT_PRINT/LithePG.app.zip`; follow-up spec review then caught the unsuppressed `mkdir` diagnostic gap, and the added regression failed first with `expected output to contain: could not create output zip parent directory`.
+- GREEN verification: `bash script/test_create_release_zip.sh`, release-helper shell tests `bash script/test_package_verify.sh && bash script/test_sign_and_notarize.sh && bash script/test_v10_release_gate.sh`, `bash -n script/create_release_zip.sh script/test_create_release_zip.sh`, `git diff --check`, SVG parse, and `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260601-054110/` with default Swift tests, live dogfood tests, and v0.4 measurement all passed. Metrics: shell readiness 151.65 ms; connected cold start 230.67 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead 0.018 ms; dogfood query median overhead 0.045 ms.
+- Independent reviews: spec compliance PASS after the `mkdir` follow-up; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-06-01-release-zip-failure-output-redaction.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
