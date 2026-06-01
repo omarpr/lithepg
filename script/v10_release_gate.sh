@@ -10,7 +10,7 @@ RELEASE_ZIP_PATH="${LITHEPG_RELEASE_ZIP_PATH:-dist/LithePG.app.zip}"
 RELEASE_ZIP_SHA256="${LITHEPG_RELEASE_ZIP_SHA256:-}"
 
 usage() {
-  cat <<'USAGE'
+  /bin/cat <<'USAGE'
 Usage: script/v10_release_gate.sh [--version <version>] [--check-remote]
 
 Fast v1.0 publication preflight. Summarizes local tag readiness and required

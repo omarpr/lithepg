@@ -1382,3 +1382,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_create_release_zip.sh`, adjacent release-helper tests (`test_package_verify`, `test_sign_and_notarize`, `test_v10_release_gate`), `bash -n script/create_release_zip.sh script/test_create_release_zip.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 127 tests across 20 suites.
 - Evidence artifact: `screenshots/evidence/2026-06-01-create-release-zip-help-cat-path-shadow-hardening.svg`.
 - No package signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 13:11 EDT — v1.0 release gate help cat PATH-shadow hardening
+
+- Hardened `script/v10_release_gate.sh --help` so `usage()` renders via `/bin/cat` instead of caller-controlled `PATH` resolution.
+- Added strict-TDD coverage in `script/test_v10_release_gate.sh` with a fake PATH-shadowed `cat` that emits `V10_RELEASE_GATE_HELP_CAT_PATH_SHADOW_SHOULD_NOT_RUN` and exits non-zero. The helper must still print usage and must not invoke or print fake `cat` output.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: release gate --help did not exit 0 under PATH-shadowed cat`.
+- GREEN verification: `bash script/test_v10_release_gate.sh` passed after the minimal `/bin/cat` production change. Adjacent release-helper tests (`test_package_verify`, `test_create_release_zip`, `test_sign_and_notarize`), shell syntax checks, `git diff --check`, SVG parse, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` all passed. Swift Testing reported 127 tests across 20 suites.
+- Evidence artifact: `screenshots/evidence/2026-06-01-v10-release-gate-help-cat-path-shadow-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

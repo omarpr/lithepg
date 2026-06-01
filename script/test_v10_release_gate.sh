@@ -143,6 +143,7 @@ grep_error_output="$(mktemp)"
 path_shadowed_dirname_output="$(mktemp)"
 path_shadowed_rm_output="$(mktemp)"
 path_shadowed_grep_output="$(mktemp)"
+path_shadowed_cat_output="$(mktemp)"
 placeholder_release_copy="$(mktemp)"
 placeholder_free_release_copy="$(mktemp)"
 mismatched_release_copy_sha="$(mktemp)"
@@ -378,6 +379,7 @@ cleanup() {
     "$path_shadowed_dirname_output" \
     "$path_shadowed_rm_output" \
     "$path_shadowed_grep_output" \
+    "$path_shadowed_cat_output" \
     "$placeholder_release_copy" \
     "$placeholder_free_release_copy" \
     "$mismatched_release_copy_sha" \
@@ -590,6 +592,14 @@ printf 'V10_RELEASE_GATE_PATH_SHADOW_RM_SHOULD_NOT_RUN\n' >&2
 exit 44
 FAKE_RM
 chmod +x "$fake_git_dir/rm"
+cat >"$fake_git_dir/cat" <<'FAKE_CAT'
+#!/usr/bin/env bash
+set -euo pipefail
+
+printf 'V10_RELEASE_GATE_HELP_CAT_PATH_SHADOW_SHOULD_NOT_RUN\n' >&2
+exit 46
+FAKE_CAT
+chmod +x "$fake_git_dir/cat"
 fake_path="$fake_git_dir:${PATH:-/usr/bin:/bin}"
 write_valid_info_plist() {
   local plist_path="$1"
@@ -2453,6 +2463,18 @@ assert_not_contains "$path_shadowed_grep_text" "V10_RELEASE_GATE_PATH_SHADOW_GRE
 assert_contains "$path_shadowed_grep_text" "v1.0 publication blocked"
 assert_contains "$path_shadowed_grep_text" "Release copy placeholders: none found"
 assert_contains "$path_shadowed_grep_text" "LITHEPG_PUBLICATION_APPROVED: not approved"
+
+set +e
+(
+  cd "$ROOT_DIR"
+  env -i PATH="$fake_path" "$HELPER" --help
+) >"$path_shadowed_cat_output" 2>&1
+path_shadowed_cat_status=$?
+set -e
+[[ "$path_shadowed_cat_status" -eq 0 ]] || fail "release gate --help did not exit 0 under PATH-shadowed cat"
+path_shadowed_cat_text="$(<"$path_shadowed_cat_output")"
+assert_contains "$path_shadowed_cat_text" "Usage: script/v10_release_gate.sh"
+assert_not_contains "$path_shadowed_cat_text" "V10_RELEASE_GATE_HELP_CAT_PATH_SHADOW_SHOULD_NOT_RUN"
 
 if run_specific_gate_capture "$path_shadowed_dirname_output" "$default_security_docs_helper" env -i PATH="$fake_path" FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker"; then
   fail "gate unexpectedly passed with all required external inputs missing under PATH-shadowed dirname"
