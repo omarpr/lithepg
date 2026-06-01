@@ -112,6 +112,17 @@ assert_contains "$helper_output" "Package verified: $app_bundle"
 assert_contains "$helper_output" "Bundle ID: dev.omarpr.lithepg"
 assert_contains "$helper_output" "Version: 1.0 (100)"
 
+wrong_basename_bundle="$fixture_root/NotLithePG.app"
+make_minimal_app_bundle "$wrong_basename_bundle"
+if run_helper_capture "$output_file" "$wrong_basename_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted an app bundle with the wrong basename"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: app bundle basename must be LithePG.app"
+assert_not_contains "$helper_output" "Package verified:"
+
 extra_arg_sentinel="EXTRA_ARG_SHOULD_NOT_BE_USED_OR_LEAKED"
 if run_helper_capture "$output_file" "$app_bundle" "$extra_arg_sentinel"; then
   helper_output="$(<"$output_file")"

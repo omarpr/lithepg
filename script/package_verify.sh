@@ -45,6 +45,7 @@ done
 
 [[ -d "$APP_BUNDLE" ]] || fail "app bundle not found: $APP_BUNDLE"
 [[ "${APP_BUNDLE##*.}" == "app" ]] || fail "bundle path must end in .app"
+[[ "${APP_BUNDLE##*/}" == "LithePG.app" ]] || fail "app bundle basename must be LithePG.app"
 
 CONTENTS_DIR="$APP_BUNDLE/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"

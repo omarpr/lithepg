@@ -1002,3 +1002,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-05-31-package-verify-help-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 20:50 EDT — v1.0 package verifier app-bundle basename gate
+
+- Hardened `script/package_verify.sh` so package verification only succeeds for an app-bundle path whose normalized basename is exactly `LithePG.app`, aligning the generic package verifier with the public release zip/signing helper canonical bundle-name gates.
+- Added strict-TDD coverage in `script/test_package_verify.sh` proving a structurally valid `NotLithePG.app` fixture is rejected with `app bundle basename must be LithePG.app` and does not print `Package verified:`.
+- RED verification: `bash script/test_package_verify.sh` failed first with `test_package_verify failed: package verifier unexpectedly accepted an app bundle with the wrong basename`.
+- GREEN verification: `bash script/test_package_verify.sh`, `bash -n script/package_verify.sh script/test_package_verify.sh`, `git diff --check`, adjacent release helper tests `bash script/test_create_release_zip.sh && bash script/test_sign_and_notarize.sh && bash script/test_v10_release_gate.sh`, and `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-05-31-package-verify-app-bundle-basename-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
