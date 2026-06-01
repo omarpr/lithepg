@@ -1137,3 +1137,16 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-06-01-package-verify-appledouble-metadata-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 02:38 EDT — v1.0 package verifier special-file gate
+
+- Hardened `script/package_verify.sh` so `LithePG.app` package verification rejects non-regular, non-directory special entries anywhere under the bundle tree, while preserving the existing symlink-specific rejection path.
+- Added strict-TDD coverage proving a FIFO under `Contents/Resources` fails with the generic message `package verification failed: app bundle must contain only regular files and directories`, without printing package-verification success or leaking fixture paths, sentinels, or the FIFO filename.
+- RED verification: `bash script/test_package_verify.sh` failed first with `test_package_verify failed: package verifier unexpectedly accepted a special file inside the app bundle` after the verifier printed package verification success for the old behavior.
+- GREEN verification: `bash script/test_package_verify.sh`, adjacent release-helper tests `bash script/test_create_release_zip.sh`, `bash script/test_sign_and_notarize.sh`, and `bash script/test_v10_release_gate.sh`, syntax checks, SVG parse, and `git diff --check` passed locally before the release-impact gates.
+- Full Swift verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 127 Swift Testing tests across 20 suites.
+- Package smoke verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/build_and_run.sh --package` passed and verified `dist/LithePG.app` with packaged executable 12,507,504 bytes / 11.93 MiB, version `0.5` build `230`.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260601-024045/` with default Swift tests, live dogfood tests, and v0.4 measurement all passed. Metrics: shell readiness 132.06 ms; connected cold start 235.81 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead 0.049 ms; dogfood query median overhead 0.013 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-06-01-package-verify-special-file-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

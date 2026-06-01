@@ -594,6 +594,24 @@ assert_not_contains "$helper_output" "$resource_symlink_sentinel"
 assert_not_contains "$helper_output" "target.txt"
 assert_not_contains "$helper_output" "resource-link"
 
+special_file_sentinel="SPECIAL_FILE_FIFO_SENTINEL_SHOULD_NOT_LEAK"
+special_file_bundle="$fixture_root/special-file-$special_file_sentinel/LithePG.app"
+special_file_fifo_name="special-fifo-should-not-leak"
+make_minimal_app_bundle "$special_file_bundle"
+mkdir -p "$special_file_bundle/Contents/Resources"
+/usr/bin/mkfifo "$special_file_bundle/Contents/Resources/$special_file_fifo_name"
+if run_helper_capture "$output_file" "$special_file_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted a special file inside the app bundle"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: app bundle must contain only regular files and directories"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$special_file_bundle"
+assert_not_contains "$helper_output" "$special_file_sentinel"
+assert_not_contains "$helper_output" "$special_file_fifo_name"
+
 unreadable_symlink_sentinel="UNREADABLE_SYMLINK_SENTINEL_SHOULD_NOT_LEAK"
 unreadable_symlink_bundle="$fixture_root/unreadable-symlink/LithePG.app"
 make_minimal_app_bundle "$unreadable_symlink_bundle"

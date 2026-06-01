@@ -96,6 +96,14 @@ if [[ -n "$symlink_match" ]]; then
   fail "app bundle must not contain symlinks"
 fi
 
+special_file_match=""
+if ! special_file_match="$(/usr/bin/find "$APP_BUNDLE" ! -type f ! -type d ! -type l -print -quit 2>/dev/null)"; then
+  fail "app bundle must contain only regular files and directories"
+fi
+if [[ -n "$special_file_match" ]]; then
+  fail "app bundle must contain only regular files and directories"
+fi
+
 finder_metadata_match=""
 if ! finder_metadata_match="$(/usr/bin/find "$APP_BUNDLE" \( -name '.DS_Store' -o -name '__MACOSX' -o -name '._*' \) -print -quit 2>/dev/null)"; then
   fail "app bundle must not contain Finder metadata files"
