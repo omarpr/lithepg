@@ -97,7 +97,7 @@ if [[ -n "$symlink_match" ]]; then
 fi
 
 finder_metadata_match=""
-if ! finder_metadata_match="$(/usr/bin/find "$APP_BUNDLE" \( -name '.DS_Store' -o -name '__MACOSX' \) -print -quit 2>/dev/null)"; then
+if ! finder_metadata_match="$(/usr/bin/find "$APP_BUNDLE" \( -name '.DS_Store' -o -name '__MACOSX' -o -name '._*' \) -print -quit 2>/dev/null)"; then
   fail "app bundle must not contain Finder metadata files"
 fi
 if [[ -n "$finder_metadata_match" ]]; then

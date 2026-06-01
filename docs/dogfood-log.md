@@ -1125,3 +1125,15 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-06-01-package-verify-finder-metadata-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 02:13 EDT — v1.0 package verifier AppleDouble metadata gate
+
+- Hardened `script/package_verify.sh` so the bundle-level Finder metadata check now rejects AppleDouble files whose basename begins with `._`, aligning package verification with the public release zip metadata gate.
+- Added strict-TDD coverage proving `Contents/Resources/._Icon` fails with the generic message `package verification failed: app bundle must not contain Finder metadata files`, without printing package-verification success or leaking fixture paths, sentinel content, or the AppleDouble filename.
+- RED verification: `bash script/test_package_verify.sh` failed first because the package verifier accepted the AppleDouble metadata fixture under the old behavior.
+- GREEN verification: `bash script/test_package_verify.sh`, `bash -n script/package_verify.sh script/test_package_verify.sh`, `git diff --check`, adjacent release-helper tests `bash script/test_create_release_zip.sh`, `bash script/test_sign_and_notarize.sh`, and `bash script/test_v10_release_gate.sh`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` all passed. Swift Testing reported 127 tests across 20 suites.
+- Package smoke verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/build_and_run.sh --package` passed and verified `dist/LithePG.app` with packaged executable 12,507,504 bytes / 11.93 MiB.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260601-021516/` with default Swift tests, live dogfood tests, and v0.4 measurement all passed. Metrics: shell readiness 126.10 ms; connected cold start 229.90 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead 0.011 ms; dogfood query median overhead 0.004 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-06-01-package-verify-appledouble-metadata-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

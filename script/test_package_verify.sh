@@ -244,6 +244,23 @@ assert_not_contains "$helper_output" "$macosx_metadata_sentinel"
 assert_not_contains "$helper_output" "__MACOSX"
 assert_not_contains "$helper_output" "._manifest"
 
+appledouble_metadata_sentinel="APPLEDOUBLE_METADATA_SENTINEL_SHOULD_NOT_LEAK"
+appledouble_metadata_bundle="$fixture_root/finder-metadata-appledouble-$appledouble_metadata_sentinel/LithePG.app"
+make_minimal_app_bundle "$appledouble_metadata_bundle"
+mkdir -p "$appledouble_metadata_bundle/Contents/Resources"
+printf '%s\n' "$appledouble_metadata_sentinel" >"$appledouble_metadata_bundle/Contents/Resources/._Icon"
+if run_helper_capture "$output_file" "$appledouble_metadata_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted AppleDouble Finder metadata inside the app bundle"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "$finder_metadata_failure"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$appledouble_metadata_bundle"
+assert_not_contains "$helper_output" "$appledouble_metadata_sentinel"
+assert_not_contains "$helper_output" "._Icon"
+
 metadata_cases=(
   "CFBundleExecutable|CFBundleExecutable mismatch"
   "CFBundleIdentifier|CFBundleIdentifier mismatch"
