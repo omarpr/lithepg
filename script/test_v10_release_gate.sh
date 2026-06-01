@@ -142,6 +142,7 @@ status_failure_output="$(mktemp)"
 grep_error_output="$(mktemp)"
 path_shadowed_dirname_output="$(mktemp)"
 path_shadowed_rm_output="$(mktemp)"
+path_shadowed_grep_output="$(mktemp)"
 placeholder_release_copy="$(mktemp)"
 placeholder_free_release_copy="$(mktemp)"
 mismatched_release_copy_sha="$(mktemp)"
@@ -376,6 +377,7 @@ cleanup() {
     "$grep_error_output" \
     "$path_shadowed_dirname_output" \
     "$path_shadowed_rm_output" \
+    "$path_shadowed_grep_output" \
     "$placeholder_release_copy" \
     "$placeholder_free_release_copy" \
     "$mismatched_release_copy_sha" \
@@ -568,16 +570,8 @@ cat >"$fake_git_dir/grep" <<'FAKE_GREP'
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ -n "${FAKE_GREP_ERROR_PATH:-}" ]]; then
-  for arg in "$@"; do
-    if [[ "$arg" == "$FAKE_GREP_ERROR_PATH" ]]; then
-      printf 'grep: %s: fake read error\n' "$arg" >&2
-      exit 2
-    fi
-  done
-fi
-
-exec /usr/bin/grep "$@"
+printf 'V10_RELEASE_GATE_PATH_SHADOW_GREP_SHOULD_NOT_RUN\n' >&2
+exit 45
 FAKE_GREP
 chmod +x "$fake_git_dir/grep"
 cat >"$fake_git_dir/dirname" <<'FAKE_DIRNAME'
@@ -2428,6 +2422,7 @@ CASK
 printf 'Report vulnerabilities to [security contact pending].\n' >"$placeholder_security_doc"
 printf 'Report vulnerabilities using the configured private security advisory flow.\n' >"$placeholder_free_security_doc"
 printf 'LithePG v1.0 release copy that cannot be scanned by fake grep.\n' >"$grep_error_release_copy"
+/bin/chmod 000 "$grep_error_release_copy"
 
 mkdir -p "$default_security_docs_repo/script" "$default_security_docs_repo/docs"
 default_security_docs_helper="$default_security_docs_repo/script/v10_release_gate.sh"
@@ -2435,6 +2430,29 @@ cp "$HELPER" "$default_security_docs_helper"
 chmod +x "$default_security_docs_helper"
 printf 'Report vulnerabilities using the configured private security advisory flow.\n' >"$default_security_docs_repo/SECURITY.md"
 printf 'Report vulnerabilities to [security contact pending].\n' >"$default_security_docs_repo/docs/SECURITY.md"
+
+if run_gate_capture "$path_shadowed_grep_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured-test-identity" \
+  LITHEPG_NOTARY_PROFILE="configured-test-notary-profile" \
+  LITHEPG_SECURITY_CONTACT="security@example.invalid" \
+  LITHEPG_HOMEBREW_TAP="example/homebrew-lithepg" \
+  LITHEPG_GITHUB_ACTIONS_READY="no" \
+  LITHEPG_RELEASE_COPY_APPROVED="false" \
+  LITHEPG_PUBLICATION_APPROVED="no"; then
+  fail "gate unexpectedly passed with publication approvals false under PATH-shadowed grep"
+fi
+path_shadowed_grep_text="$(<"$path_shadowed_grep_output")"
+assert_not_contains "$path_shadowed_grep_text" "V10_RELEASE_GATE_PATH_SHADOW_GREP_SHOULD_NOT_RUN"
+assert_contains "$path_shadowed_grep_text" "v1.0 publication blocked"
+assert_contains "$path_shadowed_grep_text" "Release copy placeholders: none found"
+assert_contains "$path_shadowed_grep_text" "LITHEPG_PUBLICATION_APPROVED: not approved"
 
 if run_specific_gate_capture "$path_shadowed_dirname_output" "$default_security_docs_helper" env -i PATH="$fake_path" FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker"; then
   fail "gate unexpectedly passed with all required external inputs missing under PATH-shadowed dirname"
@@ -4694,7 +4712,6 @@ assert_not_contains "$missing_copy_text" "fast preflight is clear"
 if run_gate_capture "$grep_error_output" env -i \
   PATH="$fake_path" \
   FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
-  FAKE_GREP_ERROR_PATH="$grep_error_release_copy" \
   LITHEPG_RELEASE_COPY_PATH="$grep_error_release_copy" \
   LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
   LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \

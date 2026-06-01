@@ -1193,7 +1193,7 @@ if [[ ! -f "$release_copy_file" ]]; then
   mark_blocker
 else
   set +e
-  grep -q 'REPLACE_WITH_' "$release_copy_file"
+  /usr/bin/grep -q 'REPLACE_WITH_' "$release_copy_file"
   grep_status=$?
   set -e
   case "$grep_status" in
@@ -1214,7 +1214,7 @@ fi
 
 if [[ "$release_copy_check_ready" -eq 1 ]]; then
   set +e
-  grep -Eq '^[[:space:]]*-[[:space:]]\[[[:space:]]\]' "$release_copy_file"
+  /usr/bin/grep -Eq '^[[:space:]]*-[[:space:]]\[[[:space:]]\]' "$release_copy_file"
   grep_status=$?
   set -e
   case "$grep_status" in
@@ -1235,7 +1235,7 @@ fi
 if [[ "$release_copy_check_ready" -eq 1 && "$RELEASE_ZIP_SHA256" =~ ^[[:xdigit:]]{64}$ ]]; then
   expected_sha="$(printf '%s' "$RELEASE_ZIP_SHA256" | /usr/bin/tr '[:upper:]' '[:lower:]')"
   set +e
-  grep -Eiq -- "(^|[^[:xdigit:]])${expected_sha}([^[:xdigit:]]|$)" "$release_copy_file"
+  /usr/bin/grep -Eiq -- "(^|[^[:xdigit:]])${expected_sha}([^[:xdigit:]]|$)" "$release_copy_file"
   grep_status=$?
   set -e
   case "$grep_status" in
@@ -1261,7 +1261,7 @@ if [[ ! -f "$homebrew_cask_file" ]]; then
   mark_blocker
 else
   set +e
-  grep -q 'REPLACE_WITH_' "$homebrew_cask_file"
+  /usr/bin/grep -q 'REPLACE_WITH_' "$homebrew_cask_file"
   grep_status=$?
   set -e
   case "$grep_status" in
@@ -1485,7 +1485,7 @@ for security_doc_path in "${SECURITY_DOC_PATHS[@]}"; do
     mark_blocker
   else
     set +e
-    grep -Eiq '\[security contact pending\]|REPLACE_WITH_|PLACEHOLDER|TODO|TBD' "$security_doc_file"
+    /usr/bin/grep -Eiq '\[security contact pending\]|REPLACE_WITH_|PLACEHOLDER|TODO|TBD' "$security_doc_file"
     grep_status=$?
     set -e
     case "$grep_status" in

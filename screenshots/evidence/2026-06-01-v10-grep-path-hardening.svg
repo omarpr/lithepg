@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release gate grep PATH hardening evidence</title>
+  <desc id="desc">Visual evidence for the commit hardening v10_release_gate.sh against PATH-shadowed grep.</desc>
+  <rect width="1200" height="720" fill="#0b1020"/>
+  <rect x="40" y="40" width="1120" height="640" rx="24" fill="#111827" stroke="#38bdf8" stroke-width="2"/>
+  <text x="80" y="105" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="34" font-weight="700">LithePG v1.0 Release Gate</text>
+  <text x="80" y="150" fill="#93c5fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="24">grep PATH-shadow hardening evidence</text>
+
+  <rect x="80" y="190" width="1040" height="360" rx="16" fill="#020617" stroke="#334155"/>
+  <text x="110" y="245" fill="#86efac" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="24">$ bash script/test_v10_release_gate.sh</text>
+  <text x="110" y="290" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="24">test_v10_release_gate passed</text>
+  <text x="110" y="350" fill="#86efac" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="24">$ bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh</text>
+  <text x="110" y="395" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="24">PASS</text>
+  <text x="110" y="455" fill="#86efac" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="24">$ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test</text>
+  <text x="110" y="500" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="24">127 tests in 20 suites passed</text>
+
+  <text x="80" y="600" fill="#fbbf24" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="22">Changed: helper-owned release-copy/Homebrew/security grep scans now use /usr/bin/grep.</text>
+  <text x="80" y="635" fill="#fbbf24" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="22">Test: fake PATH grep emits a sentinel and must not be invoked.</text>
+</svg>
