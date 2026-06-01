@@ -77,6 +77,12 @@ app_binary_mode="$(stat -f%p "$APP_BINARY")"
 if (( (8#$app_binary_mode & 07022) != 0 )); then
   fail "app executable mode is unsafe"
 fi
+if ! app_binary_headers="$(/usr/bin/otool -hv "$APP_BINARY" 2>/dev/null)"; then
+  fail "app executable format is invalid"
+fi
+if ! printf '%s\n' "$app_binary_headers" | /usr/bin/grep -Eq '^[[:space:]]*MH_MAGIC(_64)?[[:space:]].*[[:space:]]EXECUTE[[:space:]]'; then
+  fail "app executable format is invalid"
+fi
 [[ -f "$INFO_PLIST" && ! -L "$INFO_PLIST" ]] || fail "Info.plist must be a regular file"
 info_plist_mode="$(stat -f%p "$INFO_PLIST")"
 if (( (8#$info_plist_mode & 07022) != 0 )); then

@@ -53,9 +53,18 @@ PLIST
 
   chmod 644 "$app_bundle/Contents/Info.plist"
 
-  cat >"$app_bundle/Contents/MacOS/LithePGApp" <<'APP'
+  cp /usr/bin/true "$app_bundle/Contents/MacOS/LithePGApp"
+  chmod 755 "$app_bundle/Contents/MacOS/LithePGApp"
+}
+
+make_text_executable_app_bundle() {
+  local app_bundle="$1"
+  local executable_sentinel="$2"
+  make_minimal_app_bundle "$app_bundle"
+
+  cat >"$app_bundle/Contents/MacOS/LithePGApp" <<APP
 #!/usr/bin/env bash
-printf 'LithePG test fixture\n'
+printf '%s\\n' '$executable_sentinel'
 APP
   chmod 755 "$app_bundle/Contents/MacOS/LithePGApp"
 }
@@ -134,6 +143,59 @@ assert_contains "$helper_output" "Usage:"
 assert_contains "$helper_output" "LITHEPG_EXPECTED_MARKETING_VERSION"
 assert_contains "$helper_output" "LITHEPG_EXPECTED_BUILD_VERSION"
 assert_not_contains "$helper_output" "Package verified:"
+
+text_executable_sentinel="TEXT_EXECUTABLE_SENTINEL_SHOULD_NOT_LEAK"
+text_executable_bundle="$fixture_root/text-executable-$text_executable_sentinel/LithePG.app"
+make_text_executable_app_bundle "$text_executable_bundle" "$text_executable_sentinel"
+if run_helper_capture "$output_file" "$text_executable_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted a text app executable"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: app executable format is invalid"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$text_executable_bundle"
+assert_not_contains "$helper_output" "$text_executable_sentinel"
+assert_not_contains "$helper_output" "shell script"
+assert_not_contains "$helper_output" "ASCII text"
+
+mach_o_non_executable_sentinel="MACH_O_NON_EXECUTABLE_SENTINEL_SHOULD_NOT_LEAK"
+mach_o_non_executable_bundle="$fixture_root/mach-o-non-executable-$mach_o_non_executable_sentinel/LithePG.app"
+make_minimal_app_bundle "$mach_o_non_executable_bundle"
+cp /usr/lib/dyld "$mach_o_non_executable_bundle/Contents/MacOS/LithePGApp"
+chmod 755 "$mach_o_non_executable_bundle/Contents/MacOS/LithePGApp"
+if run_helper_capture "$output_file" "$mach_o_non_executable_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted a Mach-O non-executable app binary"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: app executable format is invalid"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$mach_o_non_executable_bundle"
+assert_not_contains "$helper_output" "$mach_o_non_executable_sentinel"
+assert_not_contains "$helper_output" "dynamic linker"
+assert_not_contains "$helper_output" "Mach-O"
+
+mach_o_path_contamination_sentinel="MACH_O_PATH_CONTAMINATION_SENTINEL_SHOULD_NOT_LEAK"
+mach_o_path_contamination_dir="$fixture_root/Mach-O 64-bit executable path $mach_o_path_contamination_sentinel"
+mach_o_path_contamination_bundle="$mach_o_path_contamination_dir/LithePG.app"
+make_minimal_app_bundle "$mach_o_path_contamination_bundle"
+cp /usr/lib/dyld "$mach_o_path_contamination_bundle/Contents/MacOS/LithePGApp"
+chmod 755 "$mach_o_path_contamination_bundle/Contents/MacOS/LithePGApp"
+if run_helper_capture "$output_file" "$mach_o_path_contamination_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted a Mach-O non-executable app binary from a misleading path"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: app executable format is invalid"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$mach_o_path_contamination_dir"
+assert_not_contains "$helper_output" "$mach_o_path_contamination_sentinel"
+assert_not_contains "$helper_output" "dynamic linker"
+assert_not_contains "$helper_output" "Mach-O"
 
 if ! run_helper_capture "$output_file" "$app_bundle"; then
   helper_output="$(<"$output_file")"

@@ -50,10 +50,7 @@ make_minimal_app_bundle() {
 </plist>
 PLIST
 
-  cat >"$app_bundle/Contents/MacOS/LithePGApp" <<'APP'
-#!/usr/bin/env bash
-printf 'LithePG test fixture\n'
-APP
+  cp /usr/bin/true "$app_bundle/Contents/MacOS/LithePGApp"
   chmod +x "$app_bundle/Contents/MacOS/LithePGApp"
 }
 

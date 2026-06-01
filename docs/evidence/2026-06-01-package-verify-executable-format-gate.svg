@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="560" viewBox="0 0 980 560" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG package verifier executable-format gate</title>
+  <desc id="desc">Evidence summary for the v1.0 package verification hardening slice that rejects text executables, Mach-O non-executable app binaries, and path-contaminated format probes.</desc>
+  <rect width="980" height="560" fill="#0f172a"/>
+  <rect x="34" y="34" width="912" height="492" rx="24" fill="#f8fafc"/>
+
+  <text x="68" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#0f172a">Package verifier executable-format gate</text>
+  <text x="68" y="122" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="17" fill="#334155">Target: LithePG.app/Contents/MacOS/LithePGApp must inspect as Mach-O</text>
+
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="17" fill="#0f172a">
+    <rect x="68" y="154" width="844" height="70" rx="14" fill="#fee2e2"/>
+    <text x="94" y="184" font-weight="700">RED</text>
+    <text x="154" y="184">bash script/test_package_verify.sh</text>
+    <text x="154" y="210" font-size="15" fill="#7f1d1d">failed first: text executable, Mach-O dynamic-linker, and path-contamination regressions</text>
+
+    <rect x="68" y="242" width="844" height="88" rx="14" fill="#dcfce7"/>
+    <text x="94" y="272" font-weight="700">GREEN</text>
+    <text x="176" y="272">bash script/test_package_verify.sh → test_package_verify passed</text>
+    <text x="176" y="298">bash -n script/package_verify.sh script/test_package_verify.sh → passed</text>
+    <text x="176" y="322">git diff --check → passed</text>
+
+    <rect x="68" y="348" width="844" height="74" rx="14" fill="#e0f2fe"/>
+    <text x="94" y="378" font-weight="700">Gate</text>
+    <text x="154" y="378">/usr/bin/otool -hv output is captured and never printed on failure</text>
+    <text x="154" y="404" font-size="15" fill="#075985">Gate: Mach-O header FILETYPE must be EXECUTE; failure output stays generic</text>
+
+    <rect x="68" y="440" width="844" height="52" rx="14" fill="#ffedd5"/>
+    <text x="94" y="472" font-weight="700">Adjacent</text>
+    <text x="190" y="472" font-size="15" fill="#7c2d12">sign_and_notarize, create_release_zip, and v10_release_gate helper tests passed.</text>
+  </g>
+
+  <text x="68" y="514" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#475569">Artifact: docs/evidence/2026-06-01-package-verify-executable-format-gate.svg — no secrets, no signing/notarization/publication.</text>
+</svg>

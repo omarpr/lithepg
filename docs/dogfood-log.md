@@ -1094,3 +1094,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-06-01-package-verify-metadata-redaction.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 — v1.0 package verifier executable-format gate
+
+- Hardened `script/package_verify.sh` so `Contents/MacOS/LithePGApp` must inspect as a Mach-O `EXECUTE` file via `/usr/bin/otool -hv`; text executables, Mach-O non-executables, misleading path-contamination cases, and uninspectable executables fail generically with `package verification failed: app executable format is invalid`.
+- Added strict-TDD coverage in `script/test_package_verify.sh` proving a structurally valid `LithePG.app` with a text/shell executable is rejected, added a follow-up RED regression proving a Mach-O dynamic linker is not accepted merely because it is Mach-O, and added a second follow-up proving misleading paths that contain `Mach-O ... executable` cannot contaminate executable-format detection. These cases avoid printing `Package verified:` and do not leak fixture paths, sentinels, or tool output. The valid package-verifier fixture now uses `/usr/bin/true` as a stable Mach-O executable.
+- RED verification: `bash script/test_package_verify.sh` failed first with `test_package_verify failed: package verifier unexpectedly accepted a text app executable`, then follow-up regressions failed with `test_package_verify failed: package verifier unexpectedly accepted a Mach-O non-executable app binary` and `test_package_verify failed: package verifier unexpectedly accepted a Mach-O non-executable app binary from a misleading path` before switching to the `otool -hv` `EXECUTE` header check.
+- GREEN verification: `bash script/test_package_verify.sh`, syntax checks `bash -n script/package_verify.sh script/test_package_verify.sh`, and `git diff --check` passed.
+- Follow-up fixture sync: `script/test_sign_and_notarize.sh` now uses the same `/usr/bin/true` Mach-O fixture so adjacent release-helper coverage remains aligned with the stricter package verifier.
+- Adjacent release-helper verification: `bash script/test_sign_and_notarize.sh`, `bash script/test_create_release_zip.sh`, and `bash script/test_v10_release_gate.sh` all passed.
+- Evidence artifact: `docs/evidence/2026-06-01-package-verify-executable-format-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
