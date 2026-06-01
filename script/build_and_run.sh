@@ -6,8 +6,20 @@ APP_NAME="LithePGApp"
 BUNDLE_NAME="LithePG"
 BUNDLE_ID="dev.omarpr.lithepg"
 MIN_SYSTEM_VERSION="14.0"
+AWK=/usr/bin/awk
+CAT=/bin/cat
+CHMOD=/bin/chmod
+CODESIGN=/usr/bin/codesign
+CP=/bin/cp
+DIRNAME=/usr/bin/dirname
+DITTO=/usr/bin/ditto
+MKDIR=/bin/mkdir
+RM=/bin/rm
+STAT=/usr/bin/stat
+STRIP=/usr/bin/strip
+XCRUN=/usr/bin/xcrun
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$("$DIRNAME" "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist"
 APP_BUNDLE="$DIST_DIR/$BUNDLE_NAME.app"
 APP_CONTENTS="$APP_BUNDLE/Contents"
@@ -46,18 +58,18 @@ else
   BUILD_BINARY="$(swift build --show-bin-path)/$APP_NAME"
 fi
 
-rm -rf "$APP_BUNDLE"
-mkdir -p "$APP_MACOS"
-chmod 755 "$APP_BUNDLE" "$APP_CONTENTS" "$APP_MACOS"
-cp "$BUILD_BINARY" "$APP_BINARY"
-chmod 755 "$APP_BINARY"
+"$RM" -rf "$APP_BUNDLE"
+"$MKDIR" -p "$APP_MACOS"
+"$CHMOD" 755 "$APP_BUNDLE" "$APP_CONTENTS" "$APP_MACOS"
+"$CP" "$BUILD_BINARY" "$APP_BINARY"
+"$CHMOD" 755 "$APP_BINARY"
 if [[ "$BUILD_CONFIG" == "release" ]]; then
-  BEFORE_BYTES=$(stat -f%z "$APP_BINARY")
-  strip -x "$APP_BINARY" >/dev/null 2>&1 || true
-  AFTER_BYTES=$(stat -f%z "$APP_BINARY")
+  BEFORE_BYTES=$("$STAT" -f%z "$APP_BINARY")
+  "$STRIP" -x "$APP_BINARY" >/dev/null 2>&1 || true
+  AFTER_BYTES=$("$STAT" -f%z "$APP_BINARY")
 fi
 
-cat >"$INFO_PLIST" <<PLIST
+"$CAT" >"$INFO_PLIST" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -81,7 +93,7 @@ cat >"$INFO_PLIST" <<PLIST
 </dict>
 </plist>
 PLIST
-chmod 644 "$INFO_PLIST"
+"$CHMOD" 644 "$INFO_PLIST"
 
 sign_release_bundle() {
   local identity="${LITHEPG_CODESIGN_IDENTITY:--}"
@@ -94,15 +106,15 @@ sign_release_bundle() {
   if [[ "$identity" != "-" ]]; then
     sign_args+=(--timestamp)
   fi
-  codesign "${sign_args[@]}" "$APP_BUNDLE"
-  codesign --verify --strict --deep "$APP_BUNDLE"
+  "$CODESIGN" "${sign_args[@]}" "$APP_BUNDLE"
+  "$CODESIGN" --verify --strict --deep "$APP_BUNDLE"
 }
 
 notarize_release_bundle() {
   [[ -n "${LITHEPG_NOTARY_PROFILE:-}" ]] || return 0
-  ditto -c -k --keepParent "$APP_BUNDLE" "$NOTARY_ZIP"
-  xcrun notarytool submit "$NOTARY_ZIP" --keychain-profile "$LITHEPG_NOTARY_PROFILE" --wait
-  xcrun stapler staple "$APP_BUNDLE"
+  "$DITTO" -c -k --keepParent "$APP_BUNDLE" "$NOTARY_ZIP"
+  "$XCRUN" notarytool submit "$NOTARY_ZIP" --keychain-profile "$LITHEPG_NOTARY_PROFILE" --wait
+  "$XCRUN" stapler staple "$APP_BUNDLE"
 }
 
 if [[ "$BUILD_CONFIG" == "release" ]]; then
@@ -138,9 +150,9 @@ case "$MODE" in
     printf '%s\n' "$APP_BUNDLE"
     ;;
   --package|package|release)
-    BEFORE_MIB=$(awk "BEGIN { printf \"%.2f\", $BEFORE_BYTES / 1024 / 1024 }")
-    AFTER_MIB=$(awk "BEGIN { printf \"%.2f\", $AFTER_BYTES / 1024 / 1024 }")
-    "$ROOT_DIR/script/package_verify.sh" "$APP_BUNDLE"
+    BEFORE_MIB=$("$AWK" "BEGIN { printf \"%.2f\", $BEFORE_BYTES / 1024 / 1024 }")
+    AFTER_MIB=$("$AWK" "BEGIN { printf \"%.2f\", $AFTER_BYTES / 1024 / 1024 }")
+    /bin/bash "$ROOT_DIR/script/package_verify.sh" "$APP_BUNDLE"
     printf 'Built %s (%s -> %s MiB after strip -x)\n' "$APP_BUNDLE" "$BEFORE_MIB" "$AFTER_MIB"
     ;;
   *)
