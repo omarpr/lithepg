@@ -1353,3 +1353,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_run_dogfood_app.sh` passed after the minimal `/usr/bin/dirname` production change. Adjacent verification also passed: `bash -n script/run_dogfood_app.sh script/test_run_dogfood_app.sh`, `git diff --check`, and `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`.
 - Evidence artifact: `screenshots/evidence/2026-06-01-run-dogfood-app-path-shadow-hardening.svg`.
 - No real app, Docker/Postgres instance, signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-06-01 12:11 EDT — v1.0 sign/notarize help cat PATH-shadow hardening
+
+- Hardened `script/sign_and_notarize.sh --help` so `usage()` renders via `/bin/cat` instead of caller-controlled `PATH` resolution.
+- Added strict-TDD coverage in `script/test_sign_and_notarize.sh` with a fake PATH-shadowed `cat` that emits `SIGN_AND_NOTARIZE_HELP_CAT_PATH_SHADOW_SHOULD_NOT_RUN` and exits non-zero. The helper must still print usage, must not invoke the fake `cat`, must not create a notary zip, and must not leak signing/notary sentinel values.
+- RED verification: `bash script/test_sign_and_notarize.sh` failed first with the fake `cat` sentinel and `test_sign_and_notarize failed: --help invoked PATH-shadowed cat`.
+- GREEN verification: `bash script/test_sign_and_notarize.sh`, adjacent release-helper tests (`test_create_release_zip`, `test_package_verify`, `test_v10_release_gate`), `bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh`, SVG parse, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`, and release-impact `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` all passed. Dogfood artifacts: `.build/dogfood-checks/20260601-121914/`; metrics: shell readiness 126.66 ms, connected cold start 223.25 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.030 ms, dogfood query median overhead 0.027 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED; pre-commit JSON review passed with no security concerns or logic errors.
+- Evidence artifact: `screenshots/evidence/2026-06-01-sign-notarize-help-cat-path-shadow-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.

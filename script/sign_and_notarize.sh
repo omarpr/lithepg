@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-  cat <<'USAGE'
+  /bin/cat <<'USAGE'
 Usage: sign_and_notarize.sh [--dry-run] [app-bundle]
 
 Sign, zip for notarization, submit to Apple notarization, staple, and validate

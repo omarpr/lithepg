@@ -88,6 +88,41 @@ notary_sentinel='NOTARY_PROFILE_SHOULD_NOT_LEAK'
 
 make_minimal_app_bundle "$app_bundle"
 
+help_cat_path_shadow_sentinel="SIGN_AND_NOTARIZE_HELP_CAT_PATH_SHADOW_SHOULD_NOT_RUN"
+help_cat_path_shadow_fake_bin="$fixture_root/help-cat-path-shadow-fake-bin"
+help_cat_path_shadow_marker="$fixture_root/help-cat-path-shadow-invoked"
+mkdir -p "$help_cat_path_shadow_fake_bin"
+cat >"$help_cat_path_shadow_fake_bin/cat" <<'SHIM'
+#!/usr/bin/env bash
+printf 'fake cat stdout sentinel=%s args=%s\n' "${HELP_CAT_PATH_SHADOW_SENTINEL:-}" "$*"
+printf 'fake cat stderr sentinel=%s args=%s\n' "${HELP_CAT_PATH_SHADOW_SENTINEL:-}" "$*" >&2
+printf 'cat\n' >"${HELP_CAT_PATH_SHADOW_MARKER:?}"
+exit 73
+SHIM
+chmod +x "$help_cat_path_shadow_fake_bin/cat"
+
+if ! PATH="$help_cat_path_shadow_fake_bin:$PATH" \
+  HELP_CAT_PATH_SHADOW_SENTINEL="$help_cat_path_shadow_sentinel" \
+  HELP_CAT_PATH_SHADOW_MARKER="$help_cat_path_shadow_marker" \
+  LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$notary_zip" \
+  run_helper_capture "$output_file" --help; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  [[ ! -e "$notary_zip" ]] || fail "--help with PATH-shadowed cat created notary zip before failing: $notary_zip"
+  fail "--help invoked PATH-shadowed cat"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "Usage: sign_and_notarize.sh [--dry-run] [app-bundle]"
+assert_not_contains "$helper_output" "$help_cat_path_shadow_sentinel"
+assert_not_contains "$helper_output" "fake cat"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+[[ ! -e "$help_cat_path_shadow_marker" ]] || fail "--help invoked PATH-shadowed cat: $(<"$help_cat_path_shadow_marker")"
+[[ ! -e "$notary_zip" ]] || fail "--help with PATH-shadowed cat created notary zip: $notary_zip"
+
 if ! LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
   LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
   LITHEPG_NOTARY_ZIP="$notary_zip" \
