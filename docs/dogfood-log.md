@@ -1286,3 +1286,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_v10_release_gate.sh`, adjacent release-helper tests (`test_package_verify`, `test_create_release_zip`, `test_sign_and_notarize`), `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh`, and `git diff --check` all passed.
 - Evidence artifact: `docs/evidence/2026-06-01-v10-release-gate-rm-path-shadow-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-06-01 08:58 EDT — v1.0 release gate grep PATH-shadow hardening receipt
+
+- Synced the latest committed release-gate hardening receipt into this dogfood log after `main` advanced to `2dff3ae` (`[verified] Harden v1.0 release gate grep scans`).
+- The hardening changes `script/v10_release_gate.sh` so helper-owned release-copy, Homebrew cask, and security-document scans use `/usr/bin/grep` instead of caller-controlled `PATH` resolution.
+- Strict-TDD coverage in `script/test_v10_release_gate.sh` uses a fake PATH-shadowed `grep` that emits the synthetic sentinel `V10_RELEASE_GATE_PATH_SHADOW_GREP_SHOULD_NOT_RUN`; the gate must avoid invoking it and still report normal blocked v1.0 preflight output.
+- Recorded verification from the committed slice: `bash script/test_v10_release_gate.sh`, adjacent release-helper tests, `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh`, `git diff --check`, and `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 127 tests across 20 suites.
+- Evidence artifact from the committed slice: `screenshots/evidence/2026-06-01-v10-grep-path-hardening.svg`.
+- Receipt-sync evidence artifact for this log update: `screenshots/evidence/2026-06-01-dogfood-log-grep-receipt-sync.svg`.
+- This receipt-only sync attempted no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication.
