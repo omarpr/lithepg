@@ -1022,3 +1022,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260531-212416/` with default Swift tests, live dogfood tests, and v0.4 measurement all passed. Metrics: shell readiness 133.96 ms; connected cold start 233.86 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead 0.031 ms; dogfood query median overhead 0.035 ms.
 - Evidence artifact: `docs/evidence/2026-06-01-package-verify-symlink-app-bundle-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-05-31 21:42 EDT — v1.0 package verifier trailing-slash gate
+
+- Hardened `script/package_verify.sh` so an explicit app-bundle path ending in a trailing slash is rejected before the package verifier normalizes or verifies the bundle.
+- Added strict-TDD coverage in `script/test_package_verify.sh` proving `LithePG.app/` fails with `package verification failed: app bundle path must not end with a slash`, does not print `Package verified:`, and does not leak the synthetic trailing-slash sentinel.
+- RED verification: `bash script/test_package_verify.sh` failed first because the existing verifier accepted the trailing-slash app-bundle path and printed package verification success.
+- GREEN verification: `bash script/test_package_verify.sh`, release-helper syntax checks, adjacent release-helper tests `bash script/test_create_release_zip.sh && bash script/test_sign_and_notarize.sh && bash script/test_v10_release_gate.sh`, `git diff --check`, and `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-05-31-package-verify-trailing-slash-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

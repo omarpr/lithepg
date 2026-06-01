@@ -34,6 +34,10 @@ esac
 
 APP_BUNDLE="${1:-dist/LithePG.app}"
 
+if [[ "$#" -eq 1 && "$APP_BUNDLE" == */ && ! "$APP_BUNDLE" =~ ^/+$ ]]; then
+  fail "app bundle path must not end with a slash"
+fi
+
 plist_value() {
   local key="$1"
   /usr/libexec/PlistBuddy -c "Print :$key" "$INFO_PLIST" 2>/dev/null || true
