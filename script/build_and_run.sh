@@ -11,7 +11,6 @@ CAT=/bin/cat
 CHMOD=/bin/chmod
 CODESIGN=/usr/bin/codesign
 CP=/bin/cp
-DIRNAME=/usr/bin/dirname
 DITTO=/usr/bin/ditto
 MKDIR=/bin/mkdir
 OPEN="${LITHEPG_BUILD_AND_RUN_OPEN:-/usr/bin/open}"
@@ -61,7 +60,7 @@ case "$MODE" in
     ;;
 esac
 
-ROOT_DIR="$(cd "$("$DIRNAME" "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(/bin/realpath "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/..")"
 DIST_DIR="$ROOT_DIR/dist"
 APP_BUNDLE="$DIST_DIR/$BUNDLE_NAME.app"
 APP_CONTENTS="$APP_BUNDLE/Contents"
@@ -75,7 +74,7 @@ if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode.app/Contents/Developer ]
   export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 fi
 
-cd "$ROOT_DIR"
+command cd "$ROOT_DIR"
 
 LATEST_TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
 MARKETING_VERSION="${LITHEPG_MARKETING_VERSION:-${LATEST_TAG#v}}"

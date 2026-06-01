@@ -1461,3 +1461,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260601-165122/`; metrics: shell readiness 126.25 ms, connected cold start 226.24 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.033 ms, dogfood query median overhead 0.047 ms.
 - Evidence artifact: `screenshots/evidence/2026-06-01-dogfood-postgres-pwd-function-shadow-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 17:28 EDT — v1.0 build/run root-resolution function-shadow hardening
+
+- Hardened `script/build_and_run.sh` so repository-root setup resolves through absolute `/bin/realpath` plus `/usr/bin/dirname`, avoiding PATH-shadowed utilities and exported shell functions named `builtin`, `cd`, or `pwd` before build/package setup. The later repository chdir now uses `command cd "$ROOT_DIR"` so an exported `cd` function cannot intercept it.
+- Added strict-TDD coverage in `script/test_build_and_run.sh` with exported fake `builtin`, `cd`, and `pwd` functions plus a PATH fake for `realpath`; the helper must still complete `--print-bundle-path` through fake Swift fixtures, invoke only the absolute safe pkill override, and avoid invoking, leaking, or writing marker files for any shadow sentinel.
+- RED verification: after the first production hardening, the strengthened regression failed with `BUILD_AND_RUN_ROOT_CD_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN cd invoked`, proving the remaining unqualified repository chdir was reachable before `command cd` landed.
+- GREEN verification: release-helper shell tests passed (`test_build_and_run`, `test_package_verify`, `test_create_release_zip`, `test_sign_and_notarize`, `test_v10_release_gate`), shell syntax checks passed, `git diff --check` passed, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 127 Swift Testing tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260601-172835/`; metrics: shell readiness 129.35 ms, connected cold start 233.81 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.026 ms, dogfood query median overhead 0.035 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-01-build-run-root-function-shadow-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

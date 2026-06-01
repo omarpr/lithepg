@@ -100,6 +100,110 @@ relative_pkill_output="$(<"$output_file")"
 assert_equals "$relative_pkill_status" "2"
 assert_contains "$relative_pkill_output" "LITHEPG_BUILD_AND_RUN_PKILL must be an absolute path: relative-pkill"
 
+root_shadow_sentinel="BUILD_AND_RUN_ROOT_REALPATH_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+root_shadow_builtin_sentinel="BUILD_AND_RUN_ROOT_BUILTIN_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+root_shadow_cd_sentinel="BUILD_AND_RUN_ROOT_CD_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+root_shadow_pwd_sentinel="BUILD_AND_RUN_ROOT_PWD_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+root_shadow_fake_bin="$fixture_root/root-shadow-fake-bin"
+root_shadow_swift_bin_dir="$fixture_root/root-shadow-swift-bin"
+root_shadow_swift_marker="$fixture_root/root-shadow-fake-swift-used"
+root_shadow_marker_dir="$fixture_root/root-shadow-markers"
+root_shadow_safe_pkill="$fixture_root/root-shadow-safe-pkill"
+root_shadow_safe_pkill_marker="$fixture_root/root-shadow-safe-pkill-invoked"
+/bin/mkdir -p "$root_shadow_fake_bin" "$root_shadow_swift_bin_dir" "$root_shadow_marker_dir"
+
+/bin/cat >"$root_shadow_fake_bin/realpath" <<SHIM
+#!/bin/bash
+set -euo pipefail
+/usr/bin/printf '%s realpath invoked\\n' '$root_shadow_sentinel' >&2
+/usr/bin/printf 'realpath\\n' >'$root_shadow_marker_dir/realpath'
+exit 97
+SHIM
+/bin/chmod +x "$root_shadow_fake_bin/realpath"
+
+/bin/cat >"$root_shadow_fake_bin/swift" <<'SWIFT'
+#!/bin/bash
+set -euo pipefail
+/usr/bin/printf 'fake root-shadow swift used\n' >"${FAKE_SWIFT_MARKER:?}"
+case "$*" in
+  "build --product LithePGApp")
+    /bin/mkdir -p "${FAKE_SWIFT_BIN_DIR:?}"
+    /bin/cp /usr/bin/true "$FAKE_SWIFT_BIN_DIR/LithePGApp"
+    /bin/chmod 755 "$FAKE_SWIFT_BIN_DIR/LithePGApp"
+    ;;
+  "build --show-bin-path")
+    /usr/bin/printf '%s\n' "${FAKE_SWIFT_BIN_DIR:?}"
+    ;;
+  *)
+    /usr/bin/printf 'unexpected fake root-shadow swift invocation: %s\n' "$*" >&2
+    exit 98
+    ;;
+esac
+SWIFT
+/bin/chmod +x "$root_shadow_fake_bin/swift"
+
+/bin/cat >"$root_shadow_safe_pkill" <<SHIM
+#!/bin/bash
+set -euo pipefail
+[[ "\$#" -eq 2 && "\$1" == "-x" && "\$2" == "LithePGApp" ]]
+/usr/bin/printf 'safe pkill -x LithePGApp\\n' >'$root_shadow_safe_pkill_marker'
+exit 0
+SHIM
+/bin/chmod +x "$root_shadow_safe_pkill"
+
+set +e
+(
+  cd "$ROOT_DIR"
+  builtin() {
+    /usr/bin/printf '%s builtin invoked\n' "${ROOT_SHADOW_BUILTIN_SENTINEL:?}" >&2
+    /usr/bin/printf 'builtin\n' >"${ROOT_SHADOW_MARKER_DIR:?}/builtin"
+    exit 97
+  }
+  cd() {
+    /usr/bin/printf '%s cd invoked\n' "${ROOT_SHADOW_CD_SENTINEL:?}" >&2
+    /usr/bin/printf 'cd\n' >"${ROOT_SHADOW_MARKER_DIR:?}/cd"
+    exit 97
+  }
+  pwd() {
+    /usr/bin/printf '%s pwd invoked\n' "${ROOT_SHADOW_PWD_SENTINEL:?}" >&2
+    /usr/bin/printf 'pwd\n' >"${ROOT_SHADOW_MARKER_DIR:?}/pwd"
+    /usr/bin/printf '%s\n' "${ROOT_SHADOW_FAKE_PWD:?}"
+  }
+  export -f builtin
+  export -f cd
+  export -f pwd
+  PATH="$root_shadow_fake_bin:$PATH" \
+    FAKE_SWIFT_BIN_DIR="$root_shadow_swift_bin_dir" \
+    FAKE_SWIFT_MARKER="$root_shadow_swift_marker" \
+    LITHEPG_BUILD_AND_RUN_PKILL="$root_shadow_safe_pkill" \
+    LITHEPG_MARKETING_VERSION="1.0" \
+    LITHEPG_BUILD_VERSION="100" \
+    ROOT_SHADOW_MARKER_DIR="$root_shadow_marker_dir" \
+    ROOT_SHADOW_FAKE_PWD="$fixture_root/root-shadow-wrong-root" \
+    ROOT_SHADOW_BUILTIN_SENTINEL="$root_shadow_builtin_sentinel" \
+    ROOT_SHADOW_CD_SENTINEL="$root_shadow_cd_sentinel" \
+    ROOT_SHADOW_PWD_SENTINEL="$root_shadow_pwd_sentinel" \
+    /bin/bash "$HELPER" --print-bundle-path
+) >"$output_file" 2>&1
+root_shadow_status=$?
+set -e
+root_shadow_output="$(<"$output_file")"
+if [[ "$root_shadow_status" -ne 0 ]]; then
+  /usr/bin/printf '%s\n' "$root_shadow_output" >&2
+  fail "build_and_run root resolution was affected by function- or PATH-shadowed tools"
+fi
+[[ -f "$root_shadow_swift_marker" ]] || fail "fake root-shadow swift was not used"
+assert_contains "$root_shadow_output" "$ROOT_DIR/dist/LithePG.app"
+assert_not_contains "$root_shadow_output" "$root_shadow_sentinel"
+assert_not_contains "$root_shadow_output" "$root_shadow_builtin_sentinel"
+assert_not_contains "$root_shadow_output" "$root_shadow_cd_sentinel"
+assert_not_contains "$root_shadow_output" "$root_shadow_pwd_sentinel"
+for tool in realpath builtin cd pwd; do
+  [[ ! -e "$root_shadow_marker_dir/$tool" ]] || fail "build_and_run root resolution invoked shadowed $tool"
+done
+[[ -f "$root_shadow_safe_pkill_marker" ]] || fail "build_and_run root-shadow fixture did not invoke safe pkill override"
+assert_equals "$(<"$root_shadow_safe_pkill_marker")" "safe pkill -x LithePGApp"
+
 print_bundle_sentinel="BUILD_AND_RUN_FAKE_PKILL_SENTINEL_SHOULD_NOT_RUN"
 print_bundle_fake_bin="$fixture_root/print-bundle-fake-bin"
 print_bundle_swift_bin_dir="$fixture_root/print-bundle-swift-bin"
