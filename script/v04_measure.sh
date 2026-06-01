@@ -11,6 +11,7 @@ STRIP_BIN=/usr/bin/strip
 RM_BIN=/bin/rm
 CAT_BIN=/bin/cat
 PWD_BIN=/bin/pwd
+PYTHON3_BIN=/usr/bin/python3
 
 ROOT_DIR="$(cd "$("$DIRNAME_BIN" "${BASH_SOURCE[0]}")/.." && "$PWD_BIN")"
 cd "$ROOT_DIR"
@@ -56,7 +57,7 @@ STRIP_PROBE=$("$MKTEMP_BIN" -t lithepg-strip.XXXXXX)
 "$STRIP_BIN" -x "$STRIP_PROBE" >/dev/null 2>&1 || true
 APP_STRIP_X_BYTES=$("$STAT_BIN" -f%z "$STRIP_PROBE")
 "$RM_BIN" -f "$STRIP_PROBE"
-python3 - <<PY > "$OUT_DIR/binary-size.json"
+"$PYTHON3_BIN" - <<PY > "$OUT_DIR/binary-size.json"
 import json
 bytes_ = int("$APP_BYTES")
 strip_x_bytes = int("$APP_STRIP_X_BYTES")
@@ -110,7 +111,7 @@ run_psql_bench() {
   local sql_file raw_file
   sql_file="$OUT_DIR/psql-$slug.sql"
   raw_file="$OUT_DIR/psql-$slug.raw.txt"
-  python3 - <<PY > "$sql_file"
+  "$PYTHON3_BIN" - <<PY > "$sql_file"
 warmup = int("$WARMUP")
 iterations = int("$ITERATIONS")
 query = """$query""".strip()
@@ -122,7 +123,7 @@ for _ in range(warmup + iterations):
     print(query)
 PY
   "$psql" "$BENCH_URL" -X -q -v ON_ERROR_STOP=1 -f "$sql_file" > "$raw_file" 2>&1
-  python3 - <<PY > "$OUT_DIR/psql-$slug.json"
+  "$PYTHON3_BIN" - <<PY > "$OUT_DIR/psql-$slug.json"
 import json, math, re, statistics
 raw = open("$raw_file", encoding="utf-8", errors="replace").read()
 times = [float(x) for x in re.findall(r"Time:\\s+([0-9.]+)\\s+ms", raw)]
@@ -207,7 +208,7 @@ capture_app_metrics \
   LITHEPG_STARTUP_QUERY="$SIMPLE_QUERY" \
   LITHEPG_STARTUP_METRICS_PATH="$METRICS_PATH"
 
-python3 - <<PY > "$OUT_DIR/summary.json"
+"$PYTHON3_BIN" - <<PY > "$OUT_DIR/summary.json"
 import json, pathlib
 root = pathlib.Path("$OUT_DIR")
 def load(name):

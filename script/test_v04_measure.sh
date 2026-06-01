@@ -92,7 +92,7 @@ exit 99
 DOGFOOD
 /bin/chmod +x "$fixture_root/script/dogfood_postgres.sh"
 
-for tool in dirname date mkdir cp stat mktemp strip rm cat pwd; do
+for tool in dirname date mkdir cp stat mktemp strip rm cat pwd python3; do
   /bin/cat >"$fake_bin/$tool" <<SHIM
 #!/bin/bash
 /usr/bin/printf '%s %s invoked\\n' '$sentinel' '$tool' >&2

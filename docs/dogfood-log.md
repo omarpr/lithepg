@@ -1430,3 +1430,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-01-v05-model-smoke-python3-path-shadow-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 14:54 EDT — v0.4 measurement python3 PATH-shadow hardening
+
+- Hardened `script/v04_measure.sh` so helper-owned Python JSON/SQL generation uses `/usr/bin/python3` instead of caller-controlled `PATH` resolution. `swift`, `psql`, `env`, `kill`, and `sleep` remain intentionally selectable for developer toolchains and measurement process control.
+- Added strict-TDD coverage in `script/test_v04_measure.sh` with a fake PATH-shadowed `python3` that emits `V04_MEASURE_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN`; the helper must still complete through fake Swift/psql fixtures, write measurement artifacts and `summary.json`, and avoid invoking or leaking the sentinel.
+- RED verification: `bash script/test_v04_measure.sh` failed first with `V04_MEASURE_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN python3 invoked` and `test_v04_measure failed: v04_measure.sh was affected by PATH-shadowed core utilities`.
+- GREEN verification: `bash script/test_v04_measure.sh`, `bash -n script/v04_measure.sh script/test_v04_measure.sh`, `git diff --check`, full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`, and release-impact `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` all passed. Swift Testing reported 127 tests across 20 suites; dogfood artifacts: `.build/dogfood-checks/20260601-145417/`; metrics: shell readiness 132.35 ms, connected cold start 231.91 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.068 ms, dogfood query median overhead -0.003 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-01-v04-measure-python3-path-shadow-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
