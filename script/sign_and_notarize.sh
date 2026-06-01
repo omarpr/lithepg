@@ -44,14 +44,14 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
 fi
 
 APP_BUNDLE="${1:-dist/LithePG.app}"
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_BUNDLE_ABS="$APP_BUNDLE"
 if [[ "$APP_BUNDLE_ABS" != /* ]]; then
   APP_BUNDLE_ABS="$ROOT_DIR/$APP_BUNDLE_ABS"
 fi
 
-BUNDLE_NAME="$(basename "$APP_BUNDLE_ABS" .app)"
-DIST_DIR="$(dirname "$APP_BUNDLE_ABS")"
+BUNDLE_NAME="$(/usr/bin/basename "$APP_BUNDLE_ABS" .app)"
+DIST_DIR="$(/usr/bin/dirname "$APP_BUNDLE_ABS")"
 ZIP_PATH="${LITHEPG_NOTARY_ZIP:-$DIST_DIR/$BUNDLE_NAME-notary.zip}"
 ENTITLEMENTS="${LITHEPG_ENTITLEMENTS:-$ROOT_DIR/Sources/LithePGApp/LithePGApp.entitlements}"
 CODESIGN_IDENTITY="${LITHEPG_CODESIGN_IDENTITY:-}"
@@ -184,7 +184,7 @@ normalize_app_bundle_path() {
 validate_app_bundle_canonical_basename() {
   local normalized_app_bundle_path
   normalized_app_bundle_path="$(normalize_app_bundle_path)"
-  [[ "$(basename "$normalized_app_bundle_path")" == "LithePG.app" ]] || fail "app bundle basename must be LithePG.app"
+  [[ "$(/usr/bin/basename "$normalized_app_bundle_path")" == "LithePG.app" ]] || fail "app bundle basename must be LithePG.app"
 }
 
 validate_app_bundle_not_symlink() {
@@ -219,14 +219,14 @@ validate_notary_zip_no_trailing_slash() {
 validate_notary_zip_public_release_name() {
   local zip_basename
   local zip_basename_lower
-  zip_basename="$(basename "$ZIP_PATH")"
+  zip_basename="$(/usr/bin/basename "$ZIP_PATH")"
   zip_basename_lower="$(printf '%s' "$zip_basename" | LC_ALL=C /usr/bin/tr '[:upper:]' '[:lower:]')"
   [[ "$zip_basename_lower" != "lithepg.app.zip" ]] || fail "notary zip must not use public release artifact name"
 }
 
 validate_notary_zip_parent_dir() {
   local zip_parent
-  zip_parent="$(dirname "$ZIP_PATH")"
+  zip_parent="$(/usr/bin/dirname "$ZIP_PATH")"
   if [[ ! -d "$zip_parent" ]]; then
     if [[ -e "$zip_parent" || -L "$zip_parent" ]]; then
       fail "notary zip parent path must be a directory"
@@ -273,21 +273,21 @@ fi
 STAGED_ZIP_DIR=""
 cleanup_staged_zip() {
   if [[ -n "$STAGED_ZIP_DIR" ]]; then
-    rm -rf -- "$STAGED_ZIP_DIR" >/dev/null 2>&1 || true
+    /bin/rm -rf -- "$STAGED_ZIP_DIR" >/dev/null 2>&1 || true
   fi
 }
 trap cleanup_staged_zip EXIT
 
-ZIP_PARENT="$(dirname "$ZIP_PATH")"
+ZIP_PARENT="$(/usr/bin/dirname "$ZIP_PATH")"
 staged_zip_dir=""
-if ! staged_zip_dir="$(mktemp -d "$ZIP_PARENT/.lithepg-notary.XXXXXX" 2>/dev/null)"; then
+if ! staged_zip_dir="$(/usr/bin/mktemp -d "$ZIP_PARENT/.lithepg-notary.XXXXXX" 2>/dev/null)"; then
   fail "could not create notary zip staging directory"
 fi
 STAGED_ZIP_DIR="$staged_zip_dir"
-if ! chmod 700 "$STAGED_ZIP_DIR" >/dev/null 2>&1; then
+if ! /bin/chmod 700 "$STAGED_ZIP_DIR" >/dev/null 2>&1; then
   fail "could not secure notary zip staging directory"
 fi
-STAGED_ZIP="$STAGED_ZIP_DIR/$(basename "$ZIP_PATH")"
+STAGED_ZIP="$STAGED_ZIP_DIR/$(/usr/bin/basename "$ZIP_PATH")"
 
 run_quiet "codesign failed" codesign \
   --deep \

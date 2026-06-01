@@ -398,130 +398,72 @@ assert_not_contains "$helper_output" "$codesign_sentinel"
 assert_not_contains "$helper_output" "$notary_sentinel"
 [[ -d "$notary_zip_directory" ]] || fail "dry run changed directory notary zip path: $notary_zip_directory"
 
-staging_mktemp_sentinel="SIGN_MKTEMP_ZIP_PATH_SHOULD_NOT_LEAK"
-staging_mktemp_parent="$fixture_root/$staging_mktemp_sentinel-parent"
-staging_mktemp_zip="$staging_mktemp_parent/LithePG-notary.zip"
-staging_mktemp_fake_bin="$fixture_root/staging-mktemp-failure-fake-bin"
-mkdir -p "$staging_mktemp_parent" "$staging_mktemp_fake_bin"
-cat >"$staging_mktemp_fake_bin/mktemp" <<'SHIM'
+path_shadow_core_sentinel="SIGN_PATH_SHADOWED_CORE_UTILITY_SHOULD_NOT_LEAK"
+path_shadow_core_parent="$fixture_root/$path_shadow_core_sentinel-parent"
+path_shadow_core_zip="$path_shadow_core_parent/LithePG-notary.zip"
+path_shadow_core_fake_bin="$fixture_root/path-shadow-core-fake-bin"
+path_shadow_core_marker="$fixture_root/path-shadow-core-utility-invoked"
+mkdir -p "$path_shadow_core_parent" "$path_shadow_core_fake_bin"
+for path_shadow_core_utility in basename dirname mktemp chmod rm; do
+  cat >"$path_shadow_core_fake_bin/$path_shadow_core_utility" <<'SHIM'
 #!/usr/bin/env bash
-printf 'fake mktemp stdout sentinel=%s args=%s identity=%s profile=%s zip=%s\n' \
-  "$SIGN_MKTEMP_ZIP_PATH_SHOULD_NOT_LEAK" "$*" "${LITHEPG_CODESIGN_IDENTITY:-}" "${LITHEPG_NOTARY_PROFILE:-}" "${LITHEPG_NOTARY_ZIP:-}"
-printf 'fake mktemp stderr sentinel=%s args=%s identity=%s profile=%s zip=%s\n' \
-  "$SIGN_MKTEMP_ZIP_PATH_SHOULD_NOT_LEAK" "$*" "${LITHEPG_CODESIGN_IDENTITY:-}" "${LITHEPG_NOTARY_PROFILE:-}" "${LITHEPG_NOTARY_ZIP:-}" >&2
-exit 42
+utility="${0##*/}"
+printf 'fake %s stdout sentinel=%s args=%s identity=%s profile=%s zip=%s\n' \
+  "$utility" "${PATH_SHADOW_CORE_SENTINEL:-}" "$*" "${LITHEPG_CODESIGN_IDENTITY:-}" "${LITHEPG_NOTARY_PROFILE:-}" "${LITHEPG_NOTARY_ZIP:-}"
+printf 'fake %s stderr sentinel=%s args=%s identity=%s profile=%s zip=%s\n' \
+  "$utility" "${PATH_SHADOW_CORE_SENTINEL:-}" "$*" "${LITHEPG_CODESIGN_IDENTITY:-}" "${LITHEPG_NOTARY_PROFILE:-}" "${LITHEPG_NOTARY_ZIP:-}" >&2
+printf '%s\n' "$utility" >>"${PATH_SHADOW_CORE_MARKER:?}"
+exit 71
 SHIM
-chmod +x "$staging_mktemp_fake_bin/mktemp"
-
-if PATH="$staging_mktemp_fake_bin:$PATH" \
-  SIGN_MKTEMP_ZIP_PATH_SHOULD_NOT_LEAK="$staging_mktemp_sentinel" \
-  LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
-  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
-  LITHEPG_NOTARY_ZIP="$staging_mktemp_zip" \
-  run_helper_capture "$output_file" "$app_bundle"; then
-  helper_output="$(<"$output_file")"
-  printf '%s\n' "$helper_output" >&2
-  fail "real mode unexpectedly passed when staging mktemp failed"
-fi
-
-helper_output="$(<"$output_file")"
-assert_not_contains "$helper_output" "$staging_mktemp_sentinel"
-assert_not_contains "$helper_output" "fake mktemp"
-assert_not_contains "$helper_output" "$staging_mktemp_parent"
-assert_not_contains "$helper_output" "$staging_mktemp_zip"
-assert_not_contains "$helper_output" "$codesign_sentinel"
-assert_not_contains "$helper_output" "$notary_sentinel"
-assert_contains "$helper_output" "could not create notary zip staging directory"
-[[ ! -e "$staging_mktemp_zip" ]] || fail "real mode mktemp failure created notary zip: $staging_mktemp_zip"
-
-staging_chmod_sentinel="SIGN_CHMOD_ZIP_PATH_SHOULD_NOT_LEAK"
-staging_chmod_parent="$fixture_root/$staging_chmod_sentinel-parent"
-staging_chmod_zip="$staging_chmod_parent/LithePG-notary.zip"
-staging_chmod_fake_bin="$fixture_root/staging-chmod-failure-fake-bin"
-mkdir -p "$staging_chmod_parent" "$staging_chmod_fake_bin"
-cat >"$staging_chmod_fake_bin/mktemp" <<'SHIM'
+done
+cat >"$path_shadow_core_fake_bin/codesign" <<'SHIM'
 #!/usr/bin/env bash
-template="${!#}"
-staged_dir="${template%XXXXXX}fixed"
-mkdir -p "$staged_dir"
-printf '%s\n' "$staged_dir"
 exit 0
 SHIM
-cat >"$staging_chmod_fake_bin/chmod" <<'SHIM'
+cat >"$path_shadow_core_fake_bin/ditto" <<'SHIM'
 #!/usr/bin/env bash
-printf 'fake chmod stdout sentinel=%s args=%s identity=%s profile=%s zip=%s\n' \
-  "$SIGN_CHMOD_ZIP_PATH_SHOULD_NOT_LEAK" "$*" "${LITHEPG_CODESIGN_IDENTITY:-}" "${LITHEPG_NOTARY_PROFILE:-}" "${LITHEPG_NOTARY_ZIP:-}"
-printf 'fake chmod stderr sentinel=%s args=%s identity=%s profile=%s zip=%s\n' \
-  "$SIGN_CHMOD_ZIP_PATH_SHOULD_NOT_LEAK" "$*" "${LITHEPG_CODESIGN_IDENTITY:-}" "${LITHEPG_NOTARY_PROFILE:-}" "${LITHEPG_NOTARY_ZIP:-}" >&2
-exit 43
+dest="${!#}"
+printf 'FAKE_NOTARY_ZIP_FROM_PATH_SHADOW_TEST\n' >"$dest"
+exit 0
 SHIM
-chmod +x "$staging_chmod_fake_bin/mktemp" "$staging_chmod_fake_bin/chmod"
+cat >"$path_shadow_core_fake_bin/xcrun" <<'SHIM'
+#!/usr/bin/env bash
+exit 0
+SHIM
+cat >"$path_shadow_core_fake_bin/spctl" <<'SHIM'
+#!/usr/bin/env bash
+exit 0
+SHIM
+chmod +x "$path_shadow_core_fake_bin"/*
 
-if PATH="$staging_chmod_fake_bin:$PATH" \
-  SIGN_CHMOD_ZIP_PATH_SHOULD_NOT_LEAK="$staging_chmod_sentinel" \
+if ! PATH="$path_shadow_core_fake_bin:$PATH" \
+  PATH_SHADOW_CORE_SENTINEL="$path_shadow_core_sentinel" \
+  PATH_SHADOW_CORE_MARKER="$path_shadow_core_marker" \
   LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
   LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
-  LITHEPG_NOTARY_ZIP="$staging_chmod_zip" \
+  LITHEPG_NOTARY_ZIP="$path_shadow_core_zip" \
   run_helper_capture "$output_file" "$app_bundle"; then
   helper_output="$(<"$output_file")"
   printf '%s\n' "$helper_output" >&2
-  fail "real mode unexpectedly passed when staging chmod failed"
+  fail "real mode unexpectedly failed with PATH-shadowed core utilities"
 fi
 
 helper_output="$(<"$output_file")"
-assert_not_contains "$helper_output" "$staging_chmod_sentinel"
+assert_contains "$helper_output" "Signed and notarized: LithePG.app"
+assert_contains "$helper_output" "Notary zip: created (redacted)"
+assert_not_contains "$helper_output" "$path_shadow_core_sentinel"
+assert_not_contains "$helper_output" "fake basename"
+assert_not_contains "$helper_output" "fake dirname"
+assert_not_contains "$helper_output" "fake mktemp"
 assert_not_contains "$helper_output" "fake chmod"
-assert_not_contains "$helper_output" "$staging_chmod_parent"
-assert_not_contains "$helper_output" "$staging_chmod_zip"
-assert_not_contains "$helper_output" "$codesign_sentinel"
-assert_not_contains "$helper_output" "$notary_sentinel"
-assert_contains "$helper_output" "could not secure notary zip staging directory"
-[[ ! -e "$staging_chmod_zip" ]] || fail "real mode chmod failure created notary zip: $staging_chmod_zip"
-
-cleanup_rm_sentinel="SIGN_CLEANUP_RM_STAGING_PATH_SHOULD_NOT_LEAK"
-cleanup_rm_parent="$fixture_root/$cleanup_rm_sentinel-parent"
-cleanup_rm_zip="$cleanup_rm_parent/LithePG-notary.zip"
-cleanup_rm_fake_bin="$fixture_root/cleanup-rm-failure-fake-bin"
-mkdir -p "$cleanup_rm_parent" "$cleanup_rm_fake_bin"
-cat >"$cleanup_rm_fake_bin/codesign" <<'SHIM'
-#!/usr/bin/env bash
-printf 'fake codesign stdout sentinel=%s args=%s identity=%s profile=%s zip=%s\n' \
-  "$SIGN_CLEANUP_RM_STAGING_PATH_SHOULD_NOT_LEAK" "$*" "${LITHEPG_CODESIGN_IDENTITY:-}" "${LITHEPG_NOTARY_PROFILE:-}" "${LITHEPG_NOTARY_ZIP:-}"
-printf 'fake codesign stderr sentinel=%s args=%s identity=%s profile=%s zip=%s\n' \
-  "$SIGN_CLEANUP_RM_STAGING_PATH_SHOULD_NOT_LEAK" "$*" "${LITHEPG_CODESIGN_IDENTITY:-}" "${LITHEPG_NOTARY_PROFILE:-}" "${LITHEPG_NOTARY_ZIP:-}" >&2
-exit 44
-SHIM
-cat >"$cleanup_rm_fake_bin/rm" <<'SHIM'
-#!/usr/bin/env bash
-printf 'fake rm stdout sentinel=%s cleanup args=%s identity=%s profile=%s zip=%s\n' \
-  "$SIGN_CLEANUP_RM_STAGING_PATH_SHOULD_NOT_LEAK" "$*" "${LITHEPG_CODESIGN_IDENTITY:-}" "${LITHEPG_NOTARY_PROFILE:-}" "${LITHEPG_NOTARY_ZIP:-}"
-printf 'fake rm stderr sentinel=%s cleanup args=%s identity=%s profile=%s zip=%s\n' \
-  "$SIGN_CLEANUP_RM_STAGING_PATH_SHOULD_NOT_LEAK" "$*" "${LITHEPG_CODESIGN_IDENTITY:-}" "${LITHEPG_NOTARY_PROFILE:-}" "${LITHEPG_NOTARY_ZIP:-}" >&2
-exit 45
-SHIM
-chmod +x "$cleanup_rm_fake_bin/codesign" "$cleanup_rm_fake_bin/rm"
-
-if PATH="$cleanup_rm_fake_bin:$PATH" \
-  SIGN_CLEANUP_RM_STAGING_PATH_SHOULD_NOT_LEAK="$cleanup_rm_sentinel" \
-  LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
-  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
-  LITHEPG_NOTARY_ZIP="$cleanup_rm_zip" \
-  run_helper_capture "$output_file" "$app_bundle"; then
-  helper_output="$(<"$output_file")"
-  printf '%s\n' "$helper_output" >&2
-  fail "real mode unexpectedly passed when codesign failed before cleanup rm failed"
-fi
-
-helper_output="$(<"$output_file")"
-assert_contains "$helper_output" "codesign failed"
-assert_not_contains "$helper_output" "$cleanup_rm_sentinel"
-assert_not_contains "$helper_output" "fake codesign"
 assert_not_contains "$helper_output" "fake rm"
-assert_not_contains "$helper_output" "$cleanup_rm_parent"
-assert_not_contains "$helper_output" "$cleanup_rm_zip"
+assert_not_contains "$helper_output" "$path_shadow_core_parent"
+assert_not_contains "$helper_output" "$path_shadow_core_zip"
 assert_not_contains "$helper_output" "$codesign_sentinel"
 assert_not_contains "$helper_output" "$notary_sentinel"
-[[ ! -e "$cleanup_rm_zip" ]] || fail "real mode cleanup rm failure created notary zip: $cleanup_rm_zip"
+[[ ! -e "$path_shadow_core_marker" ]] || fail "PATH-shadowed core utility was invoked: $(<"$path_shadow_core_marker")"
+[[ -f "$path_shadow_core_zip" ]] || fail "real mode with PATH-shadowed core utilities did not create notary zip"
+[[ "$(<"$path_shadow_core_zip")" == "FAKE_NOTARY_ZIP_FROM_PATH_SHADOW_TEST" ]] || fail "real mode with PATH-shadowed core utilities created unexpected notary zip contents"
 
 fake_bin="$fixture_root/fake-bin"
 noisy_ditto_failure_sentinel="SIGN_AND_NOTARIZE_NOISY_DITTO_FAILURE_SHOULD_NOT_LEAK"
