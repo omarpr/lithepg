@@ -1505,3 +1505,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED after the unsafe-`unset` follow-up.
 - Evidence artifact: `screenshots/evidence/2026-06-01-v10-release-gate-root-chdir-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 19:39 EDT — v1.0 run dogfood app root/chdir function-shadow hardening
+
+- Hardened `script/run_dogfood_app.sh` so repository-root setup resolves through absolute `/bin/realpath` plus `/usr/bin/dirname`, and Swift build/bin-path/app exec steps run from the repository root through `/usr/bin/perl` `chdir`/`exec` instead of shell `cd`, `command`, `builtin`, or `pwd`. `swift` remains intentionally PATH-resolved for developer toolchain selection and test fixtures.
+- Added strict-TDD coverage in `script/test_run_dogfood_app.sh` with a PATH-shadowed fake `realpath`, exported shell functions named `command`, `builtin`, `cd`, and `pwd`, and a fake Swift build directory containing whitespace; the helper must still use fake PATH-resolved `swift`, fake `dogfood_postgres.sh`, exec fake `LithePGApp`, pass startup URL/query, and avoid invoking/leaking sentinel output or marker files.
+- RED verification: `bash script/test_run_dogfood_app.sh` failed first with `RUN_DOGFOOD_APP_EXPORTED_SHELL_FUNCTION_SHOULD_NOT_RUN shell function cd invoked` before production hardening; the direct-exec follow-up failed first with `exec ... fake swift build dir with spaces/LithePGApp: No such file or directory` before switching Perl exec calls to `exec { $ARGV[0] } @ARGV`.
+- GREEN verification: `bash script/test_run_dogfood_app.sh`, `bash -n script/run_dogfood_app.sh script/test_run_dogfood_app.sh`, `git diff --check`, and `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed. Independent reviews: spec compliance PASS; code quality/security APPROVED; pre-commit review blocker was fixed with the whitespace-path regression.
+- Evidence artifact: `screenshots/evidence/2026-06-01-run-dogfood-app-root-chdir-hardening.svg`.
+- No real app launch, Docker/Postgres start, signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

@@ -29,9 +29,10 @@ run_helper_capture() {
   local fake_swift_build_dir="$5"
   local fake_dogfood_log="$6"
   local fake_path_shadow_core_log="$7"
-  local fake_bash_env="$8"
-  local fixture_url="$9"
-  local fixture_query="${10}"
+  local fake_function_shadow_log="$8"
+  local fake_bash_env="$9"
+  local fixture_url="${10}"
+  local fixture_query="${11}"
 
   set +e
   (
@@ -41,6 +42,7 @@ run_helper_capture() {
       FAKE_SWIFT_BUILD_DIR="$fake_swift_build_dir" \
       FAKE_DOGFOOD_LOG="$fake_dogfood_log" \
       FAKE_PATH_SHADOW_CORE_LOG="$fake_path_shadow_core_log" \
+      FAKE_FUNCTION_SHADOW_LOG="$fake_function_shadow_log" \
       BASH_ENV="$fake_bash_env" \
       POSTGRES_TEST_URL="$fixture_url" \
       LITHEPG_STARTUP_QUERY="$fixture_query" \
@@ -59,12 +61,15 @@ trap '/bin/rm -f "$output_file"; /bin/rm -rf "$fixture_root"' EXIT
 
 dirname_sentinel="RUN_DOGFOOD_APP_PATH_SHADOW_DIRNAME_SHOULD_NOT_RUN"
 core_sentinel="RUN_DOGFOOD_APP_PATH_SHADOW_CORE_SHOULD_NOT_RUN"
+function_sentinel="RUN_DOGFOOD_APP_EXPORTED_SHELL_FUNCTION_SHOULD_NOT_RUN"
 fake_bin="$fixture_root/fake-bin"
 fake_dogfood_log="$fixture_root/fake-dogfood.log"
 fake_path_shadow_core_log="$fixture_root/fake-path-shadow-core.log"
+fake_function_shadow_log="$fixture_root/fake-function-shadow.log"
 fake_bash_env="$fixture_root/fake-bash-env"
 fake_swift_log="$fixture_root/fake-swift.log"
-fake_swift_build_dir="$fixture_root/fake-swift-build"
+fake_swift_build_dir="$fixture_root/fake swift build dir with spaces"
+[[ "$fake_swift_build_dir" == *" "* ]] || fail "fake Swift build path must contain whitespace"
 fixture_url="postgres://fixture-user@localhost:55432/postgres?sslmode=disable"
 fixture_query="SELECT current_database() AS lithepg_run_dogfood_app_test;"
 /bin/mkdir -p "$fixture_root/script" "$fake_bin"
@@ -79,6 +84,15 @@ exit 97
 SHIM
 /bin/chmod +x "$fake_bin/dirname"
 
+/bin/cat >"$fake_bin/realpath" <<SHIM
+#!/bin/bash
+set -euo pipefail
+/usr/bin/printf '%s realpath invoked\\n' '$core_sentinel' >>"\${FAKE_PATH_SHADOW_CORE_LOG:?}"
+/usr/bin/printf '%s realpath invoked\\n' '$core_sentinel' >&2
+exit 97
+SHIM
+/bin/chmod +x "$fake_bin/realpath"
+
 /bin/cat >"$fake_bin/pwd" <<SHIM
 #!/bin/bash
 set -euo pipefail
@@ -88,8 +102,17 @@ exit 97
 SHIM
 /bin/chmod +x "$fake_bin/pwd"
 
-/bin/cat >"$fake_bash_env" <<'BASHENV'
-enable -n pwd
+/bin/cat >"$fake_bash_env" <<BASHENV
+shadow_function() {
+  /usr/bin/printf '%s shell function %s invoked\\n' '$function_sentinel' "\$1" >>"\${FAKE_FUNCTION_SHADOW_LOG:?}"
+  /usr/bin/printf '%s shell function %s invoked\\n' '$function_sentinel' "\$1" >&2
+  return 97
+}
+command() { shadow_function command "\$@"; }
+builtin() { shadow_function builtin "\$@"; }
+cd() { shadow_function cd "\$@"; }
+pwd() { shadow_function pwd "\$@"; }
+export -f shadow_function command builtin cd pwd
 BASHENV
 
 /bin/cat >"$fixture_root/script/dogfood_postgres.sh" <<'DOGFOOD'
@@ -127,23 +150,27 @@ esac
 SWIFT
 /bin/chmod +x "$fake_bin/swift"
 
-if ! run_helper_capture "$output_file" "$fixture_root" "$fake_bin" "$fake_swift_log" "$fake_swift_build_dir" "$fake_dogfood_log" "$fake_path_shadow_core_log" "$fake_bash_env" "$fixture_url" "$fixture_query"; then
+if ! run_helper_capture "$output_file" "$fixture_root" "$fake_bin" "$fake_swift_log" "$fake_swift_build_dir" "$fake_dogfood_log" "$fake_path_shadow_core_log" "$fake_function_shadow_log" "$fake_bash_env" "$fixture_url" "$fixture_query"; then
   helper_output="$(<"$output_file")"
   /usr/bin/printf '%s\n' "$helper_output" >&2
-  fail "run_dogfood_app.sh was affected by a PATH-shadowed core utility"
+  fail "run_dogfood_app.sh was affected by a PATH-shadowed core utility or exported shell function"
 fi
 
 helper_output="$(<"$output_file")"
 assert_not_contains "$helper_output" "$dirname_sentinel"
 assert_not_contains "$helper_output" "$core_sentinel"
+assert_not_contains "$helper_output" "$function_sentinel"
 assert_not_contains "$helper_output" "dirname invoked"
+assert_not_contains "$helper_output" "realpath invoked"
 assert_not_contains "$helper_output" "pwd invoked"
+assert_not_contains "$helper_output" "shell function"
 assert_not_contains "$helper_output" "fake dogfood_postgres reached"
 assert_contains "$helper_output" "fake LithePGApp reached"
 assert_contains "$helper_output" "startup url=$fixture_url"
 assert_contains "$helper_output" "startup query=$fixture_query"
 
-[[ ! -e "$fake_path_shadow_core_log" ]] || fail "fake PATH-shadowed pwd was invoked"
+[[ ! -e "$fake_path_shadow_core_log" ]] || fail "fake PATH-shadowed core utility was invoked"
+[[ ! -e "$fake_function_shadow_log" ]] || fail "exported shell function shadow was invoked"
 
 [[ -s "$fake_dogfood_log" ]] || fail "fake dogfood_postgres was not used"
 assert_contains "$(<"$fake_dogfood_log")" "fake dogfood_postgres reached"
@@ -154,5 +181,6 @@ assert_contains "$fake_swift_output" "fake swift build --product LithePGApp"
 assert_contains "$fake_swift_output" "fake swift build --show-bin-path"
 assert_not_contains "$fake_swift_output" "$dirname_sentinel"
 assert_not_contains "$fake_swift_output" "$core_sentinel"
+assert_not_contains "$fake_swift_output" "$function_sentinel"
 
 /usr/bin/printf 'test_run_dogfood_app passed\n'
