@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG release zip success-path redaction evidence</title>
+  <desc id="desc">Visual evidence for the commit hardening create_release_zip success output to avoid echoing caller supplied output paths.</desc>
+  <rect width="1200" height="720" fill="#101418"/>
+  <rect x="42" y="38" width="1116" height="644" rx="22" fill="#17212b" stroke="#2b4054" stroke-width="2"/>
+  <text x="80" y="94" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" font-size="34" font-weight="700">v1.0 release zip success-path redaction</text>
+  <text x="80" y="135" fill="#9fb3c8" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="18">2026-06-01 03:40 EDT • Local fixture data only • No credentials or private schemas</text>
+
+  <rect x="80" y="176" width="1040" height="154" rx="14" fill="#0d1117" stroke="#30363d"/>
+  <text x="108" y="218" fill="#ff7b72" font-family="'SF Mono', Menlo, monospace" font-size="22" font-weight="700">RED</text>
+  <text x="180" y="218" fill="#e6edf3" font-family="'SF Mono', Menlo, monospace" font-size="18">bash script/test_create_release_zip.sh</text>
+  <text x="108" y="260" fill="#ffb4a9" font-family="'SF Mono', Menlo, monospace" font-size="16">test_create_release_zip failed: expected output to contain: Created release zip: LithePG.app.zip</text>
+  <text x="108" y="298" fill="#9fb3c8" font-family="'SF Mono', Menlo, monospace" font-size="16">Fixture used a sentinel-containing output directory to prove old success output leaked caller paths.</text>
+
+  <rect x="80" y="358" width="1040" height="216" rx="14" fill="#0d1117" stroke="#30363d"/>
+  <text x="108" y="400" fill="#3fb950" font-family="'SF Mono', Menlo, monospace" font-size="22" font-weight="700">GREEN</text>
+  <text x="204" y="400" fill="#e6edf3" font-family="'SF Mono', Menlo, monospace" font-size="18">Release helper checks passed</text>
+  <text x="108" y="442" fill="#c9d1d9" font-family="'SF Mono', Menlo, monospace" font-size="16">✓ bash script/test_create_release_zip.sh</text>
+  <text x="108" y="474" fill="#c9d1d9" font-family="'SF Mono', Menlo, monospace" font-size="16">✓ bash script/test_package_verify.sh</text>
+  <text x="108" y="506" fill="#c9d1d9" font-family="'SF Mono', Menlo, monospace" font-size="16">✓ bash script/test_sign_and_notarize.sh</text>
+  <text x="108" y="538" fill="#c9d1d9" font-family="'SF Mono', Menlo, monospace" font-size="16">✓ bash script/test_v10_release_gate.sh</text>
+
+  <rect x="80" y="600" width="1040" height="44" rx="10" fill="#122b1f" stroke="#238636"/>
+  <text x="108" y="628" fill="#d2f8d2" font-family="'SF Mono', Menlo, monospace" font-size="16">Success output now prints only: Created release zip: LithePG.app.zip</text>
+</svg>

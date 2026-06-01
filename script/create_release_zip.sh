@@ -212,6 +212,6 @@ fi
 
 /usr/bin/perl -e 'use strict; use warnings; rename($ARGV[0], $ARGV[1]) or die "rename failed: $!\n";' "$temp_zip" "$OUTPUT_ZIP" || fail "could not replace output zip: $OUTPUT_ZIP"
 
-printf 'Created release zip: %s\n' "$OUTPUT_ZIP"
+printf 'Created release zip: %s\n' "$(basename "$OUTPUT_ZIP")"
 printf 'SHA-256: %s\n' "$sha_digest"
 printf 'Size bytes: %s\n' "$zip_size_bytes"

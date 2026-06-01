@@ -120,6 +120,7 @@ dangling_symlink_output="$(mktemp)"
 overwrite_output="$(mktemp)"
 approved_symlink_output="$(mktemp)"
 approved_non_dangling_symlink_output="$(mktemp)"
+success_path_redaction_output="$(mktemp)"
 inside_bundle_output="$(mktemp)"
 case_variant_inside_bundle_output="$(mktemp)"
 symlink_inside_bundle_output="$(mktemp)"
@@ -129,7 +130,7 @@ success_output="$(mktemp)"
 outside_cwd_output="$(mktemp)"
 help_output="$(mktemp)"
 fixture_root="$(mktemp -d)"
-trap 'rm -f "$missing_verify_output" "$wrong_app_bundle_name_output" "$symlink_app_bundle_output" "$symlink_app_bundle_trailing_slash_output" "$wrong_output_zip_name_output" "$trailing_slash_output_zip_output" "$approved_directory_output" "$output_parent_file_output" "$dangling_output_parent_symlink_output" "$refuse_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$inside_bundle_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$final_symlink_inside_bundle_output" "$success_output" "$outside_cwd_output" "$help_output"; rm -rf "$fixture_root"' EXIT
+trap 'rm -f "$missing_verify_output" "$wrong_app_bundle_name_output" "$symlink_app_bundle_output" "$symlink_app_bundle_trailing_slash_output" "$wrong_output_zip_name_output" "$trailing_slash_output_zip_output" "$approved_directory_output" "$output_parent_file_output" "$dangling_output_parent_symlink_output" "$refuse_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$success_path_redaction_output" "$inside_bundle_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$final_symlink_inside_bundle_output" "$success_output" "$outside_cwd_output" "$help_output"; rm -rf "$fixture_root"' EXIT
 
 sensitive_identity="SENSITIVE_CODESIGN_IDENTITY_DO_NOT_PRINT"
 sensitive_notary="SENSITIVE_NOTARY_PROFILE_DO_NOT_PRINT"
@@ -392,7 +393,7 @@ if ! FAKE_VERIFY_LOG="$verify_log" \
   fail "helper failed despite explicit overwrite approval"
 fi
 overwrite_text="$(<"$overwrite_output")"
-assert_contains "$overwrite_text" "Created release zip: dist/LithePG.app.zip"
+assert_contains "$overwrite_text" "Created release zip: LithePG.app.zip"
 assert_matches_sha_line "$overwrite_text"
 assert_size_line_for_zip "$overwrite_text" "$overwrite_fixture/dist/LithePG.app.zip"
 assert_zip_contains_app_wrapper "$overwrite_fixture/dist/LithePG.app.zip" "$overwrite_fixture/extracted-overwrite"
@@ -412,7 +413,7 @@ if ! FAKE_VERIFY_LOG="$verify_log" \
   fail "helper failed despite explicit overwrite approval for dangling output symlink"
 fi
 approved_symlink_text="$(<"$approved_symlink_output")"
-assert_contains "$approved_symlink_text" "Created release zip: dist/LithePG.app.zip"
+assert_contains "$approved_symlink_text" "Created release zip: LithePG.app.zip"
 assert_matches_sha_line "$approved_symlink_text"
 assert_size_line_for_zip "$approved_symlink_text" "$approved_symlink_fixture/dist/LithePG.app.zip"
 [[ -f "$approved_symlink_fixture/dist/LithePG.app.zip" && ! -L "$approved_symlink_fixture/dist/LithePG.app.zip" ]] || fail "approved dangling output symlink was not replaced with a regular zip"
@@ -437,7 +438,7 @@ if ! FAKE_VERIFY_LOG="$verify_log" \
   fail "helper failed despite explicit overwrite approval for non-dangling output symlink"
 fi
 approved_non_dangling_symlink_text="$(<"$approved_non_dangling_symlink_output")"
-assert_contains "$approved_non_dangling_symlink_text" "Created release zip: dist/LithePG.app.zip"
+assert_contains "$approved_non_dangling_symlink_text" "Created release zip: LithePG.app.zip"
 assert_matches_sha_line "$approved_non_dangling_symlink_text"
 assert_size_line_for_zip "$approved_non_dangling_symlink_text" "$approved_non_dangling_symlink_fixture/dist/LithePG.app.zip"
 assert_not_contains "$approved_non_dangling_symlink_text" "$sensitive_identity"
@@ -448,6 +449,32 @@ assert_not_contains "$approved_non_dangling_symlink_text" "$approved_non_danglin
 [[ -f "$approved_non_dangling_target" ]] || fail "approved non-dangling output symlink target was removed"
 [[ "$(<"$approved_non_dangling_target")" == "$approved_non_dangling_target_contents" ]] || fail "approved non-dangling output symlink target contents changed"
 assert_zip_contains_app_wrapper "$approved_non_dangling_symlink_fixture/dist/LithePG.app.zip" "$approved_non_dangling_symlink_fixture/extracted-approved-non-dangling-symlink"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+
+# Success output must not echo caller-supplied output directories, which can contain local paths or sentinel values.
+success_path_redaction_sentinel="SUCCESS_PATH_REDACTION_SENTINEL_DO_NOT_PRINT"
+success_path_redaction_fixture="$fixture_root/success-path-redaction"
+make_fixture "$success_path_redaction_fixture"
+verify_log="$success_path_redaction_fixture/verify.log"
+success_path_redaction_zip="artifacts/$success_path_redaction_sentinel/LithePG.app.zip"
+if ! FAKE_VERIFY_LOG="$verify_log" \
+  LITHEPG_CODESIGN_IDENTITY="$sensitive_identity" \
+  LITHEPG_NOTARY_PROFILE="$sensitive_notary" \
+  LITHEPG_RELEASE_MARKER="$sensitive_release_marker" \
+  run_helper_capture "$success_path_redaction_fixture" "$success_path_redaction_output" "dist/LithePG.app" "$success_path_redaction_zip"; then
+  fail "helper failed when creating a release zip under a sentinel output directory"
+fi
+success_path_redaction_text="$(<"$success_path_redaction_output")"
+assert_contains "$success_path_redaction_text" "Created release zip: LithePG.app.zip"
+assert_matches_sha_line "$success_path_redaction_text"
+assert_size_line_for_zip "$success_path_redaction_text" "$success_path_redaction_fixture/$success_path_redaction_zip"
+assert_not_contains "$success_path_redaction_text" "$success_path_redaction_zip"
+assert_not_contains "$success_path_redaction_text" "$success_path_redaction_sentinel"
+assert_not_contains "$success_path_redaction_text" "$sensitive_identity"
+assert_not_contains "$success_path_redaction_text" "$sensitive_notary"
+assert_not_contains "$success_path_redaction_text" "$sensitive_release_marker"
+[[ -f "$success_path_redaction_fixture/$success_path_redaction_zip" ]] || fail "success-path-redaction zip was not created"
+assert_zip_contains_app_wrapper "$success_path_redaction_fixture/$success_path_redaction_zip" "$success_path_redaction_fixture/extracted-success-path-redaction"
 assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
 
 # Output paths inside the app bundle are refused to avoid recursive/self-embedding artifacts.
@@ -563,7 +590,7 @@ if ! FAKE_VERIFY_LOG="$verify_log" \
   fail "helper failed on successful zip creation"
 fi
 success_text="$(<"$success_output")"
-assert_contains "$success_text" "Created release zip: artifacts/public/LithePG.app.zip"
+assert_contains "$success_text" "Created release zip: LithePG.app.zip"
 assert_matches_sha_line "$success_text"
 assert_size_line_for_zip "$success_text" "$success_fixture/artifacts/public/LithePG.app.zip"
 assert_not_contains "$success_text" "$sensitive_identity"
@@ -584,7 +611,7 @@ if ! FAKE_VERIFY_LOG="$verify_log" \
   fail "helper failed when invoked from outside the repository root with default paths"
 fi
 outside_cwd_text="$(<"$outside_cwd_output")"
-assert_contains "$outside_cwd_text" "Created release zip: dist/LithePG.app.zip"
+assert_contains "$outside_cwd_text" "Created release zip: LithePG.app.zip"
 assert_matches_sha_line "$outside_cwd_text"
 assert_size_line_for_zip "$outside_cwd_text" "$outside_fixture/dist/LithePG.app.zip"
 [[ -f "$outside_fixture/dist/LithePG.app.zip" ]] || fail "default output zip was not created under helper repository root"

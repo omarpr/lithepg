@@ -1171,3 +1171,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-06-01-package-verify-success-path-redaction.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-06-01 03:40 EDT — v1.0 release zip success-path redaction
+
+- Hardened `script/create_release_zip.sh` so successful public zip creation prints the stable artifact basename `LithePG.app.zip` instead of echoing the caller-supplied output path, which may contain local directories or sentinel values.
+- Added strict-TDD coverage in `script/test_create_release_zip.sh` proving a successful zip created under a sentinel-containing output directory still preserves the `.app` wrapper, prints SHA-256/size, and does not leak the output path, sentinel, signing identity, notary profile, or release marker environment values.
+- RED verification: `bash script/test_create_release_zip.sh` failed first with `test_create_release_zip failed: expected output to contain: Created release zip: LithePG.app.zip` while the old helper printed the caller-supplied output path.
+- GREEN verification: `bash script/test_create_release_zip.sh`, `bash -n script/create_release_zip.sh script/test_create_release_zip.sh`, `git diff --check`, adjacent release-helper tests `bash script/test_package_verify.sh && bash script/test_sign_and_notarize.sh && bash script/test_v10_release_gate.sh`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`, and package smoke `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/build_and_run.sh --package && LITHEPG_RELEASE_ZIP_OVERWRITE=approved ./script/create_release_zip.sh dist/LithePG.app dist/LithePG.app.zip` passed. Package smoke verified `dist/LithePG.app` with packaged executable 12,507,504 bytes / 11.93 MiB, version `0.5` build `233`, and release zip success output `Created release zip: LithePG.app.zip`.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-06-01-release-zip-success-path-redaction.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
