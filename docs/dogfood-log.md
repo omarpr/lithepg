@@ -1237,3 +1237,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS after the fake-`rm` env-emission follow-up; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-06-01-release-zip-cleanup-redaction.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 06:25 EDT — v1.0 package verifier PATH-shadow hardening
+
+- Hardened `script/package_verify.sh` so top-level mode/size and MiB calculations use `/usr/bin/stat` and `/usr/bin/awk` instead of caller-controlled `PATH` resolution, matching the verifier's existing absolute-tool posture for nested bundle traversal and executable inspection.
+- Added strict-TDD coverage in `script/test_package_verify.sh` where fake `stat` and `awk` binaries emit a synthetic sentinel and exit non-zero; the verifier must still pass a valid `LithePG.app` fixture and must not print the sentinel or fake-tool output.
+- RED verification: `bash script/test_package_verify.sh` failed first with `PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN stat invoked` and `test_package_verify failed: package verifier was affected by PATH-shadowed stat/awk`.
+- GREEN verification: `bash script/test_package_verify.sh`, release-helper shell tests (`test_create_release_zip`, `test_sign_and_notarize`, `test_v10_release_gate`), `bash -n script/package_verify.sh script/test_package_verify.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`, package smoke, and `./script/package_verify.sh dist/LithePG.app` all passed.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260601-062516/`; metrics: shell readiness 139.73 ms, connected cold start 231.86 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.037 ms, dogfood query median overhead 0.014 ms.
+- Evidence artifact: `docs/evidence/2026-06-01-package-verify-path-shadow-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

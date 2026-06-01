@@ -212,6 +212,34 @@ assert_contains "$helper_output" "Package verified: LithePG.app"
 assert_contains "$helper_output" "Bundle ID: dev.omarpr.lithepg"
 assert_contains "$helper_output" "Version: 1.0 (100)"
 
+path_shadow_sentinel="PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+path_shadow_fake_bin="$fixture_root/path-shadow-fake-bin"
+path_shadow_bundle="$fixture_root/path-shadow-$path_shadow_sentinel/LithePG.app"
+mkdir -p "$path_shadow_fake_bin"
+make_minimal_app_bundle "$path_shadow_bundle"
+cat >"$path_shadow_fake_bin/stat" <<SHIM
+#!/usr/bin/env bash
+printf '%s stat invoked\\n' "$path_shadow_sentinel" >&2
+exit 97
+SHIM
+cat >"$path_shadow_fake_bin/awk" <<SHIM
+#!/usr/bin/env bash
+printf '%s awk invoked\\n' "$path_shadow_sentinel" >&2
+exit 97
+SHIM
+chmod +x "$path_shadow_fake_bin/stat" "$path_shadow_fake_bin/awk"
+if ! PATH="$path_shadow_fake_bin:$PATH" run_helper_capture "$output_file" "$path_shadow_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier was affected by PATH-shadowed stat/awk"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "Package verified: LithePG.app"
+assert_not_contains "$helper_output" "$path_shadow_bundle"
+assert_not_contains "$helper_output" "$path_shadow_sentinel"
+assert_not_contains "$helper_output" "stat invoked"
+assert_not_contains "$helper_output" "awk invoked"
+
 if ! run_helper_capture "$output_file" "$app_bundle"; then
   helper_output="$(<"$output_file")"
   printf '%s\n' "$helper_output" >&2

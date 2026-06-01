@@ -51,7 +51,7 @@ done
 [[ "${APP_BUNDLE##*/}" == "LithePG.app" ]] || fail "app bundle basename must be LithePG.app"
 [[ ! -L "$APP_BUNDLE" ]] || fail "app bundle path must not be a symlink"
 [[ -d "$APP_BUNDLE" ]] || fail "app bundle not found"
-app_bundle_mode="$(stat -f%p "$APP_BUNDLE")"
+app_bundle_mode="$(/usr/bin/stat -f%p "$APP_BUNDLE")"
 if (( (8#$app_bundle_mode & 07022) != 0 )); then
   fail "app bundle directory mode is unsafe"
 fi
@@ -62,18 +62,18 @@ APP_BINARY="$MACOS_DIR/$APP_NAME"
 INFO_PLIST="$CONTENTS_DIR/Info.plist"
 
 [[ -d "$CONTENTS_DIR" && ! -L "$CONTENTS_DIR" ]] || fail "Contents directory must be a non-symlink directory"
-contents_dir_mode="$(stat -f%p "$CONTENTS_DIR")"
+contents_dir_mode="$(/usr/bin/stat -f%p "$CONTENTS_DIR")"
 if (( (8#$contents_dir_mode & 07022) != 0 )); then
   fail "Contents directory mode is unsafe"
 fi
 [[ -d "$MACOS_DIR" && ! -L "$MACOS_DIR" ]] || fail "Contents/MacOS directory must be a non-symlink directory"
-macos_dir_mode="$(stat -f%p "$MACOS_DIR")"
+macos_dir_mode="$(/usr/bin/stat -f%p "$MACOS_DIR")"
 if (( (8#$macos_dir_mode & 07022) != 0 )); then
   fail "Contents/MacOS directory mode is unsafe"
 fi
 [[ -f "$APP_BINARY" && ! -L "$APP_BINARY" ]] || fail "app executable must be a regular file"
 [[ -x "$APP_BINARY" ]] || fail "app executable is not executable"
-app_binary_mode="$(stat -f%p "$APP_BINARY")"
+app_binary_mode="$(/usr/bin/stat -f%p "$APP_BINARY")"
 if (( (8#$app_binary_mode & 07022) != 0 )); then
   fail "app executable mode is unsafe"
 fi
@@ -84,7 +84,7 @@ if ! printf '%s\n' "$app_binary_headers" | /usr/bin/grep -Eq '^[[:space:]]*MH_MA
   fail "app executable format is invalid"
 fi
 [[ -f "$INFO_PLIST" && ! -L "$INFO_PLIST" ]] || fail "Info.plist must be a regular file"
-info_plist_mode="$(stat -f%p "$INFO_PLIST")"
+info_plist_mode="$(/usr/bin/stat -f%p "$INFO_PLIST")"
 if (( (8#$info_plist_mode & 07022) != 0 )); then
   fail "Info.plist mode is unsafe"
 fi
@@ -160,13 +160,13 @@ if [[ -n "${LITHEPG_EXPECTED_BUILD_VERSION:-}" ]]; then
   [[ "$build_version" == "$LITHEPG_EXPECTED_BUILD_VERSION" ]] || fail "CFBundleVersion does not match LITHEPG_EXPECTED_BUILD_VERSION"
 fi
 
-bytes=$(stat -f%z "$APP_BINARY")
+bytes=$(/usr/bin/stat -f%z "$APP_BINARY")
 if [[ "$bytes" -gt "$HARD_CAP_BYTES" ]]; then
-  mib=$(awk "BEGIN { printf \"%.2f\", $bytes / 1024 / 1024 }")
+  mib=$(/usr/bin/awk "BEGIN { printf \"%.2f\", $bytes / 1024 / 1024 }")
   fail "app executable exceeds 50 MiB hard cap: ${mib} MiB"
 fi
 
-mib=$(awk "BEGIN { printf \"%.2f\", $bytes / 1024 / 1024 }")
+mib=$(/usr/bin/awk "BEGIN { printf \"%.2f\", $bytes / 1024 / 1024 }")
 printf 'Package verified: %s\n' "${APP_BUNDLE##*/}"
 printf 'Executable: Contents/MacOS/%s (%s bytes / %s MiB)\n' "$APP_NAME" "$bytes" "$mib"
 printf 'Bundle ID: %s\n' "$bundle_id"
