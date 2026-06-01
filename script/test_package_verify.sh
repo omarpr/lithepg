@@ -207,6 +207,43 @@ assert_contains "$helper_output" "Package verified: $app_bundle"
 assert_contains "$helper_output" "Bundle ID: dev.omarpr.lithepg"
 assert_contains "$helper_output" "Version: 1.0 (100)"
 
+finder_metadata_failure="package verification failed: app bundle must not contain Finder metadata files"
+
+ds_store_metadata_sentinel="DS_STORE_METADATA_SENTINEL_SHOULD_NOT_LEAK"
+ds_store_metadata_bundle="$fixture_root/finder-metadata-ds-store-$ds_store_metadata_sentinel/LithePG.app"
+make_minimal_app_bundle "$ds_store_metadata_bundle"
+mkdir -p "$ds_store_metadata_bundle/Contents/Resources"
+printf '%s\n' "$ds_store_metadata_sentinel" >"$ds_store_metadata_bundle/Contents/Resources/.DS_Store"
+if run_helper_capture "$output_file" "$ds_store_metadata_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted Finder metadata .DS_Store inside the app bundle"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "$finder_metadata_failure"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$ds_store_metadata_bundle"
+assert_not_contains "$helper_output" "$ds_store_metadata_sentinel"
+assert_not_contains "$helper_output" ".DS_Store"
+
+macosx_metadata_sentinel="MACOSX_METADATA_SENTINEL_SHOULD_NOT_LEAK"
+macosx_metadata_bundle="$fixture_root/finder-metadata-macosx-$macosx_metadata_sentinel/LithePG.app"
+make_minimal_app_bundle "$macosx_metadata_bundle"
+mkdir -p "$macosx_metadata_bundle/Contents/Resources/__MACOSX"
+printf '%s\n' "$macosx_metadata_sentinel" >"$macosx_metadata_bundle/Contents/Resources/__MACOSX/._manifest"
+if run_helper_capture "$output_file" "$macosx_metadata_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted Finder metadata __MACOSX directory inside the app bundle"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "$finder_metadata_failure"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$macosx_metadata_bundle"
+assert_not_contains "$helper_output" "$macosx_metadata_sentinel"
+assert_not_contains "$helper_output" "__MACOSX"
+assert_not_contains "$helper_output" "._manifest"
+
 metadata_cases=(
   "CFBundleExecutable|CFBundleExecutable mismatch"
   "CFBundleIdentifier|CFBundleIdentifier mismatch"

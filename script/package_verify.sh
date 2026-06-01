@@ -96,6 +96,14 @@ if [[ -n "$symlink_match" ]]; then
   fail "app bundle must not contain symlinks"
 fi
 
+finder_metadata_match=""
+if ! finder_metadata_match="$(/usr/bin/find "$APP_BUNDLE" \( -name '.DS_Store' -o -name '__MACOSX' \) -print -quit 2>/dev/null)"; then
+  fail "app bundle must not contain Finder metadata files"
+fi
+if [[ -n "$finder_metadata_match" ]]; then
+  fail "app bundle must not contain Finder metadata files"
+fi
+
 executable="$(plist_value CFBundleExecutable)"
 bundle_id="$(plist_value CFBundleIdentifier)"
 bundle_name="$(plist_value CFBundleName)"
