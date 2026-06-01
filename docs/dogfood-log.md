@@ -1344,3 +1344,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260601-112724/`; metrics: shell readiness 127.15 ms, connected cold start 216.11 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.023 ms, dogfood query median overhead 0.044 ms.
 - Evidence artifact: `screenshots/evidence/2026-06-01-dogfood-postgres-path-shadow-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-06-01 11:48 EDT — v1.0 run dogfood app dirname PATH-shadow hardening
+
+- Hardened `script/run_dogfood_app.sh` so helper-owned repository-root setup uses `/usr/bin/dirname` instead of caller-controlled `PATH` resolution. `swift` remains intentionally PATH-resolved so developer toolchains and test fixtures can select the Swift tool.
+- Added strict-TDD coverage in `script/test_run_dogfood_app.sh` with an isolated temp fixture, stub `script/dogfood_postgres.sh`, fake PATH-resolved `swift`, and a fake PATH-shadowed `dirname` that emits `RUN_DOGFOOD_APP_PATH_SHADOW_DIRNAME_SHOULD_NOT_RUN` and exits non-zero. The helper must still build via fake Swift, exec the fake `LithePGApp`, pass through secret-free startup URL/query values, and avoid printing or invoking the dirname sentinel.
+- RED verification: `bash script/test_run_dogfood_app.sh` failed first with `RUN_DOGFOOD_APP_PATH_SHADOW_DIRNAME_SHOULD_NOT_RUN dirname invoked` and `test_run_dogfood_app failed: run_dogfood_app.sh was affected by PATH-shadowed dirname`.
+- GREEN verification: `bash script/test_run_dogfood_app.sh` passed after the minimal `/usr/bin/dirname` production change. Adjacent verification also passed: `bash -n script/run_dogfood_app.sh script/test_run_dogfood_app.sh`, `git diff --check`, and `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`.
+- Evidence artifact: `screenshots/evidence/2026-06-01-run-dogfood-app-path-shadow-hardening.svg`.
+- No real app, Docker/Postgres instance, signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.

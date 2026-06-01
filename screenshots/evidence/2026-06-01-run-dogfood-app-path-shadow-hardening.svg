@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG run_dogfood_app PATH-shadow hardening evidence</title>
+  <desc id="desc">Evidence card for the strict-TDD slice proving run_dogfood_app avoids PATH-shadowed dirname during repository-root setup while fake swift reaches a fake app.</desc>
+  <rect width="1280" height="720" fill="#0f172a"/>
+  <rect x="48" y="48" width="1184" height="624" rx="28" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="88" y="118" fill="#e0f2fe" font-family="Menlo, Consolas, monospace" font-size="34" font-weight="700">LithePG run_dogfood_app hardening</text>
+  <text x="88" y="168" fill="#bae6fd" font-family="Menlo, Consolas, monospace" font-size="22">2026-06-01 11:48 EDT — repository-root dirname PATH-shadow regression</text>
+
+  <rect x="88" y="214" width="1104" height="126" rx="18" fill="#0c4a6e" stroke="#38bdf8" stroke-width="2"/>
+  <text x="116" y="260" fill="#e0f2fe" font-family="Menlo, Consolas, monospace" font-size="23">Production hardening:</text>
+  <text x="116" y="300" fill="#bae6fd" font-family="Menlo, Consolas, monospace" font-size="21">ROOT_DIR now resolves with /usr/bin/dirname instead of caller PATH</text>
+
+  <rect x="88" y="372" width="528" height="190" rx="18" fill="#1e3a8a" stroke="#60a5fa" stroke-width="2"/>
+  <text x="116" y="416" fill="#dbeafe" font-family="Menlo, Consolas, monospace" font-size="24" font-weight="700">Strict TDD</text>
+  <text x="116" y="458" fill="#bfdbfe" font-family="Menlo, Consolas, monospace" font-size="20">RED: fake PATH dirname printed sentinel</text>
+  <text x="116" y="494" fill="#bfdbfe" font-family="Menlo, Consolas, monospace" font-size="20">GREEN: test_run_dogfood_app passed</text>
+  <text x="116" y="530" fill="#bfdbfe" font-family="Menlo, Consolas, monospace" font-size="20">No real app, Docker, or Postgres launched</text>
+
+  <rect x="664" y="372" width="528" height="190" rx="18" fill="#312e81" stroke="#818cf8" stroke-width="2"/>
+  <text x="692" y="416" fill="#eef2ff" font-family="Menlo, Consolas, monospace" font-size="24" font-weight="700">Fixture proof</text>
+  <text x="692" y="458" fill="#c7d2fe" font-family="Menlo, Consolas, monospace" font-size="20">Fake dogfood_postgres isolated side effects</text>
+  <text x="692" y="494" fill="#c7d2fe" font-family="Menlo, Consolas, monospace" font-size="20">Fake swift created fake LithePGApp binary</text>
+  <text x="692" y="530" fill="#c7d2fe" font-family="Menlo, Consolas, monospace" font-size="20">Startup URL/query passed through secret-free</text>
+
+  <text x="88" y="618" fill="#94a3b8" font-family="Menlo, Consolas, monospace" font-size="18">Evidence artifact: screenshots/evidence/2026-06-01-run-dogfood-app-path-shadow-hardening.svg</text>
+</svg>
