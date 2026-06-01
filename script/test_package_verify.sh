@@ -249,6 +249,42 @@ assert_not_contains "$helper_output" "Package verified:"
 assert_not_contains "$helper_output" "$symlinked_plist_sentinel"
 assert_not_contains "$helper_output" "Info-target.plist"
 
+for unsafe_mode in 4755 2755 1755; do
+  info_plist_special_mode_sentinel="INFO_PLIST_SPECIAL_MODE_SENTINEL_SHOULD_NOT_LEAK"
+  info_plist_special_mode_bundle="$fixture_root/info-plist-special-mode-$unsafe_mode-$info_plist_special_mode_sentinel/LithePG.app"
+  make_minimal_app_bundle "$info_plist_special_mode_bundle"
+  chmod "$unsafe_mode" "$info_plist_special_mode_bundle/Contents/Info.plist"
+  if run_helper_capture "$output_file" "$info_plist_special_mode_bundle"; then
+    helper_output="$(<"$output_file")"
+    printf '%s\n' "$helper_output" >&2
+    fail "package verifier unexpectedly accepted special mode $unsafe_mode on Info.plist"
+  fi
+  helper_output="$(<"$output_file")"
+  assert_contains "$helper_output" "package verification failed: Info.plist mode is unsafe"
+  assert_not_contains "$helper_output" "Package verified:"
+  assert_not_contains "$helper_output" "$info_plist_special_mode_bundle"
+  assert_not_contains "$helper_output" "$info_plist_special_mode_sentinel"
+  assert_not_contains "$helper_output" "$unsafe_mode"
+done
+
+for unsafe_mode in 664 646; do
+  info_plist_writable_mode_sentinel="INFO_PLIST_WRITABLE_MODE_SENTINEL_SHOULD_NOT_LEAK"
+  info_plist_writable_mode_bundle="$fixture_root/info-plist-writable-mode-$unsafe_mode-$info_plist_writable_mode_sentinel/LithePG.app"
+  make_minimal_app_bundle "$info_plist_writable_mode_bundle"
+  chmod "$unsafe_mode" "$info_plist_writable_mode_bundle/Contents/Info.plist"
+  if run_helper_capture "$output_file" "$info_plist_writable_mode_bundle"; then
+    helper_output="$(<"$output_file")"
+    printf '%s\n' "$helper_output" >&2
+    fail "package verifier unexpectedly accepted mode $unsafe_mode on Info.plist"
+  fi
+  helper_output="$(<"$output_file")"
+  assert_contains "$helper_output" "package verification failed: Info.plist mode is unsafe"
+  assert_not_contains "$helper_output" "Package verified:"
+  assert_not_contains "$helper_output" "$info_plist_writable_mode_bundle"
+  assert_not_contains "$helper_output" "$info_plist_writable_mode_sentinel"
+  assert_not_contains "$helper_output" "$unsafe_mode"
+done
+
 wrong_basename_bundle="$fixture_root/NotLithePG.app"
 make_minimal_app_bundle "$wrong_basename_bundle"
 if run_helper_capture "$output_file" "$wrong_basename_bundle"; then
