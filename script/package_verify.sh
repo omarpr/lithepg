@@ -43,9 +43,10 @@ while [[ "$APP_BUNDLE" != "/" && "$APP_BUNDLE" == */ ]]; do
   APP_BUNDLE="${APP_BUNDLE%/}"
 done
 
-[[ -d "$APP_BUNDLE" ]] || fail "app bundle not found: $APP_BUNDLE"
 [[ "${APP_BUNDLE##*.}" == "app" ]] || fail "bundle path must end in .app"
 [[ "${APP_BUNDLE##*/}" == "LithePG.app" ]] || fail "app bundle basename must be LithePG.app"
+[[ ! -L "$APP_BUNDLE" ]] || fail "app bundle path must not be a symlink"
+[[ -d "$APP_BUNDLE" ]] || fail "app bundle not found: $APP_BUNDLE"
 
 CONTENTS_DIR="$APP_BUNDLE/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"

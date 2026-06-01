@@ -1012,3 +1012,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-05-31-package-verify-app-bundle-basename-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 — v1.0 package verifier symlink app-bundle gate
+
+- Hardened `script/package_verify.sh` so a symlinked app-bundle input path named `LithePG.app` is rejected after trailing-slash normalization and canonical-name string checks, before the `-d` existence/type check can dereference a final-component symlink.
+- Added strict-TDD coverage in `script/test_package_verify.sh` proving plain symlink, trailing-slash symlink, and dangling final-component symlink paths fail with `package verification failed: app bundle path must not be a symlink`, do not print `Package verified:`, and do not leak symlink target/input sentinels.
+- RED verification: `bash script/test_package_verify.sh` failed first for the dangling symlink follow-up with `test_package_verify failed: expected output to contain: package verification failed: app bundle path must not be a symlink`.
+- GREEN verification: `bash script/test_package_verify.sh` passed; `bash -n script/package_verify.sh script/test_package_verify.sh`, `git diff --check`, adjacent release helper tests `bash script/test_create_release_zip.sh && bash script/test_sign_and_notarize.sh && bash script/test_v10_release_gate.sh`, and `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260531-212416/` with default Swift tests, live dogfood tests, and v0.4 measurement all passed. Metrics: shell readiness 133.96 ms; connected cold start 233.86 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead 0.031 ms; dogfood query median overhead 0.035 ms.
+- Evidence artifact: `docs/evidence/2026-06-01-package-verify-symlink-app-bundle-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.

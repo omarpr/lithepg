@@ -112,6 +112,50 @@ assert_contains "$helper_output" "Package verified: $app_bundle"
 assert_contains "$helper_output" "Bundle ID: dev.omarpr.lithepg"
 assert_contains "$helper_output" "Version: 1.0 (100)"
 
+symlink_sentinel="SYMLINK_TARGET_SENTINEL_SHOULD_NOT_LEAK"
+symlink_target_bundle="$fixture_root/$symlink_sentinel/LithePG.app"
+make_minimal_app_bundle "$symlink_target_bundle"
+symlink_parent="$fixture_root/symlink-input"
+mkdir -p "$symlink_parent"
+symlinked_app_bundle="$symlink_parent/LithePG.app"
+ln -s "$symlink_target_bundle" "$symlinked_app_bundle"
+if run_helper_capture "$output_file" "$symlinked_app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted a symlinked app bundle path"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: app bundle path must not be a symlink"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$symlink_sentinel"
+
+if run_helper_capture "$output_file" "$symlinked_app_bundle/"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted a symlinked app bundle path with a trailing slash"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: app bundle path must not be a symlink"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$symlink_sentinel"
+
+dangling_symlink_sentinel="DANGLING_SYMLINK_TARGET_SENTINEL_SHOULD_NOT_LEAK"
+dangling_symlink_parent="$fixture_root/dangling-symlink-input"
+mkdir -p "$dangling_symlink_parent"
+dangling_symlinked_app_bundle="$dangling_symlink_parent/LithePG.app"
+dangling_symlink_target="$fixture_root/$dangling_symlink_sentinel/LithePG.app"
+ln -s "$dangling_symlink_target" "$dangling_symlinked_app_bundle"
+if run_helper_capture "$output_file" "$dangling_symlinked_app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted a dangling symlinked app bundle path"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: app bundle path must not be a symlink"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$dangling_symlink_sentinel"
+assert_not_contains "$helper_output" "$dangling_symlinked_app_bundle"
+
 wrong_basename_bundle="$fixture_root/NotLithePG.app"
 make_minimal_app_bundle "$wrong_basename_bundle"
 if run_helper_capture "$output_file" "$wrong_basename_bundle"; then
