@@ -260,6 +260,34 @@ helper_output="$(<"$output_file")"
 assert_contains "$helper_output" "package verification failed: app bundle basename must be LithePG.app"
 assert_not_contains "$helper_output" "Package verified:"
 
+for unsafe_mode in 4755 2755 1755; do
+  special_mode_bundle="$fixture_root/special-mode-$unsafe_mode/LithePG.app"
+  make_minimal_app_bundle "$special_mode_bundle"
+  chmod "$unsafe_mode" "$special_mode_bundle/Contents/MacOS/LithePGApp"
+  if run_helper_capture "$output_file" "$special_mode_bundle"; then
+    helper_output="$(<"$output_file")"
+    printf '%s\n' "$helper_output" >&2
+    fail "package verifier unexpectedly accepted special mode $unsafe_mode on the app executable"
+  fi
+  helper_output="$(<"$output_file")"
+  assert_contains "$helper_output" "package verification failed: app executable mode is unsafe"
+  assert_not_contains "$helper_output" "Package verified:"
+done
+
+for unsafe_mode in 775 757; do
+  writable_mode_bundle="$fixture_root/writable-mode-$unsafe_mode/LithePG.app"
+  make_minimal_app_bundle "$writable_mode_bundle"
+  chmod "$unsafe_mode" "$writable_mode_bundle/Contents/MacOS/LithePGApp"
+  if run_helper_capture "$output_file" "$writable_mode_bundle"; then
+    helper_output="$(<"$output_file")"
+    printf '%s\n' "$helper_output" >&2
+    fail "package verifier unexpectedly accepted mode $unsafe_mode on the app executable"
+  fi
+  helper_output="$(<"$output_file")"
+  assert_contains "$helper_output" "package verification failed: app executable mode is unsafe"
+  assert_not_contains "$helper_output" "Package verified:"
+done
+
 extra_arg_sentinel="EXTRA_ARG_SHOULD_NOT_BE_USED_OR_LEAKED"
 if run_helper_capture "$output_file" "$app_bundle" "$extra_arg_sentinel"; then
   helper_output="$(<"$output_file")"

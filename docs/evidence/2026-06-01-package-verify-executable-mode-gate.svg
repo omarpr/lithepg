@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="520" viewBox="0 0 920 520" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG package verifier executable-mode gate</title>
+  <desc id="desc">Evidence summary for the v1.0 package verification gate rejecting unsafe executable modes on Contents/MacOS/LithePGApp.</desc>
+  <rect width="920" height="520" fill="#111827"/>
+  <rect x="32" y="32" width="856" height="456" rx="24" fill="#f8fafc"/>
+  <text x="64" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#0f172a">Package verifier executable-mode gate</text>
+  <text x="64" y="124" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="17" fill="#334155">Target: LithePG.app/Contents/MacOS/LithePGApp</text>
+
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" fill="#0f172a">
+    <rect x="64" y="162" width="792" height="62" rx="14" fill="#fee2e2"/>
+    <text x="92" y="201">✕ Reject special executable bits: setuid 4755, setgid 2755, sticky 1755</text>
+
+    <rect x="64" y="242" width="792" height="62" rx="14" fill="#ffedd5"/>
+    <text x="92" y="281">✕ Reject writable executable modes: group-writable chmod 775 and world-writable chmod 757</text>
+
+    <rect x="64" y="322" width="792" height="62" rx="14" fill="#dcfce7"/>
+    <text x="92" y="361">✓ Preserve existing executable requirement before metadata and size verification</text>
+
+    <rect x="64" y="402" width="792" height="42" rx="12" fill="#e0f2fe"/>
+    <text x="92" y="430" font-size="16">Failure: package verification failed: app executable mode is unsafe</text>
+  </g>
+
+  <text x="64" y="468" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#475569">TDD evidence: RED package verifier test, GREEN verifier + adjacent release helper tests, syntax checks, diff check, swift build.</text>
+</svg>

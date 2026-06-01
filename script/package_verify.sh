@@ -61,6 +61,10 @@ INFO_PLIST="$CONTENTS_DIR/Info.plist"
 [[ -d "$MACOS_DIR" && ! -L "$MACOS_DIR" ]] || fail "Contents/MacOS directory must be a non-symlink directory"
 [[ -f "$APP_BINARY" && ! -L "$APP_BINARY" ]] || fail "app executable must be a regular file"
 [[ -x "$APP_BINARY" ]] || fail "app executable is not executable"
+app_binary_mode="$(stat -f%p "$APP_BINARY")"
+if (( (8#$app_binary_mode & 07022) != 0 )); then
+  fail "app executable mode is unsafe"
+fi
 [[ -f "$INFO_PLIST" && ! -L "$INFO_PLIST" ]] || fail "Info.plist must be a regular file"
 
 executable="$(plist_value CFBundleExecutable)"
