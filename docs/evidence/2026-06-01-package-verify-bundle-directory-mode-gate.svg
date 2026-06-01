@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG package verifier bundle directory mode gate evidence</title>
+  <desc id="desc">Visual receipt for the v1.0 package verifier hardening that rejects unsafe Contents and Contents/MacOS directory modes.</desc>
+  <rect width="1200" height="760" fill="#0f172a"/>
+  <rect x="40" y="36" width="1120" height="688" rx="28" fill="#111827" stroke="#38bdf8" stroke-width="4"/>
+  <text x="76" y="92" fill="#e5f3ff" font-family="Menlo, Consolas, monospace" font-size="34" font-weight="700">LithePG v1.0 release hardening</text>
+  <text x="76" y="138" fill="#bae6fd" font-family="Menlo, Consolas, monospace" font-size="22">package_verify.sh: bundle directory mode gate</text>
+
+  <rect x="76" y="178" width="1048" height="160" rx="18" fill="#020617" stroke="#334155"/>
+  <text x="108" y="222" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="22">RED</text>
+  <text x="184" y="222" fill="#e2e8f0" font-family="Menlo, Consolas, monospace" font-size="20">bash script/test_package_verify.sh</text>
+  <text x="184" y="258" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="18">failed first: accepted unsafe mode 4775 on Contents</text>
+  <text x="184" y="294" fill="#94a3b8" font-family="Menlo, Consolas, monospace" font-size="18">proves the new test caught missing behavior before implementation</text>
+
+  <rect x="76" y="366" width="1048" height="196" rx="18" fill="#020617" stroke="#334155"/>
+  <text x="108" y="410" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="22">GREEN</text>
+  <text x="204" y="410" fill="#e2e8f0" font-family="Menlo, Consolas, monospace" font-size="20">unsafe directory modes now fail before metadata/size success</text>
+  <text x="204" y="446" fill="#e2e8f0" font-family="Menlo, Consolas, monospace" font-size="18">• LithePG.app root and inner dirs reject isolated special/write bits</text>
+  <text x="204" y="478" fill="#e2e8f0" font-family="Menlo, Consolas, monospace" font-size="18">• builder and fixtures normalize root, dirs, executable, and Info.plist modes</text>
+  <text x="204" y="510" fill="#e2e8f0" font-family="Menlo, Consolas, monospace" font-size="18">• umask 002 package smoke verifies dist/LithePG.app successfully</text>
+
+  <rect x="76" y="590" width="1048" height="90" rx="18" fill="#052e16" stroke="#22c55e"/>
+  <text x="108" y="626" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="18">Verification passed: package verifier tests, adjacent release helper tests, swift build, swift test, dogfood_check</text>
+  <text x="108" y="660" fill="#bbf7d0" font-family="Menlo, Consolas, monospace" font-size="18">Dogfood artifacts: .build/dogfood-checks/20260531-233606/</text>
+</svg>

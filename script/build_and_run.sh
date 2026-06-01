@@ -48,8 +48,9 @@ fi
 
 rm -rf "$APP_BUNDLE"
 mkdir -p "$APP_MACOS"
+chmod 755 "$APP_BUNDLE" "$APP_CONTENTS" "$APP_MACOS"
 cp "$BUILD_BINARY" "$APP_BINARY"
-chmod +x "$APP_BINARY"
+chmod 755 "$APP_BINARY"
 if [[ "$BUILD_CONFIG" == "release" ]]; then
   BEFORE_BYTES=$(stat -f%z "$APP_BINARY")
   strip -x "$APP_BINARY" >/dev/null 2>&1 || true
@@ -80,6 +81,7 @@ cat >"$INFO_PLIST" <<PLIST
 </dict>
 </plist>
 PLIST
+chmod 644 "$INFO_PLIST"
 
 sign_release_bundle() {
   local identity="${LITHEPG_CODESIGN_IDENTITY:--}"

@@ -24,6 +24,7 @@ assert_not_contains() {
 make_minimal_app_bundle() {
   local app_bundle="$1"
   mkdir -p "$app_bundle/Contents/MacOS"
+  chmod 755 "$app_bundle" "$app_bundle/Contents" "$app_bundle/Contents/MacOS"
 
   cat >"$app_bundle/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -50,11 +51,13 @@ make_minimal_app_bundle() {
 </plist>
 PLIST
 
+  chmod 644 "$app_bundle/Contents/Info.plist"
+
   cat >"$app_bundle/Contents/MacOS/LithePGApp" <<'APP'
 #!/usr/bin/env bash
 printf 'LithePG test fixture\n'
 APP
-  chmod +x "$app_bundle/Contents/MacOS/LithePGApp"
+  chmod 755 "$app_bundle/Contents/MacOS/LithePGApp"
 }
 
 run_helper_capture() {
@@ -169,6 +172,42 @@ assert_not_contains "$helper_output" "Package verified:"
 assert_not_contains "$helper_output" "$dangling_symlink_sentinel"
 assert_not_contains "$helper_output" "$dangling_symlinked_app_bundle"
 
+for unsafe_mode in 4755 2755 1755; do
+  app_bundle_mode_sentinel="APP_BUNDLE_MODE_SENTINEL_SHOULD_NOT_LEAK"
+  app_bundle_mode_path="$fixture_root/app-bundle-mode-$unsafe_mode-$app_bundle_mode_sentinel/LithePG.app"
+  make_minimal_app_bundle "$app_bundle_mode_path"
+  chmod "$unsafe_mode" "$app_bundle_mode_path"
+  if run_helper_capture "$output_file" "$app_bundle_mode_path"; then
+    helper_output="$(<"$output_file")"
+    printf '%s\n' "$helper_output" >&2
+    fail "package verifier unexpectedly accepted unsafe mode $unsafe_mode on LithePG.app"
+  fi
+  helper_output="$(<"$output_file")"
+  assert_contains "$helper_output" "package verification failed: app bundle directory mode is unsafe"
+  assert_not_contains "$helper_output" "Package verified:"
+  assert_not_contains "$helper_output" "$app_bundle_mode_path"
+  assert_not_contains "$helper_output" "$app_bundle_mode_sentinel"
+  assert_not_contains "$helper_output" "$unsafe_mode"
+done
+
+for unsafe_mode in 775 757; do
+  app_bundle_mode_sentinel="APP_BUNDLE_MODE_SENTINEL_SHOULD_NOT_LEAK"
+  app_bundle_mode_path="$fixture_root/app-bundle-mode-$unsafe_mode-$app_bundle_mode_sentinel/LithePG.app"
+  make_minimal_app_bundle "$app_bundle_mode_path"
+  chmod "$unsafe_mode" "$app_bundle_mode_path"
+  if run_helper_capture "$output_file" "$app_bundle_mode_path"; then
+    helper_output="$(<"$output_file")"
+    printf '%s\n' "$helper_output" >&2
+    fail "package verifier unexpectedly accepted unsafe mode $unsafe_mode on LithePG.app"
+  fi
+  helper_output="$(<"$output_file")"
+  assert_contains "$helper_output" "package verification failed: app bundle directory mode is unsafe"
+  assert_not_contains "$helper_output" "Package verified:"
+  assert_not_contains "$helper_output" "$app_bundle_mode_path"
+  assert_not_contains "$helper_output" "$app_bundle_mode_sentinel"
+  assert_not_contains "$helper_output" "$unsafe_mode"
+done
+
 symlinked_contents_sentinel="SYMLINKED_CONTENTS_TARGET_SENTINEL_SHOULD_NOT_LEAK"
 symlinked_contents_bundle="$fixture_root/symlinked-contents/LithePG.app"
 make_minimal_app_bundle "$symlinked_contents_bundle"
@@ -204,6 +243,78 @@ assert_contains "$helper_output" "package verification failed: Contents/MacOS di
 assert_not_contains "$helper_output" "Package verified:"
 assert_not_contains "$helper_output" "$symlinked_macos_sentinel"
 assert_not_contains "$helper_output" "MacOS-target"
+
+for unsafe_mode in 4755 2755 1755; do
+  contents_mode_sentinel="CONTENTS_MODE_SENTINEL_SHOULD_NOT_LEAK"
+  contents_mode_bundle="$fixture_root/contents-mode-$unsafe_mode-$contents_mode_sentinel/LithePG.app"
+  make_minimal_app_bundle "$contents_mode_bundle"
+  chmod "$unsafe_mode" "$contents_mode_bundle/Contents"
+  if run_helper_capture "$output_file" "$contents_mode_bundle"; then
+    helper_output="$(<"$output_file")"
+    printf '%s\n' "$helper_output" >&2
+    fail "package verifier unexpectedly accepted unsafe mode $unsafe_mode on Contents"
+  fi
+  helper_output="$(<"$output_file")"
+  assert_contains "$helper_output" "package verification failed: Contents directory mode is unsafe"
+  assert_not_contains "$helper_output" "Package verified:"
+  assert_not_contains "$helper_output" "$contents_mode_bundle"
+  assert_not_contains "$helper_output" "$contents_mode_sentinel"
+  assert_not_contains "$helper_output" "$unsafe_mode"
+done
+
+for unsafe_mode in 775 757; do
+  contents_mode_sentinel="CONTENTS_MODE_SENTINEL_SHOULD_NOT_LEAK"
+  contents_mode_bundle="$fixture_root/contents-mode-$unsafe_mode-$contents_mode_sentinel/LithePG.app"
+  make_minimal_app_bundle "$contents_mode_bundle"
+  chmod "$unsafe_mode" "$contents_mode_bundle/Contents"
+  if run_helper_capture "$output_file" "$contents_mode_bundle"; then
+    helper_output="$(<"$output_file")"
+    printf '%s\n' "$helper_output" >&2
+    fail "package verifier unexpectedly accepted unsafe mode $unsafe_mode on Contents"
+  fi
+  helper_output="$(<"$output_file")"
+  assert_contains "$helper_output" "package verification failed: Contents directory mode is unsafe"
+  assert_not_contains "$helper_output" "Package verified:"
+  assert_not_contains "$helper_output" "$contents_mode_bundle"
+  assert_not_contains "$helper_output" "$contents_mode_sentinel"
+  assert_not_contains "$helper_output" "$unsafe_mode"
+done
+
+for unsafe_mode in 4755 2755 1755; do
+  macos_mode_sentinel="MACOS_MODE_SENTINEL_SHOULD_NOT_LEAK"
+  macos_mode_bundle="$fixture_root/macos-mode-$unsafe_mode-$macos_mode_sentinel/LithePG.app"
+  make_minimal_app_bundle "$macos_mode_bundle"
+  chmod "$unsafe_mode" "$macos_mode_bundle/Contents/MacOS"
+  if run_helper_capture "$output_file" "$macos_mode_bundle"; then
+    helper_output="$(<"$output_file")"
+    printf '%s\n' "$helper_output" >&2
+    fail "package verifier unexpectedly accepted unsafe mode $unsafe_mode on Contents/MacOS"
+  fi
+  helper_output="$(<"$output_file")"
+  assert_contains "$helper_output" "package verification failed: Contents/MacOS directory mode is unsafe"
+  assert_not_contains "$helper_output" "Package verified:"
+  assert_not_contains "$helper_output" "$macos_mode_bundle"
+  assert_not_contains "$helper_output" "$macos_mode_sentinel"
+  assert_not_contains "$helper_output" "$unsafe_mode"
+done
+
+for unsafe_mode in 775 757; do
+  macos_mode_sentinel="MACOS_MODE_SENTINEL_SHOULD_NOT_LEAK"
+  macos_mode_bundle="$fixture_root/macos-mode-$unsafe_mode-$macos_mode_sentinel/LithePG.app"
+  make_minimal_app_bundle "$macos_mode_bundle"
+  chmod "$unsafe_mode" "$macos_mode_bundle/Contents/MacOS"
+  if run_helper_capture "$output_file" "$macos_mode_bundle"; then
+    helper_output="$(<"$output_file")"
+    printf '%s\n' "$helper_output" >&2
+    fail "package verifier unexpectedly accepted unsafe mode $unsafe_mode on Contents/MacOS"
+  fi
+  helper_output="$(<"$output_file")"
+  assert_contains "$helper_output" "package verification failed: Contents/MacOS directory mode is unsafe"
+  assert_not_contains "$helper_output" "Package verified:"
+  assert_not_contains "$helper_output" "$macos_mode_bundle"
+  assert_not_contains "$helper_output" "$macos_mode_sentinel"
+  assert_not_contains "$helper_output" "$unsafe_mode"
+done
 
 symlinked_executable_sentinel="SYMLINKED_EXECUTABLE_TARGET_SENTINEL_SHOULD_NOT_LEAK"
 symlinked_executable_bundle="$fixture_root/symlinked-executable/LithePG.app"

@@ -51,6 +51,10 @@ done
 [[ "${APP_BUNDLE##*/}" == "LithePG.app" ]] || fail "app bundle basename must be LithePG.app"
 [[ ! -L "$APP_BUNDLE" ]] || fail "app bundle path must not be a symlink"
 [[ -d "$APP_BUNDLE" ]] || fail "app bundle not found: $APP_BUNDLE"
+app_bundle_mode="$(stat -f%p "$APP_BUNDLE")"
+if (( (8#$app_bundle_mode & 07022) != 0 )); then
+  fail "app bundle directory mode is unsafe"
+fi
 
 CONTENTS_DIR="$APP_BUNDLE/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
@@ -58,7 +62,15 @@ APP_BINARY="$MACOS_DIR/$APP_NAME"
 INFO_PLIST="$CONTENTS_DIR/Info.plist"
 
 [[ -d "$CONTENTS_DIR" && ! -L "$CONTENTS_DIR" ]] || fail "Contents directory must be a non-symlink directory"
+contents_dir_mode="$(stat -f%p "$CONTENTS_DIR")"
+if (( (8#$contents_dir_mode & 07022) != 0 )); then
+  fail "Contents directory mode is unsafe"
+fi
 [[ -d "$MACOS_DIR" && ! -L "$MACOS_DIR" ]] || fail "Contents/MacOS directory must be a non-symlink directory"
+macos_dir_mode="$(stat -f%p "$MACOS_DIR")"
+if (( (8#$macos_dir_mode & 07022) != 0 )); then
+  fail "Contents/MacOS directory mode is unsafe"
+fi
 [[ -f "$APP_BINARY" && ! -L "$APP_BINARY" ]] || fail "app executable must be a regular file"
 [[ -x "$APP_BINARY" ]] || fail "app executable is not executable"
 app_binary_mode="$(stat -f%p "$APP_BINARY")"
