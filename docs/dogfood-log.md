@@ -1324,3 +1324,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-01-v05-model-smoke-path-shadow-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 10:51 EDT — v0.4 measurement PATH-shadow hardening
+
+- Hardened `script/v04_measure.sh` so helper-owned core utility calls use absolute macOS paths for repository-root setup, timestamped output-directory naming, output-directory creation, dogfood-log copy, binary-size inspection, strip-probe setup/cleanup, metrics cleanup, and final summary display (`/usr/bin/dirname`, `/bin/pwd`, `/bin/date`, `/bin/mkdir`, `/bin/cp`, `/usr/bin/stat`, `/usr/bin/mktemp`, `/usr/bin/strip`, `/bin/rm`, `/bin/cat`) instead of caller-controlled `PATH` resolution. `swift`, `psql`, `env`, `kill`, `sleep`, and the built app/bench executables remain intentionally selectable.
+- Added strict-TDD coverage in `script/test_v04_measure.sh` with an isolated fixture and fake PATH-shadowed `dirname`, `date`, `mkdir`, `cp`, `stat`, `mktemp`, `strip`, `rm`, `cat`, and `pwd` utilities that emit `V04_MEASURE_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN`; the helper must still use fake PATH-resolved `swift`, write app/bench/psql/startup measurement artifacts, write `summary.json`, and avoid printing or invoking the sentinel.
+- RED verification from the implementation slice failed first with PATH-shadowed core-utility sentinels before the helper was hardened.
+- GREEN verification: `bash script/test_v04_measure.sh`, `bash -n script/v04_measure.sh script/test_v04_measure.sh && bash -n script/test_v04_measure.sh`, SVG parse, `git diff --check`, full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`, and release-impact `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` all passed. Swift Testing reported 127 tests across 20 suites; dogfood artifacts: `.build/dogfood-checks/20260601-105219/`; metrics: shell readiness 126.63 ms, connected cold start 224.45 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.028 ms, dogfood query median overhead 0.019 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-01-v04-measure-path-shadow-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

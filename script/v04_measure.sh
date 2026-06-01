@@ -1,13 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DIRNAME_BIN=/usr/bin/dirname
+DATE_BIN=/bin/date
+MKDIR_BIN=/bin/mkdir
+CP_BIN=/bin/cp
+STAT_BIN=/usr/bin/stat
+MKTEMP_BIN=/usr/bin/mktemp
+STRIP_BIN=/usr/bin/strip
+RM_BIN=/bin/rm
+CAT_BIN=/bin/cat
+PWD_BIN=/bin/pwd
+
+ROOT_DIR="$(cd "$("$DIRNAME_BIN" "${BASH_SOURCE[0]}")/.." && "$PWD_BIN")"
 cd "$ROOT_DIR"
 
 DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 export DEVELOPER_DIR
 
-OUT_DIR="${LITHEPG_MEASURE_OUT_DIR:-$ROOT_DIR/.build/v04-measurements/$(date +%Y%m%d-%H%M%S)}"
+OUT_DIR="${LITHEPG_MEASURE_OUT_DIR:-$ROOT_DIR/.build/v04-measurements/$("$DATE_BIN" +%Y%m%d-%H%M%S)}"
 DOGFOOD_PORT="${LITHEPG_DOGFOOD_PORT:-55432}"
 DOGFOOD_PASSWORD="${LITHEPG_DOGFOOD_PASSWORD:-postgres}"
 DOGFOOD_DATABASE="${LITHEPG_DOGFOOD_DATABASE:-postgres}"
@@ -18,11 +29,11 @@ SIMPLE_QUERY="${LITHEPG_BENCH_QUERY:-SELECT 1 AS lithepg_v04_bench}"
 DOGFOOD_QUERY="${LITHEPG_DOGFOOD_QUERY:-SELECT * FROM lithepg_demo.customer_revenue ORDER BY revenue_cents DESC LIMIT 25}"
 PSQL_BIN="${PSQL_BIN:-}"
 
-mkdir -p "$OUT_DIR"
+"$MKDIR_BIN" -p "$OUT_DIR"
 
 if [[ "${LITHEPG_SKIP_DOGFOOD_DB:-0}" != "1" ]]; then
   ./script/dogfood_postgres.sh >/tmp/lithepg-dogfood-postgres.log
-  cp /tmp/lithepg-dogfood-postgres.log "$OUT_DIR/dogfood-postgres.log"
+  "$CP_BIN" /tmp/lithepg-dogfood-postgres.log "$OUT_DIR/dogfood-postgres.log"
 fi
 
 swift build -c release --product LithePGApp
@@ -39,12 +50,12 @@ if [[ ! -x "$BENCH_BIN" ]]; then
   exit 1
 fi
 
-APP_BYTES=$(stat -f%z "$APP_BIN")
-STRIP_PROBE=$(mktemp -t lithepg-strip.XXXXXX)
-cp "$APP_BIN" "$STRIP_PROBE"
-strip -x "$STRIP_PROBE" >/dev/null 2>&1 || true
-APP_STRIP_X_BYTES=$(stat -f%z "$STRIP_PROBE")
-rm -f "$STRIP_PROBE"
+APP_BYTES=$("$STAT_BIN" -f%z "$APP_BIN")
+STRIP_PROBE=$("$MKTEMP_BIN" -t lithepg-strip.XXXXXX)
+"$CP_BIN" "$APP_BIN" "$STRIP_PROBE"
+"$STRIP_BIN" -x "$STRIP_PROBE" >/dev/null 2>&1 || true
+APP_STRIP_X_BYTES=$("$STAT_BIN" -f%z "$STRIP_PROBE")
+"$RM_BIN" -f "$STRIP_PROBE"
 python3 - <<PY > "$OUT_DIR/binary-size.json"
 import json
 bytes_ = int("$APP_BYTES")
@@ -148,7 +159,7 @@ capture_app_metrics() {
   local metrics_path="$1"
   local log_path="$2"
   shift 2
-  rm -f "$metrics_path"
+  "$RM_BIN" -f "$metrics_path"
   env \
     -u LITHEPG_STARTUP_URL \
     -u LITHEPG_UI_SMOKE_URL \
@@ -221,6 +232,6 @@ for key in [("Simple", "lithepgSimple", "psqlSimple"), ("Dogfood", "lithepgDogfo
 print(json.dumps(summary, indent=2, sort_keys=True))
 PY
 
-cat "$OUT_DIR/summary.json"
+"$CAT_BIN" "$OUT_DIR/summary.json"
 echo
 echo "Measurements written to $OUT_DIR"
