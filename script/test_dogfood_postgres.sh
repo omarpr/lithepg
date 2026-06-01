@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(/bin/realpath "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/..")"
 HELPER="$ROOT_DIR/script/dogfood_postgres.sh"
 
 fail() {
@@ -44,16 +44,37 @@ run_helper_capture() {
 
   set +e
   (
-    cd "$fixture_root"
+    builtin cd "$fixture_root"
     export LITHEPG_DOGFOOD_CONTAINER="$ambient_fixture_container"
     export LITHEPG_DOGFOOD_IMAGE="$ambient_fixture_image"
     export LITHEPG_DOGFOOD_PORT="$ambient_fixture_port"
     export LITHEPG_DOGFOOD_PASSWORD="$ambient_fixture_password"
     export LITHEPG_DOGFOOD_DATABASE="$ambient_fixture_database"
+    builtin() {
+      /usr/bin/printf '%s builtin invoked\n' "${BUILTIN_SHADOW_SENTINEL:?}" >&2
+      /usr/bin/printf 'builtin\n' >"${SHADOW_MARKER_DIR:?}/builtin"
+      exit 97
+    }
+    cd() {
+      /usr/bin/printf '%s cd invoked\n' "${CD_SHADOW_SENTINEL:?}" >&2
+      /usr/bin/printf 'cd\n' >"${SHADOW_MARKER_DIR:?}/cd"
+      exit 97
+    }
+    pwd() {
+      /usr/bin/printf '%s pwd invoked\n' "${PWD_SHADOW_SENTINEL:?}" >&2
+      /usr/bin/printf 'pwd\n' >"${SHADOW_MARKER_DIR:?}/pwd"
+      exit 97
+    }
+    export -f builtin
+    export -f cd
+    export -f pwd
     PATH="$fake_bin:$PATH" \
       FAKE_DOCKER_LOG="$docker_log" \
       FAKE_READY_COUNTER="$ready_counter" \
       SHADOW_MARKER_DIR="$marker_dir" \
+      BUILTIN_SHADOW_SENTINEL="$builtin_sentinel" \
+      CD_SHADOW_SENTINEL="$cd_sentinel" \
+      PWD_SHADOW_SENTINEL="$pwd_sentinel" \
       LITHEPG_DOGFOOD_CONTAINER="$fixture_container" \
       LITHEPG_DOGFOOD_IMAGE="$fixture_image" \
       LITHEPG_DOGFOOD_PORT="$fixture_port" \
@@ -89,6 +110,9 @@ fixture_root="$(/usr/bin/mktemp -d)"
 trap '/bin/rm -f "$output_file"; /bin/rm -rf "$fixture_root"' EXIT
 
 sentinel="DOGFOOD_POSTGRES_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+builtin_sentinel="DOGFOOD_POSTGRES_BUILTIN_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+cd_sentinel="DOGFOOD_POSTGRES_CD_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+pwd_sentinel="DOGFOOD_POSTGRES_PWD_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
 fake_bin="$fixture_root/fake-bin"
 docker_log="$fixture_root/fake-docker.log"
 ready_counter="$fixture_root/pg-isready-count"
@@ -100,7 +124,7 @@ marker_dir="$fixture_root/path-shadow-markers"
 SELECT 1;
 SQL
 
-for tool in dirname grep sleep; do
+for tool in dirname grep realpath sleep; do
   /bin/cat >"$fake_bin/$tool" <<SHIM
 #!/bin/bash
 set -euo pipefail
@@ -178,6 +202,9 @@ fi
 
 helper_output="$(<"$output_file")"
 assert_not_contains "$helper_output" "$sentinel"
+assert_not_contains "$helper_output" "$builtin_sentinel"
+assert_not_contains "$helper_output" "$cd_sentinel"
+assert_not_contains "$helper_output" "$pwd_sentinel"
 assert_not_contains "$helper_output" " invoked"
 assert_contains "$helper_output" "Dogfood database ready."
 assert_contains "$helper_output" "POSTGRES_TEST_URL="
@@ -209,8 +236,11 @@ assert_foreign_ambient_not_used "$docker_output" "$incoming_ambient_password" "$
 ready_attempts="$(/bin/cat "$ready_counter")"
 [[ "$ready_attempts" == "2" ]] || fail "expected fake pg_isready to be attempted twice, got $ready_attempts"
 
-for tool in dirname grep sleep; do
+for tool in dirname grep realpath sleep; do
   [[ ! -e "$marker_dir/$tool" ]] || fail "PATH-shadowed $tool was invoked"
 done
+[[ ! -e "$marker_dir/builtin" ]] || fail "function-shadowed builtin was invoked"
+[[ ! -e "$marker_dir/cd" ]] || fail "function-shadowed cd was invoked"
+[[ ! -e "$marker_dir/pwd" ]] || fail "function-shadowed pwd was invoked"
 
 /usr/bin/printf 'test_dogfood_postgres passed\n'

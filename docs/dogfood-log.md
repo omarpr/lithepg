@@ -1451,3 +1451,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED after the PKILL/open follow-up.
 - Evidence artifact: `screenshots/evidence/2026-06-01-build-run-verify-path-shadow-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 16:51 EDT — v1.0 dogfood Postgres root-resolution function-shadow hardening
+
+- Hardened `script/dogfood_postgres.sh` so repository-root setup resolves through absolute `/bin/realpath` plus `/usr/bin/dirname`, avoiding PATH-shadowed utilities and exported shell functions named `builtin`, `cd`, or `pwd` before Docker/dogfood setup begins. The focused test harness now uses the same root-resolution pattern for its own repository-root setup and uses `builtin cd` only for fixture setup before exporting sentinel functions.
+- Added strict-TDD coverage in `script/test_dogfood_postgres.sh` with exported fake `builtin`, `cd`, and `pwd` functions plus a PATH fake for `realpath`; the helper must still complete through fake Docker fixtures, keep the demo URL redacted as `postgres:***`, and avoid invoking, leaking, or writing marker files for any shadow sentinel.
+- RED verification: `bash script/test_dogfood_postgres.sh` failed first with the `pwd` sentinel before `/bin/pwd` landed, then failed with `DOGFOOD_POSTGRES_CD_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN cd invoked` before `builtin cd` landed, then failed with `DOGFOOD_POSTGRES_BUILTIN_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN builtin invoked` before the root resolver switched to `/bin/realpath`.
+- GREEN verification: `bash script/test_dogfood_postgres.sh`, `bash script/test_dogfood_check.sh`, `bash -n script/dogfood_postgres.sh script/test_dogfood_postgres.sh && git diff --check`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 127 Swift Testing tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260601-165122/`; metrics: shell readiness 126.25 ms, connected cold start 226.24 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.033 ms, dogfood query median overhead 0.047 ms.
+- Evidence artifact: `screenshots/evidence/2026-06-01-dogfood-postgres-pwd-function-shadow-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

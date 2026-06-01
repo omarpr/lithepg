@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG dogfood Postgres root-resolution shadow hardening evidence</title>
+  <desc id="desc">Synthetic evidence screenshot for the 2026-06-01 dogfood_postgres.sh root-resolution hardening slice. Contains only test names, sentinel labels, and non-secret verification status.</desc>
+  <rect width="1200" height="720" fill="#0b1020"/>
+  <rect x="48" y="48" width="1104" height="624" rx="24" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="82" y="112" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="30" font-weight="700">dogfood_postgres.sh root-resolution shadow hardening</text>
+  <text x="82" y="158" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="20">2026-06-01 16:51 EDT · local synthetic fixture · no secrets</text>
+
+  <rect x="82" y="196" width="1036" height="188" rx="14" fill="#020617" stroke="#334155"/>
+  <text x="110" y="236" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="20">RED</text>
+  <text x="178" y="236" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="18">bash script/test_dogfood_postgres.sh</text>
+  <text x="110" y="274" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="18">pwd sentinel failed before /bin/pwd hardening</text>
+  <text x="110" y="312" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="18">cd sentinel failed before builtin cd hardening</text>
+  <text x="110" y="350" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="18">builtin sentinel failed before /bin/realpath root resolver</text>
+
+  <rect x="82" y="410" width="1036" height="112" rx="14" fill="#052e16" stroke="#22c55e"/>
+  <text x="110" y="452" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="20">GREEN</text>
+  <text x="196" y="452" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="18">bash script/test_dogfood_postgres.sh → passed</text>
+  <text x="110" y="490" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="18">bash -n · git diff --check → passed</text>
+
+  <rect x="82" y="548" width="1036" height="74" rx="14" fill="#082f49" stroke="#38bdf8"/>
+  <text x="110" y="592" fill="#bae6fd" font-family="Menlo, Consolas, monospace" font-size="20">SCOPE</text>
+  <text x="204" y="592" fill="#e0f2fe" font-family="Menlo, Consolas, monospace" font-size="18">absolute /bin/realpath + /usr/bin/dirname; no credentials or URLs captured</text>
+</svg>

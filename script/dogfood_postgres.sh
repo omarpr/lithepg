@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(/bin/realpath "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/..")"
 CONTAINER_NAME="${LITHEPG_DOGFOOD_CONTAINER:-lithepg-smoke}"
 POSTGRES_IMAGE="${LITHEPG_DOGFOOD_IMAGE:-postgres:16}"
 HOST_PORT="${LITHEPG_DOGFOOD_PORT:-55432}"
