@@ -1440,3 +1440,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-01-v04-measure-python3-path-shadow-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 15:21 EDT — v1.0 build/run verify PATH-shadow hardening
+
+- Hardened `script/build_and_run.sh --verify` so helper-owned app launch/process verification calls use absolute-tool defaults with absolute-path-only test overrides: `/usr/bin/open`, `/bin/sleep`, `/usr/bin/pgrep`, and the existing `/usr/bin/pkill` cleanup hook. This closes the remaining non-package verify-mode PATH-shadow surface while preserving fake-tool test seams.
+- Added strict-TDD coverage in `script/test_build_and_run.sh` with fake PATH-shadowed `open`, `sleep`, and `pgrep` sentinels plus safe absolute override shims; the test proves `--verify` avoids caller-controlled PATH tools and validates exact safe shim invocations. The existing `LITHEPG_BUILD_AND_RUN_PKILL` override is now rejected unless it is absolute.
+- RED verification: the relative-PKILL regression failed first with `test_build_and_run failed: expected <2>, got <0>` before production validation was added.
+- GREEN verification: release-helper shell tests passed (`test_build_and_run`, `test_package_verify`, `test_create_release_zip`, `test_sign_and_notarize`, `test_v10_release_gate`), shell syntax checks passed, `git diff --check` passed, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 127 Swift Testing tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260601-151927/`; metrics: shell readiness 131.75 ms, connected cold start 233.51 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.035 ms, dogfood query median overhead 0.035 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED after the PKILL/open follow-up.
+- Evidence artifact: `screenshots/evidence/2026-06-01-build-run-verify-path-shadow-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

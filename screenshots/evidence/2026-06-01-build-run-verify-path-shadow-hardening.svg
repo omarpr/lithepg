@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG build/run verify PATH-shadow hardening evidence — 2026-06-01</title>
+  <desc id="desc">Visual evidence for the commit hardening build_and_run --verify against PATH-shadowed open, sleep, pgrep, and pkill helper tools.</desc>
+  <rect width="1200" height="760" fill="#0b1020"/>
+  <rect x="32" y="32" width="1136" height="696" rx="24" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="64" y="86" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="30" font-weight="700">LithePG evidence: build/run --verify PATH hardening</text>
+  <text x="64" y="126" fill="#93c5fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">2026-06-01 15:21 EDT · local-only cron output · no secrets, no external publication</text>
+
+  <g font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20">
+    <text x="64" y="184" fill="#f8fafc">Slice</text>
+    <text x="220" y="184" fill="#cbd5e1">Harden script/build_and_run.sh --verify helper-owned tool calls.</text>
+
+    <text x="64" y="232" fill="#f8fafc">Changed</text>
+    <text x="220" y="232" fill="#cbd5e1">OPEN, PGREP, PKILL, SLEEP now require absolute paths.</text>
+    <text x="220" y="262" fill="#cbd5e1">--verify uses safe tool variables instead of PATH-resolved sleep/pgrep.</text>
+
+    <text x="64" y="318" fill="#f8fafc">TDD RED</text>
+    <text x="220" y="318" fill="#fca5a5">test_build_and_run failed before production fix:</text>
+    <text x="220" y="348" fill="#fca5a5">expected &lt;2&gt;, got &lt;0&gt; for relative PKILL override.</text>
+
+    <text x="64" y="404" fill="#f8fafc">TDD GREEN</text>
+    <text x="220" y="404" fill="#86efac">bash script/test_build_and_run.sh → passed</text>
+    <text x="220" y="434" fill="#86efac">release-helper shell tests → passed</text>
+    <text x="220" y="464" fill="#86efac">swift test → 127 tests / 20 suites passed</text>
+    <text x="220" y="494" fill="#86efac">dogfood_check → passed (.build/dogfood-checks/20260601-151927)</text>
+
+    <text x="64" y="550" fill="#f8fafc">Dogfood</text>
+    <text x="220" y="550" fill="#cbd5e1">shell 131.75 ms · connected 233.51 ms · raw 21.379 MiB · strip 11.980 MiB</text>
+    <text x="220" y="580" fill="#cbd5e1">SELECT 1 overhead 0.035 ms · dogfood query overhead 0.035 ms</text>
+
+    <text x="64" y="636" fill="#f8fafc">Reviews</text>
+    <text x="220" y="636" fill="#86efac">Spec compliance PASS · code quality/security APPROVED</text>
+  </g>
+
+  <rect x="64" y="670" width="1072" height="34" rx="8" fill="#172554"/>
+  <text x="82" y="693" fill="#bfdbfe" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Artifact path: screenshots/evidence/2026-06-01-build-run-verify-path-shadow-hardening.svg</text>
+</svg>

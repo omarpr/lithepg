@@ -22,6 +22,12 @@ assert_not_contains() {
   [[ "$haystack" != *"$needle"* ]] || fail "output leaked forbidden value: $needle"
 }
 
+assert_equals() {
+  local actual="$1"
+  local expected="$2"
+  [[ "$actual" == "$expected" ]] || fail "expected <$expected>, got <$actual>"
+}
+
 run_package_capture() {
   local output_file="$1"
   local fake_bin="$2"
@@ -83,6 +89,17 @@ assert_contains "$help_output" "--package"
 assert_not_contains "$help_output" "$help_sentinel"
 [[ ! -e "$help_marker" ]] || fail "build_and_run --help invoked PATH-shadowed tools: $(<"$help_marker")"
 
+set +e
+(
+  cd "$ROOT_DIR"
+  LITHEPG_BUILD_AND_RUN_PKILL="relative-pkill" /bin/bash "$HELPER" --help
+) >"$output_file" 2>&1
+relative_pkill_status=$?
+set -e
+relative_pkill_output="$(<"$output_file")"
+assert_equals "$relative_pkill_status" "2"
+assert_contains "$relative_pkill_output" "LITHEPG_BUILD_AND_RUN_PKILL must be an absolute path: relative-pkill"
+
 print_bundle_sentinel="BUILD_AND_RUN_FAKE_PKILL_SENTINEL_SHOULD_NOT_RUN"
 print_bundle_fake_bin="$fixture_root/print-bundle-fake-bin"
 print_bundle_swift_bin_dir="$fixture_root/print-bundle-swift-bin"
@@ -102,7 +119,9 @@ SHIM
 
 /bin/cat >"$print_bundle_safe_pkill" <<SHIM
 #!/bin/bash
-/usr/bin/printf 'safe pkill %s\\n' "\$*" >'$print_bundle_safe_pkill_marker'
+set -euo pipefail
+[[ "\$#" -eq 2 && "\$1" == "-x" && "\$2" == "LithePGApp" ]]
+/usr/bin/printf 'safe pkill -x LithePGApp\\n' >'$print_bundle_safe_pkill_marker'
 exit 0
 SHIM
 /bin/chmod +x "$print_bundle_safe_pkill"
@@ -151,7 +170,143 @@ assert_contains "$print_bundle_output" "$ROOT_DIR/dist/LithePG.app"
 assert_not_contains "$print_bundle_output" "$print_bundle_sentinel"
 [[ ! -e "$print_bundle_path_pkill_marker" ]] || fail "build_and_run --print-bundle-path invoked PATH-shadowed pkill: $(<"$print_bundle_path_pkill_marker")"
 [[ -f "$print_bundle_safe_pkill_marker" ]] || fail "build_and_run --print-bundle-path did not invoke safe pkill override"
-assert_contains "$(<"$print_bundle_safe_pkill_marker")" "safe pkill -x LithePGApp"
+assert_equals "$(<"$print_bundle_safe_pkill_marker")" "safe pkill -x LithePGApp"
+
+verify_sentinel="BUILD_AND_RUN_VERIFY_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+verify_fake_bin="$fixture_root/verify-fake-bin"
+verify_swift_bin_dir="$fixture_root/verify-swift-bin"
+verify_swift_marker="$fixture_root/verify-fake-swift-used"
+verify_path_open_marker="$fixture_root/verify-path-open-invoked"
+verify_path_sleep_marker="$fixture_root/verify-path-sleep-invoked"
+verify_path_pgrep_marker="$fixture_root/verify-path-pgrep-invoked"
+verify_safe_pkill="$fixture_root/verify-safe-pkill"
+verify_safe_pkill_marker="$fixture_root/verify-safe-pkill-invoked"
+verify_safe_sleep="$fixture_root/verify-safe-sleep"
+verify_safe_sleep_marker="$fixture_root/verify-safe-sleep-invoked"
+verify_safe_pgrep="$fixture_root/verify-safe-pgrep"
+verify_safe_pgrep_marker="$fixture_root/verify-safe-pgrep-invoked"
+verify_safe_open="$fixture_root/verify-safe-open"
+verify_safe_open_marker="$fixture_root/verify-safe-open-invoked"
+/bin/mkdir -p "$verify_fake_bin" "$verify_swift_bin_dir"
+
+/bin/cat >"$verify_fake_bin/swift" <<'SWIFT'
+#!/bin/bash
+set -euo pipefail
+/usr/bin/printf 'fake verify swift used\n' >"${FAKE_SWIFT_MARKER:?}"
+case "$*" in
+  "build --product LithePGApp")
+    /bin/mkdir -p "${FAKE_SWIFT_BIN_DIR:?}"
+    /bin/cp /usr/bin/true "$FAKE_SWIFT_BIN_DIR/LithePGApp"
+    /bin/chmod 755 "$FAKE_SWIFT_BIN_DIR/LithePGApp"
+    ;;
+  "build --show-bin-path")
+    /usr/bin/printf '%s\n' "${FAKE_SWIFT_BIN_DIR:?}"
+    ;;
+  *)
+    /usr/bin/printf 'unexpected fake verify swift invocation: %s\n' "$*" >&2
+    exit 98
+    ;;
+esac
+SWIFT
+/bin/chmod +x "$verify_fake_bin/swift"
+
+/bin/cat >"$verify_fake_bin/open" <<SHIM
+#!/bin/bash
+set -euo pipefail
+/usr/bin/printf '%s open invoked\\n' '$verify_sentinel' >&2
+/usr/bin/printf 'path open %s\\n' "\$*" >'$verify_path_open_marker'
+exit 97
+SHIM
+/bin/chmod +x "$verify_fake_bin/open"
+
+/bin/cat >"$verify_fake_bin/sleep" <<SHIM
+#!/bin/bash
+set -euo pipefail
+/usr/bin/printf '%s sleep invoked\\n' '$verify_sentinel' >&2
+/usr/bin/printf 'path sleep %s\\n' "\$*" >'$verify_path_sleep_marker'
+exit 97
+SHIM
+/bin/chmod +x "$verify_fake_bin/sleep"
+
+/bin/cat >"$verify_fake_bin/pgrep" <<SHIM
+#!/bin/bash
+set -euo pipefail
+/usr/bin/printf '%s pgrep invoked\\n' '$verify_sentinel' >&2
+/usr/bin/printf 'path pgrep %s\\n' "\$*" >'$verify_path_pgrep_marker'
+exit 97
+SHIM
+/bin/chmod +x "$verify_fake_bin/pgrep"
+
+/bin/cat >"$verify_safe_pkill" <<SHIM
+#!/bin/bash
+set -euo pipefail
+[[ "\$#" -eq 2 && "\$1" == "-x" && "\$2" == "LithePGApp" ]]
+/usr/bin/printf 'safe pkill -x LithePGApp\\n' >'$verify_safe_pkill_marker'
+exit 0
+SHIM
+/bin/chmod +x "$verify_safe_pkill"
+
+/bin/cat >"$verify_safe_sleep" <<SHIM
+#!/bin/bash
+set -euo pipefail
+[[ "\$#" -eq 1 && "\$1" == "1" ]]
+/usr/bin/printf 'safe sleep 1\\n' >'$verify_safe_sleep_marker'
+exit 0
+SHIM
+/bin/chmod +x "$verify_safe_sleep"
+
+/bin/cat >"$verify_safe_pgrep" <<SHIM
+#!/bin/bash
+set -euo pipefail
+[[ "\$#" -eq 2 && "\$1" == "-x" && "\$2" == "LithePGApp" ]]
+/usr/bin/printf 'safe pgrep -x LithePGApp\\n' >'$verify_safe_pgrep_marker'
+exit 0
+SHIM
+/bin/chmod +x "$verify_safe_pgrep"
+
+/bin/cat >"$verify_safe_open" <<SHIM
+#!/bin/bash
+set -euo pipefail
+[[ "\$#" -eq 2 && "\$1" == "-n" && "\$2" == "$ROOT_DIR/dist/LithePG.app" ]]
+/usr/bin/printf 'safe open -n $ROOT_DIR/dist/LithePG.app\\n' >'$verify_safe_open_marker'
+exit 0
+SHIM
+/bin/chmod +x "$verify_safe_open"
+
+set +e
+(
+  cd "$ROOT_DIR"
+  PATH="$verify_fake_bin:$PATH" \
+    FAKE_SWIFT_BIN_DIR="$verify_swift_bin_dir" \
+    FAKE_SWIFT_MARKER="$verify_swift_marker" \
+    LITHEPG_BUILD_AND_RUN_PKILL="$verify_safe_pkill" \
+    LITHEPG_BUILD_AND_RUN_SLEEP="$verify_safe_sleep" \
+    LITHEPG_BUILD_AND_RUN_PGREP="$verify_safe_pgrep" \
+    LITHEPG_BUILD_AND_RUN_OPEN="$verify_safe_open" \
+    LITHEPG_MARKETING_VERSION="1.0" \
+    LITHEPG_BUILD_VERSION="100" \
+    /bin/bash "$HELPER" --verify
+) >"$output_file" 2>&1
+verify_status=$?
+set -e
+verify_output="$(<"$output_file")"
+if [[ "$verify_status" -ne 0 ]]; then
+  /usr/bin/printf '%s\n' "$verify_output" >&2
+  fail "build_and_run --verify failed under PATH-shadowed sleep/pgrep"
+fi
+[[ -f "$verify_swift_marker" ]] || fail "fake verify swift was not used"
+assert_not_contains "$verify_output" "$verify_sentinel"
+[[ ! -e "$verify_path_open_marker" ]] || fail "build_and_run --verify invoked PATH-shadowed open: $(<"$verify_path_open_marker")"
+[[ ! -e "$verify_path_sleep_marker" ]] || fail "build_and_run --verify invoked PATH-shadowed sleep: $(<"$verify_path_sleep_marker")"
+[[ ! -e "$verify_path_pgrep_marker" ]] || fail "build_and_run --verify invoked PATH-shadowed pgrep: $(<"$verify_path_pgrep_marker")"
+[[ -f "$verify_safe_pkill_marker" ]] || fail "build_and_run --verify did not invoke safe pkill override"
+[[ -f "$verify_safe_sleep_marker" ]] || fail "build_and_run --verify did not invoke safe sleep override"
+[[ -f "$verify_safe_pgrep_marker" ]] || fail "build_and_run --verify did not invoke safe pgrep override"
+[[ -f "$verify_safe_open_marker" ]] || fail "build_and_run --verify did not invoke safe open override"
+assert_equals "$(<"$verify_safe_pkill_marker")" "safe pkill -x LithePGApp"
+assert_equals "$(<"$verify_safe_sleep_marker")" "safe sleep 1"
+assert_equals "$(<"$verify_safe_pgrep_marker")" "safe pgrep -x LithePGApp"
+assert_equals "$(<"$verify_safe_open_marker")" "safe open -n $ROOT_DIR/dist/LithePG.app"
 
 sentinel="BUILD_AND_RUN_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN"
 fake_bin="$fixture_root/fake-bin"

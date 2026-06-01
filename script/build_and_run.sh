@@ -14,11 +14,28 @@ CP=/bin/cp
 DIRNAME=/usr/bin/dirname
 DITTO=/usr/bin/ditto
 MKDIR=/bin/mkdir
+OPEN="${LITHEPG_BUILD_AND_RUN_OPEN:-/usr/bin/open}"
+PGREP="${LITHEPG_BUILD_AND_RUN_PGREP:-/usr/bin/pgrep}"
 PKILL="${LITHEPG_BUILD_AND_RUN_PKILL:-/usr/bin/pkill}"
 RM=/bin/rm
+SLEEP="${LITHEPG_BUILD_AND_RUN_SLEEP:-/bin/sleep}"
 STAT=/usr/bin/stat
 STRIP=/usr/bin/strip
 XCRUN=/usr/bin/xcrun
+
+require_absolute_tool_path() {
+  local name="$1"
+  local value="$2"
+  if [[ "$value" != /* ]]; then
+    printf '%s must be an absolute path: %s\n' "$name" "$value" >&2
+    exit 2
+  fi
+}
+
+require_absolute_tool_path LITHEPG_BUILD_AND_RUN_OPEN "$OPEN"
+require_absolute_tool_path LITHEPG_BUILD_AND_RUN_PGREP "$PGREP"
+require_absolute_tool_path LITHEPG_BUILD_AND_RUN_PKILL "$PKILL"
+require_absolute_tool_path LITHEPG_BUILD_AND_RUN_SLEEP "$SLEEP"
 
 usage() {
   "$CAT" <<'USAGE'
@@ -148,7 +165,7 @@ if [[ "$BUILD_CONFIG" == "release" ]]; then
 fi
 
 open_app() {
-  /usr/bin/open -n "$APP_BUNDLE"
+  "$OPEN" -n "$APP_BUNDLE"
 }
 
 case "$MODE" in
@@ -168,8 +185,8 @@ case "$MODE" in
     ;;
   --verify|verify)
     open_app
-    sleep 1
-    pgrep -x "$APP_NAME" >/dev/null
+    "$SLEEP" 1
+    "$PGREP" -x "$APP_NAME" >/dev/null
     ;;
   --print-bundle-path|print-bundle-path)
     printf '%s\n' "$APP_BUNDLE"
