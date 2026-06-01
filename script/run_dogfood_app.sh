@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/.." && /bin/pwd)"
 URL="${POSTGRES_TEST_URL:-postgres://postgres:postgres@localhost:55432/postgres?sslmode=disable}"
 QUERY="${LITHEPG_STARTUP_QUERY:-SELECT * FROM lithepg_demo.customer_revenue ORDER BY revenue_cents DESC;}"
 
