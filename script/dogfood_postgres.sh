@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONTAINER_NAME="${LITHEPG_DOGFOOD_CONTAINER:-lithepg-smoke}"
 POSTGRES_IMAGE="${LITHEPG_DOGFOOD_IMAGE:-postgres:16}"
 HOST_PORT="${LITHEPG_DOGFOOD_PORT:-55432}"
@@ -14,7 +14,7 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! docker ps -a --format '{{.Names}}' | grep -qx "$CONTAINER_NAME"; then
+if ! docker ps -a --format '{{.Names}}' | /usr/bin/grep -Fqx -- "$CONTAINER_NAME"; then
   docker run \
     --name "$CONTAINER_NAME" \
     -e POSTGRES_PASSWORD="$PASSWORD" \
@@ -31,11 +31,11 @@ for _ in {1..60}; do
     break
   fi
   printf '.'
-  sleep 1
+  /bin/sleep 1
 done
 
 docker exec -i "$CONTAINER_NAME" psql -v ON_ERROR_STOP=1 -U postgres -d "$DATABASE" < "$SEED_SQL" >/dev/null
 
 echo "Dogfood database ready."
-echo "POSTGRES_TEST_URL=postgres://postgres:$PASSWORD@localhost:$HOST_PORT/$DATABASE?sslmode=disable"
+echo "POSTGRES_TEST_URL=postgres://postgres:"'***'"@localhost:$HOST_PORT/$DATABASE?sslmode=disable"
 echo "Sample query: SELECT * FROM lithepg_demo.orders ORDER BY created_at DESC LIMIT 25;"
