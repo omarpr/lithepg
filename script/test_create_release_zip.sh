@@ -124,6 +124,7 @@ approved_symlink_output="$(mktemp)"
 approved_non_dangling_symlink_output="$(mktemp)"
 success_path_redaction_output="$(mktemp)"
 cleanup_redaction_output="$(mktemp)"
+path_shadow_output="$(mktemp)"
 inside_bundle_output="$(mktemp)"
 inside_bundle_sentinel_output="$(mktemp)"
 temp_creation_failure_output="$(mktemp)"
@@ -135,7 +136,7 @@ success_output="$(mktemp)"
 outside_cwd_output="$(mktemp)"
 help_output="$(mktemp)"
 fixture_root="$(mktemp -d)"
-trap 'rm -f "$missing_verify_output" "$wrong_app_bundle_name_output" "$symlink_app_bundle_output" "$symlink_app_bundle_trailing_slash_output" "$wrong_output_zip_name_output" "$trailing_slash_output_zip_output" "$approved_directory_output" "$output_parent_file_output" "$dangling_output_parent_symlink_output" "$output_parent_creation_failure_output" "$refuse_output" "$refuse_sentinel_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$success_path_redaction_output" "$cleanup_redaction_output" "$inside_bundle_output" "$inside_bundle_sentinel_output" "$temp_creation_failure_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$final_symlink_inside_bundle_output" "$success_output" "$outside_cwd_output" "$help_output"; chmod -R u+rwx "$fixture_root" 2>/dev/null || true; rm -rf "$fixture_root"' EXIT
+trap 'rm -f "$missing_verify_output" "$wrong_app_bundle_name_output" "$symlink_app_bundle_output" "$symlink_app_bundle_trailing_slash_output" "$wrong_output_zip_name_output" "$trailing_slash_output_zip_output" "$approved_directory_output" "$output_parent_file_output" "$dangling_output_parent_symlink_output" "$output_parent_creation_failure_output" "$refuse_output" "$refuse_sentinel_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$success_path_redaction_output" "$cleanup_redaction_output" "$path_shadow_output" "$inside_bundle_output" "$inside_bundle_sentinel_output" "$temp_creation_failure_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$final_symlink_inside_bundle_output" "$success_output" "$outside_cwd_output" "$help_output"; chmod -R u+rwx "$fixture_root" 2>/dev/null || true; rm -rf "$fixture_root"' EXIT
 
 sensitive_identity="SENSITIVE_CODESIGN_IDENTITY_DO_NOT_PRINT"
 sensitive_notary="SENSITIVE_NOTARY_PROFILE_DO_NOT_PRINT"
@@ -565,6 +566,50 @@ assert_not_contains "$cleanup_redaction_text" "$sensitive_notary"
 assert_not_contains "$cleanup_redaction_text" "$sensitive_release_marker"
 [[ -f "$cleanup_redaction_fixture/$cleanup_redaction_zip" ]] || fail "cleanup-redaction zip was not created"
 assert_zip_contains_app_wrapper "$cleanup_redaction_fixture/$cleanup_redaction_zip" "$cleanup_redaction_fixture/extracted-cleanup-redaction"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+
+# PATH-shadowed core utility names must not affect release zip creation or leak fake-tool output.
+path_shadow_sentinel="PATH_SHADOW_SENTINEL_DO_NOT_PRINT"
+path_shadow_fixture="$fixture_root/path-shadowed-core-utilities"
+make_fixture "$path_shadow_fixture"
+path_shadow_fake_bin="$path_shadow_fixture/fake-bin"
+path_shadow_fake_tool_log="$path_shadow_fixture/fake-tool.log"
+mkdir -p "$path_shadow_fake_bin"
+for utility in basename dirname mkdir mktemp rm; do
+  cat >"$path_shadow_fake_bin/$utility" <<FAKE_CORE_UTILITY
+#!/usr/bin/env bash
+printf '$path_shadow_sentinel fake $utility stdout\n'
+printf '$path_shadow_sentinel fake $utility stderr\n' >&2
+if [[ -n "\${PATH_SHADOW_FAKE_TOOL_LOG:-}" ]]; then
+  printf '$path_shadow_sentinel fake $utility invoked\n' >>"\$PATH_SHADOW_FAKE_TOOL_LOG"
+fi
+exit 97
+FAKE_CORE_UTILITY
+  chmod +x "$path_shadow_fake_bin/$utility"
+done
+verify_log="$path_shadow_fixture/verify.log"
+if ! FAKE_VERIFY_LOG="$verify_log" \
+  PATH_SHADOW_FAKE_TOOL_LOG="$path_shadow_fake_tool_log" \
+  LITHEPG_CODESIGN_IDENTITY="$sensitive_identity" \
+  LITHEPG_NOTARY_PROFILE="$sensitive_notary" \
+  LITHEPG_RELEASE_MARKER="$sensitive_release_marker" \
+  PATH="$path_shadow_fake_bin:$PATH" \
+  run_helper_capture "$path_shadow_fixture" "$path_shadow_output" "dist/LithePG.app" "artifacts/public/LithePG.app.zip"; then
+  path_shadow_text="$(<"$path_shadow_output")"
+  printf '%s\n' "$path_shadow_text" >&2
+  fail "helper failed with PATH-shadowed core utilities"
+fi
+path_shadow_text="$(<"$path_shadow_output")"
+assert_contains "$path_shadow_text" "Created release zip: LithePG.app.zip"
+assert_matches_sha_line "$path_shadow_text"
+assert_size_line_for_zip "$path_shadow_text" "$path_shadow_fixture/artifacts/public/LithePG.app.zip"
+assert_not_contains "$path_shadow_text" "$path_shadow_sentinel"
+[[ ! -s "$path_shadow_fake_tool_log" ]] || fail "helper invoked a PATH-shadowed core utility"
+assert_not_contains "$path_shadow_text" "$sensitive_identity"
+assert_not_contains "$path_shadow_text" "$sensitive_notary"
+assert_not_contains "$path_shadow_text" "$sensitive_release_marker"
+[[ -f "$path_shadow_fixture/artifacts/public/LithePG.app.zip" ]] || fail "path-shadowed utility zip was not created"
+assert_zip_contains_app_wrapper "$path_shadow_fixture/artifacts/public/LithePG.app.zip" "$path_shadow_fixture/extracted-path-shadowed-core-utilities"
 assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
 
 # Temporary output directory creation failures must not echo caller-supplied output parents or mktemp's local-path diagnostics.

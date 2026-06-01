@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEFAULT_APP_BUNDLE="dist/LithePG.app"
 DEFAULT_OUTPUT_ZIP="dist/LithePG.app.zip"
 
@@ -55,7 +55,7 @@ cd "$ROOT_DIR"
 
 "$ROOT_DIR/script/package_verify.sh" "$APP_BUNDLE"
 
-if [[ "$(basename "$APP_BUNDLE")" != "LithePG.app" ]]; then
+if [[ "$(/usr/bin/basename "$APP_BUNDLE")" != "LithePG.app" ]]; then
   fail "app bundle basename must be LithePG.app"
 fi
 
@@ -73,7 +73,7 @@ case "$OUTPUT_ZIP" in
     ;;
 esac
 
-if [[ "$(basename "$OUTPUT_ZIP")" != "LithePG.app.zip" ]]; then
+if [[ "$(/usr/bin/basename "$OUTPUT_ZIP")" != "LithePG.app.zip" ]]; then
   fail "output zip basename must be LithePG.app.zip"
 fi
 
@@ -182,23 +182,23 @@ if [[ ( -e "$OUTPUT_ZIP" || -L "$OUTPUT_ZIP" ) ]] && ! is_approved "${LITHEPG_RE
   fail "Refusing to overwrite existing output zip (set LITHEPG_RELEASE_ZIP_OVERWRITE=1 to replace it)"
 fi
 
-output_parent="$(dirname "$OUTPUT_ZIP")"
+output_parent="$(/usr/bin/dirname "$OUTPUT_ZIP")"
 if [[ ( -e "$output_parent" || -L "$output_parent" ) && ! -d "$output_parent" ]]; then
   fail "output zip parent path must be a directory"
 fi
-if ! mkdir -p "$output_parent" 2>/dev/null; then
+if ! /bin/mkdir -p "$output_parent" 2>/dev/null; then
   fail "could not create output zip parent directory"
 fi
 
 temp_dir=""
 cleanup_temp_dir() {
   if [[ -n "$temp_dir" ]]; then
-    rm -rf -- "$temp_dir" >/dev/null 2>&1 || true
+    /bin/rm -rf -- "$temp_dir" >/dev/null 2>&1 || true
   fi
 }
 trap cleanup_temp_dir EXIT
 
-temp_dir="$(mktemp -d "${output_parent%/}/.release-zip.XXXXXX" 2>/dev/null)" || fail "could not create temporary output directory"
+temp_dir="$(/usr/bin/mktemp -d "${output_parent%/}/.release-zip.XXXXXX" 2>/dev/null)" || fail "could not create temporary output directory"
 temp_zip="$temp_dir/LithePG.app.zip"
 
 /usr/bin/ditto -c -k --keepParent "$APP_BUNDLE" "$temp_zip"
@@ -216,6 +216,6 @@ fi
 
 /usr/bin/perl -e 'use strict; use warnings; rename($ARGV[0], $ARGV[1]) or die "rename failed: $!\n";' "$temp_zip" "$OUTPUT_ZIP" 2>/dev/null || fail "could not replace output zip"
 
-printf 'Created release zip: %s\n' "$(basename "$OUTPUT_ZIP")"
+printf 'Created release zip: %s\n' "$(/usr/bin/basename "$OUTPUT_ZIP")"
 printf 'SHA-256: %s\n' "$sha_digest"
 printf 'Size bytes: %s\n' "$zip_size_bytes"

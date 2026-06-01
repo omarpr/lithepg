@@ -1247,3 +1247,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260601-062516/`; metrics: shell readiness 139.73 ms, connected cold start 231.86 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.037 ms, dogfood query median overhead 0.014 ms.
 - Evidence artifact: `docs/evidence/2026-06-01-package-verify-path-shadow-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 06:56 EDT — v1.0 release zip PATH-shadow hardening
+
+- Hardened `script/create_release_zip.sh` so release zip creation uses absolute macOS paths for `basename`, `dirname`, `mkdir`, `mktemp`, and cleanup `rm` instead of caller-controlled `PATH` resolution.
+- Added strict-TDD coverage in `script/test_create_release_zip.sh` where fake `basename`/`dirname`/`mkdir`/`mktemp`/`rm` utilities emit a synthetic sentinel and exit non-zero; the helper must still produce a valid `LithePG.app.zip`, preserve the app wrapper, and avoid printing or invoking fake-tool output.
+- RED verification: `bash script/test_create_release_zip.sh` failed first with `PATH_SHADOW_SENTINEL_DO_NOT_PRINT fake dirname stdout` and `test_create_release_zip failed: helper failed with PATH-shadowed core utilities`.
+- GREEN verification: `bash script/test_create_release_zip.sh`, adjacent release-helper tests (`test_package_verify`, `test_sign_and_notarize`, `test_v10_release_gate`), `bash -n script/create_release_zip.sh script/test_create_release_zip.sh`, `git diff --check`, SVG parse, full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`, package smoke, and local `LITHEPG_RELEASE_ZIP_OVERWRITE=approved ./script/create_release_zip.sh dist/LithePG.app dist/LithePG.app.zip` all passed. Swift Testing reported 127 tests across 20 suites; package smoke verified `dist/LithePG.app` with packaged executable 12,507,504 bytes / 11.93 MiB, version `0.5` build `238`; local unsigned zip size was 4,786,867 bytes.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED; pre-commit JSON review passed with no security concerns or logic errors.
+- Evidence artifact: `docs/evidence/2026-06-01-release-zip-path-shadow-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
