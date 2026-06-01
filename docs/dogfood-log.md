@@ -1472,3 +1472,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-01-build-run-root-function-shadow-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 18:05 EDT — v1.0 create-release zip root-resolution function-shadow hardening
+
+- Hardened `script/create_release_zip.sh` so repository-root setup resolves through absolute `/bin/realpath` plus `/usr/bin/dirname`, and removed shell `cd` / `command cd` reliance from the release-helper path. Relative app/output paths are now resolved lexically against the repository root, while `package_verify.sh` still receives the same relative app argument from a repo-root working directory via `/usr/bin/perl` `chdir`/`exec`.
+- Added strict-TDD coverage in `script/test_create_release_zip.sh` with exported fake `command`, `builtin`, `cd`, and `pwd` functions plus a PATH fake for `realpath`; the helper must still create a valid app zip, keep package-verify argument behavior stable, and avoid invoking, leaking, or writing marker files for any shadow sentinel.
+- RED verification: the first focused root-shadow test failed with `test_create_release_zip failed: helper root resolution invoked a function-shadowed shell builtin`; the follow-up strengthened test also failed against the intermediate `command cd` implementation before the shell-chdir dependency was eliminated.
+- GREEN verification: release-helper shell tests passed (`test_create_release_zip`, `test_package_verify`, `test_sign_and_notarize`, `test_v10_release_gate`), shell syntax checks passed, `git diff --check` passed, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with 127 Swift Testing tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260601-180315/`; metrics: shell readiness 128.77 ms, connected cold start 225.99 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.029 ms, dogfood query median overhead 0.011 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-01-create-release-zip-root-function-shadow-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

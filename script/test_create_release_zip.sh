@@ -101,7 +101,7 @@ helper_contents="$(<"$HELPER")"
 assert_contains "$helper_contents" "/usr/bin/ditto -c -k --keepParent"
 assert_contains "$helper_contents" "/usr/bin/shasum -a 256"
 assert_contains "$helper_contents" 'mktemp -d "${output_parent%/}/.release-zip.XXXXXX"'
-assert_contains "$helper_contents" '/usr/bin/ditto -c -k --keepParent "$APP_BUNDLE" "$temp_zip"'
+assert_contains "$helper_contents" '/usr/bin/ditto -c -k --keepParent "$APP_BUNDLE_ABS" "$temp_zip"'
 assert_contains "$helper_contents" 'rename($ARGV[0], $ARGV[1])'
 assert_not_contains "$helper_contents" '/usr/bin/ditto -c -k --keepParent "$APP_BUNDLE" "$OUTPUT_ZIP"'
 
@@ -124,6 +124,7 @@ approved_symlink_output="$(mktemp)"
 approved_non_dangling_symlink_output="$(mktemp)"
 success_path_redaction_output="$(mktemp)"
 cleanup_redaction_output="$(mktemp)"
+root_resolution_shadow_output="$(mktemp)"
 path_shadow_output="$(mktemp)"
 inside_bundle_output="$(mktemp)"
 inside_bundle_sentinel_output="$(mktemp)"
@@ -136,7 +137,7 @@ success_output="$(mktemp)"
 outside_cwd_output="$(mktemp)"
 help_output="$(mktemp)"
 fixture_root="$(mktemp -d)"
-trap 'rm -f "$missing_verify_output" "$wrong_app_bundle_name_output" "$symlink_app_bundle_output" "$symlink_app_bundle_trailing_slash_output" "$wrong_output_zip_name_output" "$trailing_slash_output_zip_output" "$approved_directory_output" "$output_parent_file_output" "$dangling_output_parent_symlink_output" "$output_parent_creation_failure_output" "$refuse_output" "$refuse_sentinel_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$success_path_redaction_output" "$cleanup_redaction_output" "$path_shadow_output" "$inside_bundle_output" "$inside_bundle_sentinel_output" "$temp_creation_failure_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$final_symlink_inside_bundle_output" "$success_output" "$outside_cwd_output" "$help_output"; chmod -R u+rwx "$fixture_root" 2>/dev/null || true; rm -rf "$fixture_root"' EXIT
+trap 'rm -f "$missing_verify_output" "$wrong_app_bundle_name_output" "$symlink_app_bundle_output" "$symlink_app_bundle_trailing_slash_output" "$wrong_output_zip_name_output" "$trailing_slash_output_zip_output" "$approved_directory_output" "$output_parent_file_output" "$dangling_output_parent_symlink_output" "$output_parent_creation_failure_output" "$refuse_output" "$refuse_sentinel_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$success_path_redaction_output" "$cleanup_redaction_output" "$root_resolution_shadow_output" "$path_shadow_output" "$inside_bundle_output" "$inside_bundle_sentinel_output" "$temp_creation_failure_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$final_symlink_inside_bundle_output" "$success_output" "$outside_cwd_output" "$help_output"; chmod -R u+rwx "$fixture_root" 2>/dev/null || true; rm -rf "$fixture_root"' EXIT
 
 sensitive_identity="SENSITIVE_CODESIGN_IDENTITY_DO_NOT_PRINT"
 sensitive_notary="SENSITIVE_NOTARY_PROFILE_DO_NOT_PRINT"
@@ -566,6 +567,99 @@ assert_not_contains "$cleanup_redaction_text" "$sensitive_notary"
 assert_not_contains "$cleanup_redaction_text" "$sensitive_release_marker"
 [[ -f "$cleanup_redaction_fixture/$cleanup_redaction_zip" ]] || fail "cleanup-redaction zip was not created"
 assert_zip_contains_app_wrapper "$cleanup_redaction_fixture/$cleanup_redaction_zip" "$cleanup_redaction_fixture/extracted-cleanup-redaction"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+
+# Exported shell functions named like root-resolution builtins, plus PATH-shadowed realpath,
+# must not affect repository-root setup or release zip creation.
+root_resolution_shadow_realpath_sentinel="ROOT_REALPATH_PATH_SHADOW_SENTINEL_DO_NOT_PRINT"
+root_resolution_shadow_command_sentinel="ROOT_COMMAND_FUNCTION_SHADOW_SENTINEL_DO_NOT_PRINT"
+root_resolution_shadow_builtin_sentinel="ROOT_BUILTIN_FUNCTION_SHADOW_SENTINEL_DO_NOT_PRINT"
+root_resolution_shadow_cd_sentinel="ROOT_CD_FUNCTION_SHADOW_SENTINEL_DO_NOT_PRINT"
+root_resolution_shadow_pwd_sentinel="ROOT_PWD_FUNCTION_SHADOW_SENTINEL_DO_NOT_PRINT"
+root_resolution_shadow_fixture="$fixture_root/root-resolution-shadow"
+make_fixture "$root_resolution_shadow_fixture"
+root_resolution_shadow_fake_bin="$root_resolution_shadow_fixture/fake-bin"
+root_resolution_shadow_marker_dir="$root_resolution_shadow_fixture/root-shadow-markers"
+mkdir -p "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir"
+cat >"$root_resolution_shadow_fake_bin/realpath" <<'FAKE_REALPATH'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s fake realpath stdout\n' "${ROOT_RESOLUTION_SHADOW_REALPATH_SENTINEL:?}"
+printf '%s fake realpath stderr\n' "${ROOT_RESOLUTION_SHADOW_REALPATH_SENTINEL:?}" >&2
+printf 'realpath\n' >"${ROOT_RESOLUTION_SHADOW_MARKER_DIR:?}/realpath"
+exit 97
+FAKE_REALPATH
+chmod +x "$root_resolution_shadow_fake_bin/realpath"
+verify_log="$root_resolution_shadow_fixture/verify.log"
+set +e
+(
+  command cd "$root_resolution_shadow_fixture"
+  command() {
+    /usr/bin/printf '%s command invoked\n' "${ROOT_RESOLUTION_SHADOW_COMMAND_SENTINEL:?}" >&2
+    /usr/bin/printf 'command\n' >"${ROOT_RESOLUTION_SHADOW_MARKER_DIR:?}/command"
+    exit 97
+  }
+  builtin() {
+    /usr/bin/printf '%s builtin invoked\n' "${ROOT_RESOLUTION_SHADOW_BUILTIN_SENTINEL:?}" >&2
+    /usr/bin/printf 'builtin\n' >"${ROOT_RESOLUTION_SHADOW_MARKER_DIR:?}/builtin"
+    exit 97
+  }
+  cd() {
+    /usr/bin/printf '%s cd invoked\n' "${ROOT_RESOLUTION_SHADOW_CD_SENTINEL:?}" >&2
+    /usr/bin/printf 'cd\n' >"${ROOT_RESOLUTION_SHADOW_MARKER_DIR:?}/cd"
+    exit 97
+  }
+  pwd() {
+    /usr/bin/printf '%s pwd invoked\n' "${ROOT_RESOLUTION_SHADOW_PWD_SENTINEL:?}" >&2
+    /usr/bin/printf 'pwd\n' >"${ROOT_RESOLUTION_SHADOW_MARKER_DIR:?}/pwd"
+    /usr/bin/printf '%s\n' "${ROOT_RESOLUTION_SHADOW_FAKE_PWD:?}"
+  }
+  export -f command
+  export -f builtin
+  export -f cd
+  export -f pwd
+  FAKE_VERIFY_LOG="$verify_log" \
+    LITHEPG_CODESIGN_IDENTITY="$sensitive_identity" \
+    LITHEPG_NOTARY_PROFILE="$sensitive_notary" \
+    LITHEPG_RELEASE_MARKER="$sensitive_release_marker" \
+    ROOT_RESOLUTION_SHADOW_MARKER_DIR="$root_resolution_shadow_marker_dir" \
+    ROOT_RESOLUTION_SHADOW_FAKE_PWD="$fixture_root/root-resolution-wrong-root" \
+    ROOT_RESOLUTION_SHADOW_REALPATH_SENTINEL="$root_resolution_shadow_realpath_sentinel" \
+    ROOT_RESOLUTION_SHADOW_COMMAND_SENTINEL="$root_resolution_shadow_command_sentinel" \
+    ROOT_RESOLUTION_SHADOW_BUILTIN_SENTINEL="$root_resolution_shadow_builtin_sentinel" \
+    ROOT_RESOLUTION_SHADOW_CD_SENTINEL="$root_resolution_shadow_cd_sentinel" \
+    ROOT_RESOLUTION_SHADOW_PWD_SENTINEL="$root_resolution_shadow_pwd_sentinel" \
+    PATH="$root_resolution_shadow_fake_bin:$PATH" \
+    "$root_resolution_shadow_fixture/script/create_release_zip.sh" "dist/LithePG.app" "artifacts/public/LithePG.app.zip"
+) >"$root_resolution_shadow_output" 2>&1
+root_resolution_shadow_status=$?
+set -e
+if [[ "$root_resolution_shadow_status" -ne 0 ]]; then
+  if [[ -e "$root_resolution_shadow_marker_dir/command" || -e "$root_resolution_shadow_marker_dir/builtin" || -e "$root_resolution_shadow_marker_dir/cd" || -e "$root_resolution_shadow_marker_dir/pwd" ]]; then
+    fail "helper root resolution invoked a function-shadowed shell builtin"
+  fi
+  if [[ -e "$root_resolution_shadow_marker_dir/realpath" ]]; then
+    fail "helper root resolution invoked a PATH-shadowed realpath"
+  fi
+  fail "helper failed under root-resolution shadowing"
+fi
+root_resolution_shadow_text="$(<"$root_resolution_shadow_output")"
+assert_contains "$root_resolution_shadow_text" "Created release zip: LithePG.app.zip"
+assert_matches_sha_line "$root_resolution_shadow_text"
+assert_size_line_for_zip "$root_resolution_shadow_text" "$root_resolution_shadow_fixture/artifacts/public/LithePG.app.zip"
+assert_not_contains "$root_resolution_shadow_text" "$root_resolution_shadow_realpath_sentinel"
+assert_not_contains "$root_resolution_shadow_text" "$root_resolution_shadow_command_sentinel"
+assert_not_contains "$root_resolution_shadow_text" "$root_resolution_shadow_builtin_sentinel"
+assert_not_contains "$root_resolution_shadow_text" "$root_resolution_shadow_cd_sentinel"
+assert_not_contains "$root_resolution_shadow_text" "$root_resolution_shadow_pwd_sentinel"
+assert_not_contains "$root_resolution_shadow_text" "$sensitive_identity"
+assert_not_contains "$root_resolution_shadow_text" "$sensitive_notary"
+assert_not_contains "$root_resolution_shadow_text" "$sensitive_release_marker"
+for tool in realpath command builtin cd pwd; do
+  [[ ! -e "$root_resolution_shadow_marker_dir/$tool" ]] || fail "helper root resolution invoked shadowed $tool"
+done
+[[ -f "$root_resolution_shadow_fixture/artifacts/public/LithePG.app.zip" ]] || fail "root-resolution-shadow zip was not created"
+assert_zip_contains_app_wrapper "$root_resolution_shadow_fixture/artifacts/public/LithePG.app.zip" "$root_resolution_shadow_fixture/extracted-root-resolution-shadow"
 assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
 
 # PATH-shadowed core utility names must not affect release zip creation or leak fake-tool output.
