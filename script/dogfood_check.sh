@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode.app/Contents/Developer ]]; then
@@ -12,8 +12,8 @@ DOGFOOD_PORT="${LITHEPG_DOGFOOD_PORT:-55432}"
 DOGFOOD_PASSWORD="${LITHEPG_DOGFOOD_PASSWORD:-postgres}"
 DOGFOOD_DATABASE="${LITHEPG_DOGFOOD_DATABASE:-postgres}"
 POSTGRES_TEST_URL="${POSTGRES_TEST_URL:-postgres://postgres:$DOGFOOD_PASSWORD@localhost:$DOGFOOD_PORT/$DOGFOOD_DATABASE?sslmode=disable}"
-OUT_DIR="${LITHEPG_DOGFOOD_CHECK_OUT_DIR:-$ROOT_DIR/.build/dogfood-checks/$(date +%Y%m%d-%H%M%S)}"
-mkdir -p "$OUT_DIR"
+OUT_DIR="${LITHEPG_DOGFOOD_CHECK_OUT_DIR:-$ROOT_DIR/.build/dogfood-checks/$(/bin/date +%Y%m%d-%H%M%S)}"
+/bin/mkdir -p "$OUT_DIR"
 
 printf 'Starting dogfood Postgres...\n'
 ./script/dogfood_postgres.sh > "$OUT_DIR/dogfood-postgres.log"
@@ -65,6 +65,6 @@ status = {
 print(json.dumps(status, indent=2, sort_keys=True))
 PY
 
-cat "$OUT_DIR/status.json"
+/bin/cat "$OUT_DIR/status.json"
 echo
 echo "Dogfood check written to $OUT_DIR"
