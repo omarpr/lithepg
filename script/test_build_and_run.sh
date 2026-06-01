@@ -83,6 +83,76 @@ assert_contains "$help_output" "--package"
 assert_not_contains "$help_output" "$help_sentinel"
 [[ ! -e "$help_marker" ]] || fail "build_and_run --help invoked PATH-shadowed tools: $(<"$help_marker")"
 
+print_bundle_sentinel="BUILD_AND_RUN_FAKE_PKILL_SENTINEL_SHOULD_NOT_RUN"
+print_bundle_fake_bin="$fixture_root/print-bundle-fake-bin"
+print_bundle_swift_bin_dir="$fixture_root/print-bundle-swift-bin"
+print_bundle_swift_marker="$fixture_root/print-bundle-fake-swift-used"
+print_bundle_path_pkill_marker="$fixture_root/print-bundle-path-fake-pkill-invoked"
+print_bundle_safe_pkill="$fixture_root/print-bundle-safe-pkill"
+print_bundle_safe_pkill_marker="$fixture_root/print-bundle-safe-pkill-invoked"
+/bin/mkdir -p "$print_bundle_fake_bin" "$print_bundle_swift_bin_dir"
+
+/bin/cat >"$print_bundle_fake_bin/pkill" <<SHIM
+#!/bin/bash
+/usr/bin/printf '%s pkill invoked\\n' '$print_bundle_sentinel' >&2
+/usr/bin/printf 'pkill %s\\n' "\$*" >'$print_bundle_path_pkill_marker'
+exit 0
+SHIM
+/bin/chmod +x "$print_bundle_fake_bin/pkill"
+
+/bin/cat >"$print_bundle_safe_pkill" <<SHIM
+#!/bin/bash
+/usr/bin/printf 'safe pkill %s\\n' "\$*" >'$print_bundle_safe_pkill_marker'
+exit 0
+SHIM
+/bin/chmod +x "$print_bundle_safe_pkill"
+
+/bin/cat >"$print_bundle_fake_bin/swift" <<'SWIFT'
+#!/bin/bash
+set -euo pipefail
+/usr/bin/printf 'fake debug swift used\n' >"${FAKE_SWIFT_MARKER:?}"
+case "$*" in
+  "build --product LithePGApp")
+    /bin/mkdir -p "${FAKE_SWIFT_BIN_DIR:?}"
+    /bin/cp /usr/bin/true "$FAKE_SWIFT_BIN_DIR/LithePGApp"
+    /bin/chmod 755 "$FAKE_SWIFT_BIN_DIR/LithePGApp"
+    ;;
+  "build --show-bin-path")
+    /usr/bin/printf '%s\n' "${FAKE_SWIFT_BIN_DIR:?}"
+    ;;
+  *)
+    /usr/bin/printf 'unexpected fake debug swift invocation: %s\n' "$*" >&2
+    exit 98
+    ;;
+esac
+SWIFT
+/bin/chmod +x "$print_bundle_fake_bin/swift"
+
+set +e
+(
+  cd "$ROOT_DIR"
+  PATH="$print_bundle_fake_bin:$PATH" \
+    FAKE_SWIFT_BIN_DIR="$print_bundle_swift_bin_dir" \
+    FAKE_SWIFT_MARKER="$print_bundle_swift_marker" \
+    LITHEPG_BUILD_AND_RUN_PKILL="$print_bundle_safe_pkill" \
+    LITHEPG_MARKETING_VERSION="1.0" \
+    LITHEPG_BUILD_VERSION="100" \
+    /bin/bash "$HELPER" --print-bundle-path
+) >"$output_file" 2>&1
+print_bundle_status=$?
+set -e
+print_bundle_output="$(<"$output_file")"
+if [[ "$print_bundle_status" -ne 0 ]]; then
+  /usr/bin/printf '%s\n' "$print_bundle_output" >&2
+  fail "build_and_run --print-bundle-path failed under fake swift"
+fi
+[[ -f "$print_bundle_swift_marker" ]] || fail "fake debug swift was not used"
+assert_contains "$print_bundle_output" "$ROOT_DIR/dist/LithePG.app"
+assert_not_contains "$print_bundle_output" "$print_bundle_sentinel"
+[[ ! -e "$print_bundle_path_pkill_marker" ]] || fail "build_and_run --print-bundle-path invoked PATH-shadowed pkill: $(<"$print_bundle_path_pkill_marker")"
+[[ -f "$print_bundle_safe_pkill_marker" ]] || fail "build_and_run --print-bundle-path did not invoke safe pkill override"
+assert_contains "$(<"$print_bundle_safe_pkill_marker")" "safe pkill -x LithePGApp"
+
 sentinel="BUILD_AND_RUN_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN"
 fake_bin="$fixture_root/fake-bin"
 fake_swift_bin_dir="$fixture_root/swift-bin"

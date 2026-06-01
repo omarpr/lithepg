@@ -1410,3 +1410,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-01-dogfood-check-python3-path-shadow-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 14:17 EDT — v1.0 build/run helper pkill PATH-shadow hardening
+
+- Hardened `script/build_and_run.sh` so helper-owned non-release pre-launch cleanup defaults to `/usr/bin/pkill` instead of resolving `pkill` through caller-controlled `PATH`. `swift`, `git`, `lldb`, and other developer tools remain intentionally PATH-resolved.
+- Added strict-TDD coverage in `script/test_build_and_run.sh` for `--print-bundle-path` with fake debug Swift, a PATH-shadowed fake `pkill`, and a safe absolute pkill test override. The test proves the PATH fake is not invoked while avoiding a real app launch or real process termination.
+- RED verification: `bash script/test_build_and_run.sh` failed first with `BUILD_AND_RUN_FAKE_PKILL_SENTINEL_SHOULD_NOT_RUN pkill invoked` and `test_build_and_run failed: build_and_run --print-bundle-path invoked PATH-shadowed pkill`.
+- GREEN verification: `bash script/test_build_and_run.sh`, `bash -n script/build_and_run.sh script/test_build_and_run.sh`, `git diff --check`, adjacent release-helper tests (`test_package_verify`, `test_create_release_zip`, `test_sign_and_notarize`, `test_v10_release_gate`), full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`, package smoke, and release-impact `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` all passed. Swift Testing reported 127 tests across 20 suites. Package smoke verified `dist/LithePG.app` with packaged executable 12,507,504 bytes / 11.93 MiB, version `0.5` build `256`. Dogfood artifacts: `.build/dogfood-checks/20260601-141732/`; metrics: shell readiness 130.37 ms, connected cold start 236.01 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead -0.012 ms, dogfood query median overhead 0.034 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED after the test-side-effect follow-up.
+- Evidence artifact: `screenshots/evidence/2026-06-01-build-and-run-pkill-path-shadow-hardening.svg`.
+- No signing with a real identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

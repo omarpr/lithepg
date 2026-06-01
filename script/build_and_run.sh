@@ -14,6 +14,7 @@ CP=/bin/cp
 DIRNAME=/usr/bin/dirname
 DITTO=/usr/bin/ditto
 MKDIR=/bin/mkdir
+PKILL="${LITHEPG_BUILD_AND_RUN_PKILL:-/usr/bin/pkill}"
 RM=/bin/rm
 STAT=/usr/bin/stat
 STRIP=/usr/bin/strip
@@ -70,7 +71,7 @@ case "$MODE" in
     ;;
   *)
     BUILD_CONFIG="debug"
-    pkill -x "$APP_NAME" >/dev/null 2>&1 || true
+    "$PKILL" -x "$APP_NAME" >/dev/null 2>&1 || true
     ;;
 esac
 
