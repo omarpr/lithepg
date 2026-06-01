@@ -1495,3 +1495,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED after the relative-entitlements semantics follow-up.
 - Evidence artifact: `screenshots/evidence/2026-06-01-sign-notarize-root-chdir-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 19:15 EDT — v1.0 release gate root/chdir function-shadow hardening
+
+- Hardened `script/v10_release_gate.sh` so repository-root setup uses absolute `/bin/realpath` plus `/usr/bin/dirname`, then removed the shell `cd "$ROOT_DIR"` dependency from the gate body. Git readiness checks now run through `git -C "$ROOT_DIR"`, preserving repo-root semantics even when the caller starts outside the repository and avoiding exported shell functions named `command`, `builtin`, `cd`, `pwd`, or `unset`.
+- Added strict-TDD coverage in `script/test_v10_release_gate.sh` with PATH-shadowed `dirname`/`realpath` and exported function-shadow sentinels for `command`, `builtin`, `cd`, `pwd`, and `unset`. The gate must still reach the normal blocked-publication output and must not invoke, leak, or write marker files for any sentinel.
+- RED verification: the strengthened regression failed first with `V10_RELEASE_GATE_ROOT_RESOLUTION_CD_FUNCTION_SHOULD_NOT_RUN` before the repo-root `cd` dependency was removed, and the earlier unsafe `unset -f` hardening failed with an `unset` marker before it was deleted.
+- GREEN verification: `bash script/test_v10_release_gate.sh`, adjacent release-helper tests (`test_package_verify`, `test_create_release_zip`, `test_sign_and_notarize`), shell syntax checks, `git diff --check`, full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`, and release-impact `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` all passed. Swift Testing reported 127 tests across 20 suites. Dogfood artifacts: `.build/dogfood-checks/20260601-191514/`; metrics: shell readiness 131.28 ms, connected cold start 220.91 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.022 ms, dogfood query median overhead 0.018 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED after the unsafe-`unset` follow-up.
+- Evidence artifact: `screenshots/evidence/2026-06-01-v10-release-gate-root-chdir-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

@@ -53,7 +53,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-ROOT_DIR="$(cd "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(/bin/realpath "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/..")"
+
+git_in_repo() {
+  git -C "$ROOT_DIR" "$@"
+}
 if [[ -n "$SECURITY_DOC_PATH" ]]; then
   SECURITY_DOC_PATHS=("$SECURITY_DOC_PATH")
 else
@@ -1097,21 +1101,19 @@ release_zip_top_level_entries_status() {
   return 0
 }
 
-cd "$ROOT_DIR"
-
 printf 'LithePG %s fast publication preflight\n' "$TAG"
 printf 'Repository: %s\n' "$ROOT_DIR"
 printf '\nLocal git/tag readiness:\n'
 
-if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  branch="$(git branch --show-current 2>/dev/null || true)"
+if git_in_repo rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  branch="$(git_in_repo branch --show-current 2>/dev/null || true)"
   if [[ -n "$branch" ]]; then
     printf 'Git branch: %s\n' "$branch"
   else
-    printf 'Git branch: detached at %s\n' "$(git rev-parse --short HEAD 2>/dev/null || printf 'unknown')"
+    printf 'Git branch: detached at %s\n' "$(git_in_repo rev-parse --short HEAD 2>/dev/null || printf 'unknown')"
   fi
 
-  if status_output="$(git status --short 2>/dev/null)"; then
+  if status_output="$(git_in_repo status --short 2>/dev/null)"; then
     if [[ -z "$status_output" ]]; then
       printf 'Git status: clean\n'
     else
@@ -1123,24 +1125,24 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     mark_blocker
   fi
 
-  if git rev-parse -q --verify refs/tags/v0.5 >/dev/null 2>&1; then
+  if git_in_repo rev-parse -q --verify refs/tags/v0.5 >/dev/null 2>&1; then
     printf 'Local tag v0.5: present\n'
   else
     printf 'Local tag v0.5: missing\n'
     mark_blocker
   fi
 
-  if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null 2>&1; then
+  if git_in_repo rev-parse -q --verify "refs/tags/$TAG" >/dev/null 2>&1; then
     printf 'Local tag %s: present (expected absent before publication)\n' "$TAG"
     mark_blocker
   else
     printf 'Local tag %s: absent\n' "$TAG"
   fi
 
-  if git remote get-url origin >/dev/null 2>&1; then
+  if git_in_repo remote get-url origin >/dev/null 2>&1; then
     if is_approved_value "$CHECK_REMOTE_TAGS"; then
       set +e
-      GIT_TERMINAL_PROMPT=0 git ls-remote --exit-code --tags origin refs/tags/v0.5 >/dev/null 2>&1
+      GIT_TERMINAL_PROMPT=0 git_in_repo ls-remote --exit-code --tags origin refs/tags/v0.5 >/dev/null 2>&1
       remote_v05_status=$?
       set -e
       case "$remote_v05_status" in
@@ -1157,7 +1159,7 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       esac
 
       set +e
-      GIT_TERMINAL_PROMPT=0 git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1
+      GIT_TERMINAL_PROMPT=0 git_in_repo ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1
       remote_status=$?
       set -e
       case "$remote_status" in

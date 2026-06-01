@@ -141,6 +141,7 @@ remote_v05_missing_output="$(mktemp)"
 status_failure_output="$(mktemp)"
 grep_error_output="$(mktemp)"
 path_shadowed_dirname_output="$(mktemp)"
+root_resolution_shadow_output="$(mktemp)"
 path_shadowed_rm_output="$(mktemp)"
 path_shadowed_grep_output="$(mktemp)"
 path_shadowed_cat_output="$(mktemp)"
@@ -297,6 +298,8 @@ rm -f "$missing_artifact_zip"
 fake_git_dir="$(mktemp -d)"
 fake_git_marker="$fake_git_dir/ls-remote-called"
 default_security_docs_repo="$(mktemp -d)"
+root_resolution_shadow_fake_bin="$(mktemp -d)"
+root_resolution_shadow_marker_dir="$(mktemp -d)"
 cleanup() {
   rm -f \
     "$missing_output" \
@@ -377,6 +380,7 @@ cleanup() {
     "$status_failure_output" \
     "$grep_error_output" \
     "$path_shadowed_dirname_output" \
+    "$root_resolution_shadow_output" \
     "$path_shadowed_rm_output" \
     "$path_shadowed_grep_output" \
     "$path_shadowed_cat_output" \
@@ -499,13 +503,18 @@ cleanup() {
     "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
 cat >"$fake_git_dir/git" <<'FAKE_GIT'
 #!/usr/bin/env bash
 set -euo pipefail
+
+if [[ "${1:-}" == "-C" ]]; then
+  [[ -n "${2:-}" ]] || exit 98
+  shift 2
+fi
 
 case "${1:-}" in
   rev-parse)
@@ -601,6 +610,25 @@ exit 46
 FAKE_CAT
 chmod +x "$fake_git_dir/cat"
 fake_path="$fake_git_dir:${PATH:-/usr/bin:/bin}"
+cat >"$root_resolution_shadow_fake_bin/dirname" <<'ROOT_RESOLUTION_SHADOW_DIRNAME'
+#!/usr/bin/env bash
+set -euo pipefail
+
+/usr/bin/printf 'V10_RELEASE_GATE_ROOT_RESOLUTION_PATH_SHADOW_DIRNAME_SHOULD_NOT_RUN\n' >&2
+/usr/bin/printf 'dirname\n' >"${ROOT_RESOLUTION_SHADOW_MARKER_DIR:?}/dirname"
+exit 43
+ROOT_RESOLUTION_SHADOW_DIRNAME
+chmod +x "$root_resolution_shadow_fake_bin/dirname"
+cat >"$root_resolution_shadow_fake_bin/realpath" <<'ROOT_RESOLUTION_SHADOW_REALPATH'
+#!/usr/bin/env bash
+set -euo pipefail
+
+/usr/bin/printf 'V10_RELEASE_GATE_ROOT_RESOLUTION_PATH_SHADOW_REALPATH_SHOULD_NOT_RUN\n' >&2
+/usr/bin/printf 'realpath\n' >"${ROOT_RESOLUTION_SHADOW_MARKER_DIR:?}/realpath"
+exit 42
+ROOT_RESOLUTION_SHADOW_REALPATH
+chmod +x "$root_resolution_shadow_fake_bin/realpath"
+root_resolution_shadow_fake_path="$root_resolution_shadow_fake_bin:$fake_path"
 write_valid_info_plist() {
   local plist_path="$1"
 
@@ -2483,6 +2511,59 @@ path_shadowed_dirname_text="$(<"$path_shadowed_dirname_output")"
 assert_not_contains "$path_shadowed_dirname_text" "V10_RELEASE_GATE_PATH_SHADOW_DIRNAME_SHOULD_NOT_RUN"
 assert_contains "$path_shadowed_dirname_text" "v1.0 publication blocked"
 assert_contains "$path_shadowed_dirname_text" "LITHEPG_CODESIGN_IDENTITY: missing"
+
+set +e
+(
+  cd "$ROOT_DIR"
+  command() {
+    /usr/bin/printf 'V10_RELEASE_GATE_ROOT_RESOLUTION_COMMAND_FUNCTION_SHOULD_NOT_RUN\n' >&2
+    /usr/bin/printf 'command\n' >"${ROOT_RESOLUTION_SHADOW_MARKER_DIR:?}/command"
+    exit 97
+  }
+  builtin() {
+    /usr/bin/printf 'V10_RELEASE_GATE_ROOT_RESOLUTION_BUILTIN_FUNCTION_SHOULD_NOT_RUN\n' >&2
+    /usr/bin/printf 'builtin\n' >"${ROOT_RESOLUTION_SHADOW_MARKER_DIR:?}/builtin"
+    exit 97
+  }
+  cd() {
+    /usr/bin/printf 'V10_RELEASE_GATE_ROOT_RESOLUTION_CD_FUNCTION_SHOULD_NOT_RUN\n' >&2
+    /usr/bin/printf 'cd\n' >"${ROOT_RESOLUTION_SHADOW_MARKER_DIR:?}/cd"
+    exit 97
+  }
+  pwd() {
+    /usr/bin/printf 'V10_RELEASE_GATE_ROOT_RESOLUTION_PWD_FUNCTION_SHOULD_NOT_RUN\n' >&2
+    /usr/bin/printf 'pwd\n' >"${ROOT_RESOLUTION_SHADOW_MARKER_DIR:?}/pwd"
+    /usr/bin/printf '%s\n' "$ROOT_DIR"
+  }
+  unset() {
+    /usr/bin/printf 'V10_RELEASE_GATE_ROOT_RESOLUTION_UNSET_FUNCTION_SHOULD_NOT_RUN\n' >&2
+    /usr/bin/printf 'unset\n' >"${ROOT_RESOLUTION_SHADOW_MARKER_DIR:?}/unset"
+    exit 97
+  }
+  export -f command builtin cd pwd unset
+  PATH="$root_resolution_shadow_fake_path" \
+    ROOT_RESOLUTION_SHADOW_MARKER_DIR="$root_resolution_shadow_marker_dir" \
+    FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+    /bin/bash "$default_security_docs_helper"
+) >"$root_resolution_shadow_output" 2>&1
+root_resolution_shadow_status=$?
+set -e
+root_resolution_shadow_text="$(<"$root_resolution_shadow_output")"
+if [[ "$root_resolution_shadow_status" -eq 0 ]]; then
+  fail "gate unexpectedly passed with all required external inputs missing under root-resolution shadows"
+fi
+assert_not_contains "$root_resolution_shadow_text" "V10_RELEASE_GATE_ROOT_RESOLUTION_PATH_SHADOW_DIRNAME_SHOULD_NOT_RUN"
+assert_not_contains "$root_resolution_shadow_text" "V10_RELEASE_GATE_ROOT_RESOLUTION_PATH_SHADOW_REALPATH_SHOULD_NOT_RUN"
+assert_not_contains "$root_resolution_shadow_text" "V10_RELEASE_GATE_ROOT_RESOLUTION_COMMAND_FUNCTION_SHOULD_NOT_RUN"
+assert_not_contains "$root_resolution_shadow_text" "V10_RELEASE_GATE_ROOT_RESOLUTION_BUILTIN_FUNCTION_SHOULD_NOT_RUN"
+assert_not_contains "$root_resolution_shadow_text" "V10_RELEASE_GATE_ROOT_RESOLUTION_CD_FUNCTION_SHOULD_NOT_RUN"
+assert_not_contains "$root_resolution_shadow_text" "V10_RELEASE_GATE_ROOT_RESOLUTION_PWD_FUNCTION_SHOULD_NOT_RUN"
+assert_not_contains "$root_resolution_shadow_text" "V10_RELEASE_GATE_ROOT_RESOLUTION_UNSET_FUNCTION_SHOULD_NOT_RUN"
+for tool in dirname realpath command builtin cd pwd unset; do
+  [[ ! -e "$root_resolution_shadow_marker_dir/$tool" ]] || fail "release gate root resolution invoked shadowed $tool"
+done
+assert_contains "$root_resolution_shadow_text" "v1.0 publication blocked"
+assert_contains "$root_resolution_shadow_text" "LITHEPG_CODESIGN_IDENTITY: missing"
 
 if run_gate_capture "$path_shadowed_rm_output" env -i \
   PATH="$fake_path" \

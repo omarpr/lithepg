@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release gate root/chdir hardening evidence</title>
+  <desc id="desc">Visual evidence for the v10 release gate root/chdir hardening commit: focused shell tests, Swift tests, dogfood check, and review gates passed.</desc>
+  <rect width="1200" height="760" fill="#0b1020"/>
+  <rect x="36" y="32" width="1128" height="696" rx="28" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="72" y="88" fill="#e5f3ff" font-family="Menlo, Monaco, monospace" font-size="30" font-weight="700">LithePG evidence — v10 release gate root/chdir hardening</text>
+  <text x="72" y="128" fill="#93c5fd" font-family="Menlo, Monaco, monospace" font-size="18">2026-06-01 19:15 EDT · base commit 6f17f33 · local-only cron output</text>
+
+  <rect x="72" y="166" width="1056" height="132" rx="16" fill="#07111f" stroke="#1d4ed8"/>
+  <text x="96" y="206" fill="#bfdbfe" font-family="Menlo, Monaco, monospace" font-size="20" font-weight="700">Change slice</text>
+  <text x="96" y="238" fill="#dbeafe" font-family="Menlo, Monaco, monospace" font-size="17">script/v10_release_gate.sh: ROOT_DIR uses /bin/realpath + /usr/bin/dirname.</text>
+  <text x="96" y="266" fill="#dbeafe" font-family="Menlo, Monaco, monospace" font-size="17">Removed repo-root shell cd dependency; git readiness checks now run via git -C "$ROOT_DIR".</text>
+
+  <rect x="72" y="326" width="508" height="250" rx="16" fill="#052e1a" stroke="#22c55e"/>
+  <text x="96" y="366" fill="#bbf7d0" font-family="Menlo, Monaco, monospace" font-size="20" font-weight="700">Focused verification</text>
+  <text x="96" y="402" fill="#dcfce7" font-family="Menlo, Monaco, monospace" font-size="17">✓ RED observed for shadowed cd/unset regression</text>
+  <text x="96" y="432" fill="#dcfce7" font-family="Menlo, Monaco, monospace" font-size="17">✓ bash script/test_v10_release_gate.sh</text>
+  <text x="96" y="462" fill="#dcfce7" font-family="Menlo, Monaco, monospace" font-size="17">✓ test_package_verify / create_release_zip</text>
+  <text x="96" y="492" fill="#dcfce7" font-family="Menlo, Monaco, monospace" font-size="17">✓ test_sign_and_notarize</text>
+  <text x="96" y="522" fill="#dcfce7" font-family="Menlo, Monaco, monospace" font-size="17">✓ bash -n and git diff --check</text>
+  <text x="96" y="552" fill="#dcfce7" font-family="Menlo, Monaco, monospace" font-size="17">✓ Spec PASS · Quality APPROVED</text>
+
+  <rect x="620" y="326" width="508" height="250" rx="16" fill="#2a1c05" stroke="#f59e0b"/>
+  <text x="644" y="366" fill="#fde68a" font-family="Menlo, Monaco, monospace" font-size="20" font-weight="700">Release-impact verification</text>
+  <text x="644" y="402" fill="#fef3c7" font-family="Menlo, Monaco, monospace" font-size="17">✓ swift test: 127 tests / 20 suites passed</text>
+  <text x="644" y="432" fill="#fef3c7" font-family="Menlo, Monaco, monospace" font-size="17">✓ dogfood_check artifacts: .build/dogfood-checks/20260601-191514</text>
+  <text x="644" y="462" fill="#fef3c7" font-family="Menlo, Monaco, monospace" font-size="17">✓ shell readiness: 131.28 ms</text>
+  <text x="644" y="492" fill="#fef3c7" font-family="Menlo, Monaco, monospace" font-size="17">✓ connected cold start: 220.91 ms</text>
+  <text x="644" y="522" fill="#fef3c7" font-family="Menlo, Monaco, monospace" font-size="17">✓ binary: 21.379 MiB raw / 11.980 MiB strip-probe</text>
+  <text x="644" y="552" fill="#fef3c7" font-family="Menlo, Monaco, monospace" font-size="17">✓ query overhead: 0.022 ms simple / 0.018 ms dogfood</text>
+
+  <rect x="72" y="608" width="1056" height="76" rx="16" fill="#1f2937" stroke="#64748b"/>
+  <text x="96" y="646" fill="#e5e7eb" font-family="Menlo, Monaco, monospace" font-size="18">No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron change, or external publication attempted.</text>
+  <text x="96" y="674" fill="#cbd5e1" font-family="Menlo, Monaco, monospace" font-size="16">Credential-bearing URLs/tokens are not shown; dogfood URL recorded only as postgres@localhost:55432/postgres.</text>
+</svg>
