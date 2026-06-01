@@ -44,7 +44,7 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
 fi
 
 APP_BUNDLE="${1:-dist/LithePG.app}"
-ROOT_DIR="$(cd "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(/bin/realpath "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/..")"
 APP_BUNDLE_ABS="$APP_BUNDLE"
 if [[ "$APP_BUNDLE_ABS" != /* ]]; then
   APP_BUNDLE_ABS="$ROOT_DIR/$APP_BUNDLE_ABS"
@@ -247,10 +247,17 @@ validate_notary_zip_overwrite() {
 }
 
 ZIP_PATH="$(make_absolute_path "$ZIP_PATH")"
-cd "$ROOT_DIR"
+ENTITLEMENTS="$(make_absolute_path "$ENTITLEMENTS")"
 validate_app_bundle_canonical_basename
 validate_app_bundle_not_symlink
-"$ROOT_DIR/script/package_verify.sh" "$APP_BUNDLE_ABS"
+/usr/bin/perl -e '
+use strict;
+use warnings;
+my ($root_dir, @cmd) = @ARGV;
+chdir $root_dir or exit 126;
+exec @cmd;
+exit 127;
+' "$ROOT_DIR" "$ROOT_DIR/script/package_verify.sh" "$APP_BUNDLE_ABS"
 require_config
 validate_notary_zip_no_trailing_slash
 validate_notary_zip_location

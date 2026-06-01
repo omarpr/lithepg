@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG sign/notarize root and chdir hardening verification — 2026-06-01</title>
+  <desc id="desc">Evidence artifact summarizing the TDD, review, Swift, and dogfood verification for the sign_and_notarize.sh root/chdir hardening commit.</desc>
+  <rect width="1400" height="900" fill="#0b1020"/>
+  <rect x="36" y="36" width="1328" height="828" rx="24" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="70" y="92" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="30" font-weight="700">LithePG release-helper hardening evidence</text>
+  <text x="70" y="134" fill="#93c5fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">Slice: script/sign_and_notarize.sh root/chdir function-shadow protection</text>
+  <text x="70" y="174" fill="#a7f3d0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">Timestamp: 2026-06-01 18:33 EDT / 2026-06-01T22:33:42Z</text>
+
+  <rect x="70" y="215" width="1260" height="160" rx="16" fill="#172033" stroke="#38bdf8"/>
+  <text x="95" y="252" fill="#38bdf8" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20" font-weight="700">TDD receipt</text>
+  <text x="95" y="286" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">RED 1: SIGN_AND_NOTARIZE_CD_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN cd invoked</text>
+  <text x="95" y="316" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">RED 2: sign/notarize failed: missing entitlements file from outside repo cwd</text>
+  <text x="95" y="346" fill="#bbf7d0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">GREEN: bash script/test_sign_and_notarize.sh → test_sign_and_notarize passed</text>
+
+  <rect x="70" y="405" width="1260" height="180" rx="16" fill="#172033" stroke="#22c55e"/>
+  <text x="95" y="442" fill="#22c55e" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20" font-weight="700">Verification</text>
+  <text x="95" y="476" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">release helpers: test_sign_and_notarize, test_package_verify, test_create_release_zip, test_v10_release_gate passed</text>
+  <text x="95" y="506" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">syntax/whitespace/security: bash -n, git diff --check, static diff scans passed</text>
+  <text x="95" y="536" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">Swift: swift build passed; swift test passed with 127 tests across 20 suites</text>
+  <text x="95" y="566" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">Independent reviews: spec compliance PASS; code quality/security APPROVED</text>
+
+  <rect x="70" y="615" width="1260" height="165" rx="16" fill="#172033" stroke="#f59e0b"/>
+  <text x="95" y="652" fill="#fbbf24" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20" font-weight="700">Dogfood release-impact gate</text>
+  <text x="95" y="686" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">script/dogfood_check.sh: passed, artifacts .build/dogfood-checks/20260601-183316/</text>
+  <text x="95" y="716" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">Metrics: shell 130.84 ms; connected 229.07 ms; raw 21.379 MiB; strip-probe 11.980 MiB</text>
+  <text x="95" y="746" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">Query overhead: SELECT 1 median +0.042 ms; dogfood query median +0.025 ms</text>
+
+  <text x="70" y="826" fill="#cbd5e1" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">No real signing, notarization, upload, GitHub Release, Homebrew publication, tag, cron change, or external publication was attempted.</text>
+</svg>

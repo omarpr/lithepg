@@ -1483,3 +1483,15 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-01-create-release-zip-root-function-shadow-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 18:33 EDT — v1.0 sign/notarize root and chdir function-shadow hardening
+
+- Hardened `script/sign_and_notarize.sh` so repository-root setup uses absolute `/bin/realpath` plus `/usr/bin/dirname`, and repo-root package verification runs through `/usr/bin/perl` `chdir`/`exec` instead of shell `cd`. This avoids exported shell functions named `command`, `builtin`, `cd`, or `pwd` and PATH-shadowed root-resolution utilities before signing/notary validation.
+- Preserved release semantics for relative entitlements: `LITHEPG_ENTITLEMENTS=Sources/LithePGApp/LithePGApp.entitlements` now resolves against the repository root even when the caller's cwd is outside the repo, without restoring parent-shell `cd`.
+- Added strict-TDD coverage in `script/test_sign_and_notarize.sh` for relative entitlements from an outside cwd and for root/chdir function-shadowing with PATH-shadowed `realpath`/`dirname`; dry runs must succeed, redact signing/notary values, avoid sentinel output/marker files, and avoid creating a notary zip.
+- RED verification: root/chdir shadowing first failed with `SIGN_AND_NOTARIZE_CD_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN cd invoked`; the relative-entitlements regression then failed with `sign/notarize failed: missing entitlements file` before repo-root-relative normalization landed.
+- GREEN verification: `bash script/test_sign_and_notarize.sh`, `bash script/test_package_verify.sh`, `bash script/test_create_release_zip.sh`, `bash script/test_v10_release_gate.sh`, shell syntax checks, `git diff --check`, static diff security scans, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` all passed. Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260601-183316/`; metrics: shell readiness 130.84 ms, connected cold start 229.07 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.042 ms, dogfood query median overhead 0.025 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED after the relative-entitlements semantics follow-up.
+- Evidence artifact: `screenshots/evidence/2026-06-01-sign-notarize-root-chdir-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

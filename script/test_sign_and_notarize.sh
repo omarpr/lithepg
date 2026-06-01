@@ -176,6 +176,125 @@ assert_contains "$helper_output" "Codesign identity: present (redacted)"
 assert_contains "$helper_output" "Notary profile: present (redacted)"
 [[ ! -e "$notary_zip" ]] || fail "dry run created notary zip: $notary_zip"
 
+relative_entitlements_outside_cwd="$fixture_root/outside-repo-cwd"
+relative_entitlements_notary_zip="$fixture_root/LithePG-relative-entitlements-notary.zip"
+mkdir -p "$relative_entitlements_outside_cwd"
+set +e
+(
+  cd "$relative_entitlements_outside_cwd"
+  LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+    LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+    LITHEPG_ENTITLEMENTS=Sources/LithePGApp/LithePGApp.entitlements \
+    LITHEPG_NOTARY_ZIP="$relative_entitlements_notary_zip" \
+    /bin/bash "$HELPER" --dry-run "$app_bundle"
+) >"$output_file" 2>&1
+relative_entitlements_status=$?
+set -e
+helper_output="$(<"$output_file")"
+if [[ "$relative_entitlements_status" -ne 0 ]]; then
+  printf '%s\n' "$helper_output" >&2
+  fail "dry run failed with relative entitlements from outside repo"
+fi
+assert_contains "$helper_output" "Signing/notarization dry run OK"
+assert_contains "$helper_output" "Entitlements: configured (redacted)"
+assert_contains "$helper_output" "Codesign identity: present (redacted)"
+assert_contains "$helper_output" "Notary profile: present (redacted)"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+assert_not_contains "$helper_output" "$ROOT_DIR/Sources/LithePGApp/LithePGApp.entitlements"
+assert_not_contains "$helper_output" "$relative_entitlements_notary_zip"
+[[ ! -e "$relative_entitlements_notary_zip" ]] || fail "dry run with relative entitlements created notary zip: $relative_entitlements_notary_zip"
+
+# Exported shell functions named like root/chdir helpers, plus PATH-shadowed
+# root-resolution utilities, must not affect repository-root setup or the repo
+# cwd used for package verification.
+root_chdir_shadow_sentinel="SIGN_AND_NOTARIZE_ROOT_CHDIR_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+root_chdir_shadow_command_sentinel="SIGN_AND_NOTARIZE_COMMAND_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+root_chdir_shadow_builtin_sentinel="SIGN_AND_NOTARIZE_BUILTIN_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+root_chdir_shadow_cd_sentinel="SIGN_AND_NOTARIZE_CD_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+root_chdir_shadow_pwd_sentinel="SIGN_AND_NOTARIZE_PWD_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+root_chdir_shadow_fixture="$fixture_root/root-chdir-shadow"
+root_chdir_shadow_app_bundle="$root_chdir_shadow_fixture/LithePG.app"
+root_chdir_shadow_notary_zip="$root_chdir_shadow_fixture/LithePG-notary.zip"
+root_chdir_shadow_fake_bin="$root_chdir_shadow_fixture/fake-bin"
+root_chdir_shadow_marker_dir="$root_chdir_shadow_fixture/markers"
+mkdir -p "$root_chdir_shadow_fake_bin" "$root_chdir_shadow_marker_dir"
+make_minimal_app_bundle "$root_chdir_shadow_app_bundle"
+for tool in realpath dirname; do
+  cat >"$root_chdir_shadow_fake_bin/$tool" <<SHIM
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s fake $tool stdout\\n' "\${ROOT_CHDIR_SHADOW_SENTINEL:?}"
+printf '%s fake $tool stderr\\n' "\${ROOT_CHDIR_SHADOW_SENTINEL:?}" >&2
+printf '$tool\\n' >"\${ROOT_CHDIR_SHADOW_MARKER_DIR:?}/$tool"
+exit 97
+SHIM
+  chmod +x "$root_chdir_shadow_fake_bin/$tool"
+done
+
+set +e
+(
+  cd "$ROOT_DIR"
+  command() {
+    /usr/bin/printf '%s command invoked\n' "${ROOT_CHDIR_SHADOW_COMMAND_SENTINEL:?}" >&2
+    /usr/bin/printf 'command\n' >"${ROOT_CHDIR_SHADOW_MARKER_DIR:?}/command"
+    exit 97
+  }
+  builtin() {
+    /usr/bin/printf '%s builtin invoked\n' "${ROOT_CHDIR_SHADOW_BUILTIN_SENTINEL:?}" >&2
+    /usr/bin/printf 'builtin\n' >"${ROOT_CHDIR_SHADOW_MARKER_DIR:?}/builtin"
+    exit 97
+  }
+  cd() {
+    /usr/bin/printf '%s cd invoked\n' "${ROOT_CHDIR_SHADOW_CD_SENTINEL:?}" >&2
+    /usr/bin/printf 'cd\n' >"${ROOT_CHDIR_SHADOW_MARKER_DIR:?}/cd"
+    exit 97
+  }
+  pwd() {
+    /usr/bin/printf '%s pwd invoked\n' "${ROOT_CHDIR_SHADOW_PWD_SENTINEL:?}" >&2
+    /usr/bin/printf 'pwd\n' >"${ROOT_CHDIR_SHADOW_MARKER_DIR:?}/pwd"
+    /usr/bin/printf '%s\n' "${ROOT_CHDIR_SHADOW_FAKE_PWD:?}"
+  }
+  export -f command
+  export -f builtin
+  export -f cd
+  export -f pwd
+  PATH="$root_chdir_shadow_fake_bin:$PATH" \
+    ROOT_CHDIR_SHADOW_SENTINEL="$root_chdir_shadow_sentinel" \
+    ROOT_CHDIR_SHADOW_MARKER_DIR="$root_chdir_shadow_marker_dir" \
+    ROOT_CHDIR_SHADOW_FAKE_PWD="$fixture_root/root-chdir-wrong-root" \
+    ROOT_CHDIR_SHADOW_COMMAND_SENTINEL="$root_chdir_shadow_command_sentinel" \
+    ROOT_CHDIR_SHADOW_BUILTIN_SENTINEL="$root_chdir_shadow_builtin_sentinel" \
+    ROOT_CHDIR_SHADOW_CD_SENTINEL="$root_chdir_shadow_cd_sentinel" \
+    ROOT_CHDIR_SHADOW_PWD_SENTINEL="$root_chdir_shadow_pwd_sentinel" \
+    LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+    LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+    LITHEPG_ENTITLEMENTS="$ROOT_DIR/Sources/LithePGApp/LithePGApp.entitlements" \
+    LITHEPG_NOTARY_ZIP="$root_chdir_shadow_notary_zip" \
+    /bin/bash "$HELPER" --dry-run "$root_chdir_shadow_app_bundle"
+) >"$output_file" 2>&1
+root_chdir_shadow_status=$?
+set -e
+root_chdir_shadow_output="$(<"$output_file")"
+if [[ "$root_chdir_shadow_status" -ne 0 ]]; then
+  printf '%s\n' "$root_chdir_shadow_output" >&2
+  fail "dry run failed under root/chdir function-shadowing"
+fi
+assert_contains "$root_chdir_shadow_output" "Signing/notarization dry run OK"
+assert_contains "$root_chdir_shadow_output" "Codesign identity: present (redacted)"
+assert_contains "$root_chdir_shadow_output" "Notary profile: present (redacted)"
+assert_not_contains "$root_chdir_shadow_output" "$root_chdir_shadow_sentinel"
+assert_not_contains "$root_chdir_shadow_output" "$root_chdir_shadow_command_sentinel"
+assert_not_contains "$root_chdir_shadow_output" "$root_chdir_shadow_builtin_sentinel"
+assert_not_contains "$root_chdir_shadow_output" "$root_chdir_shadow_cd_sentinel"
+assert_not_contains "$root_chdir_shadow_output" "$root_chdir_shadow_pwd_sentinel"
+assert_not_contains "$root_chdir_shadow_output" "$codesign_sentinel"
+assert_not_contains "$root_chdir_shadow_output" "$notary_sentinel"
+for tool in realpath dirname command builtin cd pwd; do
+  [[ ! -e "$root_chdir_shadow_marker_dir/$tool" ]] || fail "dry run invoked shadowed $tool during root/chdir setup"
+done
+[[ ! -e "$root_chdir_shadow_notary_zip" ]] || fail "dry run with root/chdir shadowing created notary zip: $root_chdir_shadow_notary_zip"
+
 redacted_dry_run_sentinel="SIGN_AND_NOTARIZE_DRY_RUN_PATH_SHOULD_NOT_LEAK"
 redacted_dry_run_app_parent="$fixture_root/$redacted_dry_run_sentinel-app-parent"
 redacted_dry_run_app_bundle="$redacted_dry_run_app_parent/LithePG.app"
