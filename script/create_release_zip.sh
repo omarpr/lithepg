@@ -193,7 +193,7 @@ fi
 temp_dir=""
 cleanup_temp_dir() {
   if [[ -n "$temp_dir" ]]; then
-    rm -rf -- "$temp_dir"
+    rm -rf -- "$temp_dir" >/dev/null 2>&1 || true
   fi
 }
 trap cleanup_temp_dir EXIT

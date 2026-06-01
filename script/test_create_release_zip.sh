@@ -123,6 +123,7 @@ overwrite_output="$(mktemp)"
 approved_symlink_output="$(mktemp)"
 approved_non_dangling_symlink_output="$(mktemp)"
 success_path_redaction_output="$(mktemp)"
+cleanup_redaction_output="$(mktemp)"
 inside_bundle_output="$(mktemp)"
 inside_bundle_sentinel_output="$(mktemp)"
 temp_creation_failure_output="$(mktemp)"
@@ -134,7 +135,7 @@ success_output="$(mktemp)"
 outside_cwd_output="$(mktemp)"
 help_output="$(mktemp)"
 fixture_root="$(mktemp -d)"
-trap 'rm -f "$missing_verify_output" "$wrong_app_bundle_name_output" "$symlink_app_bundle_output" "$symlink_app_bundle_trailing_slash_output" "$wrong_output_zip_name_output" "$trailing_slash_output_zip_output" "$approved_directory_output" "$output_parent_file_output" "$dangling_output_parent_symlink_output" "$output_parent_creation_failure_output" "$refuse_output" "$refuse_sentinel_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$success_path_redaction_output" "$inside_bundle_output" "$inside_bundle_sentinel_output" "$temp_creation_failure_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$final_symlink_inside_bundle_output" "$success_output" "$outside_cwd_output" "$help_output"; chmod -R u+rwx "$fixture_root" 2>/dev/null || true; rm -rf "$fixture_root"' EXIT
+trap 'rm -f "$missing_verify_output" "$wrong_app_bundle_name_output" "$symlink_app_bundle_output" "$symlink_app_bundle_trailing_slash_output" "$wrong_output_zip_name_output" "$trailing_slash_output_zip_output" "$approved_directory_output" "$output_parent_file_output" "$dangling_output_parent_symlink_output" "$output_parent_creation_failure_output" "$refuse_output" "$refuse_sentinel_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$success_path_redaction_output" "$cleanup_redaction_output" "$inside_bundle_output" "$inside_bundle_sentinel_output" "$temp_creation_failure_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$final_symlink_inside_bundle_output" "$success_output" "$outside_cwd_output" "$help_output"; chmod -R u+rwx "$fixture_root" 2>/dev/null || true; rm -rf "$fixture_root"' EXIT
 
 sensitive_identity="SENSITIVE_CODESIGN_IDENTITY_DO_NOT_PRINT"
 sensitive_notary="SENSITIVE_NOTARY_PROFILE_DO_NOT_PRINT"
@@ -526,6 +527,44 @@ assert_not_contains "$success_path_redaction_text" "$sensitive_notary"
 assert_not_contains "$success_path_redaction_text" "$sensitive_release_marker"
 [[ -f "$success_path_redaction_fixture/$success_path_redaction_zip" ]] || fail "success-path-redaction zip was not created"
 assert_zip_contains_app_wrapper "$success_path_redaction_fixture/$success_path_redaction_zip" "$success_path_redaction_fixture/extracted-success-path-redaction"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+
+# Cleanup failures after zip creation must not leak caller-controlled temp paths or make a successful zip fail.
+cleanup_redaction_sentinel="CLEANUP_RM_SENTINEL_DO_NOT_PRINT"
+cleanup_redaction_fixture="$fixture_root/cleanup-redaction"
+make_fixture "$cleanup_redaction_fixture"
+mkdir -p "$cleanup_redaction_fixture/fake-bin"
+cat >"$cleanup_redaction_fixture/fake-bin/rm" <<'FAKE_RM'
+#!/usr/bin/env bash
+printf 'fake rm leaked args: %s\n' "$*"
+printf 'fake rm leaked sentinel: CLEANUP_RM_SENTINEL_DO_NOT_PRINT\n' >&2
+printf 'fake rm leaked signing identity: %s\n' "${LITHEPG_CODESIGN_IDENTITY:-}" >&2
+printf 'fake rm leaked notary profile: %s\n' "${LITHEPG_NOTARY_PROFILE:-}"
+printf 'fake rm leaked release marker: %s\n' "${LITHEPG_RELEASE_MARKER:-}" >&2
+exit 1
+FAKE_RM
+chmod +x "$cleanup_redaction_fixture/fake-bin/rm"
+verify_log="$cleanup_redaction_fixture/verify.log"
+cleanup_redaction_zip="artifacts/$cleanup_redaction_sentinel/LithePG.app.zip"
+if ! FAKE_VERIFY_LOG="$verify_log" \
+  LITHEPG_CODESIGN_IDENTITY="$sensitive_identity" \
+  LITHEPG_NOTARY_PROFILE="$sensitive_notary" \
+  LITHEPG_RELEASE_MARKER="$sensitive_release_marker" \
+  PATH="$cleanup_redaction_fixture/fake-bin:$PATH" \
+  run_helper_capture "$cleanup_redaction_fixture" "$cleanup_redaction_output" "dist/LithePG.app" "$cleanup_redaction_zip"; then
+  fail "helper failed when cleanup rm failed after creating the zip"
+fi
+cleanup_redaction_text="$(<"$cleanup_redaction_output")"
+assert_contains "$cleanup_redaction_text" "Created release zip: LithePG.app.zip"
+assert_matches_sha_line "$cleanup_redaction_text"
+assert_size_line_for_zip "$cleanup_redaction_text" "$cleanup_redaction_fixture/$cleanup_redaction_zip"
+assert_not_contains "$cleanup_redaction_text" "$cleanup_redaction_zip"
+assert_not_contains "$cleanup_redaction_text" "$cleanup_redaction_sentinel"
+assert_not_contains "$cleanup_redaction_text" "$sensitive_identity"
+assert_not_contains "$cleanup_redaction_text" "$sensitive_notary"
+assert_not_contains "$cleanup_redaction_text" "$sensitive_release_marker"
+[[ -f "$cleanup_redaction_fixture/$cleanup_redaction_zip" ]] || fail "cleanup-redaction zip was not created"
+assert_zip_contains_app_wrapper "$cleanup_redaction_fixture/$cleanup_redaction_zip" "$cleanup_redaction_fixture/extracted-cleanup-redaction"
 assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
 
 # Temporary output directory creation failures must not echo caller-supplied output parents or mktemp's local-path diagnostics.

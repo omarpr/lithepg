@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG release zip cleanup redaction evidence</title>
+  <desc id="desc">Visual evidence that create_release_zip suppresses cleanup rm output so caller-controlled temporary paths and sentinel values do not leak after zip creation.</desc>
+  <rect width="1200" height="720" fill="#101418"/>
+  <rect x="42" y="38" width="1116" height="644" rx="22" fill="#17212b" stroke="#2b4054" stroke-width="2"/>
+  <text x="80" y="94" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" font-size="34" font-weight="700">v1.0 release zip cleanup redaction</text>
+  <text x="80" y="135" fill="#9fb3c8" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="18">2026-06-01 05:57 EDT • Synthetic fixture paths only • No credentials or private schemas</text>
+
+  <rect x="80" y="176" width="1040" height="168" rx="14" fill="#0d1117" stroke="#30363d"/>
+  <text x="108" y="218" fill="#ff7b72" font-family="'SF Mono', Menlo, monospace" font-size="22" font-weight="700">RED</text>
+  <text x="180" y="218" fill="#e6edf3" font-family="'SF Mono', Menlo, monospace" font-size="18">bash script/test_create_release_zip.sh</text>
+  <text x="108" y="258" fill="#ffb4a9" font-family="'SF Mono', Menlo, monospace" font-size="16">test_create_release_zip failed: helper failed when cleanup rm failed after creating the zip</text>
+  <text x="108" y="292" fill="#ffb4a9" font-family="'SF Mono', Menlo, monospace" font-size="16">fake rm fixture emitted cleanup args plus CLEANUP_RM_SENTINEL_DO_NOT_PRINT</text>
+
+  <rect x="80" y="374" width="1040" height="178" rx="14" fill="#0d1117" stroke="#30363d"/>
+  <text x="108" y="416" fill="#3fb950" font-family="'SF Mono', Menlo, monospace" font-size="22" font-weight="700">GREEN</text>
+  <text x="204" y="416" fill="#e6edf3" font-family="'SF Mono', Menlo, monospace" font-size="18">cleanup rm is suppressed and non-fatal</text>
+  <text x="108" y="458" fill="#c9d1d9" font-family="'SF Mono', Menlo, monospace" font-size="16">✓ bash script/test_create_release_zip.sh → test_create_release_zip passed</text>
+  <text x="108" y="490" fill="#c9d1d9" font-family="'SF Mono', Menlo, monospace" font-size="16">✓ release zip still created as LithePG.app.zip with SHA-256 and byte-size output</text>
+  <text x="108" y="522" fill="#c9d1d9" font-family="'SF Mono', Menlo, monospace" font-size="16">✓ output omits cleanup sentinel, signing identity, notary profile, and release marker</text>
+
+  <rect x="80" y="588" width="1040" height="58" rx="10" fill="#122b1f" stroke="#238636"/>
+  <text x="108" y="622" fill="#d2f8d2" font-family="'SF Mono', Menlo, monospace" font-size="16">Cleanup failures can no longer turn a completed release zip into a path-leaking helper failure.</text>
+</svg>

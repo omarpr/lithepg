@@ -1227,3 +1227,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS after the `mkdir` follow-up; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-06-01-release-zip-failure-output-redaction.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 05:57 EDT — v1.0 release zip cleanup redaction follow-up
+
+- Latest release-zip hardening found one remaining cleanup redaction gap: the `create_release_zip.sh` EXIT trap ran unsuppressed `rm -rf` cleanup for its temporary directory, so a failing cleanup `rm` could leak caller-influenced temporary paths after the zip had already been created.
+- Added strict-TDD coverage in `script/test_create_release_zip.sh` where a fake failing `rm` emits synthetic cleanup args, a sentinel path value, signing identity, notary profile, and release marker values; assertions prove cleanup output and sentinel values stay redacted while the completed `LithePG.app.zip` remains valid.
+- RED verification: `bash script/test_create_release_zip.sh` failed first with `test_create_release_zip failed: helper failed when cleanup rm failed after creating the zip`.
+- GREEN verification: `bash script/test_create_release_zip.sh`, release-helper shell tests (`test_package_verify`, `test_sign_and_notarize`, `test_v10_release_gate`), syntax checks, SVG parse, `git diff --check`, full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`, and release-impact `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` all passed. Dogfood artifacts: `.build/dogfood-checks/20260601-055925/`; metrics: shell readiness 131.63 ms, connected cold start 224.69 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.011 ms, dogfood query median overhead 0.022 ms.
+- Independent reviews: spec compliance PASS after the fake-`rm` env-emission follow-up; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-06-01-release-zip-cleanup-redaction.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
