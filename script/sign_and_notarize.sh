@@ -62,6 +62,12 @@ fail() {
   exit 1
 }
 
+run_quiet() {
+  local failure_message="$1"
+  shift
+  "$@" >/dev/null 2>&1 || fail "$failure_message"
+}
+
 is_approved() {
   case "${1:-}" in
     1|true|yes|approved)
@@ -164,7 +170,7 @@ print "/" . join("/", @parts) . "\n";
 require_config() {
   [[ -n "$CODESIGN_IDENTITY" ]] || fail "missing LITHEPG_CODESIGN_IDENTITY (Apple Developer Application signing identity)"
   [[ -n "$NOTARY_PROFILE" ]] || fail "missing LITHEPG_NOTARY_PROFILE (xcrun notarytool keychain profile name)"
-  [[ -f "$ENTITLEMENTS" ]] || fail "missing entitlements file: $ENTITLEMENTS"
+  [[ -f "$ENTITLEMENTS" ]] || fail "missing entitlements file"
 }
 
 normalize_app_bundle_path() {
@@ -194,8 +200,12 @@ validate_app_bundle_not_symlink() {
 validate_notary_zip_location() {
   local app_bundle_check_path
   local zip_check_path
-  app_bundle_check_path="$(canonicalize_path_for_location_check "$APP_BUNDLE_ABS")"
-  zip_check_path="$(canonicalize_path_for_location_check "$ZIP_PATH" preserve-final-symlink)"
+  if ! app_bundle_check_path="$(canonicalize_path_for_location_check "$APP_BUNDLE_ABS" 2>/dev/null)"; then
+    fail "could not validate app bundle path"
+  fi
+  if ! zip_check_path="$(canonicalize_path_for_location_check "$ZIP_PATH" preserve-final-symlink 2>/dev/null)"; then
+    fail "could not validate notary zip path"
+  fi
 
   if [[ "$zip_check_path" == "$app_bundle_check_path" || "$zip_check_path" == "$app_bundle_check_path/"* ]]; then
     fail "notary zip must not be inside app bundle"
@@ -251,11 +261,11 @@ validate_notary_zip_overwrite
 
 if [[ "$MODE" == "dry-run" ]]; then
   printf 'Signing/notarization dry run OK. No changes made.\n'
-  printf 'App bundle: %s\n' "$APP_BUNDLE_ABS"
+  printf 'App bundle: LithePG.app\n'
   printf 'Codesign identity: present (redacted)\n'
   printf 'Notary profile: present (redacted)\n'
-  printf 'Entitlements: %s\n' "$ENTITLEMENTS"
-  printf 'Notary zip: %s\n' "$ZIP_PATH"
+  printf 'Entitlements: configured (redacted)\n'
+  printf 'Notary zip: configured (redacted)\n'
   printf 'Planned commands: codesign -> zip -> notarytool submit --wait -> stapler -> spctl/stapler validation\n'
   exit 0
 fi
@@ -263,17 +273,23 @@ fi
 STAGED_ZIP_DIR=""
 cleanup_staged_zip() {
   if [[ -n "$STAGED_ZIP_DIR" ]]; then
-    rm -rf -- "$STAGED_ZIP_DIR"
+    rm -rf -- "$STAGED_ZIP_DIR" >/dev/null 2>&1 || true
   fi
 }
 trap cleanup_staged_zip EXIT
 
 ZIP_PARENT="$(dirname "$ZIP_PATH")"
-STAGED_ZIP_DIR="$(mktemp -d "$ZIP_PARENT/.lithepg-notary.XXXXXX")"
-chmod 700 "$STAGED_ZIP_DIR"
+staged_zip_dir=""
+if ! staged_zip_dir="$(mktemp -d "$ZIP_PARENT/.lithepg-notary.XXXXXX" 2>/dev/null)"; then
+  fail "could not create notary zip staging directory"
+fi
+STAGED_ZIP_DIR="$staged_zip_dir"
+if ! chmod 700 "$STAGED_ZIP_DIR" >/dev/null 2>&1; then
+  fail "could not secure notary zip staging directory"
+fi
 STAGED_ZIP="$STAGED_ZIP_DIR/$(basename "$ZIP_PATH")"
 
-codesign \
+run_quiet "codesign failed" codesign \
   --deep \
   --force \
   --options runtime \
@@ -282,13 +298,13 @@ codesign \
   --sign "$CODESIGN_IDENTITY" \
   "$APP_BUNDLE_ABS"
 
-codesign --verify --strict --deep "$APP_BUNDLE_ABS"
-ditto -c -k --keepParent "$APP_BUNDLE_ABS" "$STAGED_ZIP"
-/usr/bin/perl -e 'use strict; use warnings; rename($ARGV[0], $ARGV[1]) or die "rename failed: $!\n";' "$STAGED_ZIP" "$ZIP_PATH" || fail "could not replace notary zip: $ZIP_PATH"
-xcrun notarytool submit "$ZIP_PATH" --keychain-profile "$NOTARY_PROFILE" --wait
-xcrun stapler staple "$APP_BUNDLE_ABS"
-xcrun stapler validate "$APP_BUNDLE_ABS"
-spctl --assess --type execute --verbose=4 "$APP_BUNDLE_ABS"
+run_quiet "codesign verification failed" codesign --verify --strict --deep "$APP_BUNDLE_ABS"
+run_quiet "notary zip creation failed" ditto -c -k --keepParent "$APP_BUNDLE_ABS" "$STAGED_ZIP"
+run_quiet "could not replace notary zip" /usr/bin/perl -e 'use strict; use warnings; rename($ARGV[0], $ARGV[1]) or die "rename failed: $!\n";' "$STAGED_ZIP" "$ZIP_PATH"
+run_quiet "notary submission failed" xcrun notarytool submit "$ZIP_PATH" --keychain-profile "$NOTARY_PROFILE" --wait
+run_quiet "staple failed" xcrun stapler staple "$APP_BUNDLE_ABS"
+run_quiet "staple validation failed" xcrun stapler validate "$APP_BUNDLE_ABS"
+run_quiet "spctl assessment failed" spctl --assess --type execute --verbose=4 "$APP_BUNDLE_ABS"
 
-printf 'Signed and notarized: %s\n' "$APP_BUNDLE_ABS"
-printf 'Notary zip: %s\n' "$ZIP_PATH"
+printf 'Signed and notarized: LithePG.app\n'
+printf 'Notary zip: created (redacted)\n'

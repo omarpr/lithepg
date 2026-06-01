@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="780" viewBox="0 0 1200 780" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG sign/notarize output redaction evidence</title>
+  <desc id="desc">Visual evidence for hardening sign_and_notarize output so dry-run, setup, cleanup, success, tool, and missing-entitlements paths stay redacted.</desc>
+  <rect width="1200" height="780" fill="#101418"/>
+  <rect x="42" y="38" width="1116" height="704" rx="22" fill="#17212b" stroke="#2b4054" stroke-width="2"/>
+  <text x="80" y="94" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" font-size="34" font-weight="700">v1.0 sign/notarize output redaction</text>
+  <text x="80" y="135" fill="#9fb3c8" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="18">2026-06-01 04:57 EDT • Local fixture data only • No credentials or private schemas</text>
+
+  <rect x="80" y="176" width="1040" height="188" rx="14" fill="#0d1117" stroke="#30363d"/>
+  <text x="108" y="218" fill="#ff7b72" font-family="'SF Mono', Menlo, monospace" font-size="22" font-weight="700">RED</text>
+  <text x="180" y="218" fill="#e6edf3" font-family="'SF Mono', Menlo, monospace" font-size="18">bash script/test_sign_and_notarize.sh</text>
+  <text x="108" y="258" fill="#ffb4a9" font-family="'SF Mono', Menlo, monospace" font-size="16">missing-entitlements path leak caught by sentinel assertion</text>
+  <text x="108" y="290" fill="#ffb4a9" font-family="'SF Mono', Menlo, monospace" font-size="16">mktemp staging setup leak caught by sentinel assertion</text>
+  <text x="108" y="322" fill="#ffb4a9" font-family="'SF Mono', Menlo, monospace" font-size="16">cleanup rm failure leak caught by sentinel assertion</text>
+  <text x="108" y="344" fill="#9fb3c8" font-family="'SF Mono', Menlo, monospace" font-size="14">Sentinel names are synthetic test fixtures; no real credentials or local paths are shown.</text>
+
+  <rect x="80" y="392" width="1040" height="198" rx="14" fill="#0d1117" stroke="#30363d"/>
+  <text x="108" y="434" fill="#3fb950" font-family="'SF Mono', Menlo, monospace" font-size="22" font-weight="700">GREEN</text>
+  <text x="204" y="434" fill="#e6edf3" font-family="'SF Mono', Menlo, monospace" font-size="18">Release helper checks passed</text>
+  <text x="108" y="476" fill="#c9d1d9" font-family="'SF Mono', Menlo, monospace" font-size="16">✓ bash script/test_sign_and_notarize.sh</text>
+  <text x="108" y="508" fill="#c9d1d9" font-family="'SF Mono', Menlo, monospace" font-size="16">✓ create_release_zip + package_verify + v10_release_gate helper tests</text>
+  <text x="108" y="540" fill="#c9d1d9" font-family="'SF Mono', Menlo, monospace" font-size="16">✓ bash -n sign/test helper scripts + git diff --check</text>
+  <text x="108" y="570" fill="#9fb3c8" font-family="'SF Mono', Menlo, monospace" font-size="14">Parent independent review still pending; this artifact records local TDD evidence only.</text>
+
+  <rect x="80" y="626" width="1040" height="70" rx="10" fill="#122b1f" stroke="#238636"/>
+  <text x="108" y="656" fill="#d2f8d2" font-family="'SF Mono', Menlo, monospace" font-size="16">Output now uses stable LithePG.app / configured / created redacted status lines.</text>
+  <text x="108" y="684" fill="#d2f8d2" font-family="'SF Mono', Menlo, monospace" font-size="16">Noisy subprocess setup/cleanup stdout and stderr are suppressed.</text>
+</svg>

@@ -141,6 +141,68 @@ assert_contains "$helper_output" "Codesign identity: present (redacted)"
 assert_contains "$helper_output" "Notary profile: present (redacted)"
 [[ ! -e "$notary_zip" ]] || fail "dry run created notary zip: $notary_zip"
 
+redacted_dry_run_sentinel="SIGN_AND_NOTARIZE_DRY_RUN_PATH_SHOULD_NOT_LEAK"
+redacted_dry_run_app_parent="$fixture_root/$redacted_dry_run_sentinel-app-parent"
+redacted_dry_run_app_bundle="$redacted_dry_run_app_parent/LithePG.app"
+redacted_dry_run_entitlements_parent="$fixture_root/$redacted_dry_run_sentinel-entitlements-parent"
+redacted_dry_run_entitlements="$redacted_dry_run_entitlements_parent/LithePG.entitlements"
+redacted_dry_run_notary_parent="$fixture_root/$redacted_dry_run_sentinel-notary-parent"
+redacted_dry_run_notary_zip="$redacted_dry_run_notary_parent/LithePG-notary.zip"
+mkdir -p "$redacted_dry_run_entitlements_parent" "$redacted_dry_run_notary_parent"
+make_minimal_app_bundle "$redacted_dry_run_app_bundle"
+printf '<plist version="1.0"><dict/></plist>\n' >"$redacted_dry_run_entitlements"
+
+if ! LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_ENTITLEMENTS="$redacted_dry_run_entitlements" \
+  LITHEPG_NOTARY_ZIP="$redacted_dry_run_notary_zip" \
+  run_helper_capture "$output_file" --dry-run "$redacted_dry_run_app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "dry run unexpectedly failed while checking redacted local paths"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "Signing/notarization dry run OK"
+assert_contains "$helper_output" "App bundle: LithePG.app"
+assert_contains "$helper_output" "Entitlements: configured (redacted)"
+assert_contains "$helper_output" "Notary zip: configured (redacted)"
+assert_contains "$helper_output" "Codesign identity: present (redacted)"
+assert_contains "$helper_output" "Notary profile: present (redacted)"
+assert_not_contains "$helper_output" "$redacted_dry_run_sentinel"
+assert_not_contains "$helper_output" "$redacted_dry_run_app_parent"
+assert_not_contains "$helper_output" "$redacted_dry_run_app_bundle"
+assert_not_contains "$helper_output" "$redacted_dry_run_entitlements"
+assert_not_contains "$helper_output" "$redacted_dry_run_notary_zip"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+[[ ! -e "$redacted_dry_run_notary_zip" ]] || fail "dry run created redacted-path notary zip: $redacted_dry_run_notary_zip"
+
+missing_entitlements_sentinel="SIGN_AND_NOTARIZE_MISSING_ENTITLEMENTS_PATH_SHOULD_NOT_LEAK"
+missing_entitlements_parent="$fixture_root/$missing_entitlements_sentinel-entitlements-parent"
+missing_entitlements="$missing_entitlements_parent/LithePG.entitlements"
+missing_entitlements_notary_zip="$fixture_root/LithePG-missing-entitlements-notary.zip"
+mkdir -p "$missing_entitlements_parent"
+if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_ENTITLEMENTS="$missing_entitlements" \
+  LITHEPG_NOTARY_ZIP="$missing_entitlements_notary_zip" \
+  run_helper_capture "$output_file" --dry-run "$app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  [[ ! -e "$missing_entitlements_notary_zip" ]] || fail "dry run created notary zip before rejecting missing entitlements: $missing_entitlements_notary_zip"
+  fail "dry run unexpectedly passed with missing entitlements file"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "missing entitlements file"
+assert_not_contains "$helper_output" "$missing_entitlements_sentinel"
+assert_not_contains "$helper_output" "$missing_entitlements_parent"
+assert_not_contains "$helper_output" "$missing_entitlements"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+[[ ! -e "$missing_entitlements_notary_zip" ]] || fail "dry run created notary zip after rejecting missing entitlements: $missing_entitlements_notary_zip"
+
 trailing_slash_notary_zip_base="$fixture_root/LithePG-trailing-slash-notary.zip"
 trailing_slash_notary_zip="$trailing_slash_notary_zip_base///"
 trailing_slash_fake_bin="$fixture_root/trailing-slash-fake-bin"
@@ -254,6 +316,34 @@ for symlinked_app_index in "${!symlinked_app_inputs[@]}"; do
   [[ ! -e "$symlinked_app_notary_zip" ]] || fail "dry run created notary zip for symlinked app bundle: $symlinked_app_notary_zip"
 done
 
+loop_notary_zip_sentinel="SIGN_AND_NOTARIZE_LOOP_ZIP_PATH_SHOULD_NOT_LEAK"
+loop_notary_parent="$fixture_root/$loop_notary_zip_sentinel-parent"
+loop_notary_a="$loop_notary_parent/a"
+loop_notary_b="$loop_notary_parent/b"
+loop_notary_zip="$loop_notary_a/LithePG-notary.zip"
+mkdir -p "$loop_notary_parent"
+ln -s b "$loop_notary_a"
+ln -s a "$loop_notary_b"
+if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$loop_notary_zip" \
+  run_helper_capture "$output_file" --dry-run "$app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "dry run unexpectedly passed with symlink-loop notary zip path"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "could not validate notary zip path"
+assert_not_contains "$helper_output" "too many symlinks"
+assert_not_contains "$helper_output" "$loop_notary_zip_sentinel"
+assert_not_contains "$helper_output" "$loop_notary_parent"
+assert_not_contains "$helper_output" "$loop_notary_zip"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+[[ -L "$loop_notary_a" ]] || fail "dry run changed symlink-loop notary zip fixture link a: $loop_notary_a"
+[[ -L "$loop_notary_b" ]] || fail "dry run changed symlink-loop notary zip fixture link b: $loop_notary_b"
+
 existing_notary_zip_marker='EXISTING_NOTARY_ZIP_SHOULD_SURVIVE'
 printf '%s\n' "$existing_notary_zip_marker" >"$notary_zip"
 
@@ -308,7 +398,133 @@ assert_not_contains "$helper_output" "$codesign_sentinel"
 assert_not_contains "$helper_output" "$notary_sentinel"
 [[ -d "$notary_zip_directory" ]] || fail "dry run changed directory notary zip path: $notary_zip_directory"
 
+staging_mktemp_sentinel="SIGN_MKTEMP_ZIP_PATH_SHOULD_NOT_LEAK"
+staging_mktemp_parent="$fixture_root/$staging_mktemp_sentinel-parent"
+staging_mktemp_zip="$staging_mktemp_parent/LithePG-notary.zip"
+staging_mktemp_fake_bin="$fixture_root/staging-mktemp-failure-fake-bin"
+mkdir -p "$staging_mktemp_parent" "$staging_mktemp_fake_bin"
+cat >"$staging_mktemp_fake_bin/mktemp" <<'SHIM'
+#!/usr/bin/env bash
+printf 'fake mktemp stdout sentinel=%s args=%s identity=%s profile=%s zip=%s\n' \
+  "$SIGN_MKTEMP_ZIP_PATH_SHOULD_NOT_LEAK" "$*" "${LITHEPG_CODESIGN_IDENTITY:-}" "${LITHEPG_NOTARY_PROFILE:-}" "${LITHEPG_NOTARY_ZIP:-}"
+printf 'fake mktemp stderr sentinel=%s args=%s identity=%s profile=%s zip=%s\n' \
+  "$SIGN_MKTEMP_ZIP_PATH_SHOULD_NOT_LEAK" "$*" "${LITHEPG_CODESIGN_IDENTITY:-}" "${LITHEPG_NOTARY_PROFILE:-}" "${LITHEPG_NOTARY_ZIP:-}" >&2
+exit 42
+SHIM
+chmod +x "$staging_mktemp_fake_bin/mktemp"
+
+if PATH="$staging_mktemp_fake_bin:$PATH" \
+  SIGN_MKTEMP_ZIP_PATH_SHOULD_NOT_LEAK="$staging_mktemp_sentinel" \
+  LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$staging_mktemp_zip" \
+  run_helper_capture "$output_file" "$app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "real mode unexpectedly passed when staging mktemp failed"
+fi
+
+helper_output="$(<"$output_file")"
+assert_not_contains "$helper_output" "$staging_mktemp_sentinel"
+assert_not_contains "$helper_output" "fake mktemp"
+assert_not_contains "$helper_output" "$staging_mktemp_parent"
+assert_not_contains "$helper_output" "$staging_mktemp_zip"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+assert_contains "$helper_output" "could not create notary zip staging directory"
+[[ ! -e "$staging_mktemp_zip" ]] || fail "real mode mktemp failure created notary zip: $staging_mktemp_zip"
+
+staging_chmod_sentinel="SIGN_CHMOD_ZIP_PATH_SHOULD_NOT_LEAK"
+staging_chmod_parent="$fixture_root/$staging_chmod_sentinel-parent"
+staging_chmod_zip="$staging_chmod_parent/LithePG-notary.zip"
+staging_chmod_fake_bin="$fixture_root/staging-chmod-failure-fake-bin"
+mkdir -p "$staging_chmod_parent" "$staging_chmod_fake_bin"
+cat >"$staging_chmod_fake_bin/mktemp" <<'SHIM'
+#!/usr/bin/env bash
+template="${!#}"
+staged_dir="${template%XXXXXX}fixed"
+mkdir -p "$staged_dir"
+printf '%s\n' "$staged_dir"
+exit 0
+SHIM
+cat >"$staging_chmod_fake_bin/chmod" <<'SHIM'
+#!/usr/bin/env bash
+printf 'fake chmod stdout sentinel=%s args=%s identity=%s profile=%s zip=%s\n' \
+  "$SIGN_CHMOD_ZIP_PATH_SHOULD_NOT_LEAK" "$*" "${LITHEPG_CODESIGN_IDENTITY:-}" "${LITHEPG_NOTARY_PROFILE:-}" "${LITHEPG_NOTARY_ZIP:-}"
+printf 'fake chmod stderr sentinel=%s args=%s identity=%s profile=%s zip=%s\n' \
+  "$SIGN_CHMOD_ZIP_PATH_SHOULD_NOT_LEAK" "$*" "${LITHEPG_CODESIGN_IDENTITY:-}" "${LITHEPG_NOTARY_PROFILE:-}" "${LITHEPG_NOTARY_ZIP:-}" >&2
+exit 43
+SHIM
+chmod +x "$staging_chmod_fake_bin/mktemp" "$staging_chmod_fake_bin/chmod"
+
+if PATH="$staging_chmod_fake_bin:$PATH" \
+  SIGN_CHMOD_ZIP_PATH_SHOULD_NOT_LEAK="$staging_chmod_sentinel" \
+  LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$staging_chmod_zip" \
+  run_helper_capture "$output_file" "$app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "real mode unexpectedly passed when staging chmod failed"
+fi
+
+helper_output="$(<"$output_file")"
+assert_not_contains "$helper_output" "$staging_chmod_sentinel"
+assert_not_contains "$helper_output" "fake chmod"
+assert_not_contains "$helper_output" "$staging_chmod_parent"
+assert_not_contains "$helper_output" "$staging_chmod_zip"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+assert_contains "$helper_output" "could not secure notary zip staging directory"
+[[ ! -e "$staging_chmod_zip" ]] || fail "real mode chmod failure created notary zip: $staging_chmod_zip"
+
+cleanup_rm_sentinel="SIGN_CLEANUP_RM_STAGING_PATH_SHOULD_NOT_LEAK"
+cleanup_rm_parent="$fixture_root/$cleanup_rm_sentinel-parent"
+cleanup_rm_zip="$cleanup_rm_parent/LithePG-notary.zip"
+cleanup_rm_fake_bin="$fixture_root/cleanup-rm-failure-fake-bin"
+mkdir -p "$cleanup_rm_parent" "$cleanup_rm_fake_bin"
+cat >"$cleanup_rm_fake_bin/codesign" <<'SHIM'
+#!/usr/bin/env bash
+printf 'fake codesign stdout sentinel=%s args=%s identity=%s profile=%s zip=%s\n' \
+  "$SIGN_CLEANUP_RM_STAGING_PATH_SHOULD_NOT_LEAK" "$*" "${LITHEPG_CODESIGN_IDENTITY:-}" "${LITHEPG_NOTARY_PROFILE:-}" "${LITHEPG_NOTARY_ZIP:-}"
+printf 'fake codesign stderr sentinel=%s args=%s identity=%s profile=%s zip=%s\n' \
+  "$SIGN_CLEANUP_RM_STAGING_PATH_SHOULD_NOT_LEAK" "$*" "${LITHEPG_CODESIGN_IDENTITY:-}" "${LITHEPG_NOTARY_PROFILE:-}" "${LITHEPG_NOTARY_ZIP:-}" >&2
+exit 44
+SHIM
+cat >"$cleanup_rm_fake_bin/rm" <<'SHIM'
+#!/usr/bin/env bash
+printf 'fake rm stdout sentinel=%s cleanup args=%s identity=%s profile=%s zip=%s\n' \
+  "$SIGN_CLEANUP_RM_STAGING_PATH_SHOULD_NOT_LEAK" "$*" "${LITHEPG_CODESIGN_IDENTITY:-}" "${LITHEPG_NOTARY_PROFILE:-}" "${LITHEPG_NOTARY_ZIP:-}"
+printf 'fake rm stderr sentinel=%s cleanup args=%s identity=%s profile=%s zip=%s\n' \
+  "$SIGN_CLEANUP_RM_STAGING_PATH_SHOULD_NOT_LEAK" "$*" "${LITHEPG_CODESIGN_IDENTITY:-}" "${LITHEPG_NOTARY_PROFILE:-}" "${LITHEPG_NOTARY_ZIP:-}" >&2
+exit 45
+SHIM
+chmod +x "$cleanup_rm_fake_bin/codesign" "$cleanup_rm_fake_bin/rm"
+
+if PATH="$cleanup_rm_fake_bin:$PATH" \
+  SIGN_CLEANUP_RM_STAGING_PATH_SHOULD_NOT_LEAK="$cleanup_rm_sentinel" \
+  LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_NOTARY_ZIP="$cleanup_rm_zip" \
+  run_helper_capture "$output_file" "$app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "real mode unexpectedly passed when codesign failed before cleanup rm failed"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "codesign failed"
+assert_not_contains "$helper_output" "$cleanup_rm_sentinel"
+assert_not_contains "$helper_output" "fake codesign"
+assert_not_contains "$helper_output" "fake rm"
+assert_not_contains "$helper_output" "$cleanup_rm_parent"
+assert_not_contains "$helper_output" "$cleanup_rm_zip"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+[[ ! -e "$cleanup_rm_zip" ]] || fail "real mode cleanup rm failure created notary zip: $cleanup_rm_zip"
+
 fake_bin="$fixture_root/fake-bin"
+noisy_ditto_failure_sentinel="SIGN_AND_NOTARIZE_NOISY_DITTO_FAILURE_SHOULD_NOT_LEAK"
 mkdir -p "$fake_bin"
 cat >"$fake_bin/codesign" <<'SHIM'
 #!/usr/bin/env bash
@@ -316,7 +532,10 @@ exit 0
 SHIM
 cat >"$fake_bin/ditto" <<'SHIM'
 #!/usr/bin/env bash
-printf 'fake ditto failed before zip creation\n' >&2
+printf 'fake ditto stdout sentinel=%s args=%s identity=%s profile=%s zip=%s\n' \
+  "$SIGN_AND_NOTARIZE_NOISY_DITTO_FAILURE_SHOULD_NOT_LEAK" "$*" "${LITHEPG_CODESIGN_IDENTITY:-}" "${LITHEPG_NOTARY_PROFILE:-}" "${LITHEPG_NOTARY_ZIP:-}"
+printf 'fake ditto stderr sentinel=%s args=%s identity=%s profile=%s zip=%s\n' \
+  "$SIGN_AND_NOTARIZE_NOISY_DITTO_FAILURE_SHOULD_NOT_LEAK" "$*" "${LITHEPG_CODESIGN_IDENTITY:-}" "${LITHEPG_NOTARY_PROFILE:-}" "${LITHEPG_NOTARY_ZIP:-}" >&2
 exit 42
 SHIM
 cat >"$fake_bin/xcrun" <<'SHIM'
@@ -333,6 +552,7 @@ chmod +x "$fake_bin/codesign" "$fake_bin/ditto" "$fake_bin/xcrun" "$fake_bin/spc
 
 printf '%s\n' "$existing_notary_zip_marker" >"$notary_zip"
 if PATH="$fake_bin:$PATH" \
+  SIGN_AND_NOTARIZE_NOISY_DITTO_FAILURE_SHOULD_NOT_LEAK="$noisy_ditto_failure_sentinel" \
   LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
   LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
   LITHEPG_NOTARY_ZIP="$notary_zip" \
@@ -344,13 +564,81 @@ if PATH="$fake_bin:$PATH" \
 fi
 
 helper_output="$(<"$output_file")"
-assert_contains "$helper_output" "fake ditto failed before zip creation"
+assert_contains "$helper_output" "notary zip creation failed"
+assert_not_contains "$helper_output" "fake ditto stdout"
+assert_not_contains "$helper_output" "fake ditto stderr"
+assert_not_contains "$helper_output" "$noisy_ditto_failure_sentinel"
+assert_not_contains "$helper_output" "$app_bundle"
+assert_not_contains "$helper_output" "$notary_zip"
 assert_not_contains "$helper_output" "unexpected xcrun invocation"
 assert_not_contains "$helper_output" "unexpected spctl invocation"
 assert_not_contains "$helper_output" "$codesign_sentinel"
 assert_not_contains "$helper_output" "$notary_sentinel"
 [[ -f "$notary_zip" ]] || fail "real mode zip-creation failure removed existing approved notary zip"
 [[ "$(<"$notary_zip")" == "$existing_notary_zip_marker" ]] || fail "real mode zip-creation failure changed existing approved notary zip"
+
+redacted_success_sentinel="SIGN_AND_NOTARIZE_SUCCESS_PATH_SHOULD_NOT_LEAK"
+redacted_success_app_parent="$fixture_root/$redacted_success_sentinel-app-parent"
+redacted_success_app_bundle="$redacted_success_app_parent/LithePG.app"
+redacted_success_entitlements_parent="$fixture_root/$redacted_success_sentinel-entitlements-parent"
+redacted_success_entitlements="$redacted_success_entitlements_parent/LithePG.entitlements"
+redacted_success_notary_parent="$fixture_root/$redacted_success_sentinel-notary-parent"
+redacted_success_notary_zip="$redacted_success_notary_parent/LithePG-notary.zip"
+redacted_success_fake_bin="$fixture_root/redacted-success-fake-bin"
+mkdir -p "$redacted_success_entitlements_parent" "$redacted_success_notary_parent" "$redacted_success_fake_bin"
+make_minimal_app_bundle "$redacted_success_app_bundle"
+printf '<plist version="1.0"><dict/></plist>\n' >"$redacted_success_entitlements"
+cat >"$redacted_success_fake_bin/codesign" <<'SHIM'
+#!/usr/bin/env bash
+printf 'fake codesign stdout: %s\n' "$*"
+printf 'fake codesign stderr: %s\n' "$*" >&2
+exit 0
+SHIM
+cat >"$redacted_success_fake_bin/ditto" <<'SHIM'
+#!/usr/bin/env bash
+dest="${!#}"
+printf 'fake ditto stdout: %s\n' "$*"
+printf 'fake ditto stderr: %s\n' "$*" >&2
+printf 'FAKE_NOTARY_ZIP\n' >"$dest"
+exit 0
+SHIM
+cat >"$redacted_success_fake_bin/xcrun" <<'SHIM'
+#!/usr/bin/env bash
+printf 'fake xcrun stdout: %s\n' "$*"
+printf 'fake xcrun stderr: %s\n' "$*" >&2
+exit 0
+SHIM
+cat >"$redacted_success_fake_bin/spctl" <<'SHIM'
+#!/usr/bin/env bash
+printf 'fake spctl stdout: %s\n' "$*"
+printf 'fake spctl stderr: %s\n' "$*" >&2
+exit 0
+SHIM
+chmod +x "$redacted_success_fake_bin/codesign" "$redacted_success_fake_bin/ditto" "$redacted_success_fake_bin/xcrun" "$redacted_success_fake_bin/spctl"
+
+if ! PATH="$redacted_success_fake_bin:$PATH" \
+  LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+  LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+  LITHEPG_ENTITLEMENTS="$redacted_success_entitlements" \
+  LITHEPG_NOTARY_ZIP="$redacted_success_notary_zip" \
+  run_helper_capture "$output_file" "$redacted_success_app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "real mode unexpectedly failed with fake signing/notary tools while checking redacted success paths"
+fi
+
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "Signed and notarized: LithePG.app"
+assert_contains "$helper_output" "Notary zip: created (redacted)"
+assert_not_contains "$helper_output" "$redacted_success_sentinel"
+assert_not_contains "$helper_output" "$redacted_success_app_parent"
+assert_not_contains "$helper_output" "$redacted_success_app_bundle"
+assert_not_contains "$helper_output" "$redacted_success_entitlements"
+assert_not_contains "$helper_output" "$redacted_success_notary_zip"
+assert_not_contains "$helper_output" "$codesign_sentinel"
+assert_not_contains "$helper_output" "$notary_sentinel"
+[[ -f "$redacted_success_notary_zip" ]] || fail "real mode fake tools did not create notary zip"
+[[ "$(<"$redacted_success_notary_zip")" == "FAKE_NOTARY_ZIP" ]] || fail "real mode fake tools created unexpected notary zip contents"
 
 for overwrite_approval in 1 true yes; do
   if ! LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \

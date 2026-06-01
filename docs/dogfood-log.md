@@ -1181,3 +1181,38 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-06-01-release-zip-success-path-redaction.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 04:20 EDT — v1.0 sign/notarize output redaction
+
+- Hardened `script/sign_and_notarize.sh` so dry-run and real-mode success output no longer echoes caller-supplied app bundle, entitlements, or notary zip paths; output now uses stable `LithePG.app` / configured / created redacted status lines.
+- Wrapped real-mode external signing/notary operations with redacted quiet execution so noisy `codesign`, `ditto`, `xcrun`, and `spctl` stdout/stderr cannot leak local paths, signing identities, notary profiles, or fixture sentinels; failures now report generic operation-specific messages.
+- Redacted the missing-entitlements failure path so a caller-supplied local entitlements path is not printed.
+- Follow-up hardening: canonicalization failures for app bundle / notary zip location checks now suppress raw Perl stderr and emit generic redacted failures, covering symlink-loop notary zip paths that previously leaked caller-supplied path text.
+- Follow-up test coverage: the fake failing `ditto` now emits sentinel-bearing args, paths, signing identity, notary profile, and notary zip values to stdout/stderr; assertions prove those noisy subprocess outputs and sentinels do not reach helper output.
+- RED verification: initial redaction coverage failed first with `test_sign_and_notarize failed: output leaked forbidden value: SIGN_AND_NOTARIZE_MISSING_ENTITLEMENTS_PATH_SHOULD_NOT_LEAK`; follow-up TDD for the symlink-loop canonicalization gap failed first with `test_sign_and_notarize failed: expected output to contain: could not validate notary zip path`.
+- GREEN verification: `bash script/test_sign_and_notarize.sh`, `bash script/test_create_release_zip.sh && bash script/test_package_verify.sh && bash script/test_v10_release_gate.sh && bash script/test_sign_and_notarize.sh`, `bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh`, `git diff --check`, and prior `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed.
+- Release-impact dogfood verification passed with Docker available: prior `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260601-041933/` with default Swift tests, live dogfood tests, and v0.4 measurement all passed. Metrics: shell readiness 132.46 ms; connected cold start 230.06 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead 0.056 ms; dogfood query median overhead -0.005 ms.
+- Follow-up spec-gap review: PASS for the identified sign/notarize redaction gaps based on local TDD and release-helper shell verification; no new independent review was run in this pass.
+- Evidence artifact: `docs/evidence/2026-06-01-sign-notarize-output-redaction.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-06-01 04:45 EDT — v1.0 sign/notarize staging setup redaction follow-up
+
+- Latest spec review found one remaining real-mode redaction gap before signing begins: noisy caller-controlled `mktemp`/`chmod` staging setup could leak sentinel-bearing notary zip parent/template/path values.
+- Added strict-TDD real-mode coverage in `script/test_sign_and_notarize.sh` for fake noisy `mktemp` failure and fake noisy `chmod` failure, proving stdout/stderr, template args, signing identity, notary profile, notary zip, and sentinel path values stay redacted.
+- RED verification: `bash script/test_sign_and_notarize.sh` failed first with `test_sign_and_notarize failed: output leaked forbidden value: SIGN_MKTEMP_ZIP_PATH_SHOULD_NOT_LEAK`.
+- Hardened `script/sign_and_notarize.sh` so staging `mktemp` and `chmod` failures suppress subprocess output and fail with generic messages: `could not create notary zip staging directory` and `could not secure notary zip staging directory`.
+- GREEN verification: `bash script/test_sign_and_notarize.sh`, `bash script/test_create_release_zip.sh && bash script/test_package_verify.sh && bash script/test_v10_release_gate.sh && bash script/test_sign_and_notarize.sh`, `bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh`, and `git diff --check` passed.
+- No final independent review PASS was run or claimed in this follow-up; parent review remains pending.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-06-01 04:57 EDT — v1.0 sign/notarize cleanup redaction follow-up
+
+- Latest code-quality review found one remaining cleanup redaction gap: the real-mode `cleanup_staged_zip` trap still ran `rm -rf -- "$STAGED_ZIP_DIR"` without suppressing stdout/stderr, so a failing cleanup `rm` could leak a caller-influenced staging directory path after setup/failure.
+- Added strict-TDD real-mode coverage in `script/test_sign_and_notarize.sh` where a fake failing `rm` emits sentinel-bearing cleanup args, notary zip, signing identity, and notary profile values; assertions prove cleanup output and sentinel paths stay redacted while the primary `codesign failed` error remains visible.
+- RED verification: `bash script/test_sign_and_notarize.sh` failed first with `test_sign_and_notarize failed: output leaked forbidden value: SIGN_CLEANUP_RM_STAGING_PATH_SHOULD_NOT_LEAK`.
+- Hardened `script/sign_and_notarize.sh` so cleanup suppresses `rm` stdout/stderr and ignores cleanup failure: `rm -rf -- "$STAGED_ZIP_DIR" >/dev/null 2>&1 || true`.
+- GREEN verification: `bash script/test_sign_and_notarize.sh`, release-helper shell tests `bash script/test_create_release_zip.sh && bash script/test_package_verify.sh && bash script/test_v10_release_gate.sh && bash script/test_sign_and_notarize.sh`, `bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh`, and `git diff --check` passed.
+- Updated evidence artifact `docs/evidence/2026-06-01-sign-notarize-output-redaction.svg` to include the mktemp/chmod/cleanup follow-ups with synthetic, secret-free fixture language.
+- Independent follow-up reviews after cleanup hardening: spec compliance PASS; code quality/security APPROVED.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
