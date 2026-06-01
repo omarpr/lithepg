@@ -722,12 +722,12 @@ release_zip_info_plist_metadata_status() {
   fi
 
   if ! /usr/bin/unzip -p "$zip_file" "LithePG.app/Contents/Info.plist" >"$plist_file" 2>/dev/null; then
-    rm -f "$plist_file"
+    /bin/rm -f "$plist_file"
     return 2
   fi
 
   if ! /usr/bin/plutil -lint "$plist_file" >/dev/null 2>&1; then
-    rm -f "$plist_file"
+    /bin/rm -f "$plist_file"
     return 2
   fi
 
@@ -739,11 +739,11 @@ release_zip_info_plist_metadata_status() {
     plist_key_is_numeric "$plist_file" CFBundleVersion && \
     plist_key_matches "$plist_file" LSMinimumSystemVersion "14.0" && \
     plist_key_matches "$plist_file" NSPrincipalClass "NSApplication"; then
-    rm -f "$plist_file"
+    /bin/rm -f "$plist_file"
     return 0
   fi
 
-  rm -f "$plist_file"
+  /bin/rm -f "$plist_file"
   return 1
 }
 

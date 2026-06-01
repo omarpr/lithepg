@@ -1277,3 +1277,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-06-01-v10-release-gate-dirname-path-shadow-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 08:09 EDT — v1.0 release gate rm PATH-shadow hardening
+
+- Hardened `script/v10_release_gate.sh` so Info.plist metadata temp-file cleanup uses `/bin/rm -f` instead of caller-controlled `PATH` resolution.
+- Added strict-TDD coverage in `script/test_v10_release_gate.sh` where a fake PATH-shadowed `rm` emits the synthetic sentinel `V10_RELEASE_GATE_PATH_SHADOW_RM_SHOULD_NOT_RUN` and exits non-zero during a normal blocked preflight that inspects a valid release zip; the gate must avoid invoking it and still report normal blocked output.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: output leaked forbidden value: V10_RELEASE_GATE_PATH_SHADOW_RM_SHOULD_NOT_RUN`.
+- GREEN verification: `bash script/test_v10_release_gate.sh`, adjacent release-helper tests (`test_package_verify`, `test_create_release_zip`, `test_sign_and_notarize`), `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh`, and `git diff --check` all passed.
+- Evidence artifact: `docs/evidence/2026-06-01-v10-release-gate-rm-path-shadow-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.

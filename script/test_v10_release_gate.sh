@@ -141,6 +141,7 @@ remote_v05_missing_output="$(mktemp)"
 status_failure_output="$(mktemp)"
 grep_error_output="$(mktemp)"
 path_shadowed_dirname_output="$(mktemp)"
+path_shadowed_rm_output="$(mktemp)"
 placeholder_release_copy="$(mktemp)"
 placeholder_free_release_copy="$(mktemp)"
 mismatched_release_copy_sha="$(mktemp)"
@@ -374,6 +375,7 @@ cleanup() {
     "$status_failure_output" \
     "$grep_error_output" \
     "$path_shadowed_dirname_output" \
+    "$path_shadowed_rm_output" \
     "$placeholder_release_copy" \
     "$placeholder_free_release_copy" \
     "$mismatched_release_copy_sha" \
@@ -586,6 +588,14 @@ printf 'V10_RELEASE_GATE_PATH_SHADOW_DIRNAME_SHOULD_NOT_RUN\n' >&2
 exit 43
 FAKE_DIRNAME
 chmod +x "$fake_git_dir/dirname"
+cat >"$fake_git_dir/rm" <<'FAKE_RM'
+#!/usr/bin/env bash
+set -euo pipefail
+
+printf 'V10_RELEASE_GATE_PATH_SHADOW_RM_SHOULD_NOT_RUN\n' >&2
+exit 44
+FAKE_RM
+chmod +x "$fake_git_dir/rm"
 fake_path="$fake_git_dir:${PATH:-/usr/bin:/bin}"
 write_valid_info_plist() {
   local plist_path="$1"
@@ -2433,6 +2443,29 @@ path_shadowed_dirname_text="$(<"$path_shadowed_dirname_output")"
 assert_not_contains "$path_shadowed_dirname_text" "V10_RELEASE_GATE_PATH_SHADOW_DIRNAME_SHOULD_NOT_RUN"
 assert_contains "$path_shadowed_dirname_text" "v1.0 publication blocked"
 assert_contains "$path_shadowed_dirname_text" "LITHEPG_CODESIGN_IDENTITY: missing"
+
+if run_gate_capture "$path_shadowed_rm_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
+  LITHEPG_CODESIGN_IDENTITY="configured-test-identity" \
+  LITHEPG_NOTARY_PROFILE="configured-test-notary-profile" \
+  LITHEPG_SECURITY_CONTACT="security@example.invalid" \
+  LITHEPG_HOMEBREW_TAP="example/homebrew-lithepg" \
+  LITHEPG_GITHUB_ACTIONS_READY="no" \
+  LITHEPG_RELEASE_COPY_APPROVED="false" \
+  LITHEPG_PUBLICATION_APPROVED="no"; then
+  fail "gate unexpectedly passed with publication approvals false under PATH-shadowed rm"
+fi
+path_shadowed_rm_text="$(<"$path_shadowed_rm_output")"
+assert_not_contains "$path_shadowed_rm_text" "V10_RELEASE_GATE_PATH_SHADOW_RM_SHOULD_NOT_RUN"
+assert_contains "$path_shadowed_rm_text" "v1.0 publication blocked"
+assert_contains "$path_shadowed_rm_text" "Release artifact zip: present"
+assert_contains "$path_shadowed_rm_text" "Release artifact Info.plist metadata: matches"
+assert_contains "$path_shadowed_rm_text" "LITHEPG_PUBLICATION_APPROVED: not approved"
 
 if run_specific_gate_capture "$missing_output" "$default_security_docs_helper" env -i PATH="$fake_path" FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker"; then
   fail "gate unexpectedly passed with all required external inputs missing"
