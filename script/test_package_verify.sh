@@ -115,6 +115,19 @@ assert_contains "$helper_output" "Package verified: $app_bundle"
 assert_contains "$helper_output" "Bundle ID: dev.omarpr.lithepg"
 assert_contains "$helper_output" "Version: 1.0 (100)"
 
+missing_app_sentinel="MISSING_APP_SENTINEL_SHOULD_NOT_LEAK"
+missing_app_bundle="$fixture_root/$missing_app_sentinel/LithePG.app"
+if run_helper_capture "$output_file" "$missing_app_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted a nonexistent LithePG.app path"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: app bundle not found"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$missing_app_bundle"
+assert_not_contains "$helper_output" "$missing_app_sentinel"
+
 trailing_slash_sentinel="TRAILING_SLASH_SENTINEL_SHOULD_NOT_LEAK"
 trailing_slash_app_bundle="$fixture_root/$trailing_slash_sentinel/LithePG.app"
 make_minimal_app_bundle "$trailing_slash_app_bundle"
