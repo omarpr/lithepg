@@ -92,21 +92,21 @@ principal_class="$(plist_value NSPrincipalClass)"
 marketing_version="$(plist_value CFBundleShortVersionString)"
 build_version="$(plist_value CFBundleVersion)"
 
-[[ "$executable" == "$APP_NAME" ]] || fail "CFBundleExecutable is '$executable', expected '$APP_NAME'"
-[[ "$bundle_id" == "$EXPECTED_BUNDLE_ID" ]] || fail "CFBundleIdentifier is '$bundle_id', expected '$EXPECTED_BUNDLE_ID'"
-[[ "$bundle_name" == "$BUNDLE_NAME" ]] || fail "CFBundleName is '$bundle_name', expected '$BUNDLE_NAME'"
-[[ "$package_type" == "APPL" ]] || fail "CFBundlePackageType is '$package_type', expected 'APPL'"
-[[ "$minimum_system" == "$EXPECTED_MIN_SYSTEM_VERSION" ]] || fail "LSMinimumSystemVersion is '$minimum_system', expected '$EXPECTED_MIN_SYSTEM_VERSION'"
-[[ "$principal_class" == "NSApplication" ]] || fail "NSPrincipalClass is '$principal_class', expected 'NSApplication'"
-[[ "$marketing_version" =~ ^[0-9]+(\.[0-9]+){1,2}$ ]] || fail "CFBundleShortVersionString is '$marketing_version', expected numeric release version"
-[[ "$build_version" =~ ^[0-9]+$ ]] || fail "CFBundleVersion is '$build_version', expected numeric build version"
+[[ "$executable" == "$APP_NAME" ]] || fail "CFBundleExecutable mismatch"
+[[ "$bundle_id" == "$EXPECTED_BUNDLE_ID" ]] || fail "CFBundleIdentifier mismatch"
+[[ "$bundle_name" == "$BUNDLE_NAME" ]] || fail "CFBundleName mismatch"
+[[ "$package_type" == "APPL" ]] || fail "CFBundlePackageType mismatch"
+[[ "$minimum_system" == "$EXPECTED_MIN_SYSTEM_VERSION" ]] || fail "LSMinimumSystemVersion mismatch"
+[[ "$principal_class" == "NSApplication" ]] || fail "NSPrincipalClass mismatch"
+[[ "$marketing_version" =~ ^[0-9]+(\.[0-9]+){1,2}$ ]] || fail "CFBundleShortVersionString is not a numeric release version"
+[[ "$build_version" =~ ^[0-9]+$ ]] || fail "CFBundleVersion is not a numeric build version"
 
 if [[ -n "${LITHEPG_EXPECTED_MARKETING_VERSION:-}" ]]; then
-  [[ "$marketing_version" == "$LITHEPG_EXPECTED_MARKETING_VERSION" ]] || fail "CFBundleShortVersionString is '$marketing_version', expected '$LITHEPG_EXPECTED_MARKETING_VERSION' from LITHEPG_EXPECTED_MARKETING_VERSION"
+  [[ "$marketing_version" == "$LITHEPG_EXPECTED_MARKETING_VERSION" ]] || fail "CFBundleShortVersionString does not match LITHEPG_EXPECTED_MARKETING_VERSION"
 fi
 
 if [[ -n "${LITHEPG_EXPECTED_BUILD_VERSION:-}" ]]; then
-  [[ "$build_version" == "$LITHEPG_EXPECTED_BUILD_VERSION" ]] || fail "CFBundleVersion is '$build_version', expected '$LITHEPG_EXPECTED_BUILD_VERSION' from LITHEPG_EXPECTED_BUILD_VERSION"
+  [[ "$build_version" == "$LITHEPG_EXPECTED_BUILD_VERSION" ]] || fail "CFBundleVersion does not match LITHEPG_EXPECTED_BUILD_VERSION"
 fi
 
 bytes=$(stat -f%z "$APP_BINARY")

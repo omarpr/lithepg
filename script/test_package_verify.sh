@@ -74,6 +74,36 @@ run_helper_capture() {
   return "$status"
 }
 
+run_helper_capture_with_expected_marketing_version() {
+  local output_file="$1"
+  local expected_marketing_version="$2"
+  shift 2
+  set +e
+  (
+    cd "$ROOT_DIR"
+    unset LITHEPG_EXPECTED_BUILD_VERSION
+    LITHEPG_EXPECTED_MARKETING_VERSION="$expected_marketing_version" "$HELPER" "$@"
+  ) >"$output_file" 2>&1
+  local status=$?
+  set -e
+  return "$status"
+}
+
+run_helper_capture_with_expected_build_version() {
+  local output_file="$1"
+  local expected_build_version="$2"
+  shift 2
+  set +e
+  (
+    cd "$ROOT_DIR"
+    unset LITHEPG_EXPECTED_MARKETING_VERSION
+    LITHEPG_EXPECTED_BUILD_VERSION="$expected_build_version" "$HELPER" "$@"
+  ) >"$output_file" 2>&1
+  local status=$?
+  set -e
+  return "$status"
+}
+
 [[ -f "$HELPER" ]] || fail "helper script missing: $HELPER"
 
 output_file="$(mktemp)"
@@ -114,6 +144,62 @@ helper_output="$(<"$output_file")"
 assert_contains "$helper_output" "Package verified: $app_bundle"
 assert_contains "$helper_output" "Bundle ID: dev.omarpr.lithepg"
 assert_contains "$helper_output" "Version: 1.0 (100)"
+
+metadata_cases=(
+  "CFBundleExecutable|CFBundleExecutable mismatch"
+  "CFBundleIdentifier|CFBundleIdentifier mismatch"
+  "CFBundleName|CFBundleName mismatch"
+  "CFBundlePackageType|CFBundlePackageType mismatch"
+  "LSMinimumSystemVersion|LSMinimumSystemVersion mismatch"
+  "NSPrincipalClass|NSPrincipalClass mismatch"
+  "CFBundleShortVersionString|CFBundleShortVersionString is not a numeric release version"
+  "CFBundleVersion|CFBundleVersion is not a numeric build version"
+)
+for metadata_case in "${metadata_cases[@]}"; do
+  IFS='|' read -r metadata_key expected_failure <<<"$metadata_case"
+  metadata_sentinel="${metadata_key}_METADATA_SENTINEL_SHOULD_NOT_LEAK"
+  metadata_bundle="$fixture_root/metadata-$metadata_key/LithePG.app"
+  make_minimal_app_bundle "$metadata_bundle"
+  /usr/libexec/PlistBuddy -c "Set :$metadata_key $metadata_sentinel" "$metadata_bundle/Contents/Info.plist" >/dev/null
+  if run_helper_capture "$output_file" "$metadata_bundle"; then
+    helper_output="$(<"$output_file")"
+    printf '%s\n' "$helper_output" >&2
+    fail "package verifier unexpectedly accepted invalid $metadata_key metadata"
+  fi
+  helper_output="$(<"$output_file")"
+  assert_contains "$helper_output" "package verification failed: $expected_failure"
+  assert_not_contains "$helper_output" "Package verified:"
+  assert_not_contains "$helper_output" "$metadata_sentinel"
+  assert_not_contains "$helper_output" "$metadata_bundle"
+done
+
+expected_marketing_sentinel="EXPECTED_MARKETING_VERSION_SENTINEL_SHOULD_NOT_LEAK"
+expected_marketing_bundle="$fixture_root/expected-marketing/LithePG.app"
+make_minimal_app_bundle "$expected_marketing_bundle"
+if run_helper_capture_with_expected_marketing_version "$output_file" "$expected_marketing_sentinel" "$expected_marketing_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted mismatched expected marketing version"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: CFBundleShortVersionString does not match LITHEPG_EXPECTED_MARKETING_VERSION"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$expected_marketing_sentinel"
+assert_not_contains "$helper_output" "$expected_marketing_bundle"
+
+expected_build_sentinel="EXPECTED_BUILD_VERSION_SENTINEL_SHOULD_NOT_LEAK"
+expected_build_bundle="$fixture_root/expected-build/LithePG.app"
+make_minimal_app_bundle "$expected_build_bundle"
+if run_helper_capture_with_expected_build_version "$output_file" "$expected_build_sentinel" "$expected_build_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted mismatched expected build version"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: CFBundleVersion does not match LITHEPG_EXPECTED_BUILD_VERSION"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$expected_build_sentinel"
+assert_not_contains "$helper_output" "$expected_build_bundle"
 
 missing_app_sentinel="MISSING_APP_SENTINEL_SHOULD_NOT_LEAK"
 missing_app_bundle="$fixture_root/$missing_app_sentinel/LithePG.app"

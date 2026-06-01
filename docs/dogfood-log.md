@@ -1084,3 +1084,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-06-01-package-verify-missing-app-redaction.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 00:20 EDT — v1.0 package verifier metadata redaction gate
+
+- Hardened `script/package_verify.sh` so Info.plist metadata mismatch and expected-version mismatch failures use generic messages instead of echoing actual plist values, expected constants, or expected-version environment values.
+- Added strict-TDD coverage in `script/test_package_verify.sh` for the full metadata family (`CFBundleExecutable`, `CFBundleIdentifier`, `CFBundleName`, `CFBundlePackageType`, `LSMinimumSystemVersion`, `NSPrincipalClass`, `CFBundleShortVersionString`, and `CFBundleVersion`) plus `LITHEPG_EXPECTED_MARKETING_VERSION` and `LITHEPG_EXPECTED_BUILD_VERSION` mismatch redaction.
+- RED verification: `bash script/test_package_verify.sh` failed first with the expected missing generic metadata-mismatch output before the verifier failure strings were redacted.
+- GREEN verification: `bash script/test_package_verify.sh`, `bash -n script/package_verify.sh script/test_package_verify.sh`, `git diff --check`, and adjacent release-helper tests `bash script/test_create_release_zip.sh && bash script/test_sign_and_notarize.sh && bash script/test_v10_release_gate.sh` all passed.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-06-01-package-verify-metadata-redaction.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
