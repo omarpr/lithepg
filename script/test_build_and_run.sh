@@ -52,6 +52,37 @@ verify_output_file="$(/usr/bin/mktemp)"
 fixture_root="$(/usr/bin/mktemp -d)"
 trap '/bin/rm -f "$output_file" "$verify_output_file"; /bin/rm -rf "$fixture_root"' EXIT
 
+help_sentinel="BUILD_AND_RUN_HELP_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+help_fake_bin="$fixture_root/help-fake-bin"
+help_marker="$fixture_root/help-path-shadow-invoked"
+/bin/mkdir -p "$help_fake_bin"
+for tool in cat git pkill swift; do
+  /bin/cat >"$help_fake_bin/$tool" <<SHIM
+#!/bin/bash
+/usr/bin/printf '%s %s invoked\\n' '$help_sentinel' '$tool' >&2
+/usr/bin/printf '%s\\n' '$tool' >>'$help_marker'
+exit 97
+SHIM
+  /bin/chmod +x "$help_fake_bin/$tool"
+done
+
+set +e
+(
+  cd "$ROOT_DIR"
+  PATH="$help_fake_bin:$PATH" /bin/bash "$HELPER" --help
+) >"$output_file" 2>&1
+help_status=$?
+set -e
+help_output="$(<"$output_file")"
+if [[ "$help_status" -ne 0 ]]; then
+  /usr/bin/printf '%s\n' "$help_output" >&2
+  fail "build_and_run --help did not exit 0 under PATH-shadowed tools"
+fi
+assert_contains "$help_output" "usage: script/build_and_run.sh"
+assert_contains "$help_output" "--package"
+assert_not_contains "$help_output" "$help_sentinel"
+[[ ! -e "$help_marker" ]] || fail "build_and_run --help invoked PATH-shadowed tools: $(<"$help_marker")"
+
 sentinel="BUILD_AND_RUN_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN"
 fake_bin="$fixture_root/fake-bin"
 fake_swift_bin_dir="$fixture_root/swift-bin"

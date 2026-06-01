@@ -19,6 +19,30 @@ STAT=/usr/bin/stat
 STRIP=/usr/bin/strip
 XCRUN=/usr/bin/xcrun
 
+usage() {
+  "$CAT" <<'USAGE'
+usage: script/build_and_run.sh [run|--debug|--logs|--telemetry|--verify|--print-bundle-path|--package]
+
+Build and run, inspect, or package the LithePG macOS app.
+
+Modes:
+  run                  Build debug app and open it (default)
+  --debug              Build debug app and start lldb
+  --logs               Build debug app, open it, and stream app process logs
+  --telemetry          Build debug app, open it, and stream subsystem logs
+  --verify             Build debug app, open it, and verify the process starts
+  --print-bundle-path  Print the generated app bundle path
+  --package            Build release app bundle under dist/LithePG.app and verify it
+USAGE
+}
+
+case "$MODE" in
+  -h|--help|help)
+    usage
+    exit 0
+    ;;
+esac
+
 ROOT_DIR="$(cd "$("$DIRNAME" "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist"
 APP_BUNDLE="$DIST_DIR/$BUNDLE_NAME.app"

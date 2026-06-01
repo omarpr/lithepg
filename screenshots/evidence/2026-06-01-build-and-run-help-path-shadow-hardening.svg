@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG build_and_run --help PATH-shadow hardening evidence</title>
+  <desc id="desc">Synthetic terminal-style evidence for the build_and_run --help PATH-shadow hardening slice; no secrets or private data are shown.</desc>
+  <rect width="1200" height="760" fill="#0f172a"/>
+  <rect x="36" y="36" width="1128" height="688" rx="22" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="70" y="88" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="26" font-weight="700">LithePG evidence — build_and_run --help PATH-shadow hardening</text>
+  <text x="70" y="126" fill="#94a3b8" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Recorded 2026-06-01 13:32 EDT · synthetic fixture · no credentials, URLs, schemas, or result rows</text>
+
+  <rect x="70" y="160" width="1060" height="140" rx="14" fill="#1f2937" stroke="#ef4444" stroke-width="2"/>
+  <text x="96" y="198" fill="#fecaca" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18" font-weight="700">RED — failing test first</text>
+  <text x="96" y="232" fill="#fca5a5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">$ bash script/test_build_and_run.sh</text>
+  <text x="96" y="262" fill="#fecaca" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">BUILD_AND_RUN_HELP_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN swift invoked</text>
+  <text x="96" y="286" fill="#fecaca" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">test_build_and_run failed: build_and_run --help did not exit 0 under PATH-shadowed tools</text>
+
+  <rect x="70" y="326" width="1060" height="184" rx="14" fill="#14213d" stroke="#38bdf8" stroke-width="2"/>
+  <text x="96" y="364" fill="#bae6fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18" font-weight="700">CHANGE</text>
+  <text x="96" y="398" fill="#dbeafe" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">script/build_and_run.sh now handles -h/--help/help before git, pkill, swift, or package work.</text>
+  <text x="96" y="428" fill="#dbeafe" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">usage() renders through /bin/cat via the existing CAT absolute-tool constant.</text>
+  <text x="96" y="458" fill="#dbeafe" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">script/test_build_and_run.sh shadows cat/git/pkill/swift and proves help stays read-only and deterministic.</text>
+  <text x="96" y="488" fill="#dbeafe" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">No signing, notarization, upload, Homebrew publication, GitHub Release, tag, or cron change was attempted.</text>
+
+  <rect x="70" y="536" width="1060" height="144" rx="14" fill="#102a1f" stroke="#22c55e" stroke-width="2"/>
+  <text x="96" y="574" fill="#bbf7d0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18" font-weight="700">GREEN — verification</text>
+  <text x="96" y="608" fill="#bbf7d0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">$ bash script/test_build_and_run.sh</text>
+  <text x="96" y="632" fill="#bbf7d0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">test_build_and_run passed</text>
+  <text x="96" y="662" fill="#bbf7d0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Adjacent release-helper tests, shell syntax checks, git diff --check, and Swift verification passed before commit.</text>
+</svg>
