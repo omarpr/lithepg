@@ -126,6 +126,13 @@ esac
 GIT
 /bin/chmod +x "$fake_bin/git"
 
+/bin/cat >"$fake_bin/python3" <<PYTHON
+#!/bin/bash
+/usr/bin/printf '%s python3 invoked\\n' '$sentinel' >&2
+exit 99
+PYTHON
+/bin/chmod +x "$fake_bin/python3"
+
 /bin/cat >"$fixture_root/script/dogfood_postgres.sh" <<'DOGFOOD'
 #!/bin/bash
 set -euo pipefail

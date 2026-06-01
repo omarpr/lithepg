@@ -35,7 +35,7 @@ DEVELOPER_DIR="$DEVELOPER_DIR" \
 
 COMMIT="$(git rev-parse --short HEAD)"
 BRANCH="$(git branch --show-current)"
-python3 - <<PY > "$OUT_DIR/status.json"
+/usr/bin/python3 - <<PY > "$OUT_DIR/status.json"
 import json, pathlib, datetime
 root = pathlib.Path("$OUT_DIR")
 summary = json.loads((root / "v04-measure" / "summary.json").read_text())
