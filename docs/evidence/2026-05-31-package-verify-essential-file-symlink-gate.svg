@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 package verifier essential path symlink gate evidence</title>
+  <desc id="desc">Verification artifact showing package verification rejects symlinked required bundle directories and essential bundle files without exposing target details.</desc>
+  <rect width="1200" height="720" fill="#0f172a"/>
+  <rect x="32" y="32" width="1136" height="656" rx="24" fill="#111827" stroke="#38bdf8" stroke-width="2"/>
+  <text x="64" y="88" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="30" fill="#e5e7eb">LithePG v1.0 release-helper hardening</text>
+  <text x="64" y="128" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#93c5fd">Slice: package_verify rejects symlinked required dirs + essential files</text>
+
+  <rect x="64" y="164" width="1072" height="404" rx="14" fill="#020617" stroke="#334155"/>
+  <text x="88" y="204" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#f8fafc">RED: bash script/test_package_verify.sh</text>
+  <text x="88" y="234" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#fca5a5">failed first because symlinked Contents directory was accepted</text>
+
+  <text x="88" y="288" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#f8fafc">GREEN: bash script/test_package_verify.sh</text>
+  <text x="88" y="318" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#86efac">test_package_verify passed</text>
+
+  <text x="88" y="372" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#f8fafc">$ bash -n script/package_verify.sh script/test_package_verify.sh</text>
+  <text x="88" y="402" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#86efac">syntax checks passed</text>
+
+  <text x="88" y="456" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#f8fafc">$ bash script/test_create_release_zip.sh &amp;&amp; bash script/test_sign_and_notarize.sh &amp;&amp; bash script/test_v10_release_gate.sh</text>
+  <text x="88" y="486" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#86efac">test_create_release_zip passed; test_sign_and_notarize passed; test_v10_release_gate passed</text>
+
+  <text x="88" y="540" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#f8fafc">$ swift test + ./script/dogfood_check.sh</text>
+  <text x="88" y="570" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#86efac">127 tests passed; dogfood artifacts .build/dogfood-checks/20260531-221700</text>
+
+  <text x="64" y="620" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#cbd5e1">UTC 2026-06-01T02:08:54Z • dir/file symlink targets and marker strings were not exposed</text>
+  <text x="64" y="650" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#cbd5e1">No signing, notarization, upload, tag, cron, or external publication attempted</text>
+</svg>

@@ -169,6 +169,86 @@ assert_not_contains "$helper_output" "Package verified:"
 assert_not_contains "$helper_output" "$dangling_symlink_sentinel"
 assert_not_contains "$helper_output" "$dangling_symlinked_app_bundle"
 
+symlinked_contents_sentinel="SYMLINKED_CONTENTS_TARGET_SENTINEL_SHOULD_NOT_LEAK"
+symlinked_contents_bundle="$fixture_root/symlinked-contents/LithePG.app"
+make_minimal_app_bundle "$symlinked_contents_bundle"
+symlinked_contents_target="$fixture_root/$symlinked_contents_sentinel/Contents-target"
+mkdir -p "${symlinked_contents_target%/*}"
+mv "$symlinked_contents_bundle/Contents" "$symlinked_contents_target"
+ln -s "$symlinked_contents_target" "$symlinked_contents_bundle/Contents"
+if run_helper_capture "$output_file" "$symlinked_contents_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted a symlinked Contents directory"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: Contents directory must be a non-symlink directory"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$symlinked_contents_sentinel"
+assert_not_contains "$helper_output" "Contents-target"
+
+symlinked_macos_sentinel="SYMLINKED_MACOS_TARGET_SENTINEL_SHOULD_NOT_LEAK"
+symlinked_macos_bundle="$fixture_root/symlinked-macos/LithePG.app"
+make_minimal_app_bundle "$symlinked_macos_bundle"
+symlinked_macos_target="$fixture_root/$symlinked_macos_sentinel/MacOS-target"
+mkdir -p "${symlinked_macos_target%/*}"
+mv "$symlinked_macos_bundle/Contents/MacOS" "$symlinked_macos_target"
+ln -s "$symlinked_macos_target" "$symlinked_macos_bundle/Contents/MacOS"
+if run_helper_capture "$output_file" "$symlinked_macos_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted a symlinked Contents/MacOS directory"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: Contents/MacOS directory must be a non-symlink directory"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$symlinked_macos_sentinel"
+assert_not_contains "$helper_output" "MacOS-target"
+
+symlinked_executable_sentinel="SYMLINKED_EXECUTABLE_TARGET_SENTINEL_SHOULD_NOT_LEAK"
+symlinked_executable_bundle="$fixture_root/symlinked-executable/LithePG.app"
+make_minimal_app_bundle "$symlinked_executable_bundle"
+symlinked_executable_target_dir="$fixture_root/$symlinked_executable_sentinel"
+symlinked_executable_target="$symlinked_executable_target_dir/LithePGApp-target"
+mkdir -p "$symlinked_executable_target_dir"
+cat >"$symlinked_executable_target" <<'APP'
+#!/usr/bin/env bash
+printf 'LithePG symlink executable target fixture\n'
+APP
+chmod +x "$symlinked_executable_target"
+rm "$symlinked_executable_bundle/Contents/MacOS/LithePGApp"
+ln -s "$symlinked_executable_target" "$symlinked_executable_bundle/Contents/MacOS/LithePGApp"
+if run_helper_capture "$output_file" "$symlinked_executable_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted a symlinked app executable"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: app executable must be a regular file"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$symlinked_executable_sentinel"
+assert_not_contains "$helper_output" "LithePGApp-target"
+
+symlinked_plist_sentinel="SYMLINKED_INFO_PLIST_TARGET_SENTINEL_SHOULD_NOT_LEAK"
+symlinked_plist_bundle="$fixture_root/symlinked-info-plist/LithePG.app"
+make_minimal_app_bundle "$symlinked_plist_bundle"
+symlinked_plist_target_dir="$fixture_root/$symlinked_plist_sentinel"
+symlinked_plist_target="$symlinked_plist_target_dir/Info-target.plist"
+mkdir -p "$symlinked_plist_target_dir"
+cp "$symlinked_plist_bundle/Contents/Info.plist" "$symlinked_plist_target"
+rm "$symlinked_plist_bundle/Contents/Info.plist"
+ln -s "$symlinked_plist_target" "$symlinked_plist_bundle/Contents/Info.plist"
+if run_helper_capture "$output_file" "$symlinked_plist_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted a symlinked Info.plist"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: Info.plist must be a regular file"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$symlinked_plist_sentinel"
+assert_not_contains "$helper_output" "Info-target.plist"
+
 wrong_basename_bundle="$fixture_root/NotLithePG.app"
 make_minimal_app_bundle "$wrong_basename_bundle"
 if run_helper_capture "$output_file" "$wrong_basename_bundle"; then
