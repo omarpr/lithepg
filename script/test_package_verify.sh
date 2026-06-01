@@ -521,6 +521,49 @@ assert_not_contains "$helper_output" "Package verified:"
 assert_not_contains "$helper_output" "$symlinked_plist_sentinel"
 assert_not_contains "$helper_output" "Info-target.plist"
 
+resource_symlink_sentinel="RESOURCE_SYMLINK_SENTINEL_SHOULD_NOT_LEAK"
+resource_symlink_bundle="$fixture_root/resource-symlink/LithePG.app"
+make_minimal_app_bundle "$resource_symlink_bundle"
+mkdir -p "$resource_symlink_bundle/Contents/Resources"
+printf '%s\n' "$resource_symlink_sentinel" >"$resource_symlink_bundle/Contents/Resources/target.txt"
+ln -s target.txt "$resource_symlink_bundle/Contents/Resources/resource-link"
+if run_helper_capture "$output_file" "$resource_symlink_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted a resource symlink inside the app bundle"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: app bundle must not contain symlinks"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$resource_symlink_bundle"
+assert_not_contains "$helper_output" "$resource_symlink_sentinel"
+assert_not_contains "$helper_output" "target.txt"
+assert_not_contains "$helper_output" "resource-link"
+
+unreadable_symlink_sentinel="UNREADABLE_SYMLINK_SENTINEL_SHOULD_NOT_LEAK"
+unreadable_symlink_bundle="$fixture_root/unreadable-symlink/LithePG.app"
+make_minimal_app_bundle "$unreadable_symlink_bundle"
+unreadable_symlink_dir="$unreadable_symlink_bundle/Contents/Resources/sealed"
+mkdir -p "$unreadable_symlink_dir"
+printf '%s\n' "$unreadable_symlink_sentinel" >"$unreadable_symlink_dir/target.txt"
+ln -s target.txt "$unreadable_symlink_dir/hidden-link"
+chmod 000 "$unreadable_symlink_dir"
+if run_helper_capture "$output_file" "$unreadable_symlink_bundle"; then
+  chmod u+rwx "$unreadable_symlink_dir"
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted an uninspectable bundle tree"
+fi
+chmod u+rwx "$unreadable_symlink_dir"
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: app bundle must not contain symlinks"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$unreadable_symlink_bundle"
+assert_not_contains "$helper_output" "$unreadable_symlink_sentinel"
+assert_not_contains "$helper_output" "target.txt"
+assert_not_contains "$helper_output" "hidden-link"
+assert_not_contains "$helper_output" "sealed"
+
 for unsafe_mode in 4755 2755 1755; do
   info_plist_special_mode_sentinel="INFO_PLIST_SPECIAL_MODE_SENTINEL_SHOULD_NOT_LEAK"
   info_plist_special_mode_bundle="$fixture_root/info-plist-special-mode-$unsafe_mode-$info_plist_special_mode_sentinel/LithePG.app"

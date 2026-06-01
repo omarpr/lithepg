@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="560" viewBox="0 0 980 560" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG package verifier nested symlink gate</title>
+  <desc id="desc">Evidence summary for the v1.0 package verification hardening slice that rejects any symlink nested inside LithePG.app.</desc>
+  <rect width="980" height="560" fill="#0f172a"/>
+  <rect x="34" y="34" width="912" height="492" rx="24" fill="#f8fafc"/>
+
+  <text x="68" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#0f172a">Package verifier nested symlink gate</text>
+  <text x="68" y="122" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="17" fill="#334155">Target: no symlink entries anywhere under LithePG.app before release packaging</text>
+
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="17" fill="#0f172a">
+    <rect x="68" y="154" width="844" height="72" rx="14" fill="#fee2e2"/>
+    <text x="94" y="184" font-weight="700">RED</text>
+    <text x="154" y="184">bash script/test_package_verify.sh</text>
+    <text x="154" y="210" font-size="15" fill="#7f1d1d">failed first: resource symlink and unreadable-tree regressions accepted verification</text>
+
+    <rect x="68" y="244" width="844" height="102" rx="14" fill="#dcfce7"/>
+    <text x="94" y="274" font-weight="700">GREEN</text>
+    <text x="176" y="274">package_verify, create_release_zip, sign_and_notarize, v10_release_gate tests → passed</text>
+    <text x="176" y="300">bash -n + git diff --check → passed</text>
+    <text x="176" y="326">swift build + build_and_run.sh --package → passed (11.93 MiB packaged exe)</text>
+
+    <rect x="68" y="366" width="844" height="74" rx="14" fill="#e0f2fe"/>
+    <text x="94" y="396" font-weight="700">Gate</text>
+    <text x="154" y="396">/usr/bin/find detects nested bundle symlinks and fails closed on traversal errors</text>
+    <text x="154" y="422" font-size="15" fill="#075985">Failure output: package verification failed: app bundle must not contain symlinks</text>
+
+    <rect x="68" y="458" width="844" height="52" rx="14" fill="#ffedd5"/>
+    <text x="94" y="490" font-weight="700">Scope</text>
+    <text x="176" y="490" font-size="15" fill="#7c2d12">No signing, notarization, upload, Homebrew publication, tag, or cron changes.</text>
+  </g>
+
+  <text x="68" y="532" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#475569">Artifact: docs/evidence/2026-06-01-package-verify-nested-symlink-gate.svg — no secrets, seeded/local evidence only.</text>
+</svg>

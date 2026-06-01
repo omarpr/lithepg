@@ -1105,3 +1105,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Adjacent release-helper verification: `bash script/test_sign_and_notarize.sh`, `bash script/test_create_release_zip.sh`, and `bash script/test_v10_release_gate.sh` all passed.
 - Evidence artifact: `docs/evidence/2026-06-01-package-verify-executable-format-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-06-01 01:19 EDT — v1.0 package verifier nested symlink gate
+
+- Hardened `script/package_verify.sh` so `LithePG.app` fails package verification if any symlink exists anywhere under the bundle tree, not only at the app path or required `Contents`/`MacOS`/executable/`Info.plist` paths.
+- Added strict-TDD coverage proving a `Contents/Resources` symlink is rejected with the generic message `package verification failed: app bundle must not contain symlinks`, while avoiding leaks of the fixture path, target name, link name, or sentinel payload. Review follow-up added fail-closed coverage for an uninspectable nested directory so traversal errors cannot hide symlinks.
+- RED verification: `bash script/test_package_verify.sh` failed first with `test_package_verify failed: package verifier unexpectedly accepted a resource symlink inside the app bundle` after printing package verification success. Review follow-up RED failed with `test_package_verify failed: package verifier unexpectedly accepted an uninspectable bundle tree` before the `find` exit status was checked.
+- GREEN verification: `bash script/test_package_verify.sh`, `bash script/test_create_release_zip.sh`, `bash script/test_sign_and_notarize.sh`, `bash script/test_v10_release_gate.sh`, release-helper syntax checks, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/build_and_run.sh --package` all passed. Packaged executable: 12,507,504 bytes / 11.93 MiB.
+- Evidence artifact: `docs/evidence/2026-06-01-package-verify-nested-symlink-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

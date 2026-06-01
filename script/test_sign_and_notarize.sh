@@ -476,12 +476,14 @@ if LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
 fi
 
 helper_output="$(<"$output_file")"
-assert_contains "$helper_output" "notary zip must not be inside app bundle"
+assert_contains "$helper_output" "package verification failed: app bundle must not contain symlinks"
 assert_not_contains "$helper_output" "$codesign_sentinel"
 assert_not_contains "$helper_output" "$notary_sentinel"
+assert_not_contains "$helper_output" "$final_symlink_outside_target_marker"
 [[ -L "$final_symlink_inside_bundle_zip" ]] || fail "dry run changed inside-bundle final notary zip symlink: $final_symlink_inside_bundle_zip"
 [[ "$(readlink "$final_symlink_inside_bundle_zip")" == "$final_symlink_outside_target" ]] || fail "dry run retargeted inside-bundle final notary zip symlink: $final_symlink_inside_bundle_zip"
 [[ "$(<"$final_symlink_outside_target")" == "$final_symlink_outside_target_marker" ]] || fail "dry run changed outside final symlink target: $final_symlink_outside_target"
+rm "$final_symlink_inside_bundle_zip"
 
 symlink_parent_traversal_link="$fixture_root/notary-link-to-app-resources"
 ln -s "$app_bundle/Contents/Resources" "$symlink_parent_traversal_link"

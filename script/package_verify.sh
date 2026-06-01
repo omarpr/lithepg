@@ -88,6 +88,13 @@ info_plist_mode="$(stat -f%p "$INFO_PLIST")"
 if (( (8#$info_plist_mode & 07022) != 0 )); then
   fail "Info.plist mode is unsafe"
 fi
+symlink_match=""
+if ! symlink_match="$(/usr/bin/find "$APP_BUNDLE" -type l -print -quit 2>/dev/null)"; then
+  fail "app bundle must not contain symlinks"
+fi
+if [[ -n "$symlink_match" ]]; then
+  fail "app bundle must not contain symlinks"
+fi
 
 executable="$(plist_value CFBundleExecutable)"
 bundle_id="$(plist_value CFBundleIdentifier)"
