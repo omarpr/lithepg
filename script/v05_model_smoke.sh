@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/.." && /bin/pwd)"
 cd "$ROOT_DIR"
 
 DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 export DEVELOPER_DIR
 
-OUT_DIR="${LITHEPG_MODEL_SMOKE_OUT_DIR:-$ROOT_DIR/.build/v05-model-smoke/$(date +%Y%m%d-%H%M%S)}"
-mkdir -p "$OUT_DIR"
+OUT_DIR="${LITHEPG_MODEL_SMOKE_OUT_DIR:-$ROOT_DIR/.build/v05-model-smoke/$(/bin/date +%Y%m%d-%H%M%S)}"
+/bin/mkdir -p "$OUT_DIR"
 
-swift test --filter LocalModelAIQueryService | tee "$OUT_DIR/local-model-tests.log"
-swift build -c release --product LithePGApp | tee "$OUT_DIR/release-build.log"
+swift test --filter LocalModelAIQueryService | /usr/bin/tee "$OUT_DIR/local-model-tests.log"
+swift build -c release --product LithePGApp | /usr/bin/tee "$OUT_DIR/release-build.log"
 
 APP_BIN="$ROOT_DIR/.build/release/LithePGApp"
 if [[ ! -x "$APP_BIN" ]]; then
@@ -20,7 +20,7 @@ if [[ ! -x "$APP_BIN" ]]; then
 fi
 
 COREML_LINKED=0
-if otool -L "$APP_BIN" | grep -q "CoreML.framework"; then
+if /usr/bin/otool -L "$APP_BIN" | /usr/bin/grep -q "CoreML.framework"; then
   COREML_LINKED=1
 fi
 
@@ -41,6 +41,6 @@ print(json.dumps({
 }, indent=2, sort_keys=True))
 PY
 
-cat "$OUT_DIR/summary.json"
+/bin/cat "$OUT_DIR/summary.json"
 echo
 echo "Model smoke measurements written to $OUT_DIR"
