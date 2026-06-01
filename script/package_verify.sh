@@ -167,7 +167,7 @@ if [[ "$bytes" -gt "$HARD_CAP_BYTES" ]]; then
 fi
 
 mib=$(awk "BEGIN { printf \"%.2f\", $bytes / 1024 / 1024 }")
-printf 'Package verified: %s\n' "$APP_BUNDLE"
+printf 'Package verified: %s\n' "${APP_BUNDLE##*/}"
 printf 'Executable: Contents/MacOS/%s (%s bytes / %s MiB)\n' "$APP_NAME" "$bytes" "$mib"
 printf 'Bundle ID: %s\n' "$bundle_id"
 printf 'Version: %s (%s)\n' "$marketing_version" "$build_version"

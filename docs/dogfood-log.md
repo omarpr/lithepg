@@ -1160,3 +1160,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Repo build verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed.
 - Evidence artifact: `docs/evidence/2026-06-01-package-verify-nested-mode-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.
+
+## 2026-06-01 03:21 EDT — v1.0 package verifier success-path redaction
+
+- Hardened `script/package_verify.sh` so successful package verification prints the stable bundle name `Package verified: LithePG.app` instead of echoing the caller-supplied app bundle path.
+- Added strict-TDD coverage proving a valid app bundle under a sentinel-containing path still verifies successfully while the success output does not leak the full path or sentinel.
+- RED verification: `bash script/test_package_verify.sh` failed first with the expected success-path sentinel leak from the previous `Package verified: $APP_BUNDLE` output.
+- GREEN verification: `bash script/test_package_verify.sh`, `bash -n script/package_verify.sh script/test_package_verify.sh`, `git diff --check`, adjacent release-helper tests `bash script/test_create_release_zip.sh && bash script/test_sign_and_notarize.sh && bash script/test_v10_release_gate.sh`, full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`, and package smoke `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/build_and_run.sh --package` all passed. Package smoke verified `dist/LithePG.app` with packaged executable 12,507,504 bytes / 11.93 MiB, version `0.5` build `232`.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260601-032335/` with default Swift tests, live dogfood tests, and v0.4 measurement all passed. Metrics: shell readiness 132.10 ms; connected cold start 233.97 ms; raw release executable 21.379 MiB; strip-probe executable 11.980 MiB; `SELECT 1` median overhead 0.065 ms; dogfood query median overhead 0.034 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `docs/evidence/2026-06-01-package-verify-success-path-redaction.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.

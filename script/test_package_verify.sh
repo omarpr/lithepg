@@ -197,13 +197,28 @@ assert_not_contains "$helper_output" "$mach_o_path_contamination_sentinel"
 assert_not_contains "$helper_output" "dynamic linker"
 assert_not_contains "$helper_output" "Mach-O"
 
+success_path_sentinel="SUCCESS_PATH_SENTINEL_SHOULD_NOT_LEAK"
+success_path_bundle="$fixture_root/success-path-$success_path_sentinel/LithePG.app"
+make_minimal_app_bundle "$success_path_bundle"
+if ! run_helper_capture "$output_file" "$success_path_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verification unexpectedly failed for a valid fixture under a sentinel path"
+fi
+helper_output="$(<"$output_file")"
+assert_not_contains "$helper_output" "$success_path_bundle"
+assert_not_contains "$helper_output" "$success_path_sentinel"
+assert_contains "$helper_output" "Package verified: LithePG.app"
+assert_contains "$helper_output" "Bundle ID: dev.omarpr.lithepg"
+assert_contains "$helper_output" "Version: 1.0 (100)"
+
 if ! run_helper_capture "$output_file" "$app_bundle"; then
   helper_output="$(<"$output_file")"
   printf '%s\n' "$helper_output" >&2
   fail "package verification unexpectedly failed for a valid fixture"
 fi
 helper_output="$(<"$output_file")"
-assert_contains "$helper_output" "Package verified: $app_bundle"
+assert_contains "$helper_output" "Package verified: LithePG.app"
 assert_contains "$helper_output" "Bundle ID: dev.omarpr.lithepg"
 assert_contains "$helper_output" "Version: 1.0 (100)"
 
