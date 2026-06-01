@@ -1150,3 +1150,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `docs/evidence/2026-06-01-package-verify-special-file-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 02:57 EDT — v1.0 package verifier nested mode gate
+
+- Hardened `script/package_verify.sh` so `LithePG.app` package verification rejects unsafe modes on any nested app-bundle directory or regular file, beyond the existing root/`Contents`/`Contents/MacOS`/executable/`Info.plist` essential-path checks.
+- Added strict-TDD coverage proving unsafe nested directory modes (`775`, `1755`) and unsafe nested regular-file modes (`664`, `4755`) fail with generic messages, without printing package-verification success or leaking fixture paths, sentinels, nested names, modes, or file contents.
+- RED verification: `bash script/test_package_verify.sh` failed first with `test_package_verify failed: package verifier unexpectedly accepted unsafe mode 775 on a nested app-bundle directory` after the old verifier printed package verification success for the unsafe nested directory fixture.
+- GREEN verification: `bash script/test_package_verify.sh`, `bash -n script/package_verify.sh script/test_package_verify.sh`, `git diff --check`, and adjacent release-helper tests `bash script/test_create_release_zip.sh && bash script/test_sign_and_notarize.sh && bash script/test_v10_release_gate.sh` all passed.
+- Repo build verification: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed.
+- Evidence artifact: `docs/evidence/2026-06-01-package-verify-nested-mode-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, push, cron changes, or external publication was attempted.

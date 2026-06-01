@@ -636,6 +636,51 @@ assert_not_contains "$helper_output" "target.txt"
 assert_not_contains "$helper_output" "hidden-link"
 assert_not_contains "$helper_output" "sealed"
 
+for unsafe_mode in 775 1755; do
+  nested_directory_mode_sentinel="NESTED_DIRECTORY_MODE_SENTINEL_SHOULD_NOT_LEAK"
+  nested_directory_mode_bundle="$fixture_root/nested-directory-mode-$unsafe_mode-$nested_directory_mode_sentinel/LithePG.app"
+  nested_directory_name="nested-directory-mode-name-should-not-leak"
+  make_minimal_app_bundle "$nested_directory_mode_bundle"
+  mkdir -p "$nested_directory_mode_bundle/Contents/Resources/$nested_directory_name"
+  chmod "$unsafe_mode" "$nested_directory_mode_bundle/Contents/Resources/$nested_directory_name"
+  if run_helper_capture "$output_file" "$nested_directory_mode_bundle"; then
+    chmod u+rwx "$nested_directory_mode_bundle/Contents/Resources/$nested_directory_name"
+    helper_output="$(<"$output_file")"
+    printf '%s\n' "$helper_output" >&2
+    fail "package verifier unexpectedly accepted unsafe mode $unsafe_mode on a nested app-bundle directory"
+  fi
+  chmod u+rwx "$nested_directory_mode_bundle/Contents/Resources/$nested_directory_name"
+  helper_output="$(<"$output_file")"
+  assert_contains "$helper_output" "package verification failed: app bundle contains unsafe directory mode"
+  assert_not_contains "$helper_output" "Package verified:"
+  assert_not_contains "$helper_output" "$nested_directory_mode_bundle"
+  assert_not_contains "$helper_output" "$nested_directory_mode_sentinel"
+  assert_not_contains "$helper_output" "$nested_directory_name"
+  assert_not_contains "$helper_output" "$unsafe_mode"
+done
+
+for unsafe_mode in 664 4755; do
+  nested_file_mode_sentinel="NESTED_FILE_MODE_SENTINEL_SHOULD_NOT_LEAK"
+  nested_file_mode_bundle="$fixture_root/nested-file-mode-$unsafe_mode-$nested_file_mode_sentinel/LithePG.app"
+  nested_file_name="nested-file-mode-name-should-not-leak.txt"
+  make_minimal_app_bundle "$nested_file_mode_bundle"
+  mkdir -p "$nested_file_mode_bundle/Contents/Resources"
+  printf '%s\n' "$nested_file_mode_sentinel" >"$nested_file_mode_bundle/Contents/Resources/$nested_file_name"
+  chmod "$unsafe_mode" "$nested_file_mode_bundle/Contents/Resources/$nested_file_name"
+  if run_helper_capture "$output_file" "$nested_file_mode_bundle"; then
+    helper_output="$(<"$output_file")"
+    printf '%s\n' "$helper_output" >&2
+    fail "package verifier unexpectedly accepted unsafe mode $unsafe_mode on a nested app-bundle file"
+  fi
+  helper_output="$(<"$output_file")"
+  assert_contains "$helper_output" "package verification failed: app bundle contains unsafe file mode"
+  assert_not_contains "$helper_output" "Package verified:"
+  assert_not_contains "$helper_output" "$nested_file_mode_bundle"
+  assert_not_contains "$helper_output" "$nested_file_mode_sentinel"
+  assert_not_contains "$helper_output" "$nested_file_name"
+  assert_not_contains "$helper_output" "$unsafe_mode"
+done
+
 for unsafe_mode in 4755 2755 1755; do
   info_plist_special_mode_sentinel="INFO_PLIST_SPECIAL_MODE_SENTINEL_SHOULD_NOT_LEAK"
   info_plist_special_mode_bundle="$fixture_root/info-plist-special-mode-$unsafe_mode-$info_plist_special_mode_sentinel/LithePG.app"

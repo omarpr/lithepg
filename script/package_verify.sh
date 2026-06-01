@@ -104,6 +104,28 @@ if [[ -n "$special_file_match" ]]; then
   fail "app bundle must contain only regular files and directories"
 fi
 
+if ! /usr/bin/find "$APP_BUNDLE" -type d -exec /bin/bash -c '
+  for path do
+    mode="$(/usr/bin/stat -f%p "$path")" || exit 2
+    if (( (8#$mode & 07022) != 0 )); then
+      exit 1
+    fi
+  done
+' bash {} + >/dev/null 2>&1; then
+  fail "app bundle contains unsafe directory mode"
+fi
+
+if ! /usr/bin/find "$APP_BUNDLE" -type f -exec /bin/bash -c '
+  for path do
+    mode="$(/usr/bin/stat -f%p "$path")" || exit 2
+    if (( (8#$mode & 07022) != 0 )); then
+      exit 1
+    fi
+  done
+' bash {} + >/dev/null 2>&1; then
+  fail "app bundle contains unsafe file mode"
+fi
+
 finder_metadata_match=""
 if ! finder_metadata_match="$(/usr/bin/find "$APP_BUNDLE" \( -name '.DS_Store' -o -name '__MACOSX' -o -name '._*' \) -print -quit 2>/dev/null)"; then
   fail "app bundle must not contain Finder metadata files"
