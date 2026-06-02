@@ -1876,3 +1876,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Existing fail-closed coverage is in `script/test_dogfood_check.sh`: it invokes the helper with `LITHEPG_DOGFOOD_CHECK_STARTUP_ENV_SANITIZED=1` and `BASH_ENV=""`, expects the generic sanitizer failure path, and ensures normal dogfood startup output is skipped.
 - Evidence artifact: `screenshots/evidence/2026-06-02-dogfood-check-empty-bash-env-receipt-sync.svg`.
 - This is docs/evidence only; no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 13:32 EDT — package verifier empty Perl startup-env fail-closed hardening
+
+- Hardened `script/package_verify.sh` so empty-but-present Perl startup env keys (`PERL5OPT`, `PERL5LIB`, and `PERLLIB`) are treated as dirty startup environment, matching the current release-helper sanitizer posture. Sanitizer-marked reentry with any of those keys present now fails closed with exit 2 before package verification or usage output can continue.
+- Added strict-TDD coverage in `script/test_package_verify.sh` for all three empty Perl startup env keys with `LITHEPG_PACKAGE_VERIFY_BASH_FUNCTIONS_SANITIZED=1`; each case expects the generic package-verifier sanitizer failure and asserts no package verification output, usage text, fixture path, synthetic sentinel, or ambient private value leaks.
+- RED verification: `bash script/test_package_verify.sh` failed first with `package verifier sanitizer marker with empty PERL5OPT should exit 2, got 0`.
+- GREEN verification: `bash script/test_package_verify.sh`, adjacent release-helper tests (`test_create_release_zip`, `test_sign_and_notarize`, `test_v10_release_gate`), `bash -n script/package_verify.sh script/test_package_verify.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-133218/`; metrics: shell readiness 133.70 ms, connected cold start 244.31 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.010 ms, dogfood query median overhead 0.060 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-02-package-verify-empty-perl-env-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

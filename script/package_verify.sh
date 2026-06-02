@@ -2,7 +2,7 @@
 
 BASH_BIN=/bin/bash
 
-if [[ "${BASH_ENV+x}" == x || -n "${PERL5OPT:-}" || -n "${PERL5LIB:-}" || -n "${PERLLIB:-}" ]] || /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
+if [[ "${BASH_ENV+x}" == x || "${PERL5OPT+x}" == x || "${PERL5LIB+x}" == x || "${PERLLIB+x}" == x ]] || /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
   my $sanitize_needed = 0;
   for my $key (keys %ENV) {
     $sanitize_needed = 1 if $key =~ /\ABASH_FUNC_/;
