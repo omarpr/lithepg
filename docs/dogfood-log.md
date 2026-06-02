@@ -1611,3 +1611,16 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-02-dogfood-postgres-startup-bash-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 01:40 EDT — v1.0 build/run executable startup Bash hardening
+
+- Hardened `script/build_and_run.sh` executable startup by switching from PATH-selected `#!/usr/bin/env bash` to absolute privileged Bash (`#!/bin/bash -p`), so direct helper invocation cannot be routed through a fake `bash` on `PATH` before build/package setup begins.
+- Added startup sanitization before normal build/run logic: nonempty `BASH_ENV`, exported Bash functions (`BASH_FUNC_*`), and Perl startup env (`PERL5OPT`, `PERL5LIB`, `PERLLIB`) trigger a `/bin/bash -p` re-exec with those entries removed; if dirty startup env remains after the sanitizer marker is set, the helper fails closed with exit 2 instead of re-sanitizing forever or continuing.
+- Added strict-TDD coverage in `script/test_build_and_run.sh` for copied-helper executable invocation with fake PATH-selected `bash`, BASH_ENV-defined and exported `set` function shadows, Perl startup poisoning of `/usr/bin/perl` helper calls, and the dirty-env-after-sanitizer fail-closed path.
+- RED verification: `bash script/test_build_and_run.sh` first failed with `BUILD_AND_RUN_INITIAL_BASH_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN fake bash invoked`; after the initial implementation, the added fail-closed regression failed because dirty startup env with `LITHEPG_BUILD_AND_RUN_STARTUP_ENV_SANITIZED=1` still printed helper usage instead of failing closed.
+- GREEN verification: `bash script/test_build_and_run.sh`, `bash -n script/build_and_run.sh script/test_build_and_run.sh`, `git diff --check`, adjacent release-helper tests (`test_package_verify`, `test_create_release_zip`, `test_sign_and_notarize`, `test_v10_release_gate`), `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` all passed. Swift Testing reported 127 tests across 20 suites.
+- Package gate passed: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/build_and_run.sh --package` plus `./script/package_verify.sh dist/LithePG.app`; packaged executable 12,507,504 bytes / 11.93 MiB, bundle version 0.5 (278).
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-013631/`; metrics: shell readiness 126.18 ms, connected cold start 241.08 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.039 ms, dogfood query median overhead 0.039 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED after the fail-closed follow-up.
+- Evidence artifact: `screenshots/evidence/2026-06-02-build-run-startup-bash-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

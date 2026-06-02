@@ -213,6 +213,163 @@ done
 [[ -f "$root_shadow_safe_pkill_marker" ]] || fail "build_and_run root-shadow fixture did not invoke safe pkill override"
 assert_equals "$(<"$root_shadow_safe_pkill_marker")" "safe pkill -x LithePGApp"
 
+startup_helper_repo="$fixture_root/startup-helper-repo"
+startup_helper="$startup_helper_repo/script/build_and_run.sh"
+startup_fake_bin="$fixture_root/startup-fake-bin"
+startup_fake_bash_marker="$fixture_root/startup-fake-bash-invoked"
+startup_fake_bash_sentinel="BUILD_AND_RUN_INITIAL_BASH_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+/bin/mkdir -p "$startup_helper_repo/script" "$startup_fake_bin"
+/bin/cp "$HELPER" "$startup_helper"
+/bin/chmod +x "$startup_helper"
+/bin/cat >"$startup_fake_bin/bash" <<SHIM
+#!/bin/bash
+/usr/bin/printf '%s fake bash invoked\\n' '$startup_fake_bash_sentinel' >&2
+/usr/bin/printf 'fake-bash\\n' >'$startup_fake_bash_marker'
+exit 97
+SHIM
+/bin/chmod +x "$startup_fake_bin/bash"
+
+set +e
+(
+  PATH="$startup_fake_bin:$PATH" "$startup_helper" --help
+) >"$output_file" 2>&1
+startup_fake_bash_status=$?
+set -e
+startup_fake_bash_output="$(<"$output_file")"
+if [[ "$startup_fake_bash_status" -ne 0 ]]; then
+  /usr/bin/printf '%s\n' "$startup_fake_bash_output" >&2
+  fail "build_and_run executable invocation used PATH-selected bash"
+fi
+assert_contains "$startup_fake_bash_output" "usage: script/build_and_run.sh"
+assert_not_contains "$startup_fake_bash_output" "$startup_fake_bash_sentinel"
+[[ ! -e "$startup_fake_bash_marker" ]] || fail "build_and_run executable invocation used fake PATH bash: $(<"$startup_fake_bash_marker")"
+
+startup_env_shadow_sentinel="BUILD_AND_RUN_STARTUP_ENV_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+startup_env_bash_file="$fixture_root/build-and-run-bash-env"
+startup_env_bash_marker="$fixture_root/build-and-run-bash-env-marker"
+startup_env_export_marker="$fixture_root/build-and-run-exported-set-marker"
+/bin/cat >"$startup_env_bash_file" <<'BASHENV'
+set() {
+  /usr/bin/printf '%s BASH_ENV set function invoked\n' "${BUILD_AND_RUN_STARTUP_ENV_SHADOW_SENTINEL:?}" >&2
+  /usr/bin/printf 'bash-env\n' >"${BUILD_AND_RUN_STARTUP_ENV_BASH_MARKER:?}"
+  exit 97
+}
+BASHENV
+
+set +e
+(
+  set() {
+    /usr/bin/printf '%s exported set function invoked\n' "${BUILD_AND_RUN_STARTUP_ENV_SHADOW_SENTINEL:?}" >&2
+    /usr/bin/printf 'exported-set\n' >"${BUILD_AND_RUN_STARTUP_ENV_EXPORT_MARKER:?}"
+    exit 97
+  }
+  export -f set
+  BUILD_AND_RUN_STARTUP_ENV_SHADOW_SENTINEL="$startup_env_shadow_sentinel" \
+    BUILD_AND_RUN_STARTUP_ENV_BASH_MARKER="$startup_env_bash_marker" \
+    BUILD_AND_RUN_STARTUP_ENV_EXPORT_MARKER="$startup_env_export_marker" \
+    BASH_ENV="$startup_env_bash_file" \
+    "$startup_helper" --help
+) >"$output_file" 2>&1
+startup_env_shadow_status=$?
+set -e
+startup_env_shadow_output="$(<"$output_file")"
+if [[ "$startup_env_shadow_status" -ne 0 ]]; then
+  /usr/bin/printf '%s\n' "$startup_env_shadow_output" >&2
+  fail "build_and_run executable startup was affected by BASH_ENV or exported shell functions"
+fi
+assert_contains "$startup_env_shadow_output" "usage: script/build_and_run.sh"
+assert_not_contains "$startup_env_shadow_output" "$startup_env_shadow_sentinel"
+assert_not_contains "$startup_env_shadow_output" "set function invoked"
+[[ ! -e "$startup_env_bash_marker" ]] || fail "build_and_run invoked BASH_ENV-defined set function: $(<"$startup_env_bash_marker")"
+[[ ! -e "$startup_env_export_marker" ]] || fail "build_and_run invoked exported set function: $(<"$startup_env_export_marker")"
+
+set +e
+(
+  LITHEPG_BUILD_AND_RUN_STARTUP_ENV_SANITIZED=1 \
+    PERL5OPT=-MBuildAndRunSanitizerShouldFailClosed \
+    "$startup_helper" --help
+) >"$output_file" 2>&1
+startup_fail_closed_status=$?
+set -e
+startup_fail_closed_output="$(<"$output_file")"
+if [[ "$startup_fail_closed_status" -eq 0 ]]; then
+  /usr/bin/printf '%s\n' "$startup_fail_closed_output" >&2
+  fail "build_and_run startup sanitizer did not fail closed when sanitized marker still had dirty env"
+fi
+assert_contains "$startup_fail_closed_output" "unsanitized startup environment remains after build_and_run sanitizer"
+assert_not_contains "$startup_fail_closed_output" "usage: script/build_and_run.sh"
+
+startup_perl_sentinel="BUILD_AND_RUN_PERL_STARTUP_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+startup_perl_lib="$fixture_root/build-and-run-perl-lib"
+startup_perl_marker="$fixture_root/build-and-run-perl-marker"
+startup_perl_fake_bin="$fixture_root/build-and-run-perl-fake-bin"
+startup_perl_swift_bin_dir="$fixture_root/build-and-run-perl-swift-bin"
+startup_perl_swift_marker="$fixture_root/build-and-run-perl-swift-used"
+startup_perl_safe_pkill="$fixture_root/build-and-run-perl-safe-pkill"
+/bin/mkdir -p "$startup_perl_lib" "$startup_perl_fake_bin" "$startup_perl_swift_bin_dir"
+/bin/cat >"$startup_perl_lib/BuildAndRunPerlStartupPoison.pm" <<'PERLPOISON'
+BEGIN {
+  open my $fh, '>', $ENV{BUILD_AND_RUN_PERL_STARTUP_MARKER} or die $!;
+  print {$fh} "perl-startup\n";
+  close $fh;
+  die "$ENV{BUILD_AND_RUN_PERL_STARTUP_SHADOW_SENTINEL} Perl startup invoked\n";
+}
+1;
+PERLPOISON
+/bin/cat >"$startup_perl_fake_bin/swift" <<'SWIFT'
+#!/bin/bash
+set -euo pipefail
+/usr/bin/printf 'fake startup-perl swift used\n' >"${FAKE_SWIFT_MARKER:?}"
+case "$*" in
+  "build --product LithePGApp")
+    /bin/mkdir -p "${FAKE_SWIFT_BIN_DIR:?}"
+    /bin/cp /usr/bin/true "$FAKE_SWIFT_BIN_DIR/LithePGApp"
+    /bin/chmod 755 "$FAKE_SWIFT_BIN_DIR/LithePGApp"
+    ;;
+  "build --show-bin-path")
+    /usr/bin/printf '%s\n' "${FAKE_SWIFT_BIN_DIR:?}"
+    ;;
+  *)
+    /usr/bin/printf 'unexpected fake startup-perl swift invocation: %s\n' "$*" >&2
+    exit 98
+    ;;
+esac
+SWIFT
+/bin/chmod +x "$startup_perl_fake_bin/swift"
+/bin/cat >"$startup_perl_safe_pkill" <<'SHIM'
+#!/bin/bash
+exit 0
+SHIM
+/bin/chmod +x "$startup_perl_safe_pkill"
+
+set +e
+(
+  PATH="$startup_perl_fake_bin:$PATH" \
+    FAKE_SWIFT_BIN_DIR="$startup_perl_swift_bin_dir" \
+    FAKE_SWIFT_MARKER="$startup_perl_swift_marker" \
+    LITHEPG_BUILD_AND_RUN_PKILL="$startup_perl_safe_pkill" \
+    LITHEPG_MARKETING_VERSION="1.0" \
+    LITHEPG_BUILD_VERSION="100" \
+    BUILD_AND_RUN_PERL_STARTUP_MARKER="$startup_perl_marker" \
+    BUILD_AND_RUN_PERL_STARTUP_SHADOW_SENTINEL="$startup_perl_sentinel" \
+    PERL5LIB="$startup_perl_lib" \
+    PERLLIB="$startup_perl_lib" \
+    PERL5OPT=-MBuildAndRunPerlStartupPoison \
+    "$startup_helper" --print-bundle-path
+) >"$output_file" 2>&1
+startup_perl_status=$?
+set -e
+startup_perl_output="$(<"$output_file")"
+if [[ "$startup_perl_status" -ne 0 ]]; then
+  /usr/bin/printf '%s\n' "$startup_perl_output" >&2
+  fail "build_and_run executable startup left Perl startup environment unsanitized"
+fi
+[[ -f "$startup_perl_swift_marker" ]] || fail "fake startup-perl swift was not used"
+assert_contains "$startup_perl_output" "$startup_helper_repo/dist/LithePG.app"
+assert_not_contains "$startup_perl_output" "$startup_perl_sentinel"
+assert_not_contains "$startup_perl_output" "Perl startup invoked"
+[[ ! -e "$startup_perl_marker" ]] || fail "build_and_run invoked Perl startup env: $(<"$startup_perl_marker")"
+
 print_bundle_sentinel="BUILD_AND_RUN_FAKE_PKILL_SENTINEL_SHOULD_NOT_RUN"
 print_bundle_fake_bin="$fixture_root/print-bundle-fake-bin"
 print_bundle_swift_bin_dir="$fixture_root/print-bundle-swift-bin"
