@@ -343,7 +343,12 @@ if ! /bin/chmod 700 "$STAGED_ZIP_DIR" >/dev/null 2>&1; then
 fi
 STAGED_ZIP="$STAGED_ZIP_DIR/$(/usr/bin/basename "$ZIP_PATH")"
 
-run_quiet "codesign failed" codesign \
+CODESIGN_BIN=/usr/bin/codesign
+DITTO_BIN=/usr/bin/ditto
+XCRUN_BIN=/usr/bin/xcrun
+SPCTL_BIN=/usr/sbin/spctl
+
+run_quiet "codesign failed" "$CODESIGN_BIN" \
   --deep \
   --force \
   --options runtime \
@@ -352,13 +357,13 @@ run_quiet "codesign failed" codesign \
   --sign "$CODESIGN_IDENTITY" \
   "$APP_BUNDLE_ABS"
 
-run_quiet "codesign verification failed" codesign --verify --strict --deep "$APP_BUNDLE_ABS"
-run_quiet "notary zip creation failed" ditto -c -k --keepParent "$APP_BUNDLE_ABS" "$STAGED_ZIP"
+run_quiet "codesign verification failed" "$CODESIGN_BIN" --verify --strict --deep "$APP_BUNDLE_ABS"
+run_quiet "notary zip creation failed" "$DITTO_BIN" -c -k --keepParent "$APP_BUNDLE_ABS" "$STAGED_ZIP"
 run_quiet "could not replace notary zip" /usr/bin/perl -e 'use strict; use warnings; rename($ARGV[0], $ARGV[1]) or die "rename failed: $!\n";' "$STAGED_ZIP" "$ZIP_PATH"
-run_quiet "notary submission failed" xcrun notarytool submit "$ZIP_PATH" --keychain-profile "$NOTARY_PROFILE" --wait
-run_quiet "staple failed" xcrun stapler staple "$APP_BUNDLE_ABS"
-run_quiet "staple validation failed" xcrun stapler validate "$APP_BUNDLE_ABS"
-run_quiet "spctl assessment failed" spctl --assess --type execute --verbose=4 "$APP_BUNDLE_ABS"
+run_quiet "notary submission failed" "$XCRUN_BIN" notarytool submit "$ZIP_PATH" --keychain-profile "$NOTARY_PROFILE" --wait
+run_quiet "staple failed" "$XCRUN_BIN" stapler staple "$APP_BUNDLE_ABS"
+run_quiet "staple validation failed" "$XCRUN_BIN" stapler validate "$APP_BUNDLE_ABS"
+run_quiet "spctl assessment failed" "$SPCTL_BIN" --assess --type execute --verbose=4 "$APP_BUNDLE_ABS"
 
 printf 'Signed and notarized: LithePG.app\n'
 printf 'Notary zip: created (redacted)\n'

@@ -1926,3 +1926,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Gate statuses synced: `defaultSwiftTest`, `liveSwiftTest`, and `v04Measure` passed.
 - Evidence artifact: `screenshots/evidence/2026-06-02-v10-public-status-metrics-sync-latest.svg`.
 - This docs-only status sync attempted no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication.
+
+## 2026-06-02 15:45 EDT — v1.0 sign/notarize publication tool PATH hardening
+
+- Hardened `script/sign_and_notarize.sh` real-mode publication-sensitive tool invocations so `codesign`, `ditto`, `xcrun`, and `spctl` are called by absolute system paths (`/usr/bin/codesign`, `/usr/bin/ditto`, `/usr/bin/xcrun`, and `/usr/sbin/spctl`) instead of through `PATH`.
+- Added strict-TDD coverage in `script/test_sign_and_notarize.sh` for PATH-shadowed `codesign`/`ditto`/`xcrun`/`spctl`: static assertions pin every publication-sensitive invocation to the absolute system-tool variables, and the dynamic regression proves PATH-shadowed fake shims are not reached before real codesign validation fails. Output remains redacted and no notary zip is created.
+- RED verification: `bash script/test_sign_and_notarize.sh` failed first because the old helper passed with PATH-shadowed publication tools; a follow-up static assertion check also confirmed the old helper lacked the absolute publication-tool variables.
+- GREEN verification: `bash script/test_sign_and_notarize.sh`, adjacent release-helper tests (`test_create_release_zip`, `test_package_verify`, `test_v10_release_gate`), `bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-154445/`; metrics: shell readiness 127.05 ms, connected cold start 263.35 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.027 ms, dogfood query median overhead 0.029 ms.
+- Evidence artifact: `screenshots/evidence/2026-06-02-sign-notarize-publication-tool-path-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
