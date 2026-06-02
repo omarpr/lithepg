@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="640" viewBox="0 0 1100 640" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 public status metrics sync evidence</title>
+  <desc id="desc">Visual evidence for the docs sync from the 2026-06-02 dogfood check after Python isolation hardening.</desc>
+  <rect width="1100" height="640" fill="#10131a"/>
+  <rect x="36" y="34" width="1028" height="568" rx="24" fill="#171b24" stroke="#3a4257" stroke-width="2"/>
+  <text x="72" y="92" fill="#f4f7fb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="30" font-weight="700">v1.0 public status metrics sync</text>
+  <text x="72" y="132" fill="#aeb8cc" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">Source receipt: .build/dogfood-checks/20260602-164838/</text>
+  <text x="72" y="164" fill="#aeb8cc" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">main @ 958dd50 · docs updated with latest local gate metrics</text>
+
+  <g font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20">
+    <rect x="72" y="206" width="310" height="118" rx="16" fill="#202838" stroke="#596379"/>
+    <text x="96" y="250" fill="#7ee787">swift test</text>
+    <text x="96" y="286" fill="#f4f7fb">passed</text>
+
+    <rect x="400" y="206" width="310" height="118" rx="16" fill="#202838" stroke="#596379"/>
+    <text x="424" y="250" fill="#7ee787">live dogfood</text>
+    <text x="424" y="286" fill="#f4f7fb">passed</text>
+
+    <rect x="728" y="206" width="310" height="118" rx="16" fill="#202838" stroke="#596379"/>
+    <text x="752" y="250" fill="#7ee787">v04 measure</text>
+    <text x="752" y="286" fill="#f4f7fb">passed</text>
+  </g>
+
+  <g font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="19">
+    <text x="92" y="382" fill="#dbe4f0">shell readiness</text>
+    <text x="430" y="382" fill="#f4f7fb">130.43 ms</text>
+    <text x="92" y="424" fill="#dbe4f0">connected startup</text>
+    <text x="430" y="424" fill="#f4f7fb">253.83 ms</text>
+    <text x="92" y="466" fill="#dbe4f0">raw / strip-probe executable</text>
+    <text x="430" y="466" fill="#f4f7fb">21.379 MiB / 11.980 MiB</text>
+    <text x="92" y="508" fill="#dbe4f0">SELECT 1 median overhead</text>
+    <text x="430" y="508" fill="#f4f7fb">0.037 ms</text>
+    <text x="92" y="550" fill="#dbe4f0">dogfood query median overhead</text>
+    <text x="430" y="550" fill="#f4f7fb">0.017 ms</text>
+  </g>
+
+  <text x="72" y="594" fill="#7f8ba3" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="15">No secrets, no credentials, no signing/notarization/upload/Homebrew/GitHub Release/tag/cron changes attempted.</text>
+</svg>
