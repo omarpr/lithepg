@@ -299,6 +299,26 @@ fi
 assert_contains "$startup_fail_closed_output" "unsanitized startup environment remains after build_and_run sanitizer"
 assert_not_contains "$startup_fail_closed_output" "usage: script/build_and_run.sh"
 
+# If the sanitizer marker is already set, even an empty-but-present BASH_ENV is dirty.
+startup_empty_bash_env_private="BUILD_AND_RUN_EMPTY_BASH_ENV_PRIVATE_SENTINEL_SHOULD_NOT_LEAK"
+set +e
+(
+  LITHEPG_BUILD_AND_RUN_STARTUP_ENV_SANITIZED=1 \
+    BUILD_AND_RUN_EMPTY_BASH_ENV_PRIVATE="$startup_empty_bash_env_private" \
+    BASH_ENV="" \
+    "$startup_helper" --help
+) >"$output_file" 2>&1
+startup_empty_bash_env_fail_closed_status=$?
+set -e
+startup_empty_bash_env_fail_closed_output="$(<"$output_file")"
+if [[ "$startup_empty_bash_env_fail_closed_status" -ne 2 ]]; then
+  /usr/bin/printf '%s\n' "$startup_empty_bash_env_fail_closed_output" >&2
+  fail "build_and_run startup sanitizer did not fail closed with exit 2 for empty BASH_ENV after sanitizer marker"
+fi
+assert_contains "$startup_empty_bash_env_fail_closed_output" "unsanitized startup environment remains after build_and_run sanitizer"
+assert_not_contains "$startup_empty_bash_env_fail_closed_output" "usage: script/build_and_run.sh"
+assert_not_contains "$startup_empty_bash_env_fail_closed_output" "$startup_empty_bash_env_private"
+
 startup_perl_sentinel="BUILD_AND_RUN_PERL_STARTUP_SHADOW_SENTINEL_SHOULD_NOT_RUN"
 startup_perl_lib="$fixture_root/build-and-run-perl-lib"
 startup_perl_marker="$fixture_root/build-and-run-perl-marker"

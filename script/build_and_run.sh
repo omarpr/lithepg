@@ -3,7 +3,7 @@
 BASH_BIN=/bin/bash
 
 startup_env_sanitize_needed=0
-if [[ -n "${BASH_ENV:-}" || "${PERL5OPT+x}" == x || "${PERL5LIB+x}" == x || "${PERLLIB+x}" == x ]]; then
+if [[ "${BASH_ENV+x}" == x || "${PERL5OPT+x}" == x || "${PERL5LIB+x}" == x || "${PERLLIB+x}" == x ]]; then
   startup_env_sanitize_needed=1
 elif /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
   for my $key (keys %ENV) {
@@ -44,7 +44,7 @@ elif ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
   for my $key (keys %ENV) {
     die "unsanitized bash function environment key remains: $key\n" if $key =~ /\ABASH_FUNC_/;
   }
-  die "unsanitized BASH_ENV remains\n" if exists $ENV{BASH_ENV} && $ENV{BASH_ENV} ne "";
+  die "unsanitized BASH_ENV remains\n" if exists $ENV{BASH_ENV};
   exit 0;
 '; then
   exit 2

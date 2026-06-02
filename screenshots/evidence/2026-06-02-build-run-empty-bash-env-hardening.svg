@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG build_and_run empty BASH_ENV hardening evidence</title>
+  <desc id="desc">Visual release evidence for the 2026-06-02 build_and_run empty BASH_ENV fail-closed hardening slice.</desc>
+  <rect width="1200" height="760" fill="#0f172a"/>
+  <rect x="40" y="40" width="1120" height="680" rx="28" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="80" y="105" fill="#e5e7eb" font-family="SF Mono, Menlo, Consolas, monospace" font-size="34" font-weight="700">LithePG v1.0 helper hardening</text>
+  <text x="80" y="150" fill="#93c5fd" font-family="SF Mono, Menlo, Consolas, monospace" font-size="22">script/build_and_run.sh · empty BASH_ENV fail-closed</text>
+
+  <rect x="80" y="190" width="500" height="190" rx="18" fill="#020617" stroke="#334155"/>
+  <text x="110" y="235" fill="#fca5a5" font-family="SF Mono, Menlo, Consolas, monospace" font-size="22" font-weight="700">RED</text>
+  <text x="110" y="275" fill="#e5e7eb" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">New test first:</text>
+  <text x="110" y="305" fill="#e5e7eb" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">BASH_ENV=&quot;&quot; + sanitizer marker</text>
+  <text x="110" y="335" fill="#fca5a5" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">old helper printed usage instead of exit 2</text>
+
+  <rect x="620" y="190" width="500" height="190" rx="18" fill="#020617" stroke="#334155"/>
+  <text x="650" y="235" fill="#86efac" font-family="SF Mono, Menlo, Consolas, monospace" font-size="22" font-weight="700">GREEN</text>
+  <text x="650" y="275" fill="#e5e7eb" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">BASH_ENV key presence is dirty</text>
+  <text x="650" y="305" fill="#e5e7eb" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">post-sanitizer guard rejects any key</text>
+  <text x="650" y="335" fill="#86efac" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">generic fail-closed message, no usage leak</text>
+
+  <rect x="80" y="420" width="1040" height="250" rx="18" fill="#020617" stroke="#334155"/>
+  <text x="110" y="462" fill="#e5e7eb" font-family="SF Mono, Menlo, Consolas, monospace" font-size="22" font-weight="700">Verification receipt</text>
+  <text x="110" y="505" fill="#a7f3d0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">✓ bash script/test_build_and_run.sh</text>
+  <text x="110" y="535" fill="#a7f3d0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">✓ adjacent release helper tests + bash -n script/*.sh + git diff --check</text>
+  <text x="110" y="565" fill="#a7f3d0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">✓ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test — 127 tests / 20 suites</text>
+  <text x="110" y="595" fill="#a7f3d0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">✓ dogfood_check.sh — .build/dogfood-checks/20260602-093717</text>
+  <text x="110" y="625" fill="#c4b5fd" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">Metrics: shell 130.31 ms · cold 250.02 ms · raw 21.379 MiB · strip 11.980 MiB</text>
+
+  <text x="80" y="705" fill="#94a3b8" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16">No signing, notarization, upload, GitHub Release, tag, cron change, or publication attempted.</text>
+</svg>
