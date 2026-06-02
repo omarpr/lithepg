@@ -1514,3 +1514,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - GREEN verification: `bash script/test_run_dogfood_app.sh`, `bash -n script/run_dogfood_app.sh script/test_run_dogfood_app.sh`, `git diff --check`, and `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed. Independent reviews: spec compliance PASS; code quality/security APPROVED; pre-commit review blocker was fixed with the whitespace-path regression.
 - Evidence artifact: `screenshots/evidence/2026-06-01-run-dogfood-app-root-chdir-hardening.svg`.
 - No real app launch, Docker/Postgres start, signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 20:05 EDT — v1.0 dogfood check root/chdir function-shadow hardening
+
+- Hardened `script/dogfood_check.sh` so repository-root setup uses absolute `/bin/realpath` plus `/usr/bin/dirname`, and removed the shell `cd "$ROOT_DIR"` dependency from the dogfood gate body. Swift test commands now run from the repository root through a small `/usr/bin/perl` `chdir`/`exec` wrapper, helper scripts are invoked by absolute repo-root paths, and git metadata uses `git -C "$ROOT_DIR"`.
+- Added strict-TDD coverage in `script/test_dogfood_check.sh` with PATH-shadowed fake `realpath`, `dirname`, `date`, `mkdir`, and `cat` plus exported shell functions named `command`, `builtin`, `cd`, and `pwd`. The helper must still write `status.json`, use fake PATH-resolved `swift`/`git`, and avoid invoking or leaking any shadow sentinel.
+- RED verification: `bash script/test_dogfood_check.sh` failed first with `DOGFOOD_CHECK_CD_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN cd invoked` before production hardening.
+- GREEN verification: `bash script/test_dogfood_check.sh`, `bash -n script/dogfood_check.sh script/test_dogfood_check.sh`, `git diff --check`, and `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` passed.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260601-200458/`; metrics: shell readiness 130.54 ms, connected cold start 225.41 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.026 ms, dogfood query median overhead 0.019 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-01-dogfood-check-root-chdir-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

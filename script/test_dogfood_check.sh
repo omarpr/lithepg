@@ -27,13 +27,47 @@ run_helper_capture() {
   local fake_bin="$3"
   local fake_swift_log="$4"
   local developer_dir="$5"
+  local marker_dir="$6"
+  local command_sentinel="$7"
+  local builtin_sentinel="$8"
+  local cd_sentinel="$9"
+  local pwd_sentinel="${10}"
 
   set +e
   (
     cd "$fixture_root"
+    command() {
+      /usr/bin/printf '%s command invoked\n' "${DOGFOOD_CHECK_COMMAND_SHADOW_SENTINEL:?}" >&2
+      /usr/bin/printf 'command\n' >"${DOGFOOD_CHECK_SHADOW_MARKER_DIR:?}/command"
+      exit 97
+    }
+    builtin() {
+      /usr/bin/printf '%s builtin invoked\n' "${DOGFOOD_CHECK_BUILTIN_SHADOW_SENTINEL:?}" >&2
+      /usr/bin/printf 'builtin\n' >"${DOGFOOD_CHECK_SHADOW_MARKER_DIR:?}/builtin"
+      exit 97
+    }
+    cd() {
+      /usr/bin/printf '%s cd invoked\n' "${DOGFOOD_CHECK_CD_SHADOW_SENTINEL:?}" >&2
+      /usr/bin/printf 'cd\n' >"${DOGFOOD_CHECK_SHADOW_MARKER_DIR:?}/cd"
+      exit 97
+    }
+    pwd() {
+      /usr/bin/printf '%s pwd invoked\n' "${DOGFOOD_CHECK_PWD_SHADOW_SENTINEL:?}" >&2
+      /usr/bin/printf 'pwd\n' >"${DOGFOOD_CHECK_SHADOW_MARKER_DIR:?}/pwd"
+      exit 97
+    }
+    export -f command
+    export -f builtin
+    export -f cd
+    export -f pwd
     PATH="$fake_bin:$PATH" \
       DEVELOPER_DIR="$developer_dir" \
       FAKE_SWIFT_LOG="$fake_swift_log" \
+      DOGFOOD_CHECK_SHADOW_MARKER_DIR="$marker_dir" \
+      DOGFOOD_CHECK_COMMAND_SHADOW_SENTINEL="$command_sentinel" \
+      DOGFOOD_CHECK_BUILTIN_SHADOW_SENTINEL="$builtin_sentinel" \
+      DOGFOOD_CHECK_CD_SHADOW_SENTINEL="$cd_sentinel" \
+      DOGFOOD_CHECK_PWD_SHADOW_SENTINEL="$pwd_sentinel" \
       /bin/bash "$fixture_root/script/dogfood_check.sh"
   ) >"$output_file" 2>&1
   local status=$?
@@ -85,17 +119,23 @@ fixture_root="$(/usr/bin/mktemp -d)"
 trap '/bin/rm -f "$output_file"; /bin/rm -rf "$fixture_root"' EXIT
 
 sentinel="DOGFOOD_CHECK_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+command_sentinel="DOGFOOD_CHECK_COMMAND_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+builtin_sentinel="DOGFOOD_CHECK_BUILTIN_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+cd_sentinel="DOGFOOD_CHECK_CD_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+pwd_sentinel="DOGFOOD_CHECK_PWD_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
 fake_bin="$fixture_root/fake-bin"
 fake_swift_log="$fixture_root/fake-swift.log"
+marker_dir="$fixture_root/shadow-markers"
 developer_dir="$(/usr/bin/xcode-select -p)"
-/bin/mkdir -p "$fixture_root/script" "$fake_bin"
+/bin/mkdir -p "$fixture_root/script" "$fake_bin" "$marker_dir"
 /bin/cp "$HELPER" "$fixture_root/script/dogfood_check.sh"
 /bin/chmod +x "$fixture_root/script/dogfood_check.sh"
 
-for tool in dirname date mkdir cat; do
+for tool in dirname date mkdir cat realpath; do
   /bin/cat >"$fake_bin/$tool" <<SHIM
 #!/bin/bash
 /usr/bin/printf '%s %s invoked\\n' '$sentinel' '$tool' >&2
+/usr/bin/printf '%s\\n' '$tool' >'$marker_dir/$tool'
 exit 97
 SHIM
   /bin/chmod +x "$fake_bin/$tool"
@@ -111,6 +151,9 @@ SWIFT
 /bin/cat >"$fake_bin/git" <<'GIT'
 #!/bin/bash
 set -euo pipefail
+if [[ "${1:-}" == "-C" ]]; then
+  shift 2
+fi
 case "$*" in
   "rev-parse --short HEAD")
     /usr/bin/printf 'abc1234\n'
@@ -163,7 +206,7 @@ JSON
 MEASURE
 /bin/chmod +x "$fixture_root/script/v04_measure.sh"
 
-if ! run_helper_capture "$output_file" "$fixture_root" "$fake_bin" "$fake_swift_log" "$developer_dir"; then
+if ! run_helper_capture "$output_file" "$fixture_root" "$fake_bin" "$fake_swift_log" "$developer_dir" "$marker_dir" "$command_sentinel" "$builtin_sentinel" "$cd_sentinel" "$pwd_sentinel"; then
   helper_output="$(<"$output_file")"
   /usr/bin/printf '%s\n' "$helper_output" >&2
   fail "dogfood_check.sh was affected by PATH-shadowed core utilities"
@@ -171,6 +214,10 @@ fi
 
 helper_output="$(<"$output_file")"
 assert_not_contains "$helper_output" "$sentinel"
+assert_not_contains "$helper_output" "$command_sentinel"
+assert_not_contains "$helper_output" "$builtin_sentinel"
+assert_not_contains "$helper_output" "$cd_sentinel"
+assert_not_contains "$helper_output" "$pwd_sentinel"
 assert_not_contains "$helper_output" " invoked"
 assert_contains "$helper_output" '"defaultSwiftTest": "passed"'
 assert_contains "$helper_output" '"liveSwiftTest": "passed"'
@@ -184,5 +231,9 @@ out_dir="$(extract_out_dir "$output_file")" || fail "helper output did not inclu
 status_file="$out_dir/status.json"
 [[ -f "$status_file" ]] || fail "status.json missing: $status_file"
 assert_status_json "$status_file"
+
+for tool in dirname date mkdir cat realpath command builtin cd pwd; do
+  [[ ! -e "$marker_dir/$tool" ]] || fail "dogfood_check.sh invoked shadowed $tool"
+done
 
 /usr/bin/printf 'test_dogfood_check passed\n'

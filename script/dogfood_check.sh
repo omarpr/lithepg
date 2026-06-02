@@ -1,8 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT_DIR"
+ROOT_DIR="$(/bin/realpath "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/..")"
+
+run_from_root() {
+  /usr/bin/perl -e '
+    my $root = shift @ARGV;
+    chdir($root) or die "chdir failed\n";
+    $ENV{PWD} = $root;
+    exec { $ARGV[0] } @ARGV or die "exec failed\n";
+  ' "$ROOT_DIR" "$@"
+}
 
 if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode.app/Contents/Developer ]]; then
   export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
@@ -16,25 +24,25 @@ OUT_DIR="${LITHEPG_DOGFOOD_CHECK_OUT_DIR:-$ROOT_DIR/.build/dogfood-checks/$(/bin
 /bin/mkdir -p "$OUT_DIR"
 
 printf 'Starting dogfood Postgres...\n'
-./script/dogfood_postgres.sh > "$OUT_DIR/dogfood-postgres.log"
+"$ROOT_DIR/script/dogfood_postgres.sh" > "$OUT_DIR/dogfood-postgres.log"
 
 printf 'Running default test suite...\n'
-DEVELOPER_DIR="$DEVELOPER_DIR" swift test > "$OUT_DIR/swift-test.log" 2>&1
+DEVELOPER_DIR="$DEVELOPER_DIR" run_from_root swift test > "$OUT_DIR/swift-test.log" 2>&1
 
 printf 'Running live dogfood test slice...\n'
 POSTGRES_TEST_URL="$POSTGRES_TEST_URL" \
 DEVELOPER_DIR="$DEVELOPER_DIR" \
-swift test --filter 'saved connection flow|query history records|connects through AppState|refresh schema|reconnect|live|Live' \
+run_from_root swift test --filter 'saved connection flow|query history records|connects through AppState|refresh schema|reconnect|live|Live' \
   > "$OUT_DIR/live-swift-test.log" 2>&1
 
 printf 'Running v0.4 measurement gate...\n'
 LITHEPG_MEASURE_OUT_DIR="$OUT_DIR/v04-measure" \
 POSTGRES_TEST_URL="$POSTGRES_TEST_URL" \
 DEVELOPER_DIR="$DEVELOPER_DIR" \
-./script/v04_measure.sh > "$OUT_DIR/v04-measure.log" 2>&1
+"$ROOT_DIR/script/v04_measure.sh" > "$OUT_DIR/v04-measure.log" 2>&1
 
-COMMIT="$(git rev-parse --short HEAD)"
-BRANCH="$(git branch --show-current)"
+COMMIT="$(git -C "$ROOT_DIR" rev-parse --short HEAD)"
+BRANCH="$(git -C "$ROOT_DIR" branch --show-current)"
 /usr/bin/python3 - <<PY > "$OUT_DIR/status.json"
 import json, pathlib, datetime
 root = pathlib.Path("$OUT_DIR")
