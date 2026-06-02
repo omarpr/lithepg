@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="860" viewBox="0 0 1400 860" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG create_release_zip startup hardening evidence</title>
+  <desc id="desc">Visual evidence for the commit hardening create_release_zip.sh against Bash and Perl startup environment interception.</desc>
+  <rect width="1400" height="860" fill="#0b1020"/>
+  <rect x="48" y="48" width="1304" height="764" rx="22" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="84" y="108" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="34" font-weight="700">LithePG release helper hardening</text>
+  <text x="84" y="150" fill="#94a3b8" font-family="Menlo, Consolas, monospace" font-size="20">Evidence captured: 2026-06-02 00:24:29 EDT</text>
+
+  <rect x="84" y="192" width="1228" height="288" rx="14" fill="#020617" stroke="#1e293b"/>
+  <text x="112" y="236" fill="#38bdf8" font-family="Menlo, Consolas, monospace" font-size="22" font-weight="700">Changed slice</text>
+  <text x="112" y="276" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="20">script/create_release_zip.sh</text>
+  <text x="112" y="312" fill="#cbd5e1" font-family="Menlo, Consolas, monospace" font-size="18">• Uses #!/bin/bash -p instead of PATH-selected env bash</text>
+  <text x="112" y="346" fill="#cbd5e1" font-family="Menlo, Consolas, monospace" font-size="18">• Sanitizes BASH_ENV and BASH_FUNC_* before helper body</text>
+  <text x="112" y="380" fill="#cbd5e1" font-family="Menlo, Consolas, monospace" font-size="18">• Sanitizes PERL5OPT, PERL5LIB, and PERLLIB, including Perl-only poison</text>
+  <text x="112" y="414" fill="#cbd5e1" font-family="Menlo, Consolas, monospace" font-size="18">• Re-execs through /bin/bash -p with LITHEPG_CREATE_RELEASE_ZIP_STARTUP_ENV_SANITIZED</text>
+  <text x="112" y="452" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="20">script/test_create_release_zip.sh: startup interception regression coverage</text>
+
+  <rect x="84" y="512" width="1228" height="224" rx="14" fill="#052e16" stroke="#166534"/>
+  <text x="112" y="556" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="22" font-weight="700">Verification output</text>
+  <text x="112" y="596" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="20">$ bash script/test_create_release_zip.sh</text>
+  <text x="112" y="630" fill="#bbf7d0" font-family="Menlo, Consolas, monospace" font-size="20">test_create_release_zip passed</text>
+  <text x="112" y="664" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="20">$ bash script/test_package_verify.sh &amp;&amp; bash script/test_sign_and_notarize.sh &amp;&amp; bash script/test_v10_release_gate.sh</text>
+  <text x="112" y="698" fill="#bbf7d0" font-family="Menlo, Consolas, monospace" font-size="20">test_package_verify passed · test_sign_and_notarize passed · test_v10_release_gate passed</text>
+
+  <text x="84" y="776" fill="#94a3b8" font-family="Menlo, Consolas, monospace" font-size="18">Independent reviews: spec PASS; quality APPROVED; pre-commit JSON review passed.</text>
+</svg>

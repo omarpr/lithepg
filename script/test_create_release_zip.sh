@@ -103,9 +103,13 @@ assert_contains "$helper_contents" "/usr/bin/shasum -a 256"
 assert_contains "$helper_contents" 'mktemp -d "${output_parent%/}/.release-zip.XXXXXX"'
 assert_contains "$helper_contents" '/usr/bin/ditto -c -k --keepParent "$APP_BUNDLE_ABS" "$temp_zip"'
 assert_contains "$helper_contents" 'rename($ARGV[0], $ARGV[1])'
+assert_contains "$helper_contents" 'exec { $bash } $bash, "-p", @ARGV;'
 assert_not_contains "$helper_contents" '/usr/bin/ditto -c -k --keepParent "$APP_BUNDLE" "$OUTPUT_ZIP"'
 
 missing_verify_output="$(mktemp)"
+initial_bash_path_shadow_output="$(mktemp)"
+startup_env_shadow_output="$(mktemp)"
+perl_startup_shadow_output="$(mktemp)"
 wrong_app_bundle_name_output="$(mktemp)"
 symlink_app_bundle_output="$(mktemp)"
 symlink_app_bundle_trailing_slash_output="$(mktemp)"
@@ -137,7 +141,7 @@ success_output="$(mktemp)"
 outside_cwd_output="$(mktemp)"
 help_output="$(mktemp)"
 fixture_root="$(mktemp -d)"
-trap 'rm -f "$missing_verify_output" "$wrong_app_bundle_name_output" "$symlink_app_bundle_output" "$symlink_app_bundle_trailing_slash_output" "$wrong_output_zip_name_output" "$trailing_slash_output_zip_output" "$approved_directory_output" "$output_parent_file_output" "$dangling_output_parent_symlink_output" "$output_parent_creation_failure_output" "$refuse_output" "$refuse_sentinel_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$success_path_redaction_output" "$cleanup_redaction_output" "$root_resolution_shadow_output" "$path_shadow_output" "$inside_bundle_output" "$inside_bundle_sentinel_output" "$temp_creation_failure_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$final_symlink_inside_bundle_output" "$success_output" "$outside_cwd_output" "$help_output"; chmod -R u+rwx "$fixture_root" 2>/dev/null || true; rm -rf "$fixture_root"' EXIT
+trap 'rm -f "$missing_verify_output" "$initial_bash_path_shadow_output" "$startup_env_shadow_output" "$perl_startup_shadow_output" "$wrong_app_bundle_name_output" "$symlink_app_bundle_output" "$symlink_app_bundle_trailing_slash_output" "$wrong_output_zip_name_output" "$trailing_slash_output_zip_output" "$approved_directory_output" "$output_parent_file_output" "$dangling_output_parent_symlink_output" "$output_parent_creation_failure_output" "$refuse_output" "$refuse_sentinel_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$success_path_redaction_output" "$cleanup_redaction_output" "$root_resolution_shadow_output" "$path_shadow_output" "$inside_bundle_output" "$inside_bundle_sentinel_output" "$temp_creation_failure_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$final_symlink_inside_bundle_output" "$success_output" "$outside_cwd_output" "$help_output"; chmod -R u+rwx "$fixture_root" 2>/dev/null || true; rm -rf "$fixture_root"' EXIT
 
 sensitive_identity="SENSITIVE_CODESIGN_IDENTITY_DO_NOT_PRINT"
 sensitive_notary="SENSITIVE_NOTARY_PROFILE_DO_NOT_PRINT"
@@ -156,6 +160,165 @@ missing_verify_text="$(<"$missing_verify_output")"
 assert_contains "$missing_verify_text" "fake package verification failed"
 assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
 [[ ! -e "$verify_fixture/dist/LithePG.app.zip" ]] || fail "zip was created despite package verification failure"
+
+# Executable startup must not route through PATH-selected bash before helper code runs.
+initial_bash_path_shadow_sentinel="CREATE_RELEASE_ZIP_INITIAL_BASH_PATH_SHADOW_SENTINEL_DO_NOT_PRINT"
+initial_bash_path_shadow_fixture="$fixture_root/initial-bash-path-shadow"
+initial_bash_path_shadow_fake_bin="$initial_bash_path_shadow_fixture/fake-bin"
+initial_bash_path_shadow_marker="$initial_bash_path_shadow_fixture/fake-bash-invoked"
+make_fixture "$initial_bash_path_shadow_fixture"
+mkdir -p "$initial_bash_path_shadow_fake_bin"
+cat >"$initial_bash_path_shadow_fake_bin/bash" <<'FAKE_BASH'
+#!/bin/sh
+/usr/bin/printf '%s fake bash invoked\n' "${CREATE_RELEASE_ZIP_INITIAL_BASH_PATH_SHADOW_SENTINEL:-}" >&2
+/usr/bin/printf 'bash\n' >"${CREATE_RELEASE_ZIP_INITIAL_BASH_PATH_SHADOW_MARKER:?}"
+exit 97
+FAKE_BASH
+chmod +x "$initial_bash_path_shadow_fake_bin/bash"
+if ! CREATE_RELEASE_ZIP_INITIAL_BASH_PATH_SHADOW_SENTINEL="$initial_bash_path_shadow_sentinel" \
+  CREATE_RELEASE_ZIP_INITIAL_BASH_PATH_SHADOW_MARKER="$initial_bash_path_shadow_marker" \
+  PATH="$initial_bash_path_shadow_fake_bin:$PATH" \
+  run_helper_capture "$initial_bash_path_shadow_fixture" "$initial_bash_path_shadow_output" "--help"; then
+  initial_bash_path_shadow_text="$(<"$initial_bash_path_shadow_output")"
+  printf '%s\n' "$initial_bash_path_shadow_text" >&2
+  fail "create release zip executable invocation used PATH-selected bash"
+fi
+initial_bash_path_shadow_text="$(<"$initial_bash_path_shadow_output")"
+assert_contains "$initial_bash_path_shadow_text" "Usage:"
+assert_not_contains "$initial_bash_path_shadow_text" "$initial_bash_path_shadow_fixture"
+assert_not_contains "$initial_bash_path_shadow_text" "$initial_bash_path_shadow_sentinel"
+assert_not_contains "$initial_bash_path_shadow_text" "fake bash invoked"
+[[ ! -e "$initial_bash_path_shadow_marker" ]] || fail "create release zip executable invocation used PATH-selected bash: $(<"$initial_bash_path_shadow_marker")"
+
+# Bash and Perl startup environments, including exported shell functions, must be
+# sanitized before normal helper logic or child helpers can observe them.
+startup_env_shadow_sentinel="CREATE_RELEASE_ZIP_STARTUP_ENV_SHADOW_SENTINEL_DO_NOT_PRINT"
+startup_env_shadow_fixture="$fixture_root/startup-env-shadow"
+startup_env_shadow_bash_env="$startup_env_shadow_fixture/poison.bash_env"
+startup_env_shadow_perl_lib="$startup_env_shadow_fixture/perl-lib"
+startup_env_shadow_bash_marker="$startup_env_shadow_fixture/bash-startup-invoked"
+startup_env_shadow_export_marker="$startup_env_shadow_fixture/exported-function-invoked"
+startup_env_shadow_perl_marker="$startup_env_shadow_fixture/perl-startup-invoked"
+make_fixture "$startup_env_shadow_fixture"
+mkdir -p "$startup_env_shadow_perl_lib"
+cat >"$startup_env_shadow_bash_env" <<'BASHENV'
+set() {
+  /usr/bin/printf '%s BASH_ENV set function invoked\n' "${CREATE_RELEASE_ZIP_STARTUP_ENV_SHADOW_SENTINEL:?}" >&2
+  /usr/bin/printf 'bash-env\n' >"${CREATE_RELEASE_ZIP_STARTUP_ENV_BASH_MARKER:?}"
+  exit 97
+}
+BASHENV
+cat >"$startup_env_shadow_perl_lib/CreateReleaseZipStartupPoison.pm" <<'PERLMOD'
+package CreateReleaseZipStartupPoison;
+BEGIN {
+  my $sentinel = $ENV{CREATE_RELEASE_ZIP_STARTUP_ENV_SHADOW_SENTINEL} // '';
+  my $marker = $ENV{CREATE_RELEASE_ZIP_STARTUP_ENV_PERL_MARKER} // '';
+  if ($marker ne '' && open(my $fh, '>', $marker)) {
+    print {$fh} "perl\n";
+    close $fh;
+  }
+  print STDERR "$sentinel Perl startup invoked\n";
+  exit 97;
+}
+1;
+PERLMOD
+verify_log="$startup_env_shadow_fixture/verify.log"
+set +e
+(
+  command cd "$startup_env_shadow_fixture"
+  set() {
+    /usr/bin/printf '%s exported set function invoked\n' "${CREATE_RELEASE_ZIP_STARTUP_ENV_SHADOW_SENTINEL:?}" >&2
+    /usr/bin/printf 'exported-set\n' >"${CREATE_RELEASE_ZIP_STARTUP_ENV_EXPORT_MARKER:?}"
+    exit 97
+  }
+  export -f set
+  FAKE_VERIFY_LOG="$verify_log" \
+    CREATE_RELEASE_ZIP_STARTUP_ENV_SHADOW_SENTINEL="$startup_env_shadow_sentinel" \
+    CREATE_RELEASE_ZIP_STARTUP_ENV_BASH_MARKER="$startup_env_shadow_bash_marker" \
+    CREATE_RELEASE_ZIP_STARTUP_ENV_EXPORT_MARKER="$startup_env_shadow_export_marker" \
+    CREATE_RELEASE_ZIP_STARTUP_ENV_PERL_MARKER="$startup_env_shadow_perl_marker" \
+    BASH_ENV="$startup_env_shadow_bash_env" \
+    PERL5LIB="$startup_env_shadow_perl_lib" \
+    PERLLIB="$startup_env_shadow_perl_lib" \
+    PERL5OPT=-MCreateReleaseZipStartupPoison \
+    "$startup_env_shadow_fixture/script/create_release_zip.sh" "dist/LithePG.app" "artifacts/public/LithePG.app.zip"
+) >"$startup_env_shadow_output" 2>&1
+startup_env_shadow_status=$?
+set -e
+if [[ "$startup_env_shadow_status" -ne 0 ]]; then
+  startup_env_shadow_text="$(<"$startup_env_shadow_output")"
+  printf '%s\n' "$startup_env_shadow_text" >&2
+  fail "create release zip was affected by Bash/Perl startup environment shadowing"
+fi
+startup_env_shadow_text="$(<"$startup_env_shadow_output")"
+assert_contains "$startup_env_shadow_text" "Created release zip: LithePG.app.zip"
+assert_matches_sha_line "$startup_env_shadow_text"
+assert_size_line_for_zip "$startup_env_shadow_text" "$startup_env_shadow_fixture/artifacts/public/LithePG.app.zip"
+assert_not_contains "$startup_env_shadow_text" "$startup_env_shadow_fixture"
+assert_not_contains "$startup_env_shadow_text" "$startup_env_shadow_sentinel"
+assert_not_contains "$startup_env_shadow_text" "BASH_ENV set function invoked"
+assert_not_contains "$startup_env_shadow_text" "exported set function invoked"
+assert_not_contains "$startup_env_shadow_text" "Perl startup invoked"
+[[ ! -e "$startup_env_shadow_bash_marker" ]] || fail "create release zip invoked BASH_ENV-defined set function: $(<"$startup_env_shadow_bash_marker")"
+[[ ! -e "$startup_env_shadow_export_marker" ]] || fail "create release zip invoked exported set function: $(<"$startup_env_shadow_export_marker")"
+[[ ! -e "$startup_env_shadow_perl_marker" ]] || fail "create release zip honored Perl startup environment: $(<"$startup_env_shadow_perl_marker")"
+[[ -f "$startup_env_shadow_fixture/artifacts/public/LithePG.app.zip" ]] || fail "startup-env-shadow zip was not created"
+assert_zip_contains_app_wrapper "$startup_env_shadow_fixture/artifacts/public/LithePG.app.zip" "$startup_env_shadow_fixture/extracted-startup-env-shadow"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+
+# Perl startup environment alone must trigger sanitization before normal helper
+# /usr/bin/perl calls can observe PERL5OPT/PERL5LIB/PERLLIB.
+perl_startup_shadow_sentinel="CREATE_RELEASE_ZIP_PERL_STARTUP_SHADOW_SENTINEL_DO_NOT_PRINT"
+perl_startup_shadow_fixture="$fixture_root/perl-startup-shadow"
+perl_startup_shadow_perl_lib="$perl_startup_shadow_fixture/perl-lib"
+perl_startup_shadow_perl_marker="$perl_startup_shadow_fixture/perl-startup-invoked"
+make_fixture "$perl_startup_shadow_fixture"
+mkdir -p "$perl_startup_shadow_perl_lib"
+cat >"$perl_startup_shadow_perl_lib/CreateReleaseZipPerlStartupPoison.pm" <<'PERLMOD'
+package CreateReleaseZipPerlStartupPoison;
+BEGIN {
+  my $sentinel = $ENV{CREATE_RELEASE_ZIP_PERL_STARTUP_SHADOW_SENTINEL} // '';
+  my $marker = $ENV{CREATE_RELEASE_ZIP_PERL_STARTUP_MARKER} // '';
+  if ($marker ne '' && open(my $fh, '>', $marker)) {
+    print {$fh} "perl\n";
+    close $fh;
+  }
+  print STDERR "$sentinel Perl startup invoked\n";
+  exit 97;
+}
+1;
+PERLMOD
+verify_log="$perl_startup_shadow_fixture/verify.log"
+set +e
+(
+  command cd "$perl_startup_shadow_fixture"
+  unset BASH_ENV
+  FAKE_VERIFY_LOG="$verify_log" \
+    CREATE_RELEASE_ZIP_PERL_STARTUP_SHADOW_SENTINEL="$perl_startup_shadow_sentinel" \
+    CREATE_RELEASE_ZIP_PERL_STARTUP_MARKER="$perl_startup_shadow_perl_marker" \
+    PERL5LIB="$perl_startup_shadow_perl_lib" \
+    PERLLIB="$perl_startup_shadow_perl_lib" \
+    PERL5OPT=-MCreateReleaseZipPerlStartupPoison \
+    "$perl_startup_shadow_fixture/script/create_release_zip.sh" "dist/LithePG.app" "artifacts/public/LithePG.app.zip"
+) >"$perl_startup_shadow_output" 2>&1
+perl_startup_shadow_status=$?
+set -e
+if [[ "$perl_startup_shadow_status" -ne 0 ]]; then
+  perl_startup_shadow_text="$(<"$perl_startup_shadow_output")"
+  printf '%s\n' "$perl_startup_shadow_text" >&2
+  fail "create release zip was affected by Perl-only startup environment shadowing"
+fi
+perl_startup_shadow_text="$(<"$perl_startup_shadow_output")"
+assert_contains "$perl_startup_shadow_text" "Created release zip: LithePG.app.zip"
+assert_matches_sha_line "$perl_startup_shadow_text"
+assert_size_line_for_zip "$perl_startup_shadow_text" "$perl_startup_shadow_fixture/artifacts/public/LithePG.app.zip"
+assert_not_contains "$perl_startup_shadow_text" "$perl_startup_shadow_fixture"
+assert_not_contains "$perl_startup_shadow_text" "$perl_startup_shadow_sentinel"
+assert_not_contains "$perl_startup_shadow_text" "Perl startup invoked"
+[[ ! -e "$perl_startup_shadow_perl_marker" ]] || fail "create release zip honored Perl-only startup environment: $(<"$perl_startup_shadow_perl_marker")"
+[[ -f "$perl_startup_shadow_fixture/artifacts/public/LithePG.app.zip" ]] || fail "perl-startup-shadow zip was not created"
+assert_zip_contains_app_wrapper "$perl_startup_shadow_fixture/artifacts/public/LithePG.app.zip" "$perl_startup_shadow_fixture/extracted-perl-startup-shadow"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
 
 # The public release helper must only package the canonical LithePG.app wrapper.
 wrong_app_bundle_name_fixture="$fixture_root/wrong-app-bundle-name"
