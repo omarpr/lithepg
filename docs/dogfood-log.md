@@ -1918,3 +1918,11 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-02-dogfood-check-status-json-argv-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 15:18 EDT — v1.0 public status metrics sync
+
+- Refreshed `README.md`, `CHANGELOG.md`, and `docs/releases/v1.0-draft.md` from the latest committed local dogfood gate at `.build/dogfood-checks/20260602-150152/` on `main` at `7c580d4`.
+- Safe metrics synced: 132.10 ms shell readiness; 253.84 ms connected cold start; 21.379 MiB raw release executable; 11.980 MiB strip-probe executable; 0.045 ms median `SELECT 1` overhead; 0.112 ms median dogfood-query overhead.
+- Gate statuses synced: `defaultSwiftTest`, `liveSwiftTest`, and `v04Measure` passed.
+- Evidence artifact: `screenshots/evidence/2026-06-02-v10-public-status-metrics-sync-latest.svg`.
+- This docs-only status sync attempted no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication.
