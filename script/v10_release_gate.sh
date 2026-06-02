@@ -648,7 +648,7 @@ release_zip_entry_paths_ascii_status() {
     return 2
   fi
 
-  /usr/bin/python3 - "$zip_file" <<'PY'
+  /usr/bin/python3 -I - "$zip_file" <<'PY'
 import sys
 import zipfile
 
@@ -907,7 +907,7 @@ release_zip_info_plist_mode_safety_status() {
     return 2
   fi
 
-  /usr/bin/python3 - "$zip_file" <<'PY'
+  /usr/bin/python3 -I - "$zip_file" <<'PY'
 import stat
 import sys
 import zipfile

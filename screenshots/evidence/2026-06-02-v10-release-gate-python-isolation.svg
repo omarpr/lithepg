@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release gate Python isolation evidence</title>
+  <desc id="desc">Visual evidence for the 2026-06-02 release-gate hardening slice: embedded Python probes now use isolated mode and verification passed.</desc>
+  <rect width="1200" height="720" fill="#0b1020"/>
+  <rect x="40" y="40" width="1120" height="640" rx="28" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="80" y="105" fill="#e5e7eb" font-family="SF Mono, Menlo, Consolas, monospace" font-size="34" font-weight="700">v1.0 release gate: Python isolated mode</text>
+  <text x="80" y="155" fill="#93c5fd" font-family="SF Mono, Menlo, Consolas, monospace" font-size="20">screenshots/evidence/2026-06-02-v10-release-gate-python-isolation.svg</text>
+
+  <rect x="80" y="195" width="1040" height="120" rx="18" fill="#172554" stroke="#60a5fa" stroke-width="2"/>
+  <text x="110" y="238" fill="#dbeafe" font-family="SF Mono, Menlo, Consolas, monospace" font-size="22">RED</text>
+  <text x="190" y="238" fill="#fca5a5" font-family="SF Mono, Menlo, Consolas, monospace" font-size="22">bash script/test_v10_release_gate.sh</text>
+  <text x="190" y="278" fill="#fecaca" font-family="SF Mono, Menlo, Consolas, monospace" font-size="20">failed first: expected 2 occurrences of /usr/bin/python3 -I -</text>
+
+  <rect x="80" y="345" width="1040" height="120" rx="18" fill="#052e16" stroke="#22c55e" stroke-width="2"/>
+  <text x="110" y="388" fill="#dcfce7" font-family="SF Mono, Menlo, Consolas, monospace" font-size="22">GREEN</text>
+  <text x="210" y="388" fill="#bbf7d0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="22">/usr/bin/python3 -I - "$zip_file"</text>
+  <text x="210" y="428" fill="#86efac" font-family="SF Mono, Menlo, Consolas, monospace" font-size="20">both embedded zip-inspection probes now run with isolated Python</text>
+
+  <rect x="80" y="495" width="1040" height="120" rx="18" fill="#1f2937" stroke="#a78bfa" stroke-width="2"/>
+  <text x="110" y="538" fill="#ede9fe" font-family="SF Mono, Menlo, Consolas, monospace" font-size="22">VERIFY</text>
+  <text x="230" y="538" fill="#e5e7eb" font-family="SF Mono, Menlo, Consolas, monospace" font-size="20">release-helper tests + bash -n + swift build/test passed</text>
+  <text x="230" y="578" fill="#e5e7eb" font-family="SF Mono, Menlo, Consolas, monospace" font-size="20">dogfood_check passed: shell 128.65 ms, cold start 266.86 ms</text>
+
+  <text x="80" y="650" fill="#94a3b8" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron change, or external publication was attempted.</text>
+</svg>

@@ -1945,3 +1945,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - The preflight intentionally remains blocked with 12 blockers: release-copy/Homebrew/security placeholders, missing approved release-artifact SHA-256 input, missing codesign identity/notary profile/security contact/Homebrew tap, GitHub Actions not approved, release-copy approval not approved, and publication approval not approved.
 - Evidence artifact: `screenshots/evidence/2026-06-02-v10-publication-preflight-latest.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 16:28 EDT — v1.0 release gate Python isolation hardening
+
+- Hardened `script/v10_release_gate.sh` so both embedded Python zip-inspection probes run with isolated mode (`/usr/bin/python3 -I -`) instead of inheriting ambient Python startup/import environment while inspecting the public release artifact.
+- Added strict-TDD coverage in `script/test_v10_release_gate.sh` requiring exactly two isolated Python stdin probes and rejecting the previous non-isolated `/usr/bin/python3 - "` invocation shape.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `test_v10_release_gate failed: expected 2 occurrences of: /usr/bin/python3 -I -` before production hardening.
+- GREEN verification: `bash script/test_v10_release_gate.sh`, adjacent release-helper tests (`test_create_release_zip`, `test_sign_and_notarize`, `test_package_verify`), `bash -n script/*.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-162830/`; metrics: shell readiness 128.65 ms, connected cold start 266.86 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.025 ms, dogfood query median overhead 0.036 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-02-v10-release-gate-python-isolation.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
