@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 publication preflight, 2026-06-02 16:09 EDT</title>
+  <desc id="desc">Visual receipt showing the v1.0 fast publication preflight remains safely blocked on external release inputs while local and remote tag state is as expected.</desc>
+  <rect width="1200" height="720" fill="#0f172a"/>
+  <rect x="40" y="40" width="1120" height="640" rx="24" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="72" y="92" fill="#e5f3ff" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="28" font-weight="700">LithePG v1.0 fast publication preflight</text>
+  <text x="72" y="130" fill="#93c5fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">2026-06-02 16:09 EDT · main @ a3af2e4 · no publication attempted</text>
+
+  <rect x="72" y="164" width="500" height="206" rx="16" fill="#0b1220" stroke="#334155"/>
+  <text x="96" y="204" fill="#bae6fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="21" font-weight="700">Git/tag readiness</text>
+  <text x="96" y="242" fill="#d1fae5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">✓ branch: main</text>
+  <text x="96" y="274" fill="#d1fae5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">✓ working tree: clean</text>
+  <text x="96" y="306" fill="#d1fae5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">✓ origin tag v0.5: present</text>
+  <text x="96" y="338" fill="#fef3c7" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">• origin tag v1.0: absent (expected)</text>
+
+  <rect x="604" y="164" width="484" height="206" rx="16" fill="#0b1220" stroke="#334155"/>
+  <text x="628" y="204" fill="#bae6fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="21" font-weight="700">Local artifact checks</text>
+  <text x="628" y="242" fill="#d1fae5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">✓ LithePG.app.zip present</text>
+  <text x="628" y="274" fill="#d1fae5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">✓ app wrapper and bundle metadata match</text>
+  <text x="628" y="306" fill="#d1fae5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">✓ code signature/runtime checks pass</text>
+  <text x="628" y="338" fill="#fef3c7" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">• approved SHA-256 input missing</text>
+
+  <rect x="72" y="402" width="1016" height="206" rx="16" fill="#1f2937" stroke="#f59e0b" stroke-width="2"/>
+  <text x="96" y="442" fill="#fde68a" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700">Publication remains blocked: 12 blockers</text>
+  <text x="96" y="480" fill="#fef3c7" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">• Release copy / Homebrew cask / security policy placeholders remain intentionally present.</text>
+  <text x="96" y="512" fill="#fef3c7" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">• Codesign identity, notary profile, security contact, and Homebrew tap are missing.</text>
+  <text x="96" y="544" fill="#fef3c7" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">• GitHub Actions readiness, release-copy approval, and publication approval are not approved.</text>
+  <text x="96" y="576" fill="#fca5a5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">Result: no tag, no upload, no GitHub Release, no Homebrew publication.</text>
+
+  <text x="72" y="648" fill="#94a3b8" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="15">Command: ./script/v10_release_gate.sh --check-remote · output redacted to safe status fields only</text>
+</svg>

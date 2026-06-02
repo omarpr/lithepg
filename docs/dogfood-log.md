@@ -1936,3 +1936,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-154445/`; metrics: shell readiness 127.05 ms, connected cold start 263.35 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.027 ms, dogfood query median overhead 0.029 ms.
 - Evidence artifact: `screenshots/evidence/2026-06-02-sign-notarize-publication-tool-path-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 16:09 EDT — v1.0 publication preflight receipt
+
+- Re-ran the fast publication preflight after the latest sign/notarize publication-tool hardening: `./script/v10_release_gate.sh --check-remote`.
+- Verified expected repository/tag state: `main` was clean at `a3af2e4`, local/origin `v0.5` existed, and local/origin `v1.0` was absent.
+- Verified local artifact inspection still sees `dist/LithePG.app.zip` with a present app wrapper, matching bundle metadata, canonical entries, executable Mach-O format, code-signature resources, valid code-signature verification, matching signature identifier, and runtime option present.
+- The preflight intentionally remains blocked with 12 blockers: release-copy/Homebrew/security placeholders, missing approved release-artifact SHA-256 input, missing codesign identity/notary profile/security contact/Homebrew tap, GitHub Actions not approved, release-copy approval not approved, and publication approval not approved.
+- Evidence artifact: `screenshots/evidence/2026-06-02-v10-publication-preflight-latest.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
