@@ -1974,3 +1974,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Existing verification from the committed slice: `bash script/test_v10_release_gate.sh`, full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`, and `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` passed; the dogfood gate wrote artifacts under `.build/dogfood-checks/20260602-171838/`.
 - Original evidence artifact: `docs/evidence/20260602-v10-artifact-only-release-gate.svg`; receipt-sync evidence artifact: `screenshots/evidence/2026-06-02-v10-artifact-only-receipt-sync.svg`.
 - This docs/evidence receipt sync attempted no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication.
+
+## 2026-06-02 17:56 EDT — package verifier hard-link rejection
+
+- Hardened `script/package_verify.sh` so release app bundles fail verification if any regular file has multiple hard links, closing a local mutability/TOCTOU gap between package verification and downstream zip/sign/notarization steps.
+- Added strict-TDD coverage in `script/test_package_verify.sh` that first proved the old verifier accepted a hard-linked `Contents/MacOS/LithePGApp` and then verifies the new generic failure path without leaking fixture paths, sentinels, or external hard-link target names.
+- RED verification: `bash script/test_package_verify.sh` failed first with `package verifier unexpectedly accepted a hard-linked file inside the app bundle`.
+- GREEN verification passed: `bash script/test_package_verify.sh`, adjacent release-helper tests (`test_create_release_zip`, `test_sign_and_notarize`, `test_v10_release_gate`), `bash -n script/package_verify.sh script/test_package_verify.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`. Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-175538/`; metrics: shell readiness 138.99 ms, connected cold start 253.37 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.083 ms, dogfood query median overhead 0.073 ms.
+- Evidence artifact: `screenshots/evidence/2026-06-02-package-verify-hardlink-rejection.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

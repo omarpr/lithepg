@@ -1156,6 +1156,26 @@ assert_not_contains "$helper_output" "$special_file_bundle"
 assert_not_contains "$helper_output" "$special_file_sentinel"
 assert_not_contains "$helper_output" "$special_file_fifo_name"
 
+hardlinked_file_sentinel="HARDLINKED_FILE_SENTINEL_SHOULD_NOT_LEAK"
+hardlinked_file_bundle="$fixture_root/hardlinked-file-$hardlinked_file_sentinel/LithePG.app"
+hardlinked_external_target="$fixture_root/hardlinked-external-target"
+make_minimal_app_bundle "$hardlinked_file_bundle"
+rm "$hardlinked_file_bundle/Contents/MacOS/LithePGApp"
+cp /usr/bin/true "$hardlinked_external_target"
+ln "$hardlinked_external_target" "$hardlinked_file_bundle/Contents/MacOS/LithePGApp"
+chmod 755 "$hardlinked_file_bundle/Contents/MacOS/LithePGApp"
+if run_helper_capture "$output_file" "$hardlinked_file_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted a hard-linked file inside the app bundle"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: app bundle must not contain hard-linked files"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$hardlinked_file_bundle"
+assert_not_contains "$helper_output" "$hardlinked_file_sentinel"
+assert_not_contains "$helper_output" "hardlinked-external-target"
+
 unreadable_symlink_sentinel="UNREADABLE_SYMLINK_SENTINEL_SHOULD_NOT_LEAK"
 unreadable_symlink_bundle="$fixture_root/unreadable-symlink/LithePG.app"
 make_minimal_app_bundle "$unreadable_symlink_bundle"

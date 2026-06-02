@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG package verifier hard-link rejection evidence</title>
+  <desc id="desc">Evidence summary for the 2026-06-02 package verifier hard-link rejection slice.</desc>
+  <rect width="1200" height="760" fill="#0b1020"/>
+  <rect x="44" y="44" width="1112" height="672" rx="24" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="80" y="104" font-family="SF Mono, Menlo, Consolas, monospace" font-size="30" fill="#e5f3ff">LithePG evidence — package verifier hard-link rejection</text>
+  <text x="80" y="150" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18" fill="#93c5fd">2026-06-02 17:56 EDT · release-helper hardening · no external publication</text>
+
+  <rect x="80" y="190" width="1040" height="118" rx="14" fill="#172033" stroke="#334155"/>
+  <text x="108" y="232" font-family="SF Mono, Menlo, Consolas, monospace" font-size="22" fill="#fca5a5">RED</text>
+  <text x="190" y="232" font-family="SF Mono, Menlo, Consolas, monospace" font-size="19" fill="#e5e7eb">bash script/test_package_verify.sh</text>
+  <text x="190" y="266" font-family="SF Mono, Menlo, Consolas, monospace" font-size="17" fill="#cbd5e1">failed first: verifier accepted a hard-linked app executable fixture</text>
+
+  <rect x="80" y="332" width="1040" height="164" rx="14" fill="#10251b" stroke="#22c55e"/>
+  <text x="108" y="374" font-family="SF Mono, Menlo, Consolas, monospace" font-size="22" fill="#86efac">GREEN</text>
+  <text x="190" y="374" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18" fill="#dcfce7">test_package_verify, test_create_release_zip, test_sign_and_notarize, test_v10_release_gate passed</text>
+  <text x="190" y="408" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18" fill="#dcfce7">bash -n + git diff --check passed</text>
+  <text x="190" y="442" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18" fill="#dcfce7">swift build + swift test passed (127 Swift Testing tests / 20 suites)</text>
+
+  <rect x="80" y="520" width="1040" height="118" rx="14" fill="#1f2937" stroke="#64748b"/>
+  <text x="108" y="562" font-family="SF Mono, Menlo, Consolas, monospace" font-size="22" fill="#fde68a">DOGFOOD</text>
+  <text x="220" y="562" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18" fill="#f8fafc">.build/dogfood-checks/20260602-175538/ passed</text>
+  <text x="220" y="596" font-family="SF Mono, Menlo, Consolas, monospace" font-size="17" fill="#cbd5e1">shell 138.99 ms · connected 253.37 ms · raw 21.379 MiB · strip 11.980 MiB</text>
+
+  <text x="80" y="680" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16" fill="#94a3b8">Changed files: script/package_verify.sh, script/test_package_verify.sh, docs/dogfood-log.md</text>
+</svg>

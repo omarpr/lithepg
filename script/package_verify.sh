@@ -148,6 +148,14 @@ if [[ -n "$special_file_match" ]]; then
   fail "app bundle must contain only regular files and directories"
 fi
 
+hardlink_match=""
+if ! hardlink_match="$(/usr/bin/find "$APP_BUNDLE" -type f -links +1 -print -quit 2>/dev/null)"; then
+  fail "app bundle must not contain hard-linked files"
+fi
+if [[ -n "$hardlink_match" ]]; then
+  fail "app bundle must not contain hard-linked files"
+fi
+
 if ! /usr/bin/find "$APP_BUNDLE" -type d -exec /bin/bash -c '
   for path do
     mode="$(/usr/bin/stat -f%p "$path")" || exit 2
