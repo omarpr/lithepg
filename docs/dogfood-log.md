@@ -1907,3 +1907,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Gate statuses synced: `defaultSwiftTest`, `liveSwiftTest`, and `v04Measure` passed.
 - Evidence artifact: `screenshots/evidence/2026-06-02-v10-public-status-metrics-sync.svg`.
 - This docs-only status sync attempted no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication.
+
+## 2026-06-02 15:02 EDT — dogfood_check status JSON argv hardening
+
+- Hardened `script/dogfood_check.sh` so status JSON metadata is passed into the Python writer as argv data with a quoted heredoc instead of interpolating shell values into Python source.
+- Added strict-TDD regression coverage in `script/test_dogfood_check.sh` for a valid git branch containing a double quote (`dogfood-check-quote"branch`), proving `status.json` remains valid JSON and credential redaction is preserved.
+- RED verification: the new test failed first because the old helper produced invalid Python source (`"branch": "dogfood-check-quote"branch"`) and could not write `status.json`.
+- GREEN verification passed: `bash script/test_dogfood_check.sh`, `bash -n script/dogfood_check.sh script/test_dogfood_check.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-150152/`; metrics: shell readiness 132.10 ms, connected cold start 253.84 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.045 ms, dogfood query median overhead 0.112 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-02-dogfood-check-status-json-argv-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

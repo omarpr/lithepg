@@ -121,15 +121,16 @@ sanitized_exec "$ROOT_DIR/script/v04_measure.sh" > "$OUT_DIR/v04-measure.log" 2>
 
 COMMIT="$("$GIT_BIN" -C "$ROOT_DIR" rev-parse --short HEAD)"
 BRANCH="$("$GIT_BIN" -C "$ROOT_DIR" branch --show-current)"
-"$PYTHON3_BIN" - <<PY > "$OUT_DIR/status.json"
-import json, pathlib, datetime
-root = pathlib.Path("$OUT_DIR")
+"$PYTHON3_BIN" - "$OUT_DIR" "$BRANCH" "$COMMIT" "$DOGFOOD_PORT" "$DOGFOOD_DATABASE" <<'PY' > "$OUT_DIR/status.json"
+import json, pathlib, datetime, sys
+out_dir, branch, commit, dogfood_port, dogfood_database = sys.argv[1:6]
+root = pathlib.Path(out_dir)
 summary = json.loads((root / "v04-measure" / "summary.json").read_text())
 status = {
     "timestampUtc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-    "branch": "$BRANCH",
-    "commit": "$COMMIT",
-    "postgresTestURLLabel": "postgres@localhost:$DOGFOOD_PORT/$DOGFOOD_DATABASE",
+    "branch": branch,
+    "commit": commit,
+    "postgresTestURLLabel": f"postgres@localhost:{dogfood_port}/{dogfood_database}",
     "defaultSwiftTest": "passed",
     "liveSwiftTest": "passed",
     "v04Measure": "passed",

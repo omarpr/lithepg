@@ -507,6 +507,30 @@ status_json="$(<"$status_file")"
 assert_contains "$status_json" '"postgresTestURLLabel": "postgres@localhost:55432/postgres"'
 assert_not_contains "$status_json" "postgres:postgres@"
 
+quoted_branch='dogfood-check-quote"branch'
+/usr/bin/git -C "$fixture_root" checkout -q -b "$quoted_branch"
+if ! run_helper_capture "$output_file" "$fixture_root" "$fake_bin" "$fake_swift_log" "$developer_dir" "$marker_dir" "$command_sentinel" "$builtin_sentinel" "$cd_sentinel" "$pwd_sentinel" "$exec_sentinel" "$startup_env_bash_file" "$startup_env_perl_lib" "-MDogfoodCheckStartupPoison"; then
+  helper_output="$(<"$output_file")"
+  /usr/bin/printf '%s\n' "$helper_output" >&2
+  fail "dogfood_check.sh could not write valid status.json for quoted git branch"
+fi
+
+helper_output="$(<"$output_file")"
+assert_not_contains "$helper_output" "$sentinel"
+assert_not_contains "$helper_output" "$git_sentinel"
+assert_not_contains "$helper_output" "$startup_env_shadow_sentinel"
+assert_not_contains "$helper_output" "Perl startup invoked"
+assert_not_contains "$helper_output" " invoked"
+assert_not_contains "$helper_output" "postgres:postgres@"
+quoted_out_dir="$(extract_out_dir "$output_file")" || fail "helper output did not include output directory for quoted branch run"
+quoted_status_file="$quoted_out_dir/status.json"
+[[ -f "$quoted_status_file" ]] || fail "status.json missing for quoted branch run: $quoted_status_file"
+assert_status_json "$quoted_status_file" "$quoted_branch" "$expected_commit"
+quoted_status_json="$(<"$quoted_status_file")"
+assert_contains "$quoted_status_json" 'dogfood-check-quote\"branch'
+assert_contains "$quoted_status_json" '"postgresTestURLLabel": "postgres@localhost:55432/postgres"'
+assert_not_contains "$quoted_status_json" "postgres:postgres@"
+
 for tool in dirname date mkdir cat realpath python3 git command builtin cd pwd exec; do
   [[ ! -e "$marker_dir/$tool" ]] || fail "dogfood_check.sh invoked shadowed $tool"
 done
