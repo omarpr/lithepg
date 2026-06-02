@@ -1751,3 +1751,11 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - The release copy, Homebrew, security contact, signing/notary, GitHub Actions, SHA-256, and publication approval placeholders remain intentionally blocked pending Omar-controlled external inputs.
 - Evidence artifact: `screenshots/evidence/2026-06-02-v10-release-draft-metric-sync.svg`.
 - This docs-only release-draft sync attempted no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication.
+
+## 2026-06-02 08:25 EDT — v1.0 dogfood check startup receipt sync
+
+- Synced the committed `script/dogfood_check.sh` startup-env hardening receipt into this dogfood log after `main` advanced past `c21955e` (`[verified] chore(dogfood): harden check startup env`).
+- That committed slice hardened direct dogfood-check startup against fake PATH-selected Bash, `BASH_ENV`, exported Bash functions, and Perl startup-environment poisoning while preserving intentional developer-tool PATH selection inside the checked commands.
+- Existing hardening evidence artifact from the committed slice: `screenshots/evidence/2026-06-02-dogfood-check-hardening.svg`.
+- Receipt-sync evidence artifact for this log update: `screenshots/evidence/2026-06-02-dogfood-check-startup-receipt-sync.svg`.
+- This docs-only receipt sync attempted no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication.
