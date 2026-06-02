@@ -1648,3 +1648,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-02-dogfood-check-default-url-redaction-fix.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 03:57 EDT — v1.0 run dogfood app executable startup Bash hardening
+
+- Hardened `script/run_dogfood_app.sh` executable startup by switching from PATH-selected `#!/usr/bin/env bash` to absolute privileged Bash (`#!/bin/bash -p`), so copied/direct helper invocation cannot be routed through a fake `bash` on `PATH` before dogfood app setup begins.
+- Added startup sanitization before normal run-dogfood-app logic: nonempty `BASH_ENV`, exported Bash functions (`BASH_FUNC_*`), and Perl startup env (`PERL5OPT`, `PERL5LIB`, `PERLLIB`) trigger a `/bin/bash -p` re-exec with those entries removed. Dirty startup env after the sanitizer marker now fails closed with exit 2.
+- Added strict-TDD coverage in `script/test_run_dogfood_app.sh` for direct executable invocation with fake PATH-selected `bash`, BASH_ENV/exported `set` function shadowing, Perl startup poisoning, dirty-env-after-sanitizer fail-closed behavior, and continued fake PATH-resolved `swift` selection.
+- RED verification: `bash script/test_run_dogfood_app.sh` failed first with `RUN_DOGFOOD_APP_INITIAL_BASH_PATH_SHADOW_SHOULD_NOT_RUN fake PATH-selected bash invoked` before production hardening.
+- GREEN verification: `bash script/test_run_dogfood_app.sh`, `bash -n script/run_dogfood_app.sh script/test_run_dogfood_app.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED; pre-commit JSON review passed with no security concerns or logic errors.
+- Evidence artifact: `screenshots/evidence/2026-06-02-run-dogfood-app-startup-bash-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
