@@ -88,9 +88,14 @@ run_helper_capture() {
     else
       unset LITHEPG_DOGFOOD_CHECK_STARTUP_ENV_SANITIZED
     fi
-    PATH="$fake_bin:$PATH" \
+    /usr/bin/env -u POSTGRES_TEST_URL \
+      PATH="$fake_bin:$PATH" \
       DEVELOPER_DIR="$developer_dir" \
+      LITHEPG_DOGFOOD_PORT="55432" \
+      "LITHEPG_DOGFOOD_PASSWORD=$fixture_database_credential" \
+      LITHEPG_DOGFOOD_DATABASE="postgres" \
       FAKE_SWIFT_LOG="$fake_swift_log" \
+      FAKE_MEASURE_LOG="$fake_measure_log" \
       DOGFOOD_CHECK_SHADOW_MARKER_DIR="$marker_dir" \
       DOGFOOD_CHECK_COMMAND_SHADOW_SENTINEL="$command_sentinel" \
       DOGFOOD_CHECK_BUILTIN_SHADOW_SENTINEL="$builtin_sentinel" \
@@ -122,9 +127,14 @@ run_helper_capture_empty_bash_env_guard() {
     export BASH_ENV=""
     export LITHEPG_DOGFOOD_CHECK_STARTUP_ENV_SANITIZED=1
     unset PERL5OPT PERL5LIB PERLLIB
-    PATH="$fake_bin:$PATH" \
+    /usr/bin/env -u POSTGRES_TEST_URL \
+      PATH="$fake_bin:$PATH" \
       DEVELOPER_DIR="$developer_dir" \
+      LITHEPG_DOGFOOD_PORT="55432" \
+      "LITHEPG_DOGFOOD_PASSWORD=$fixture_database_credential" \
+      LITHEPG_DOGFOOD_DATABASE="postgres" \
       FAKE_SWIFT_LOG="$fake_swift_log" \
+      FAKE_MEASURE_LOG="$fake_measure_log" \
       "$fixture_root/script/dogfood_check.sh"
   ) >"$output_file" 2>&1
   local status=$?
@@ -188,6 +198,7 @@ startup_env_shadow_sentinel="DOGFOOD_CHECK_STARTUP_ENV_SHADOW_SENTINEL_SHOULD_NO
 perl_startup_shadow_sentinel="DOGFOOD_CHECK_PERL_STARTUP_SHADOW_SENTINEL_SHOULD_NOT_RUN"
 fake_bin="$fixture_root/fake-bin"
 fake_swift_log="$fixture_root/fake-swift.log"
+fake_measure_log="$fixture_root/fake-measure.log"
 marker_dir="$fixture_root/shadow-markers"
 startup_env_bash_file="$fixture_root/dogfood-check-bash-env"
 startup_env_bash_marker="$fixture_root/dogfood-check-bash-env-marker"
@@ -196,6 +207,7 @@ startup_env_perl_marker="$fixture_root/dogfood-check-startup-perl-marker"
 perl_startup_perl_lib="$fixture_root/dogfood-check-perl-only-lib"
 perl_startup_perl_marker="$fixture_root/dogfood-check-perl-only-marker"
 developer_dir="$(/usr/bin/xcode-select -p)"
+fixture_database_credential="postgres"
 /bin/mkdir -p "$fixture_root/script" "$fake_bin" "$marker_dir" "$startup_env_perl_lib" "$perl_startup_perl_lib"
 /usr/bin/git -C "$fixture_root" init -q
 /usr/bin/git -C "$fixture_root" config user.email dogfood-check-test@example.invalid
@@ -289,6 +301,11 @@ check_no_exported_function_shadows() {
 }
 check_no_exported_function_shadows
 /usr/bin/printf 'fake swift %s\n' "$*" >>"${FAKE_SWIFT_LOG:?}"
+if [[ "${POSTGRES_TEST_URL+x}" == "x" ]]; then
+  /usr/bin/printf 'fake swift POSTGRES_TEST_URL=%s\n' "$POSTGRES_TEST_URL" >>"${FAKE_SWIFT_LOG:?}"
+else
+  /usr/bin/printf 'fake swift POSTGRES_TEST_URL=<unset>\n' >>"${FAKE_SWIFT_LOG:?}"
+fi
 SWIFT
 /bin/chmod +x "$fake_bin/swift"
 
@@ -385,6 +402,7 @@ check_no_exported_function_shadows() {
   '
 }
 check_no_exported_function_shadows
+/usr/bin/printf 'fake v04_measure POSTGRES_TEST_URL=%s\n' "${POSTGRES_TEST_URL-<unset>}" >>"${FAKE_MEASURE_LOG:?}"
 /bin/mkdir -p "${LITHEPG_MEASURE_OUT_DIR:?}"
 /bin/cat >"$LITHEPG_MEASURE_OUT_DIR/summary.json" <<'JSON'
 {
@@ -463,15 +481,31 @@ assert_not_contains "$helper_output" " invoked"
 assert_contains "$helper_output" '"defaultSwiftTest": "passed"'
 assert_contains "$helper_output" '"liveSwiftTest": "passed"'
 assert_contains "$helper_output" '"v04Measure": "passed"'
+assert_contains "$helper_output" '"postgresTestURLLabel": "postgres@localhost:55432/postgres"'
+assert_not_contains "$helper_output" "postgres:postgres@"
 
 [[ -s "$fake_swift_log" ]] || fail "fake swift was not used"
-assert_contains "$(<"$fake_swift_log")" "fake swift test"
-assert_contains "$(<"$fake_swift_log")" "fake swift test --filter"
+fake_swift_output="$(<"$fake_swift_log")"
+expected_default_postgres_test_url="postgres://postgres:postgres@localhost:55432/postgres?sslmode=disable"
+redacted_default_postgres_test_url="postgres://postgres:***@localhost:55432/postgres?sslmode=disable"
+assert_contains "$fake_swift_output" "fake swift test"
+assert_contains "$fake_swift_output" "fake swift POSTGRES_TEST_URL=<unset>"
+assert_contains "$fake_swift_output" "fake swift test --filter"
+[[ "$fake_swift_output" == *"fake swift POSTGRES_TEST_URL=$expected_default_postgres_test_url"* ]] || fail "live Swift did not receive default POSTGRES_TEST_URL with real password"
+assert_not_contains "$fake_swift_output" "$redacted_default_postgres_test_url"
+
+[[ -s "$fake_measure_log" ]] || fail "fake v04_measure was not used"
+fake_measure_output="$(<"$fake_measure_log")"
+[[ "$fake_measure_output" == *"fake v04_measure POSTGRES_TEST_URL=$expected_default_postgres_test_url"* ]] || fail "v04_measure did not receive default POSTGRES_TEST_URL with real password"
+assert_not_contains "$fake_measure_output" "$redacted_default_postgres_test_url"
 
 out_dir="$(extract_out_dir "$output_file")" || fail "helper output did not include output directory"
 status_file="$out_dir/status.json"
 [[ -f "$status_file" ]] || fail "status.json missing: $status_file"
 assert_status_json "$status_file" "$expected_branch" "$expected_commit"
+status_json="$(<"$status_file")"
+assert_contains "$status_json" '"postgresTestURLLabel": "postgres@localhost:55432/postgres"'
+assert_not_contains "$status_json" "postgres:postgres@"
 
 for tool in dirname date mkdir cat realpath python3 git command builtin cd pwd exec; do
   [[ ! -e "$marker_dir/$tool" ]] || fail "dogfood_check.sh invoked shadowed $tool"

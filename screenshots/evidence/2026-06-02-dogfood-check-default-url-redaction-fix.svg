@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="680" viewBox="0 0 1100 680" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG dogfood check default URL redaction fix evidence</title>
+  <desc id="desc">Verification receipt for the dogfood_check fix that passes the real local dogfood password internally while keeping output redacted.</desc>
+  <rect width="1100" height="680" fill="#0b1020"/>
+  <rect x="32" y="32" width="1036" height="616" rx="24" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="64" y="82" fill="#e5e7eb" font-family="Menlo, Monaco, Consolas, monospace" font-size="28" font-weight="700">dogfood_check default URL fix</text>
+  <text x="64" y="122" fill="#93c5fd" font-family="Menlo, Monaco, Consolas, monospace" font-size="16">2026-06-02 03:25 EDT • local-only receipt • no secrets shown</text>
+
+  <rect x="64" y="154" width="972" height="170" rx="14" fill="#020617" stroke="#1e293b"/>
+  <text x="88" y="190" fill="#a7f3d0" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">Root cause closed</text>
+  <text x="88" y="224" fill="#e5e7eb" font-family="Menlo, Monaco, Consolas, monospace" font-size="15">• Default POSTGRES_TEST_URL now uses the real in-memory dogfood password internally.</text>
+  <text x="88" y="254" fill="#e5e7eb" font-family="Menlo, Monaco, Consolas, monospace" font-size="15">• Helper stdout/status remain label-only: postgres@localhost:55432/postgres.</text>
+  <text x="88" y="284" fill="#e5e7eb" font-family="Menlo, Monaco, Consolas, monospace" font-size="15">• Regression fixture proves live Swift + v04_measure do not receive the redacted literal.</text>
+
+  <rect x="64" y="348" width="972" height="212" rx="14" fill="#020617" stroke="#1e293b"/>
+  <text x="88" y="384" fill="#a7f3d0" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">Verification</text>
+  <text x="88" y="418" fill="#e5e7eb" font-family="Menlo, Monaco, Consolas, monospace" font-size="15">✓ bash script/test_dogfood_check.sh</text>
+  <text x="88" y="448" fill="#e5e7eb" font-family="Menlo, Monaco, Consolas, monospace" font-size="15">✓ bash -n script/dogfood_check.sh script/test_dogfood_check.sh</text>
+  <text x="88" y="478" fill="#e5e7eb" font-family="Menlo, Monaco, Consolas, monospace" font-size="15">✓ git diff --check</text>
+  <text x="88" y="508" fill="#e5e7eb" font-family="Menlo, Monaco, Consolas, monospace" font-size="15">✓ swift test — 127 tests across 20 suites</text>
+  <text x="88" y="538" fill="#e5e7eb" font-family="Menlo, Monaco, Consolas, monospace" font-size="15">✓ ./script/dogfood_check.sh — default/live/v04 gates passed</text>
+
+  <rect x="64" y="584" width="972" height="42" rx="10" fill="#064e3b" stroke="#10b981"/>
+  <text x="88" y="611" fill="#ecfdf5" font-family="Menlo, Monaco, Consolas, monospace" font-size="15">Dogfood artifacts: .build/dogfood-checks/20260602-032512/ • no credential-bearing URL emitted</text>
+</svg>
