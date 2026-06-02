@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG run_dogfood_app empty BASH_ENV fail-closed hardening evidence</title>
+  <desc id="desc">Evidence summary for strict TDD hardening of script/run_dogfood_app.sh against empty BASH_ENV sanitizer reentry.</desc>
+  <rect width="1200" height="720" fill="#0d1117"/>
+  <rect x="32" y="32" width="1136" height="656" rx="18" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+  <text x="64" y="84" fill="#58a6ff" font-family="Menlo, Consolas, monospace" font-size="28" font-weight="700">LithePG evidence — run_dogfood_app empty BASH_ENV hardening</text>
+  <text x="64" y="128" fill="#c9d1d9" font-family="Menlo, Consolas, monospace" font-size="18">Change: empty-but-present BASH_ENV is dirty startup state after sanitizer marker.</text>
+  <text x="64" y="160" fill="#c9d1d9" font-family="Menlo, Consolas, monospace" font-size="18">Guard: exits 2 before dogfood_postgres, Swift build, or app launch; output stays generic/redacted.</text>
+
+  <rect x="64" y="198" width="1088" height="232" rx="12" fill="#0d1117" stroke="#30363d"/>
+  <text x="88" y="236" fill="#7ee787" font-family="Menlo, Consolas, monospace" font-size="18">RED</text>
+  <text x="160" y="236" fill="#f0f6fc" font-family="Menlo, Consolas, monospace" font-size="16">bash script/test_run_dogfood_app.sh</text>
+  <text x="88" y="268" fill="#ff7b72" font-family="Menlo, Consolas, monospace" font-size="15">failed first: startup sanitizer did not fail closed with exit 2 for empty BASH_ENV</text>
+  <text x="88" y="316" fill="#7ee787" font-family="Menlo, Consolas, monospace" font-size="18">GREEN</text>
+  <text x="160" y="316" fill="#f0f6fc" font-family="Menlo, Consolas, monospace" font-size="16">test_run_dogfood_app passed</text>
+  <text x="88" y="356" fill="#7ee787" font-family="Menlo, Consolas, monospace" font-size="18">REVIEWS</text>
+  <text x="160" y="356" fill="#f0f6fc" font-family="Menlo, Consolas, monospace" font-size="16">Spec compliance PASS; code quality/security APPROVED</text>
+  <text x="88" y="396" fill="#7ee787" font-family="Menlo, Consolas, monospace" font-size="18">NO SECRETS</text>
+  <text x="160" y="396" fill="#f0f6fc" font-family="Menlo, Consolas, monospace" font-size="16">Credential-bearing Postgres URL remains redacted in public output.</text>
+
+  <rect x="64" y="456" width="1088" height="136" rx="12" fill="#0d1117" stroke="#30363d"/>
+  <text x="88" y="496" fill="#ffa657" font-family="Menlo, Consolas, monospace" font-size="18">Verification bundle</text>
+  <text x="88" y="532" fill="#f0f6fc" font-family="Menlo, Consolas, monospace" font-size="15">bash test_run_dogfood_app + bash -n + git diff --check + swift build + swift test: PASS</text>
+  <text x="88" y="562" fill="#f0f6fc" font-family="Menlo, Consolas, monospace" font-size="15">dogfood_check: PASS at .build/dogfood-checks/20260602-103951/</text>
+
+  <text x="64" y="638" fill="#8b949e" font-family="Menlo, Consolas, monospace" font-size="14">Generated 2026-06-02 10:40 EDT for commit evidence. No signing/notarization/publication attempted.</text>
+</svg>

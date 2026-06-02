@@ -1815,3 +1815,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-02-create-release-zip-empty-bash-env-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 10:40 EDT — v1.0 run dogfood app empty BASH_ENV fail-closed hardening
+
+- Hardened `script/run_dogfood_app.sh` so an empty-but-present `BASH_ENV` is treated as dirty startup environment, matching the current release-helper sanitizer posture. Sanitizer-marked reentry with any remaining `BASH_ENV` now fails closed with exit 2 before dogfood Postgres, Swift build, or app launch can run.
+- Added strict-TDD coverage in `script/test_run_dogfood_app.sh` for direct helper invocation with `LITHEPG_RUN_DOGFOOD_APP_STARTUP_ENV_SANITIZED=1` and `BASH_ENV=""`; the helper must emit the generic sanitizer failure, avoid private sentinel leakage, skip fake dogfood Postgres and Swift work, and avoid app output.
+- RED verification: `bash script/test_run_dogfood_app.sh` failed first because the old helper continued into fake app work instead of failing closed for empty `BASH_ENV` after the sanitizer marker.
+- GREEN verification: `bash script/test_run_dogfood_app.sh`, `bash -n script/run_dogfood_app.sh script/test_run_dogfood_app.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-103951/`; metrics: shell readiness 131.24 ms, connected cold start 268.86 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.033 ms, dogfood query median overhead 0.019 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-02-run-dogfood-app-empty-bash-env-hardening.svg`.
+- No real app launch outside the fake test fixture, signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

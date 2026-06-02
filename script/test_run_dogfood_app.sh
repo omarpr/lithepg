@@ -266,4 +266,34 @@ fi
 assert_contains "$startup_fail_closed_output" "unsanitized startup environment remains after run_dogfood_app sanitizer"
 assert_not_contains "$startup_fail_closed_output" "fake LithePGApp reached"
 
+/bin/rm -f "$output_file" "$fake_dogfood_log" "$fake_swift_log"
+empty_bash_env_private_sentinel="RUN_DOGFOOD_APP_EMPTY_BASH_ENV_PRIVATE_SENTINEL_SHOULD_NOT_LEAK"
+set +e
+(
+  cd "$fixture_root"
+  LITHEPG_RUN_DOGFOOD_APP_STARTUP_ENV_SANITIZED=1 \
+    RUN_DOGFOOD_APP_EMPTY_BASH_ENV_PRIVATE="$empty_bash_env_private_sentinel" \
+    BASH_ENV="" \
+    PATH="$fake_bin:$PATH" \
+    FAKE_SWIFT_LOG="$fake_swift_log" \
+    FAKE_SWIFT_BUILD_DIR="$fake_swift_build_dir" \
+    FAKE_DOGFOOD_LOG="$fake_dogfood_log" \
+    POSTGRES_TEST_URL="$fixture_url" \
+    LITHEPG_STARTUP_QUERY="$fixture_query" \
+    "$fixture_root/script/run_dogfood_app.sh"
+) >"$output_file" 2>&1
+empty_bash_env_fail_closed_status=$?
+set -e
+empty_bash_env_fail_closed_output="$(<"$output_file")"
+if [[ "$empty_bash_env_fail_closed_status" -ne 2 ]]; then
+  /usr/bin/printf '%s\n' "$empty_bash_env_fail_closed_output" >&2
+  fail "run_dogfood_app.sh startup sanitizer did not fail closed with exit 2 for empty BASH_ENV after sanitizer marker"
+fi
+assert_contains "$empty_bash_env_fail_closed_output" "unsanitized startup environment remains after run_dogfood_app sanitizer"
+assert_not_contains "$empty_bash_env_fail_closed_output" "$empty_bash_env_private_sentinel"
+assert_not_contains "$empty_bash_env_fail_closed_output" "fake LithePGApp reached"
+assert_not_contains "$empty_bash_env_fail_closed_output" "fake dogfood_postgres reached"
+[[ ! -s "$fake_dogfood_log" ]] || fail "run_dogfood_app.sh empty BASH_ENV fail-closed path started dogfood postgres: $(<"$fake_dogfood_log")"
+[[ ! -s "$fake_swift_log" ]] || fail "run_dogfood_app.sh empty BASH_ENV fail-closed path invoked swift: $(<"$fake_swift_log")"
+
 /usr/bin/printf 'test_run_dogfood_app passed\n'
