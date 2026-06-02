@@ -1,4 +1,40 @@
-#!/usr/bin/env bash
+#!/bin/bash -p
+
+BASH_BIN=/bin/bash
+
+if /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
+  my $sanitize_needed = 0;
+  for my $key (keys %ENV) {
+    $sanitize_needed = 1 if $key =~ /\ABASH_FUNC_/;
+  }
+  $sanitize_needed = 1 if exists $ENV{BASH_ENV} && $ENV{BASH_ENV} ne "";
+  exit 0 if $sanitize_needed;
+  exit 1;
+'; then
+  /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
+    use strict;
+    use warnings;
+    my $bash = shift @ARGV;
+    for my $key (keys %ENV) {
+      delete $ENV{$key} if $key =~ /\ABASH_FUNC_/;
+    }
+    delete $ENV{BASH_ENV};
+    delete $ENV{PERL5OPT};
+    delete $ENV{PERL5LIB};
+    delete $ENV{PERLLIB};
+    $ENV{LITHEPG_PACKAGE_VERIFY_BASH_FUNCTIONS_SANITIZED} = "1";
+    exec { $bash } $bash, @ARGV;
+    die "exec $bash: $!\n";
+  ' "$BASH_BIN" "${BASH_SOURCE[0]}" "$@"
+else
+  if /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
+    for my $key (keys %ENV) {
+      die "unsanitized bash function environment key remains: $key\n" if $key =~ /\ABASH_FUNC_/;
+    }
+    die "unsanitized BASH_ENV remains\n" if exists $ENV{BASH_ENV} && $ENV{BASH_ENV} ne "";
+    exit 0;
+  '; then
+
 set -euo pipefail
 
 APP_NAME="LithePGApp"
@@ -183,3 +219,7 @@ if [[ -n "${LITHEPG_EXPECTED_BUILD_VERSION:-}" ]]; then
   printf 'Expected build version: %s\n' "$LITHEPG_EXPECTED_BUILD_VERSION"
 fi
 printf 'Minimum system: %s\n' "$minimum_system"
+  else
+    /usr/bin/false
+  fi
+fi

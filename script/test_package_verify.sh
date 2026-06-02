@@ -334,6 +334,275 @@ assert_not_contains "$helper_output" "$path_shadow_sentinel"
 assert_not_contains "$helper_output" "stat invoked"
 assert_not_contains "$helper_output" "awk invoked"
 
+initial_bash_path_shadow_sentinel="INITIAL_BASH_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+initial_bash_path_shadow_fake_bin="$fixture_root/initial-bash-path-shadow-fake-bin"
+initial_bash_path_shadow_bundle="$fixture_root/initial-bash-path-shadow-$initial_bash_path_shadow_sentinel/LithePG.app"
+initial_bash_path_shadow_marker="$fixture_root/initial-bash-path-shadow-invoked"
+mkdir -p "$initial_bash_path_shadow_fake_bin"
+make_minimal_app_bundle "$initial_bash_path_shadow_bundle"
+cat >"$initial_bash_path_shadow_fake_bin/bash" <<'SHIM'
+#!/bin/sh
+/usr/bin/printf '%s fake bash invoked\n' "${INITIAL_BASH_PATH_SHADOW_SENTINEL:-}" >&2
+/usr/bin/printf 'bash\n' >"${INITIAL_BASH_PATH_SHADOW_MARKER:?}"
+exit 97
+SHIM
+chmod +x "$initial_bash_path_shadow_fake_bin/bash"
+if ! INITIAL_BASH_PATH_SHADOW_SENTINEL="$initial_bash_path_shadow_sentinel" \
+  INITIAL_BASH_PATH_SHADOW_MARKER="$initial_bash_path_shadow_marker" \
+  PATH="$initial_bash_path_shadow_fake_bin:$PATH" \
+  run_helper_capture "$output_file" "$initial_bash_path_shadow_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier executable invocation used PATH-selected bash"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "Package verified: LithePG.app"
+assert_not_contains "$helper_output" "$initial_bash_path_shadow_bundle"
+assert_not_contains "$helper_output" "$initial_bash_path_shadow_sentinel"
+assert_not_contains "$helper_output" "fake bash invoked"
+[[ ! -e "$initial_bash_path_shadow_marker" ]] || fail "package verifier executable invocation used PATH-selected bash: $(<"$initial_bash_path_shadow_marker")"
+
+printf_function_shadow_sentinel="PRINTF_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+printf_function_shadow_bundle="$fixture_root/printf-function-shadow-$printf_function_shadow_sentinel/LithePG.app"
+printf_function_shadow_marker="$fixture_root/printf-function-shadow-invoked"
+make_minimal_app_bundle "$printf_function_shadow_bundle"
+set +e
+(
+  cd "$ROOT_DIR"
+  unset LITHEPG_EXPECTED_MARKETING_VERSION LITHEPG_EXPECTED_BUILD_VERSION
+  printf() {
+    /usr/bin/printf '%s printf function invoked\n' "${PRINTF_FUNCTION_SHADOW_SENTINEL:?}" >&2
+    /usr/bin/printf 'printf\n' >"${PRINTF_FUNCTION_SHADOW_MARKER:?}"
+    exit 97
+  }
+  export -f printf
+  PRINTF_FUNCTION_SHADOW_SENTINEL="$printf_function_shadow_sentinel" \
+    PRINTF_FUNCTION_SHADOW_MARKER="$printf_function_shadow_marker" \
+    "$HELPER" "$printf_function_shadow_bundle"
+) >"$output_file" 2>&1
+printf_function_shadow_status=$?
+set -e
+if [[ "$printf_function_shadow_status" -ne 0 ]]; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier was affected by an exported printf function"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "Package verified: LithePG.app"
+assert_not_contains "$helper_output" "$printf_function_shadow_bundle"
+assert_not_contains "$helper_output" "$printf_function_shadow_sentinel"
+assert_not_contains "$helper_output" "printf function invoked"
+[[ ! -e "$printf_function_shadow_marker" ]] || fail "package verifier invoked exported printf function: $(<"$printf_function_shadow_marker")"
+
+exec_function_shadow_sentinel="EXEC_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+exec_function_shadow_bundle="$fixture_root/exec-function-shadow-$exec_function_shadow_sentinel/LithePG.app"
+exec_function_shadow_marker="$fixture_root/exec-function-shadow-invoked"
+make_minimal_app_bundle "$exec_function_shadow_bundle"
+set +e
+(
+  cd "$ROOT_DIR"
+  unset LITHEPG_EXPECTED_MARKETING_VERSION LITHEPG_EXPECTED_BUILD_VERSION
+  exec() {
+    /usr/bin/printf '%s exec function invoked\n' "${EXEC_FUNCTION_SHADOW_SENTINEL:?}" >&2
+    /usr/bin/printf 'exec\n' >"${EXEC_FUNCTION_SHADOW_MARKER:?}"
+    exit 97
+  }
+  export -f exec
+  EXEC_FUNCTION_SHADOW_SENTINEL="$exec_function_shadow_sentinel" \
+    EXEC_FUNCTION_SHADOW_MARKER="$exec_function_shadow_marker" \
+    "$HELPER" "$exec_function_shadow_bundle"
+) >"$output_file" 2>&1
+exec_function_shadow_status=$?
+set -e
+if [[ "$exec_function_shadow_status" -ne 0 ]]; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier was affected by an exported exec function"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "Package verified: LithePG.app"
+assert_not_contains "$helper_output" "$exec_function_shadow_bundle"
+assert_not_contains "$helper_output" "$exec_function_shadow_sentinel"
+assert_not_contains "$helper_output" "exec function invoked"
+[[ ! -e "$exec_function_shadow_marker" ]] || fail "package verifier invoked exported exec function: $(<"$exec_function_shadow_marker")"
+
+set_function_shadow_sentinel="SET_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+set_function_shadow_bundle="$fixture_root/set-function-shadow-$set_function_shadow_sentinel/LithePG.app"
+set_function_shadow_marker="$fixture_root/set-function-shadow-invoked"
+make_minimal_app_bundle "$set_function_shadow_bundle"
+set +e
+(
+  cd "$ROOT_DIR"
+  unset LITHEPG_EXPECTED_MARKETING_VERSION LITHEPG_EXPECTED_BUILD_VERSION
+  set() {
+    /usr/bin/printf '%s set function invoked\n' "${SET_FUNCTION_SHADOW_SENTINEL:?}" >&2
+    /usr/bin/printf 'set\n' >"${SET_FUNCTION_SHADOW_MARKER:?}"
+    exit 97
+  }
+  export -f set
+  SET_FUNCTION_SHADOW_SENTINEL="$set_function_shadow_sentinel" \
+    SET_FUNCTION_SHADOW_MARKER="$set_function_shadow_marker" \
+    "$HELPER" "$set_function_shadow_bundle"
+) >"$output_file" 2>&1
+set_function_shadow_status=$?
+set -e
+if [[ "$set_function_shadow_status" -ne 0 ]]; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier was affected by an exported set function"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "Package verified: LithePG.app"
+assert_not_contains "$helper_output" "$set_function_shadow_bundle"
+assert_not_contains "$helper_output" "$set_function_shadow_sentinel"
+assert_not_contains "$helper_output" "set function invoked"
+[[ ! -e "$set_function_shadow_marker" ]] || fail "package verifier invoked exported set function: $(<"$set_function_shadow_marker")"
+
+bash_env_set_shadow_sentinel="BASH_ENV_SET_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+bash_env_set_shadow_bundle="$fixture_root/bash-env-set-shadow-$bash_env_set_shadow_sentinel/LithePG.app"
+bash_env_set_shadow_marker="$fixture_root/bash-env-set-shadow-invoked"
+bash_env_set_shadow_fixture="$fixture_root/bash-env-set-shadow.bash_env"
+make_minimal_app_bundle "$bash_env_set_shadow_bundle"
+cat >"$bash_env_set_shadow_fixture" <<'BASHENV'
+set() {
+  /usr/bin/printf '%s set function invoked\n' "${BASH_ENV_SET_SHADOW_SENTINEL:?}" >&2
+  /usr/bin/printf 'set\n' >"${BASH_ENV_SET_SHADOW_MARKER:?}"
+  exit 97
+}
+BASHENV
+set +e
+(
+  cd "$ROOT_DIR"
+  unset LITHEPG_EXPECTED_MARKETING_VERSION LITHEPG_EXPECTED_BUILD_VERSION
+  BASH_ENV_SET_SHADOW_SENTINEL="$bash_env_set_shadow_sentinel" \
+    BASH_ENV_SET_SHADOW_MARKER="$bash_env_set_shadow_marker" \
+    BASH_ENV="$bash_env_set_shadow_fixture" \
+    "$HELPER" "$bash_env_set_shadow_bundle"
+) >"$output_file" 2>&1
+bash_env_set_shadow_status=$?
+set -e
+if [[ "$bash_env_set_shadow_status" -ne 0 ]]; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier was affected by a BASH_ENV-defined set function"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "Package verified: LithePG.app"
+assert_not_contains "$helper_output" "$bash_env_set_shadow_bundle"
+assert_not_contains "$helper_output" "$bash_env_set_shadow_sentinel"
+assert_not_contains "$helper_output" "set function invoked"
+[[ ! -e "$bash_env_set_shadow_marker" ]] || fail "package verifier invoked BASH_ENV-defined set function: $(<"$bash_env_set_shadow_marker")"
+
+bash_env_unset_then_set_shadow_sentinel="BASH_ENV_UNSET_THEN_SET_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+bash_env_unset_then_set_shadow_bundle="$fixture_root/bash-env-unset-then-set-shadow-$bash_env_unset_then_set_shadow_sentinel/LithePG.app"
+bash_env_unset_then_set_shadow_marker="$fixture_root/bash-env-unset-then-set-shadow-invoked"
+bash_env_unset_then_set_shadow_fixture="$fixture_root/bash-env-unset-then-set-shadow.bash_env"
+make_minimal_app_bundle "$bash_env_unset_then_set_shadow_bundle"
+cat >"$bash_env_unset_then_set_shadow_fixture" <<'BASHENV'
+unset BASH_ENV
+set() {
+  /usr/bin/printf '%s set function invoked\n' "${BASH_ENV_UNSET_THEN_SET_SHADOW_SENTINEL:?}" >&2
+  /usr/bin/printf 'set\n' >"${BASH_ENV_UNSET_THEN_SET_SHADOW_MARKER:?}"
+  exit 97
+}
+BASHENV
+set +e
+(
+  cd "$ROOT_DIR"
+  unset LITHEPG_EXPECTED_MARKETING_VERSION LITHEPG_EXPECTED_BUILD_VERSION
+  BASH_ENV_UNSET_THEN_SET_SHADOW_SENTINEL="$bash_env_unset_then_set_shadow_sentinel" \
+    BASH_ENV_UNSET_THEN_SET_SHADOW_MARKER="$bash_env_unset_then_set_shadow_marker" \
+    BASH_ENV="$bash_env_unset_then_set_shadow_fixture" \
+    "$HELPER" "$bash_env_unset_then_set_shadow_bundle"
+) >"$output_file" 2>&1
+bash_env_unset_then_set_shadow_status=$?
+set -e
+if [[ "$bash_env_unset_then_set_shadow_status" -ne 0 ]]; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier was affected by a BASH_ENV file that unset BASH_ENV before defining set"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "Package verified: LithePG.app"
+assert_not_contains "$helper_output" "$bash_env_unset_then_set_shadow_bundle"
+assert_not_contains "$helper_output" "$bash_env_unset_then_set_shadow_sentinel"
+assert_not_contains "$helper_output" "set function invoked"
+[[ ! -e "$bash_env_unset_then_set_shadow_marker" ]] || fail "package verifier invoked BASH_ENV-defined set function after BASH_ENV was unset: $(<"$bash_env_unset_then_set_shadow_marker")"
+
+perl_startup_hide_function_sentinel="PERL_STARTUP_HIDE_FUNCTION_SENTINEL_SHOULD_NOT_RUN"
+perl_startup_hide_function_bundle="$fixture_root/perl-startup-hide-function-$perl_startup_hide_function_sentinel/LithePG.app"
+perl_startup_hide_function_marker="$fixture_root/perl-startup-hide-function-invoked"
+perl_startup_hide_function_lib="$fixture_root/perl-startup-hide-function-lib"
+make_minimal_app_bundle "$perl_startup_hide_function_bundle"
+mkdir -p "$perl_startup_hide_function_lib"
+cat >"$perl_startup_hide_function_lib/HideBashFunc.pm" <<'PERLMOD'
+package HideBashFunc;
+BEGIN {
+  for my $key (keys %ENV) {
+    delete $ENV{$key} if $key =~ /\ABASH_FUNC_/;
+  }
+}
+1;
+PERLMOD
+set +e
+(
+  cd "$ROOT_DIR"
+  unset LITHEPG_EXPECTED_MARKETING_VERSION LITHEPG_EXPECTED_BUILD_VERSION
+  set() {
+    /usr/bin/printf '%s set function invoked\n' "${PERL_STARTUP_HIDE_FUNCTION_SENTINEL:?}" >&2
+    /usr/bin/printf 'set\n' >"${PERL_STARTUP_HIDE_FUNCTION_MARKER:?}"
+    exit 97
+  }
+  export -f set
+  PERL_STARTUP_HIDE_FUNCTION_SENTINEL="$perl_startup_hide_function_sentinel" \
+    PERL_STARTUP_HIDE_FUNCTION_MARKER="$perl_startup_hide_function_marker" \
+    PERL5LIB="$perl_startup_hide_function_lib" \
+    PERL5OPT=-MHideBashFunc \
+    "$HELPER" "$perl_startup_hide_function_bundle"
+) >"$output_file" 2>&1
+perl_startup_hide_function_status=$?
+set -e
+if [[ "$perl_startup_hide_function_status" -ne 0 ]]; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier let Perl startup env hide an exported set function"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "Package verified: LithePG.app"
+assert_not_contains "$helper_output" "$perl_startup_hide_function_bundle"
+assert_not_contains "$helper_output" "$perl_startup_hide_function_sentinel"
+assert_not_contains "$helper_output" "set function invoked"
+[[ ! -e "$perl_startup_hide_function_marker" ]] || fail "package verifier invoked exported set function hidden by Perl startup env: $(<"$perl_startup_hide_function_marker")"
+
+perl_startup_env_set_shadow_sentinel="PERL_STARTUP_ENV_SET_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+perl_startup_env_set_shadow_marker="$fixture_root/perl-startup-env-set-shadow-invoked"
+set +e
+(
+  cd "$ROOT_DIR"
+  unset LITHEPG_EXPECTED_MARKETING_VERSION LITHEPG_EXPECTED_BUILD_VERSION
+  set() {
+    /usr/bin/printf '%s set function invoked\n' "${PERL_STARTUP_ENV_SET_SHADOW_SENTINEL:?}" >&2
+    /usr/bin/printf 'set\n' >"${PERL_STARTUP_ENV_SET_SHADOW_MARKER:?}"
+    exit 97
+  }
+  export -f set
+  PERL_STARTUP_ENV_SET_SHADOW_SENTINEL="$perl_startup_env_set_shadow_sentinel" \
+    PERL_STARTUP_ENV_SET_SHADOW_MARKER="$perl_startup_env_set_shadow_marker" \
+    PERL5OPT=-Mdoesnotexist \
+    "$HELPER" --help
+) >"$output_file" 2>&1
+perl_startup_env_set_shadow_status=$?
+set -e
+helper_output="$(<"$output_file")"
+if [[ "$perl_startup_env_set_shadow_status" -ne 0 ]]; then
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier honored PERL5OPT before sanitizer detection"
+fi
+assert_contains "$helper_output" "Usage:"
+assert_not_contains "$helper_output" "$perl_startup_env_set_shadow_sentinel"
+assert_not_contains "$helper_output" "set function invoked"
+[[ ! -e "$perl_startup_env_set_shadow_marker" ]] || fail "package verifier invoked exported set function under PERL5OPT: $(<"$perl_startup_env_set_shadow_marker")"
+
 if ! run_helper_capture "$output_file" "$app_bundle"; then
   helper_output="$(<"$output_file")"
   printf '%s\n' "$helper_output" >&2

@@ -1577,3 +1577,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-01-dogfood-postgres-command-function-shadow-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 23:44 EDT — v1.0 package verifier startup-env hardening
+
+- Hardened `script/package_verify.sh` executable startup by switching from PATH-selected `#!/usr/bin/env bash` to absolute privileged Bash (`#!/bin/bash -p`), preventing fake `bash` PATH interception and initial `BASH_ENV`/exported-function startup before helper verification begins.
+- Added defense-in-depth sanitizer coverage before normal verifier logic: Perl probes now run through `/usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl`, treat `BASH_FUNC_*` and nonempty `BASH_ENV` as sanitize-needed, delete `BASH_FUNC_*`, `BASH_ENV`, and Perl startup env before re-execing `/bin/bash`, and fail closed through `/usr/bin/false` if the no-sanitize proof fails.
+- Added strict-TDD coverage in `script/test_package_verify.sh` for fake PATH `bash`, exported `printf`, `exec`, and `set` function shadows, `BASH_ENV`-defined `set`, `BASH_ENV` that unsets itself before defining `set`, and Perl startup env attempts to hide exported Bash functions. The verifier must keep fixture paths/sentinels out of output and avoid invoking all markers.
+- RED verification: new tests failed first with expected sentinels including `INITIAL_BASH_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN fake bash invoked` and `BASH_ENV_UNSET_THEN_SET_SHADOW_SENTINEL_SHOULD_NOT_RUN set function invoked` before the startup hardening landed.
+- GREEN verification: `bash script/test_package_verify.sh`, adjacent `bash script/test_create_release_zip.sh`, `git diff --check`, `bash -n script/*.sh`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-01-package-verify-startup-env-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
