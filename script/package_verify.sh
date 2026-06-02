@@ -26,7 +26,7 @@ if [[ -n "${BASH_ENV:-}" || -n "${PERL5OPT:-}" || -n "${PERL5LIB:-}" || -n "${PE
     delete $ENV{PERL5LIB};
     delete $ENV{PERLLIB};
     $ENV{LITHEPG_PACKAGE_VERIFY_BASH_FUNCTIONS_SANITIZED} = "1";
-    exec { $bash } $bash, @ARGV;
+    exec { $bash } $bash, "-p", @ARGV;
     die "exec $bash: $!\n";
   ' "$BASH_BIN" "${BASH_SOURCE[0]}" "$@"
 else

@@ -1725,3 +1725,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-02-package-verify-startup-env-fail-closed.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 07:11 EDT — v1.0 package verifier privileged Bash re-exec hardening
+
+- Hardened `script/package_verify.sh` startup-env sanitizer re-exec to invoke `/bin/bash -p`, matching its privileged Bash shebang and the other v1.0 release/dogfood helpers after dirty Bash/Perl startup env is scrubbed.
+- Added strict-TDD coverage in `script/test_package_verify.sh` asserting the package verifier sanitizer keeps the privileged re-exec form `exec { $bash } $bash, "-p", @ARGV;`.
+- RED verification: `bash script/test_package_verify.sh` failed first with `test_package_verify failed: expected output to contain: exec { $bash } $bash, "-p", @ARGV;` before the production re-exec fix.
+- GREEN verification: `bash script/test_package_verify.sh`, adjacent release-helper tests (`test_create_release_zip`, `test_sign_and_notarize`, `test_v10_release_gate`), `bash -n script/package_verify.sh script/test_package_verify.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-071038/`; metrics: shell readiness 130.93 ms, connected cold start 241.57 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.035 ms, dogfood query median overhead 0.011 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-02-package-verify-privileged-reexec.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

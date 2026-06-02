@@ -114,6 +114,8 @@ run_helper_capture_with_expected_build_version() {
 }
 
 [[ -f "$HELPER" ]] || fail "helper script missing: $HELPER"
+helper_contents="$(<"$HELPER")"
+assert_contains "$helper_contents" 'exec { $bash } $bash, "-p", @ARGV;'
 
 output_file="$(mktemp)"
 fixture_root="$(mktemp -d)"
