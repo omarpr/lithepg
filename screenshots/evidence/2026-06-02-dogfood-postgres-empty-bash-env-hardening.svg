@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG dogfood Postgres empty BASH_ENV hardening evidence</title>
+  <desc id="desc">Evidence receipt for the dogfood_postgres startup sanitizer fail-closed hardening completed on 2026-06-02.</desc>
+  <rect width="1200" height="760" fill="#0b1020"/>
+  <rect x="36" y="36" width="1128" height="688" rx="22" fill="#111827" stroke="#38bdf8" stroke-width="2"/>
+  <text x="72" y="92" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="28" fill="#e5f2ff" font-weight="700">LithePG v1.0 helper hardening</text>
+  <text x="72" y="132" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18" fill="#93c5fd">2026-06-02 11:22 EDT · dogfood_postgres empty BASH_ENV fail-closed</text>
+
+  <rect x="72" y="168" width="1056" height="134" rx="14" fill="#172554" stroke="#2563eb"/>
+  <text x="100" y="206" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20" fill="#bfdbfe" font-weight="700">Change</text>
+  <text x="100" y="240" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#dbeafe">script/dogfood_postgres.sh now treats any present BASH_ENV key as dirty startup env.</text>
+  <text x="100" y="270" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#dbeafe">Sanitizer-marked reentry with BASH_ENV=&quot;&quot; exits 2 before Docker/dogfood setup.</text>
+
+  <rect x="72" y="330" width="1056" height="206" rx="14" fill="#052e16" stroke="#22c55e"/>
+  <text x="100" y="368" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20" fill="#bbf7d0" font-weight="700">Verification</text>
+  <text x="100" y="402" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#dcfce7">RED: bash script/test_dogfood_postgres.sh failed first with expected empty-BASH_ENV gap.</text>
+  <text x="100" y="432" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#dcfce7">GREEN: bash script/test_dogfood_postgres.sh → passed</text>
+  <text x="100" y="462" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#dcfce7">GREEN: bash script/test_dogfood_check.sh → passed</text>
+  <text x="100" y="492" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#dcfce7">Syntax/whitespace: bash -n … + git diff --check → passed</text>
+  <text x="100" y="522" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#dcfce7">Swift: swift build + swift test → 127 tests across 20 suites passed</text>
+  <text x="100" y="552" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#dcfce7">Dogfood check: .build/dogfood-checks/20260602-112408 → passed</text>
+
+  <rect x="72" y="584" width="1056" height="104" rx="14" fill="#312e81" stroke="#818cf8"/>
+  <text x="100" y="622" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20" fill="#ddd6fe" font-weight="700">Review / side effects</text>
+  <text x="100" y="636" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#ede9fe">Independent spec review: PASS · code quality/security: APPROVED</text>
+  <text x="100" y="662" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#ede9fe">No signing, notarization, upload, Homebrew publication, GitHub Release, tag, or cron change.</text>
+</svg>

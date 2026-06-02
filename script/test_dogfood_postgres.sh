@@ -229,6 +229,43 @@ assert_not_contains "$helper_output" "fake bash invoked"
 [[ ! -e "$initial_bash_path_shadow_marker" ]] || fail "PATH-selected bash was invoked: $(<"$initial_bash_path_shadow_marker")"
 /bin/rm -f "$output_file" "$docker_log" "$ready_counter"
 
+empty_bash_env_fail_closed_private_sentinel="DOGFOOD_POSTGRES_EMPTY_BASH_ENV_PRIVATE_SENTINEL_SHOULD_NOT_LEAK"
+set +e
+(
+  export BASH_ENV=""
+  export LITHEPG_DOGFOOD_POSTGRES_STARTUP_ENV_SANITIZED=1
+  unset PERL5OPT PERL5LIB PERLLIB
+  PATH="$fake_bin:$PATH" \
+    FAKE_DOCKER_LOG="$docker_log" \
+    FAKE_READY_COUNTER="$ready_counter" \
+    DOGFOOD_POSTGRES_EMPTY_BASH_ENV_PRIVATE_SENTINEL="$empty_bash_env_fail_closed_private_sentinel" \
+    LITHEPG_DOGFOOD_CONTAINER="$fixture_container" \
+    LITHEPG_DOGFOOD_IMAGE="$fixture_image" \
+    LITHEPG_DOGFOOD_PORT="$fixture_port" \
+    LITHEPG_DOGFOOD_PASSWORD=$fixture_password \
+    LITHEPG_DOGFOOD_DATABASE="$fixture_database" \
+    "$fixture_root/script/dogfood_postgres.sh"
+) >"$output_file" 2>&1
+empty_bash_env_fail_closed_status=$?
+set -e
+empty_bash_env_fail_closed_output="$(<"$output_file")"
+if [[ "$empty_bash_env_fail_closed_status" -ne 2 ]]; then
+  /usr/bin/printf '%s\n' "$empty_bash_env_fail_closed_output" >&2
+  fail "dogfood_postgres sanitizer marker with exported empty BASH_ENV should exit 2, got $empty_bash_env_fail_closed_status"
+fi
+if [[ "$empty_bash_env_fail_closed_output" != "unsanitized startup environment remains after dogfood_postgres sanitizer" ]]; then
+  /usr/bin/printf '%s\n' "$empty_bash_env_fail_closed_output" >&2
+  fail "dogfood_postgres sanitizer empty BASH_ENV fail-closed output was not generic and redacted"
+fi
+assert_not_contains "$empty_bash_env_fail_closed_output" "$empty_bash_env_fail_closed_private_sentinel"
+assert_not_contains "$empty_bash_env_fail_closed_output" "$fixture_root"
+assert_not_contains "$empty_bash_env_fail_closed_output" "$fixture_password"
+assert_not_contains "$empty_bash_env_fail_closed_output" "$ambient_fixture_password"
+assert_not_contains_if_set "$empty_bash_env_fail_closed_output" "$incoming_ambient_password"
+assert_not_contains "$empty_bash_env_fail_closed_output" "Dogfood database ready."
+[[ ! -s "$docker_log" ]] || fail "sanitizer empty BASH_ENV fail-closed invoked fake docker: $(<"$docker_log")"
+/bin/rm -f "$output_file" "$docker_log" "$ready_counter"
+
 startup_env_sanitizer_fail_closed_sentinel="DOGFOOD_POSTGRES_SANITIZER_FAIL_CLOSED_SENTINEL_SHOULD_NOT_PRINT"
 startup_env_sanitizer_fail_closed_bash_env="$fixture_root/dogfood-postgres-fail-closed.bash_env"
 startup_env_sanitizer_fail_closed_bash_marker="$fixture_root/dogfood-postgres-fail-closed-bash-marker"
