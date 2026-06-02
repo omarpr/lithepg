@@ -1703,3 +1703,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-02-sign-notarize-startup-env-fail-closed.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 06:08 EDT — v1.0 dogfood Postgres startup-env fail-closed hardening
+
+- Hardened `script/dogfood_postgres.sh` so dirty Bash/Perl startup environment detected after `LITHEPG_DOGFOOD_POSTGRES_STARTUP_ENV_SANITIZED=1` fails closed with exit 2 instead of continuing into Docker setup.
+- Added strict-TDD coverage in `script/test_dogfood_postgres.sh` for the fail-closed sanitizer-marker path and normal dirty-startup-env sanitization through the fake Docker fixture. The tests assert no fake Docker work happens on fail-closed, and output avoids fixture paths, passwords, and sentinel text.
+- RED verification: the new regression failed on the old helper with `test_dogfood_postgres failed: dogfood_postgres sanitizer marker with dirty startup env should exit 2, got 0`.
+- GREEN verification: `bash script/test_dogfood_postgres.sh`, adjacent `bash script/test_dogfood_check.sh`, `bash -n script/dogfood_postgres.sh script/test_dogfood_postgres.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-060758/`; metrics: shell readiness 131.21 ms, connected cold start 240.56 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.023 ms, dogfood query median overhead 0.044 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-02-dogfood-postgres-startup-env-fail-closed.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

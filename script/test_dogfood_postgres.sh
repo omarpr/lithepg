@@ -229,6 +229,146 @@ assert_not_contains "$helper_output" "fake bash invoked"
 [[ ! -e "$initial_bash_path_shadow_marker" ]] || fail "PATH-selected bash was invoked: $(<"$initial_bash_path_shadow_marker")"
 /bin/rm -f "$output_file" "$docker_log" "$ready_counter"
 
+startup_env_sanitizer_fail_closed_sentinel="DOGFOOD_POSTGRES_SANITIZER_FAIL_CLOSED_SENTINEL_SHOULD_NOT_PRINT"
+startup_env_sanitizer_fail_closed_bash_env="$fixture_root/dogfood-postgres-fail-closed.bash_env"
+startup_env_sanitizer_fail_closed_bash_marker="$fixture_root/dogfood-postgres-fail-closed-bash-marker"
+startup_env_sanitizer_fail_closed_export_marker="$fixture_root/dogfood-postgres-fail-closed-export-marker"
+/bin/cat >"$startup_env_sanitizer_fail_closed_bash_env" <<'BASHENV'
+dogfood_postgres_sanitizer_fail_closed_bash_shadow() {
+  /usr/bin/printf '%s BASH_ENV function invoked\n' "${DOGFOOD_POSTGRES_SANITIZER_FAIL_CLOSED_SENTINEL:?}" >&2
+  /usr/bin/printf 'bash-env\n' >"${DOGFOOD_POSTGRES_SANITIZER_FAIL_CLOSED_BASH_MARKER:?}"
+  exit 97
+}
+BASHENV
+
+set +e
+(
+  dogfood_postgres_sanitizer_fail_closed_export_shadow() {
+    /usr/bin/printf '%s exported function invoked\n' "${DOGFOOD_POSTGRES_SANITIZER_FAIL_CLOSED_SENTINEL:?}" >&2
+    /usr/bin/printf 'exported-function\n' >"${DOGFOOD_POSTGRES_SANITIZER_FAIL_CLOSED_EXPORT_MARKER:?}"
+    exit 97
+  }
+  export -f dogfood_postgres_sanitizer_fail_closed_export_shadow
+  PATH="$fake_bin:$PATH" \
+    FAKE_DOCKER_LOG="$docker_log" \
+    FAKE_READY_COUNTER="$ready_counter" \
+    DOGFOOD_POSTGRES_SANITIZER_FAIL_CLOSED_SENTINEL="$startup_env_sanitizer_fail_closed_sentinel" \
+    DOGFOOD_POSTGRES_SANITIZER_FAIL_CLOSED_BASH_MARKER="$startup_env_sanitizer_fail_closed_bash_marker" \
+    DOGFOOD_POSTGRES_SANITIZER_FAIL_CLOSED_EXPORT_MARKER="$startup_env_sanitizer_fail_closed_export_marker" \
+    LITHEPG_DOGFOOD_CONTAINER="$fixture_container" \
+    LITHEPG_DOGFOOD_IMAGE="$fixture_image" \
+    LITHEPG_DOGFOOD_PORT="$fixture_port" \
+    LITHEPG_DOGFOOD_PASSWORD="$fixture_password" \
+    LITHEPG_DOGFOOD_DATABASE="$fixture_database" \
+    LITHEPG_DOGFOOD_POSTGRES_STARTUP_ENV_SANITIZED=1 \
+    BASH_ENV="$startup_env_sanitizer_fail_closed_bash_env" \
+    PERL5OPT=-MDogfoodPostgresSanitizerFailClosedShouldNotLoad \
+    "$fixture_root/script/dogfood_postgres.sh"
+) >"$output_file" 2>&1
+startup_env_sanitizer_fail_closed_status=$?
+set -e
+startup_env_sanitizer_fail_closed_output="$(<"$output_file")"
+if [[ "$startup_env_sanitizer_fail_closed_status" -ne 2 ]]; then
+  /usr/bin/printf '%s\n' "$startup_env_sanitizer_fail_closed_output" >&2
+  fail "dogfood_postgres sanitizer marker with dirty startup env should exit 2, got $startup_env_sanitizer_fail_closed_status"
+fi
+if [[ "$startup_env_sanitizer_fail_closed_output" != "unsanitized startup environment remains after dogfood_postgres sanitizer" ]]; then
+  /usr/bin/printf '%s\n' "$startup_env_sanitizer_fail_closed_output" >&2
+  fail "dogfood_postgres sanitizer fail-closed output was not generic and redacted"
+fi
+assert_not_contains "$startup_env_sanitizer_fail_closed_output" "$fixture_root"
+assert_not_contains "$startup_env_sanitizer_fail_closed_output" "$fixture_password"
+assert_not_contains "$startup_env_sanitizer_fail_closed_output" "$ambient_fixture_password"
+assert_not_contains_if_set "$startup_env_sanitizer_fail_closed_output" "$incoming_ambient_password"
+assert_not_contains "$startup_env_sanitizer_fail_closed_output" "$startup_env_sanitizer_fail_closed_sentinel"
+assert_not_contains "$startup_env_sanitizer_fail_closed_output" "BASH_ENV function invoked"
+assert_not_contains "$startup_env_sanitizer_fail_closed_output" "exported function invoked"
+assert_not_contains "$startup_env_sanitizer_fail_closed_output" "Dogfood database ready."
+[[ ! -s "$docker_log" ]] || fail "sanitizer fail-closed invoked fake docker: $(<"$docker_log")"
+[[ ! -e "$startup_env_sanitizer_fail_closed_bash_marker" ]] || fail "dogfood_postgres invoked BASH_ENV-defined function: $(<"$startup_env_sanitizer_fail_closed_bash_marker")"
+[[ ! -e "$startup_env_sanitizer_fail_closed_export_marker" ]] || fail "dogfood_postgres invoked exported function: $(<"$startup_env_sanitizer_fail_closed_export_marker")"
+/bin/rm -f "$output_file" "$docker_log" "$ready_counter"
+
+startup_env_shadow_sentinel="DOGFOOD_POSTGRES_STARTUP_ENV_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+startup_env_bash_file="$fixture_root/dogfood-postgres-startup.bash_env"
+startup_env_bash_marker="$fixture_root/dogfood-postgres-startup-bash-marker"
+startup_env_export_marker="$fixture_root/dogfood-postgres-startup-export-marker"
+startup_perl_lib="$fixture_root/dogfood-postgres-perl-lib"
+startup_perl_marker="$fixture_root/dogfood-postgres-perl-marker"
+/bin/mkdir -p "$startup_perl_lib"
+/bin/cat >"$startup_env_bash_file" <<'BASHENV'
+set() {
+  /usr/bin/printf '%s BASH_ENV set function invoked\n' "${DOGFOOD_POSTGRES_STARTUP_ENV_SHADOW_SENTINEL:?}" >&2
+  /usr/bin/printf 'bash-env\n' >"${DOGFOOD_POSTGRES_STARTUP_ENV_BASH_MARKER:?}"
+  exit 97
+}
+BASHENV
+/bin/cat >"$startup_perl_lib/DogfoodPostgresPerlStartupPoison.pm" <<'PERLPOISON'
+package DogfoodPostgresPerlStartupPoison;
+BEGIN {
+  my $sentinel = $ENV{DOGFOOD_POSTGRES_STARTUP_ENV_SHADOW_SENTINEL} // '';
+  my $marker = $ENV{DOGFOOD_POSTGRES_STARTUP_ENV_PERL_MARKER} // '';
+  if ($marker ne '' && open(my $fh, '>', $marker)) {
+    print {$fh} "perl-startup\n";
+    close $fh;
+  }
+  print STDERR "$sentinel Perl startup invoked\n";
+  exit 97;
+}
+1;
+PERLPOISON
+
+set +e
+(
+  set() {
+    /usr/bin/printf '%s exported set function invoked\n' "${DOGFOOD_POSTGRES_STARTUP_ENV_SHADOW_SENTINEL:?}" >&2
+    /usr/bin/printf 'exported-set\n' >"${DOGFOOD_POSTGRES_STARTUP_ENV_EXPORT_MARKER:?}"
+    exit 97
+  }
+  export -f set
+  PATH="$fake_bin:$PATH" \
+    FAKE_DOCKER_LOG="$docker_log" \
+    FAKE_READY_COUNTER="$ready_counter" \
+    DOGFOOD_POSTGRES_STARTUP_ENV_SHADOW_SENTINEL="$startup_env_shadow_sentinel" \
+    DOGFOOD_POSTGRES_STARTUP_ENV_BASH_MARKER="$startup_env_bash_marker" \
+    DOGFOOD_POSTGRES_STARTUP_ENV_EXPORT_MARKER="$startup_env_export_marker" \
+    DOGFOOD_POSTGRES_STARTUP_ENV_PERL_MARKER="$startup_perl_marker" \
+    LITHEPG_DOGFOOD_CONTAINER="$fixture_container" \
+    LITHEPG_DOGFOOD_IMAGE="$fixture_image" \
+    LITHEPG_DOGFOOD_PORT="$fixture_port" \
+    LITHEPG_DOGFOOD_PASSWORD="$fixture_password" \
+    LITHEPG_DOGFOOD_DATABASE="$fixture_database" \
+    BASH_ENV="$startup_env_bash_file" \
+    PERL5LIB="$startup_perl_lib" \
+    PERLLIB="$startup_perl_lib" \
+    PERL5OPT=-MDogfoodPostgresPerlStartupPoison \
+    "$fixture_root/script/dogfood_postgres.sh"
+) >"$output_file" 2>&1
+startup_env_shadow_status=$?
+set -e
+startup_env_shadow_output="$(<"$output_file")"
+if [[ "$startup_env_shadow_status" -ne 0 ]]; then
+  /usr/bin/printf '%s\n' "$startup_env_shadow_output" >&2
+  fail "dogfood_postgres executable startup left Bash/Perl startup environment unsanitized"
+fi
+assert_contains "$startup_env_shadow_output" "Dogfood database ready."
+assert_contains "$startup_env_shadow_output" "POSTGRES_TEST_URL=postgres://postgres:***@localhost:$fixture_port/$fixture_database?sslmode=disable"
+assert_not_contains "$startup_env_shadow_output" "$startup_env_shadow_sentinel"
+assert_not_contains "$startup_env_shadow_output" "set function invoked"
+assert_not_contains "$startup_env_shadow_output" "Perl startup invoked"
+assert_not_contains "$startup_env_shadow_output" "$fixture_password"
+assert_not_contains "$startup_env_shadow_output" "$ambient_fixture_password"
+assert_not_contains_if_set "$startup_env_shadow_output" "$incoming_ambient_password"
+[[ -s "$docker_log" ]] || fail "fake docker was not used after startup env sanitization"
+startup_env_shadow_docker_output="$(<"$docker_log")"
+assert_contains "$startup_env_shadow_docker_output" "docker exec -i lithepg-smoke psql -v ON_ERROR_STOP=1 -U postgres -d postgres"
+assert_not_contains "$startup_env_shadow_docker_output" "$startup_env_shadow_sentinel"
+assert_not_contains "$startup_env_shadow_docker_output" "$fixture_password"
+[[ ! -e "$startup_env_bash_marker" ]] || fail "dogfood_postgres invoked BASH_ENV-defined set function: $(<"$startup_env_bash_marker")"
+[[ ! -e "$startup_env_export_marker" ]] || fail "dogfood_postgres invoked exported set function: $(<"$startup_env_export_marker")"
+[[ ! -e "$startup_perl_marker" ]] || fail "dogfood_postgres invoked Perl startup env: $(<"$startup_perl_marker")"
+/bin/rm -f "$output_file" "$docker_log" "$ready_counter"
+
 if ! run_helper_capture "$output_file" "$fixture_root" "$fake_bin" "$docker_log" "$ready_counter" "$marker_dir"; then
   helper_output="$(<"$output_file")"
   assert_not_contains "$helper_output" "$fixture_password"
