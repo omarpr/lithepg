@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v04 measurement receipt sync</title>
+  <desc id="desc">Evidence artifact for syncing the latest v04 measurement hardening receipt into the dogfood log.</desc>
+  <rect width="1280" height="720" fill="#08111f"/>
+  <rect x="48" y="44" width="1184" height="632" rx="24" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="80" y="96" fill="#f8fafc" font-family="Menlo, Consolas, monospace" font-size="30" font-weight="700">LithePG receipt sync</text>
+  <text x="80" y="132" fill="#94a3b8" font-family="Menlo, Consolas, monospace" font-size="18">Generated 2026-06-01 21:52 EDT • repo /Users/omar/projects/lithepg</text>
+
+  <rect x="80" y="168" width="1080" height="360" rx="16" fill="#020617" stroke="#1e293b"/>
+  <text x="112" y="216" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="22">✓ Synced dogfood log with latest main commit</text>
+  <text x="148" y="248" fill="#d1fae5" font-family="Menlo, Consolas, monospace" font-size="18">65fdd4d — [verified] chore: harden v04 measurement helper</text>
+
+  <text x="112" y="304" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="22">✓ Referenced existing hardening evidence</text>
+  <text x="148" y="336" fill="#d1fae5" font-family="Menlo, Consolas, monospace" font-size="18">screenshots/evidence/2026-06-01-v04-measure-hardening.svg</text>
+
+  <text x="112" y="392" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="22">Scope</text>
+  <text x="148" y="424" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="18">Docs-only receipt update; no code, signing, notarization, upload, release, tag, cron, or external publication.</text>
+
+  <text x="80" y="584" fill="#fbbf24" font-family="Menlo, Consolas, monospace" font-size="20" font-weight="700">Verification targets for this commit</text>
+  <text x="80" y="616" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="18">SVG parse • Markdown/diff review • focused secret-pattern scan • git diff --check</text>
+</svg>

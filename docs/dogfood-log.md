@@ -1547,3 +1547,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-01-package-verify-default-root-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 21:52 EDT — v0.4 measurement helper receipt sync
+
+- Synced the latest committed v0.4 measurement hardening receipt into this dogfood log after `main` advanced to `65fdd4d` (`[verified] chore: harden v04 measurement helper`).
+- The hardening changes `script/v04_measure.sh` and `script/test_v04_measure.sh` so the measurement helper is covered against PATH-shadowed core utilities, exported Bash function leaks, and repository/output paths with spaces while preserving intentionally selectable developer tools and process-control seams.
+- Recorded verification from the committed slice: `bash script/test_v04_measure.sh`, `bash -n script/v04_measure.sh script/test_v04_measure.sh && git diff --check`, adjacent `bash script/test_dogfood_check.sh`, full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`, static added-line security scans, and independent spec/quality reviews all passed. Swift Testing reported 127 tests across 20 suites.
+- Existing hardening evidence artifact from the committed slice: `screenshots/evidence/2026-06-01-v04-measure-hardening.svg`.
+- Receipt-sync evidence artifact for this log update: `screenshots/evidence/2026-06-01-v04-measure-receipt-sync.svg`.
+- This docs-only receipt sync attempted no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication.
