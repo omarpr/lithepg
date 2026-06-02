@@ -1984,3 +1984,15 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-175538/`; metrics: shell readiness 138.99 ms, connected cold start 253.37 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.083 ms, dogfood query median overhead 0.073 ms.
 - Evidence artifact: `screenshots/evidence/2026-06-02-package-verify-hardlink-rejection.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 18:26 EDT — release zip artifact-only gate wiring
+
+- Hardened `script/create_release_zip.sh` so the staged public `LithePG.app.zip` is validated by `script/v10_release_gate.sh --artifact-only` before it is renamed into the final output path.
+- The helper now passes the staged temp zip path through `LITHEPG_RELEASE_ZIP_PATH` and its computed SHA-256 through `LITHEPG_RELEASE_ZIP_SHA256`; artifact-gate output is suppressed and a failing gate emits only the generic `create_release_zip failed: release artifact validation failed` message.
+- Added strict-TDD coverage in `script/test_create_release_zip.sh` proving the success path invokes the artifact-only gate with the staged zip and matching 64-hex SHA, and proving a failing fake artifact gate stops before final rename without leaking sentinel paths or creating the final zip.
+- RED verification: `bash script/test_create_release_zip.sh` failed first with `test_create_release_zip failed: helper unexpectedly passed when artifact gate failed`.
+- GREEN verification passed: `bash script/test_create_release_zip.sh`, `bash script/test_v10_release_gate.sh`, `bash script/test_package_verify.sh`, `bash -n` for the touched release-helper scripts, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`. Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-182609/`; metrics: shell readiness 129.31 ms, connected cold start 263.76 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.068 ms, dogfood query median overhead 0.136 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-02-create-release-zip-artifact-gate.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

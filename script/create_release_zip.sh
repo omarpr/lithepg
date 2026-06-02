@@ -266,6 +266,19 @@ if ! zip_size_bytes="$(/usr/bin/stat -f%z "$temp_zip" 2>/dev/null)"; then
 fi
 [[ "$zip_size_bytes" =~ ^[0-9]+$ ]] || fail "computed byte size for output zip was empty or non-numeric"
 
+if ! LITHEPG_RELEASE_ZIP_PATH="$temp_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$sha_digest" \
+  /usr/bin/perl -e '
+use strict;
+use warnings;
+my ($root_dir, @cmd) = @ARGV;
+chdir $root_dir or exit 126;
+exec @cmd;
+exit 127;
+' "$ROOT_DIR" "$ROOT_DIR/script/v10_release_gate.sh" --artifact-only >/dev/null 2>&1; then
+  fail "release artifact validation failed"
+fi
+
 /usr/bin/perl -e 'use strict; use warnings; rename($ARGV[0], $ARGV[1]) or die "rename failed: $!\n";' "$temp_zip" "$OUTPUT_ZIP_ABS" 2>/dev/null || fail "could not replace output zip"
 
 printf 'Created release zip: %s\n' "$(/usr/bin/basename "$OUTPUT_ZIP")"

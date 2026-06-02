@@ -43,6 +43,19 @@ assert_file_contains() {
   assert_contains "$contents" "$needle"
 }
 
+first_log_value() {
+  local contents="$1"
+  local key="$2"
+  local line
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" == "$key="* ]]; then
+      printf '%s\n' "${line#*=}"
+      return 0
+    fi
+  done <<<"$contents"
+  fail "expected log value for: $key"
+}
+
 assert_zip_contains_app_wrapper() {
   local zip_path="$1"
   local extract_dir="$2"
@@ -66,9 +79,55 @@ if [[ "${FAKE_VERIFY_FAIL:-}" == "1" ]]; then
   printf 'fake package verification failed\n' >&2
   exit 42
 fi
-printf 'fake package verified: %s\n' "${1:-}"
+if [[ "${FAKE_VERIFY_QUIET:-}" != "1" ]]; then
+  printf 'fake package verified: %s\n' "${1:-}"
+fi
 FAKE_VERIFY
   chmod +x "$fixture/script/package_verify.sh"
+
+  cat >"$fixture/script/v10_release_gate.sh" <<'FAKE_GATE'
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ -n "${FAKE_GATE_LOG:-}" ]]; then
+  printf 'args=%s\n' "$*" >>"$FAKE_GATE_LOG"
+  printf 'zip_path=%s\n' "${LITHEPG_RELEASE_ZIP_PATH:-}" >>"$FAKE_GATE_LOG"
+  printf 'zip_sha=%s\n' "${LITHEPG_RELEASE_ZIP_SHA256:-}" >>"$FAKE_GATE_LOG"
+  if [[ -f "${LITHEPG_RELEASE_ZIP_PATH:-}" ]]; then
+    printf 'zip_exists=1\n' >>"$FAKE_GATE_LOG"
+  else
+    printf 'zip_exists=0\n' >>"$FAKE_GATE_LOG"
+  fi
+  if actual_sha_line="$(/usr/bin/shasum -a 256 "${LITHEPG_RELEASE_ZIP_PATH:-}" 2>/dev/null)"; then
+    printf 'actual_sha=%s\n' "${actual_sha_line%%[[:space:]]*}" >>"$FAKE_GATE_LOG"
+  fi
+  if [[ -n "${FAKE_GATE_FINAL_ZIP_PATH:-}" && -e "$FAKE_GATE_FINAL_ZIP_PATH" ]]; then
+    printf 'final_zip_exists=1\n' >>"$FAKE_GATE_LOG"
+  else
+    printf 'final_zip_exists=0\n' >>"$FAKE_GATE_LOG"
+  fi
+fi
+
+if [[ "$*" != "--artifact-only" ]]; then
+  printf 'fake artifact gate expected --artifact-only\n' >&2
+  exit 44
+fi
+if [[ ! "${LITHEPG_RELEASE_ZIP_SHA256:-}" =~ ^[0-9a-f]{64}$ ]]; then
+  printf 'fake artifact gate expected 64-hex SHA\n' >&2
+  exit 45
+fi
+if [[ ! -f "${LITHEPG_RELEASE_ZIP_PATH:-}" ]]; then
+  printf 'fake artifact gate expected staged zip file\n' >&2
+  exit 46
+fi
+
+if [[ "${FAKE_ARTIFACT_GATE_FAIL:-}" == "1" ]]; then
+  printf 'fake artifact gate stdout leak: %s %s\n' "${FAKE_ARTIFACT_GATE_SENTINEL:-}" "${LITHEPG_RELEASE_ZIP_PATH:-}"
+  printf 'fake artifact gate stderr leak: %s %s\n' "${FAKE_ARTIFACT_GATE_SENTINEL:-}" "${FAKE_ARTIFACT_GATE_FIXTURE_PATH:-}" >&2
+  exit 43
+fi
+FAKE_GATE
+  chmod +x "$fixture/script/v10_release_gate.sh"
 
   mkdir -p "$fixture/dist/LithePG.app/Contents/MacOS"
   printf 'fake app bundle\n' >"$fixture/dist/LithePG.app/Contents/MacOS/LithePGApp"
@@ -139,11 +198,12 @@ case_variant_inside_bundle_output="$(mktemp)"
 symlink_inside_bundle_output="$(mktemp)"
 symlink_parent_traversal_output="$(mktemp)"
 final_symlink_inside_bundle_output="$(mktemp)"
+artifact_gate_failure_output="$(mktemp)"
 success_output="$(mktemp)"
 outside_cwd_output="$(mktemp)"
 help_output="$(mktemp)"
 fixture_root="$(mktemp -d)"
-trap 'rm -f "$missing_verify_output" "$initial_bash_path_shadow_output" "$startup_env_shadow_output" "$startup_env_sanitizer_fail_closed_output" "$startup_env_sanitizer_empty_bash_env_fail_closed_output" "$perl_startup_shadow_output" "$wrong_app_bundle_name_output" "$symlink_app_bundle_output" "$symlink_app_bundle_trailing_slash_output" "$wrong_output_zip_name_output" "$trailing_slash_output_zip_output" "$approved_directory_output" "$output_parent_file_output" "$dangling_output_parent_symlink_output" "$output_parent_creation_failure_output" "$refuse_output" "$refuse_sentinel_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$success_path_redaction_output" "$cleanup_redaction_output" "$root_resolution_shadow_output" "$path_shadow_output" "$inside_bundle_output" "$inside_bundle_sentinel_output" "$temp_creation_failure_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$final_symlink_inside_bundle_output" "$success_output" "$outside_cwd_output" "$help_output"; chmod -R u+rwx "$fixture_root" 2>/dev/null || true; rm -rf "$fixture_root"' EXIT
+trap 'rm -f "$missing_verify_output" "$initial_bash_path_shadow_output" "$startup_env_shadow_output" "$startup_env_sanitizer_fail_closed_output" "$startup_env_sanitizer_empty_bash_env_fail_closed_output" "$perl_startup_shadow_output" "$wrong_app_bundle_name_output" "$symlink_app_bundle_output" "$symlink_app_bundle_trailing_slash_output" "$wrong_output_zip_name_output" "$trailing_slash_output_zip_output" "$approved_directory_output" "$output_parent_file_output" "$dangling_output_parent_symlink_output" "$output_parent_creation_failure_output" "$refuse_output" "$refuse_sentinel_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$success_path_redaction_output" "$cleanup_redaction_output" "$root_resolution_shadow_output" "$path_shadow_output" "$inside_bundle_output" "$inside_bundle_sentinel_output" "$temp_creation_failure_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$final_symlink_inside_bundle_output" "$artifact_gate_failure_output" "$success_output" "$outside_cwd_output" "$help_output"; chmod -R u+rwx "$fixture_root" 2>/dev/null || true; rm -rf "$fixture_root"' EXIT
 
 sensitive_identity="SENSITIVE_CODESIGN_IDENTITY_DO_NOT_PRINT"
 sensitive_notary="SENSITIVE_NOTARY_PROFILE_DO_NOT_PRINT"
@@ -1097,11 +1157,46 @@ assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
 [[ "$(readlink "$final_symlink_inside_output_path")" == "$final_symlink_inside_target" ]] || fail "inside-bundle final output symlink target changed despite refusal"
 [[ "$(<"$final_symlink_inside_target")" == "$final_symlink_inside_target_contents" ]] || fail "outside final output symlink target contents changed"
 
+# A failing artifact-only v1.0 gate must stop before the final rename and only emit a generic failure.
+artifact_gate_failure_sentinel="ARTIFACT_GATE_FAILURE_SENTINEL_DO_NOT_PRINT"
+artifact_gate_failure_fixture="$fixture_root/artifact-gate-failure"
+artifact_gate_failure_zip="$artifact_gate_failure_fixture/artifacts/public/LithePG.app.zip"
+artifact_gate_failure_log="$artifact_gate_failure_fixture/artifact-gate.log"
+make_fixture "$artifact_gate_failure_fixture"
+verify_log="$artifact_gate_failure_fixture/verify.log"
+if FAKE_VERIFY_LOG="$verify_log" \
+  FAKE_VERIFY_QUIET="1" \
+  FAKE_GATE_LOG="$artifact_gate_failure_log" \
+  FAKE_GATE_FINAL_ZIP_PATH="$artifact_gate_failure_zip" \
+  FAKE_ARTIFACT_GATE_FAIL="1" \
+  FAKE_ARTIFACT_GATE_SENTINEL="$artifact_gate_failure_sentinel" \
+  FAKE_ARTIFACT_GATE_FIXTURE_PATH="$artifact_gate_failure_fixture" \
+  run_helper_capture "$artifact_gate_failure_fixture" "$artifact_gate_failure_output" "dist/LithePG.app" "artifacts/public/LithePG.app.zip"; then
+  fail "helper unexpectedly passed when artifact gate failed"
+fi
+artifact_gate_failure_text="$(<"$artifact_gate_failure_output")"
+[[ "$artifact_gate_failure_text" == "create_release_zip failed: release artifact validation failed" ]] || fail "artifact gate failure output was not only the generic failure"
+assert_not_contains "$artifact_gate_failure_text" "$artifact_gate_failure_fixture"
+assert_not_contains "$artifact_gate_failure_text" "$artifact_gate_failure_sentinel"
+assert_not_contains "$artifact_gate_failure_text" "fake artifact gate stdout leak"
+assert_not_contains "$artifact_gate_failure_text" "fake artifact gate stderr leak"
+assert_not_contains "$artifact_gate_failure_text" "Created release zip:"
+assert_not_contains "$artifact_gate_failure_text" "SHA-256:"
+assert_not_contains "$artifact_gate_failure_text" "Size bytes:"
+assert_file_contains "$artifact_gate_failure_log" "args=--artifact-only"
+assert_file_contains "$artifact_gate_failure_log" "zip_exists=1"
+assert_file_contains "$artifact_gate_failure_log" "final_zip_exists=0"
+assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+[[ ! -e "$artifact_gate_failure_zip" ]] || fail "final zip was created despite artifact gate failure"
+
 # Success creates parent directories, preserves the .app wrapper, prints SHA-256, and does not leak secret-ish env values.
 success_fixture="$fixture_root/success"
 make_fixture "$success_fixture"
 verify_log="$success_fixture/verify.log"
+success_gate_log="$success_fixture/artifact-gate.log"
 if ! FAKE_VERIFY_LOG="$verify_log" \
+  FAKE_GATE_LOG="$success_gate_log" \
+  FAKE_GATE_FINAL_ZIP_PATH="$success_fixture/artifacts/public/LithePG.app.zip" \
   LITHEPG_CODESIGN_IDENTITY="$sensitive_identity" \
   LITHEPG_NOTARY_PROFILE="$sensitive_notary" \
   LITHEPG_RELEASE_MARKER="$sensitive_release_marker" \
@@ -1118,6 +1213,20 @@ assert_not_contains "$success_text" "$sensitive_release_marker"
 [[ -f "$success_fixture/artifacts/public/LithePG.app.zip" ]] || fail "success zip was not created in nested output directory"
 assert_zip_contains_app_wrapper "$success_fixture/artifacts/public/LithePG.app.zip" "$success_fixture/extracted-success"
 assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
+success_gate_text="$(<"$success_gate_log")"
+assert_contains "$success_gate_text" "args=--artifact-only"
+assert_contains "$success_gate_text" "zip_exists=1"
+assert_contains "$success_gate_text" "final_zip_exists=0"
+success_gate_path="$(first_log_value "$success_gate_text" "zip_path")"
+success_gate_sha="$(first_log_value "$success_gate_text" "zip_sha")"
+success_gate_actual_sha="$(first_log_value "$success_gate_text" "actual_sha")"
+success_fixture_real="$(/bin/realpath "$success_fixture")"
+success_final_zip_real="$success_fixture_real/artifacts/public/LithePG.app.zip"
+[[ "$success_gate_path" == "$success_fixture_real/artifacts/public/.release-zip."*/LithePG.app.zip ]] || fail "artifact gate did not receive staged temporary zip path"
+[[ "$success_gate_path" != "$success_final_zip_real" ]] || fail "artifact gate received final zip path instead of staged zip path"
+[[ "$success_gate_sha" =~ ^[0-9a-f]{64}$ ]] || fail "artifact gate did not receive a 64-hex SHA"
+[[ "$success_gate_sha" == "$success_gate_actual_sha" ]] || fail "artifact gate SHA did not match staged zip content"
+assert_contains "$success_text" "SHA-256: $success_gate_sha"
 
 # Default paths resolve from the helper's repository root, not the caller's cwd.
 outside_fixture="$fixture_root/default-from-outside-cwd"
