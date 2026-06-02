@@ -1736,3 +1736,10 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-02-package-verify-privileged-reexec.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 07:26 EDT — v1.0 public status receipt refresh
+
+- Refreshed `README.md` and `CHANGELOG.md` with the latest committed 2026-06-02 local dogfood gate metrics from `.build/dogfood-checks/20260602-071038/`; that receipt's `status.json` records `main` at `e24a9b2`.
+- Current public-reader status now reports shell readiness 130.93 ms, connected cold start 241.57 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.035 ms, and dogfood query median overhead 0.011 ms, while keeping the public `v1.0` blockers unchanged.
+- Evidence artifact: `screenshots/evidence/2026-06-02-v10-public-status-receipt-refresh.svg`.
+- This docs-only receipt refresh attempted no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication.

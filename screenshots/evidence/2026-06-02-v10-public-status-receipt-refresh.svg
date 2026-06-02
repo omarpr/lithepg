@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 public status receipt refresh evidence</title>
+  <desc id="desc">Visual evidence for the 2026-06-02 README and changelog status refresh using the latest local dogfood gate metrics.</desc>
+  <rect width="1200" height="760" fill="#0b1020"/>
+  <rect x="40" y="40" width="1120" height="680" rx="24" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="70" y="95" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="30" font-weight="700">LithePG v1.0 public status refresh</text>
+  <text x="70" y="135" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="18">2026-06-02 07:26 EDT · README.md + CHANGELOG.md</text>
+
+  <rect x="70" y="170" width="1060" height="125" rx="14" fill="#172554" stroke="#60a5fa" stroke-width="2"/>
+  <text x="95" y="210" fill="#bfdbfe" font-family="Menlo, Consolas, monospace" font-size="20" font-weight="700">Change</text>
+  <text x="95" y="245" fill="#e0f2fe" font-family="Menlo, Consolas, monospace" font-size="17">Public status docs now reference the latest committed local dogfood gate</text>
+  <text x="95" y="272" fill="#e0f2fe" font-family="Menlo, Consolas, monospace" font-size="17">metrics from .build/dogfood-checks/20260602-071038/ at e24a9b2.</text>
+
+  <rect x="70" y="320" width="515" height="235" rx="14" fill="#052e16" stroke="#22c55e" stroke-width="2"/>
+  <text x="95" y="360" fill="#bbf7d0" font-family="Menlo, Consolas, monospace" font-size="20" font-weight="700">Docs refreshed</text>
+  <text x="95" y="397" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="16">README: latest v1.0 local gate receipt</text>
+  <text x="95" y="425" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="16">CHANGELOG: unreleased v1.0 verified metrics</text>
+  <text x="95" y="453" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="16">Dogfood log: docs-only receipt entry</text>
+  <text x="95" y="496" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="16">No release blockers changed or hidden</text>
+  <text x="95" y="524" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="16">No public tag/release publication attempted</text>
+
+  <rect x="615" y="320" width="515" height="235" rx="14" fill="#3f1d05" stroke="#f59e0b" stroke-width="2"/>
+  <text x="640" y="360" fill="#fde68a" font-family="Menlo, Consolas, monospace" font-size="20" font-weight="700">Latest reported gate</text>
+  <text x="640" y="397" fill="#ffedd5" font-family="Menlo, Consolas, monospace" font-size="16">Artifacts: .build/dogfood-checks/20260602-071038/</text>
+  <text x="640" y="425" fill="#ffedd5" font-family="Menlo, Consolas, monospace" font-size="16">swift test: passed · live dogfood: passed</text>
+  <text x="640" y="453" fill="#ffedd5" font-family="Menlo, Consolas, monospace" font-size="16">v0.4 measure: passed</text>
+  <text x="640" y="496" fill="#ffedd5" font-family="Menlo, Consolas, monospace" font-size="16">startup: shell 130.93 ms · connected 241.57 ms</text>
+  <text x="640" y="524" fill="#ffedd5" font-family="Menlo, Consolas, monospace" font-size="16">overhead: SELECT 1 0.035 ms · dogfood 0.011 ms</text>
+
+  <rect x="70" y="585" width="1060" height="75" rx="14" fill="#1f2937" stroke="#6b7280" stroke-width="2"/>
+  <text x="95" y="630" fill="#f9fafb" font-family="Menlo, Consolas, monospace" font-size="18">No secrets, signing, notarization, upload, Homebrew publication, GitHub Release, tag, or cron changes.</text>
+</svg>

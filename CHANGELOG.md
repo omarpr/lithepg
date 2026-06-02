@@ -24,7 +24,7 @@ LithePG follows outcome-named milestones with semantic-version tags. v1.0 remain
 ### Verified
 
 - Local v1.0 release gates passed on `main` before any public tag/release publication: `swift test`, `script/dogfood_check.sh`, `script/build_and_run.sh --package`, and `script/package_verify.sh dist/LithePG.app`.
-- The local gate receipt stayed within the lean/fast budgets: 259.24 ms shell readiness, 250.97 ms connected cold start, 21.379 MiB raw release executable, 11.980 MiB stripped executable, and a 12,507,504-byte / 11.93 MiB packaged executable.
+- The latest 2026-06-02 seeded dogfood receipt stayed within the lean/fast budgets: 130.93 ms shell readiness, 241.57 ms connected cold start, 21.379 MiB raw release executable, 11.980 MiB stripped executable, and the prior package gate produced a 12,507,504-byte / 11.93 MiB packaged executable.
 - Signing/notarization dry-run reached the expected external credential gate after package verification; real signing/notarization remains blocked by missing Apple Developer signing/notary environment credentials.
 
 ### Still blocked before release
