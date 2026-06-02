@@ -193,6 +193,42 @@ esac
 DOCKER
 /bin/chmod +x "$fake_bin/docker"
 
+# Executable startup must not route through PATH-selected bash before helper code runs.
+initial_bash_path_shadow_sentinel="DOGFOOD_POSTGRES_INITIAL_BASH_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+initial_bash_path_shadow_marker="$marker_dir/initial-bash"
+/bin/cat >"$fake_bin/bash" <<'FAKE_BASH'
+#!/bin/sh
+/usr/bin/printf '%s fake bash invoked\n' "${DOGFOOD_POSTGRES_INITIAL_BASH_PATH_SHADOW_SENTINEL:-}" >&2
+/usr/bin/printf 'bash\n' >"${DOGFOOD_POSTGRES_INITIAL_BASH_PATH_SHADOW_MARKER:?}"
+exit 97
+FAKE_BASH
+/bin/chmod +x "$fake_bin/bash"
+if DOGFOOD_POSTGRES_INITIAL_BASH_PATH_SHADOW_SENTINEL="$initial_bash_path_shadow_sentinel" \
+  DOGFOOD_POSTGRES_INITIAL_BASH_PATH_SHADOW_MARKER="$initial_bash_path_shadow_marker" \
+  PATH="$fake_bin:$PATH" \
+  FAKE_DOCKER_LOG="$docker_log" \
+  FAKE_READY_COUNTER="$ready_counter" \
+  LITHEPG_DOGFOOD_CONTAINER="$fixture_container" \
+  LITHEPG_DOGFOOD_IMAGE="$fixture_image" \
+  LITHEPG_DOGFOOD_PORT="$fixture_port" \
+  LITHEPG_DOGFOOD_PASSWORD="$fixture_password" \
+  LITHEPG_DOGFOOD_DATABASE="$fixture_database" \
+  "$fixture_root/script/dogfood_postgres.sh" >"$output_file" 2>&1; then
+  :
+else
+  helper_output="$(<"$output_file")"
+  assert_not_contains "$helper_output" "$fixture_password"
+  assert_not_contains "$helper_output" "$ambient_fixture_password"
+  assert_not_contains_if_set "$helper_output" "$incoming_ambient_password"
+  /usr/bin/printf '%s\n' "$helper_output" >&2
+  fail "dogfood_postgres.sh executable invocation used PATH-selected bash"
+fi
+helper_output="$(<"$output_file")"
+assert_not_contains "$helper_output" "$initial_bash_path_shadow_sentinel"
+assert_not_contains "$helper_output" "fake bash invoked"
+[[ ! -e "$initial_bash_path_shadow_marker" ]] || fail "PATH-selected bash was invoked: $(<"$initial_bash_path_shadow_marker")"
+/bin/rm -f "$output_file" "$docker_log" "$ready_counter"
+
 if ! run_helper_capture "$output_file" "$fixture_root" "$fake_bin" "$docker_log" "$ready_counter" "$marker_dir"; then
   helper_output="$(<"$output_file")"
   assert_not_contains "$helper_output" "$fixture_password"

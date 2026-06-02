@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash -p
 set -euo pipefail
 
 ROOT_DIR="$(/bin/realpath "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/..")"
