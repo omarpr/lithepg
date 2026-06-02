@@ -1759,3 +1759,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Existing hardening evidence artifact from the committed slice: `screenshots/evidence/2026-06-02-dogfood-check-hardening.svg`.
 - Receipt-sync evidence artifact for this log update: `screenshots/evidence/2026-06-02-dogfood-check-startup-receipt-sync.svg`.
 - This docs-only receipt sync attempted no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication.
+
+## 2026-06-02 08:44 EDT — v1.0 release gate empty BASH_ENV fail-closed hardening
+
+- Hardened `script/v10_release_gate.sh` so an empty-but-present `BASH_ENV` is treated as dirty startup environment, matching the existing fail-closed posture for dirty Bash/Perl startup state. The sanitizer now checks `BASH_ENV` key presence before normal release-gate logic and rejects any remaining `BASH_ENV` key after a sanitizer-marked re-entry.
+- Added strict-TDD coverage in `script/test_v10_release_gate.sh` for direct helper invocation with `LITHEPG_V10_RELEASE_GATE_STARTUP_ENV_SANITIZED=1` and `BASH_ENV=""`; the helper must exit 2 with the generic sanitizer failure message and must not continue to normal `--help` usage output.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first because the old helper printed normal usage instead of failing closed for empty `BASH_ENV` after the sanitizer marker.
+- GREEN verification: `bash script/test_v10_release_gate.sh`, adjacent release-helper tests (`test_create_release_zip`, `test_sign_and_notarize`), `bash -n script/*.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-084410/`; metrics: shell readiness 131.53 ms, connected cold start 275.03 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.015 ms, dogfood query median overhead 0.035 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-02-v10-release-gate-empty-bash-env-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

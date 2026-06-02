@@ -143,6 +143,7 @@ grep_error_output="$(mktemp)"
 initial_bash_path_shadow_output="$(mktemp)"
 startup_env_shadow_output="$(mktemp)"
 startup_fail_closed_output="$(mktemp)"
+startup_empty_bash_env_fail_closed_output="$(mktemp)"
 path_shadowed_dirname_output="$(mktemp)"
 root_resolution_shadow_output="$(mktemp)"
 path_shadowed_rm_output="$(mktemp)"
@@ -386,6 +387,7 @@ cleanup() {
     "$initial_bash_path_shadow_output" \
     "$startup_env_shadow_output" \
     "$startup_fail_closed_output" \
+    "$startup_empty_bash_env_fail_closed_output" \
     "$path_shadowed_dirname_output" \
     "$root_resolution_shadow_output" \
     "$path_shadowed_rm_output" \
@@ -2594,6 +2596,26 @@ if [[ "$startup_fail_closed_status" -eq 0 ]]; then
 fi
 assert_contains "$startup_fail_closed_text" "unsanitized startup environment remains after v10_release_gate sanitizer"
 assert_not_contains "$startup_fail_closed_text" "Usage: script/v10_release_gate.sh"
+
+# If the sanitizer marker is already set, even an empty-but-present BASH_ENV is dirty.
+set +e
+(
+  cd "$default_security_docs_repo"
+  env -i \
+    PATH="$fake_path" \
+    LITHEPG_V10_RELEASE_GATE_STARTUP_ENV_SANITIZED=1 \
+    BASH_ENV="" \
+    "$default_security_docs_helper" --help
+) >"$startup_empty_bash_env_fail_closed_output" 2>&1
+startup_empty_bash_env_fail_closed_status=$?
+set -e
+startup_empty_bash_env_fail_closed_text="$(<"$startup_empty_bash_env_fail_closed_output")"
+if [[ "$startup_empty_bash_env_fail_closed_status" -ne 2 ]]; then
+  printf '%s\n' "$startup_empty_bash_env_fail_closed_text" >&2
+  fail "v10 release gate startup sanitizer did not fail closed with exit 2 for empty BASH_ENV after sanitizer marker"
+fi
+assert_contains "$startup_empty_bash_env_fail_closed_text" "unsanitized startup environment remains after v10_release_gate sanitizer"
+assert_not_contains "$startup_empty_bash_env_fail_closed_text" "Usage: script/v10_release_gate.sh"
 
 if run_gate_capture "$path_shadowed_grep_output" env -i \
   PATH="$fake_path" \
