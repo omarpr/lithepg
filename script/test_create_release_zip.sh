@@ -110,6 +110,7 @@ missing_verify_output="$(mktemp)"
 initial_bash_path_shadow_output="$(mktemp)"
 startup_env_shadow_output="$(mktemp)"
 startup_env_sanitizer_fail_closed_output="$(mktemp)"
+startup_env_sanitizer_empty_bash_env_fail_closed_output="$(mktemp)"
 perl_startup_shadow_output="$(mktemp)"
 wrong_app_bundle_name_output="$(mktemp)"
 symlink_app_bundle_output="$(mktemp)"
@@ -142,7 +143,7 @@ success_output="$(mktemp)"
 outside_cwd_output="$(mktemp)"
 help_output="$(mktemp)"
 fixture_root="$(mktemp -d)"
-trap 'rm -f "$missing_verify_output" "$initial_bash_path_shadow_output" "$startup_env_shadow_output" "$startup_env_sanitizer_fail_closed_output" "$perl_startup_shadow_output" "$wrong_app_bundle_name_output" "$symlink_app_bundle_output" "$symlink_app_bundle_trailing_slash_output" "$wrong_output_zip_name_output" "$trailing_slash_output_zip_output" "$approved_directory_output" "$output_parent_file_output" "$dangling_output_parent_symlink_output" "$output_parent_creation_failure_output" "$refuse_output" "$refuse_sentinel_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$success_path_redaction_output" "$cleanup_redaction_output" "$root_resolution_shadow_output" "$path_shadow_output" "$inside_bundle_output" "$inside_bundle_sentinel_output" "$temp_creation_failure_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$final_symlink_inside_bundle_output" "$success_output" "$outside_cwd_output" "$help_output"; chmod -R u+rwx "$fixture_root" 2>/dev/null || true; rm -rf "$fixture_root"' EXIT
+trap 'rm -f "$missing_verify_output" "$initial_bash_path_shadow_output" "$startup_env_shadow_output" "$startup_env_sanitizer_fail_closed_output" "$startup_env_sanitizer_empty_bash_env_fail_closed_output" "$perl_startup_shadow_output" "$wrong_app_bundle_name_output" "$symlink_app_bundle_output" "$symlink_app_bundle_trailing_slash_output" "$wrong_output_zip_name_output" "$trailing_slash_output_zip_output" "$approved_directory_output" "$output_parent_file_output" "$dangling_output_parent_symlink_output" "$output_parent_creation_failure_output" "$refuse_output" "$refuse_sentinel_output" "$uppercase_overwrite_output" "$dangling_symlink_output" "$overwrite_output" "$approved_symlink_output" "$approved_non_dangling_symlink_output" "$success_path_redaction_output" "$cleanup_redaction_output" "$root_resolution_shadow_output" "$path_shadow_output" "$inside_bundle_output" "$inside_bundle_sentinel_output" "$temp_creation_failure_output" "$case_variant_inside_bundle_output" "$symlink_inside_bundle_output" "$symlink_parent_traversal_output" "$final_symlink_inside_bundle_output" "$success_output" "$outside_cwd_output" "$help_output"; chmod -R u+rwx "$fixture_root" 2>/dev/null || true; rm -rf "$fixture_root"' EXIT
 
 sensitive_identity="SENSITIVE_CODESIGN_IDENTITY_DO_NOT_PRINT"
 sensitive_notary="SENSITIVE_NOTARY_PROFILE_DO_NOT_PRINT"
@@ -317,6 +318,40 @@ assert_not_contains "$startup_env_sanitizer_fail_closed_text" "Created release z
 [[ ! -e "$startup_env_sanitizer_fail_closed_zip" ]] || fail "zip was created despite sanitizer fail-closed dirty startup environment"
 [[ ! -e "$startup_env_sanitizer_fail_closed_bash_marker" ]] || fail "create release zip invoked BASH_ENV-defined set function: $(<"$startup_env_sanitizer_fail_closed_bash_marker")"
 [[ ! -e "$startup_env_sanitizer_fail_closed_export_marker" ]] || fail "create release zip invoked exported set function: $(<"$startup_env_sanitizer_fail_closed_export_marker")"
+
+# An empty-but-present BASH_ENV is still dirty startup environment. If the
+# sanitizer marker is already set, the copied helper must fail closed before
+# normal usage/package/zip output.
+startup_env_sanitizer_empty_bash_env_fail_closed_sentinel="CREATE_RELEASE_ZIP_EMPTY_BASH_ENV_FAIL_CLOSED_SENTINEL_DO_NOT_PRINT"
+startup_env_sanitizer_empty_bash_env_fail_closed_fixture="$fixture_root/startup-env-sanitizer-empty-bash-env-fail-closed"
+startup_env_sanitizer_empty_bash_env_fail_closed_zip="$startup_env_sanitizer_empty_bash_env_fail_closed_fixture/artifacts/fail-closed/LithePG.app.zip"
+make_fixture "$startup_env_sanitizer_empty_bash_env_fail_closed_fixture"
+verify_log="$startup_env_sanitizer_empty_bash_env_fail_closed_fixture/verify.log"
+set +e
+(
+  command cd "$startup_env_sanitizer_empty_bash_env_fail_closed_fixture"
+  FAKE_VERIFY_LOG="$verify_log" \
+    CREATE_RELEASE_ZIP_EMPTY_BASH_ENV_FAIL_CLOSED_SENTINEL="$startup_env_sanitizer_empty_bash_env_fail_closed_sentinel" \
+    LITHEPG_CREATE_RELEASE_ZIP_STARTUP_ENV_SANITIZED=1 \
+    BASH_ENV="" \
+    "$startup_env_sanitizer_empty_bash_env_fail_closed_fixture/script/create_release_zip.sh" "dist/LithePG.app" "artifacts/fail-closed/LithePG.app.zip"
+) >"$startup_env_sanitizer_empty_bash_env_fail_closed_output" 2>&1
+startup_env_sanitizer_empty_bash_env_fail_closed_status=$?
+set -e
+startup_env_sanitizer_empty_bash_env_fail_closed_text="$(<"$startup_env_sanitizer_empty_bash_env_fail_closed_output")"
+assert_not_contains "$startup_env_sanitizer_empty_bash_env_fail_closed_text" "$startup_env_sanitizer_empty_bash_env_fail_closed_fixture"
+assert_not_contains "$startup_env_sanitizer_empty_bash_env_fail_closed_text" "$startup_env_sanitizer_empty_bash_env_fail_closed_sentinel"
+if [[ "$startup_env_sanitizer_empty_bash_env_fail_closed_status" -ne 2 ]]; then
+  printf '%s\n' "$startup_env_sanitizer_empty_bash_env_fail_closed_text" >&2
+  fail "create release zip sanitizer marker with empty BASH_ENV should exit 2, got $startup_env_sanitizer_empty_bash_env_fail_closed_status"
+fi
+assert_contains "$startup_env_sanitizer_empty_bash_env_fail_closed_text" "unsanitized startup environment remains after create_release_zip sanitizer"
+assert_not_contains "$startup_env_sanitizer_empty_bash_env_fail_closed_text" "Usage:"
+assert_not_contains "$startup_env_sanitizer_empty_bash_env_fail_closed_text" "Created release zip:"
+assert_not_contains "$startup_env_sanitizer_empty_bash_env_fail_closed_text" "SHA-256:"
+assert_not_contains "$startup_env_sanitizer_empty_bash_env_fail_closed_text" "Size bytes:"
+[[ ! -e "$startup_env_sanitizer_empty_bash_env_fail_closed_zip" ]] || fail "zip was created despite sanitizer fail-closed empty BASH_ENV startup environment"
+[[ ! -e "$verify_log" ]] || fail "package verification ran despite sanitizer fail-closed empty BASH_ENV startup environment"
 
 # Perl startup environment alone must trigger sanitization before normal helper
 # /usr/bin/perl calls can observe PERL5OPT/PERL5LIB/PERLLIB.
