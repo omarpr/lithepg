@@ -101,6 +101,7 @@ assert_equals "$relative_pkill_status" "2"
 assert_contains "$relative_pkill_output" "LITHEPG_BUILD_AND_RUN_PKILL must be an absolute path: relative-pkill"
 
 root_shadow_sentinel="BUILD_AND_RUN_ROOT_REALPATH_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+root_shadow_command_sentinel="BUILD_AND_RUN_ROOT_COMMAND_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
 root_shadow_builtin_sentinel="BUILD_AND_RUN_ROOT_BUILTIN_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
 root_shadow_cd_sentinel="BUILD_AND_RUN_ROOT_CD_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
 root_shadow_pwd_sentinel="BUILD_AND_RUN_ROOT_PWD_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
@@ -154,6 +155,11 @@ SHIM
 set +e
 (
   cd "$ROOT_DIR"
+  command() {
+    /usr/bin/printf '%s command invoked\n' "${ROOT_SHADOW_COMMAND_SENTINEL:?}" >&2
+    /usr/bin/printf 'command\n' >"${ROOT_SHADOW_MARKER_DIR:?}/command"
+    exit 97
+  }
   builtin() {
     /usr/bin/printf '%s builtin invoked\n' "${ROOT_SHADOW_BUILTIN_SENTINEL:?}" >&2
     /usr/bin/printf 'builtin\n' >"${ROOT_SHADOW_MARKER_DIR:?}/builtin"
@@ -169,6 +175,7 @@ set +e
     /usr/bin/printf 'pwd\n' >"${ROOT_SHADOW_MARKER_DIR:?}/pwd"
     /usr/bin/printf '%s\n' "${ROOT_SHADOW_FAKE_PWD:?}"
   }
+  export -f command
   export -f builtin
   export -f cd
   export -f pwd
@@ -180,6 +187,7 @@ set +e
     LITHEPG_BUILD_VERSION="100" \
     ROOT_SHADOW_MARKER_DIR="$root_shadow_marker_dir" \
     ROOT_SHADOW_FAKE_PWD="$fixture_root/root-shadow-wrong-root" \
+    ROOT_SHADOW_COMMAND_SENTINEL="$root_shadow_command_sentinel" \
     ROOT_SHADOW_BUILTIN_SENTINEL="$root_shadow_builtin_sentinel" \
     ROOT_SHADOW_CD_SENTINEL="$root_shadow_cd_sentinel" \
     ROOT_SHADOW_PWD_SENTINEL="$root_shadow_pwd_sentinel" \
@@ -195,10 +203,11 @@ fi
 [[ -f "$root_shadow_swift_marker" ]] || fail "fake root-shadow swift was not used"
 assert_contains "$root_shadow_output" "$ROOT_DIR/dist/LithePG.app"
 assert_not_contains "$root_shadow_output" "$root_shadow_sentinel"
+assert_not_contains "$root_shadow_output" "$root_shadow_command_sentinel"
 assert_not_contains "$root_shadow_output" "$root_shadow_builtin_sentinel"
 assert_not_contains "$root_shadow_output" "$root_shadow_cd_sentinel"
 assert_not_contains "$root_shadow_output" "$root_shadow_pwd_sentinel"
-for tool in realpath builtin cd pwd; do
+for tool in realpath command builtin cd pwd; do
   [[ ! -e "$root_shadow_marker_dir/$tool" ]] || fail "build_and_run root resolution invoked shadowed $tool"
 done
 [[ -f "$root_shadow_safe_pkill_marker" ]] || fail "build_and_run root-shadow fixture did not invoke safe pkill override"

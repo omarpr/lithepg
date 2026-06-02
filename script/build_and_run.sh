@@ -13,6 +13,7 @@ CODESIGN=/usr/bin/codesign
 CP=/bin/cp
 DITTO=/usr/bin/ditto
 MKDIR=/bin/mkdir
+PERL=/usr/bin/perl
 OPEN="${LITHEPG_BUILD_AND_RUN_OPEN:-/usr/bin/open}"
 PGREP="${LITHEPG_BUILD_AND_RUN_PGREP:-/usr/bin/pgrep}"
 PKILL="${LITHEPG_BUILD_AND_RUN_PKILL:-/usr/bin/pkill}"
@@ -74,12 +75,23 @@ if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode.app/Contents/Developer ]
   export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 fi
 
-command cd "$ROOT_DIR"
+run_from_root() {
+  "$PERL" -e '
+    use strict;
+    use warnings;
+    my $root = shift @ARGV;
+    chdir $root or die "chdir $root: $!\n";
+    $ENV{PWD} = $root;
+    @ARGV or die "exec: missing command\n";
+    exec { $ARGV[0] } @ARGV;
+    die "exec $ARGV[0]: $!\n";
+  ' "$ROOT_DIR" "$@"
+}
 
-LATEST_TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+LATEST_TAG="$(git -C "$ROOT_DIR" describe --tags --abbrev=0 2>/dev/null || true)"
 MARKETING_VERSION="${LITHEPG_MARKETING_VERSION:-${LATEST_TAG#v}}"
 MARKETING_VERSION="${MARKETING_VERSION:-0.0}"
-BUILD_VERSION="${LITHEPG_BUILD_VERSION:-$(git rev-list --count HEAD 2>/dev/null || printf '0')}"
+BUILD_VERSION="${LITHEPG_BUILD_VERSION:-$(git -C "$ROOT_DIR" rev-list --count HEAD 2>/dev/null || printf '0')}"
 
 case "$MODE" in
   --package|package|release)
@@ -92,11 +104,11 @@ case "$MODE" in
 esac
 
 if [[ "$BUILD_CONFIG" == "release" ]]; then
-  swift build -c release --product "$APP_NAME"
-  BUILD_BINARY="$(swift build -c release --show-bin-path)/$APP_NAME"
+  run_from_root swift build -c release --product "$APP_NAME"
+  BUILD_BINARY="$(run_from_root swift build -c release --show-bin-path)/$APP_NAME"
 else
-  swift build --product "$APP_NAME"
-  BUILD_BINARY="$(swift build --show-bin-path)/$APP_NAME"
+  run_from_root swift build --product "$APP_NAME"
+  BUILD_BINARY="$(run_from_root swift build --show-bin-path)/$APP_NAME"
 fi
 
 "$RM" -rf "$APP_BUNDLE"

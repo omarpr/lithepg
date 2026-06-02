@@ -1556,3 +1556,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Existing hardening evidence artifact from the committed slice: `screenshots/evidence/2026-06-01-v04-measure-hardening.svg`.
 - Receipt-sync evidence artifact for this log update: `screenshots/evidence/2026-06-01-v04-measure-receipt-sync.svg`.
 - This docs-only receipt sync attempted no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication.
+
+## 2026-06-01 22:15 EDT — v1.0 build/run command function-shadow hardening
+
+- Hardened `script/build_and_run.sh` so the helper no longer depends on shell `command cd "$ROOT_DIR"` before app build/package work. Git metadata now uses `git -C "$ROOT_DIR"`, and Swift build/bin-path commands run from the repository root through an absolute `/usr/bin/perl` `chdir`/`exec` wrapper while preserving intentionally PATH-resolved `swift`.
+- Added strict-TDD coverage in `script/test_build_and_run.sh` with an exported sentinel `command()` function alongside the existing `builtin`, `cd`, and `pwd` root-shadow sentinels. The test must still use the fake PATH-resolved Swift tool and safe absolute pkill override, print the repo-root app bundle path, and avoid invoking/leaking shadow sentinels.
+- RED verification: `bash script/test_build_and_run.sh` failed first with `BUILD_AND_RUN_ROOT_COMMAND_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN command invoked` before the shell `command cd` dependency was removed.
+- GREEN verification: `bash script/test_build_and_run.sh`, adjacent release-helper tests (`test_package_verify`, `test_create_release_zip`, `test_sign_and_notarize`, `test_v10_release_gate`), `bash -n script/build_and_run.sh script/test_build_and_run.sh`, `git diff --check`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260601-221454/`; metrics: shell readiness 135.47 ms, connected cold start 256.71 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.029 ms, dogfood query median overhead 0.023 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-01-build-run-command-function-shadow-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
