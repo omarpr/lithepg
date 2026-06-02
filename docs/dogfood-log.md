@@ -1671,3 +1671,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-02-v05-model-smoke-startup-bash-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 04:50 EDT — v0.4 measurement executable startup Bash hardening
+
+- Hardened `script/v04_measure.sh` executable startup by switching from PATH-selected `#!/usr/bin/env bash` to absolute privileged Bash (`#!/bin/bash -p`), so copied/direct measurement-helper invocation cannot be routed through a fake `bash` on `PATH` before v0.4 release measurements begin.
+- Added startup sanitization before normal measurement logic: nonempty `BASH_ENV`, exported Bash functions (`BASH_FUNC_*`), and Perl startup env (`PERL5OPT`, `PERL5LIB`, `PERLLIB`) trigger a `/bin/bash -p` re-exec with those entries removed. Dirty startup env after the sanitizer marker fails closed with exit 2.
+- Added strict-TDD coverage in `script/test_v04_measure.sh` for direct executable invocation with fake PATH-selected `bash`, BASH_ENV/exported `set` function shadowing, Perl startup poisoning, dirty-env-after-sanitizer fail-closed behavior, and continued fake PATH-resolved `swift`/`psql` selection.
+- RED verification: `bash script/test_v04_measure.sh` failed first with `V04_MEASURE_INITIAL_BASH_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN fake bash invoked` before production hardening.
+- GREEN verification: `bash script/test_v04_measure.sh`, `bash -n script/v04_measure.sh script/test_v04_measure.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-045033/`; metrics: shell readiness 131.07 ms, connected cold start 241.38 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.040 ms, dogfood query median overhead 0.030 ms.
+- Evidence artifact: `screenshots/evidence/2026-06-02-v04-measure-startup-bash-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

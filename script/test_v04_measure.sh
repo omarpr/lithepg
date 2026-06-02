@@ -102,6 +102,45 @@ run_helper_capture() {
   return "$status"
 }
 
+run_executable_helper_capture() {
+  local output_file="$1"
+  local fixture_root="$2"
+  local path_bin="$3"
+  local fake_swift_log="$4"
+  local out_dir="$5"
+  local outside_cwd="$6"
+  local marker_dir="$7"
+  local command_sentinel="$8"
+  local builtin_sentinel="$9"
+  local cd_sentinel="${10}"
+  local pwd_sentinel="${11}"
+  local docker_sentinel="${12}"
+  local kill_sentinel="${13}"
+  local sleep_sentinel="${14}"
+
+  set +e
+  (
+    cd "$outside_cwd"
+    PATH="$path_bin:$PATH" \
+      FAKE_SWIFT_LOG="$fake_swift_log" \
+      FAKE_DOGFOOD_LOG="$marker_dir/dogfood-executable" \
+      LITHEPG_MEASURE_OUT_DIR="$out_dir" \
+      V04_MEASURE_SHADOW_MARKER_DIR="$marker_dir" \
+      V04_MEASURE_SHADOW_ASSERT_HELPER="$fixture_root/assert_no_shadow_functions.sh" \
+      V04_MEASURE_COMMAND_SHADOW_SENTINEL="$command_sentinel" \
+      V04_MEASURE_BUILTIN_SHADOW_SENTINEL="$builtin_sentinel" \
+      V04_MEASURE_CD_SHADOW_SENTINEL="$cd_sentinel" \
+      V04_MEASURE_PWD_SHADOW_SENTINEL="$pwd_sentinel" \
+      V04_MEASURE_DOCKER_SHADOW_SENTINEL="$docker_sentinel" \
+      V04_MEASURE_KILL_SHADOW_SENTINEL="$kill_sentinel" \
+      V04_MEASURE_SLEEP_SHADOW_SENTINEL="$sleep_sentinel" \
+      "$fixture_root/script/v04_measure.sh"
+  ) >"$output_file" 2>&1
+  local status=$?
+  set -e
+  return "$status"
+}
+
 assert_summary_json() {
   local summary_file="$1"
   local expected_out_dir="$2"
@@ -259,6 +298,180 @@ assert_no_shadow_functions "fake psql"
 /usr/bin/printf 'Time: 0.26 ms\n'
 PSQL
 /bin/chmod +x "$fake_bin/psql"
+
+startup_fake_bash_sentinel="V04_MEASURE_INITIAL_BASH_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+startup_fake_bash_marker="$fixture_root/startup-fake-bash-invoked"
+/bin/cat >"$fake_bin/bash" <<SHIM
+#!/bin/bash
+/usr/bin/printf '%s fake bash invoked\\n' '$startup_fake_bash_sentinel' >&2
+/usr/bin/printf 'fake-bash\\n' >'$startup_fake_bash_marker'
+exit 97
+SHIM
+/bin/chmod +x "$fake_bin/bash"
+
+executable_out_dir="$fixture_root/out/executable-v04-measure"
+if ! run_executable_helper_capture "$output_file" "$fixture_root" "$fake_bin" "$fake_swift_log" "$executable_out_dir" "$outside_cwd" "$marker_dir" "$command_sentinel" "$builtin_sentinel" "$cd_sentinel" "$pwd_sentinel" "$docker_sentinel" "$kill_sentinel" "$sleep_sentinel"; then
+  executable_output="$(<"$output_file")"
+  /usr/bin/printf '%s\n' "$executable_output" >&2
+  fail "v04_measure.sh executable invocation used PATH-selected bash"
+fi
+
+executable_output="$(<"$output_file")"
+assert_not_contains "$executable_output" "$startup_fake_bash_sentinel"
+assert_not_contains "$executable_output" "fake bash invoked"
+assert_contains "$executable_output" "fake app build passed"
+assert_contains "$executable_output" "fake bench build passed"
+assert_contains "$executable_output" "Measurements written to $executable_out_dir"
+[[ ! -e "$startup_fake_bash_marker" ]] || fail "v04_measure.sh executable invocation used fake PATH bash: $(<"$startup_fake_bash_marker")"
+summary_file="$executable_out_dir/summary.json"
+[[ -f "$summary_file" ]] || fail "executable summary.json missing: $summary_file"
+expected_root="$(/bin/realpath "$fixture_root")"
+assert_summary_json "$summary_file" "$executable_out_dir" "$expected_root/.build/release/LithePGApp"
+
+startup_clean_bin="$fixture_root/startup-clean-bin"
+/bin/mkdir -p "$startup_clean_bin"
+/bin/cp "$fake_bin/swift" "$startup_clean_bin/swift"
+/bin/cp "$fake_bin/psql" "$startup_clean_bin/psql"
+/bin/chmod +x "$startup_clean_bin/swift" "$startup_clean_bin/psql"
+
+startup_env_shadow_sentinel="V04_MEASURE_STARTUP_ENV_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+startup_env_bash_file="$fixture_root/v04-measure-bash-env"
+startup_env_bash_marker="$fixture_root/v04-measure-bash-env-marker"
+startup_env_export_marker="$fixture_root/v04-measure-exported-set-marker"
+startup_env_out_dir="$fixture_root/out/startup-env-v04-measure"
+/bin/cat >"$startup_env_bash_file" <<'BASHENV'
+set() {
+  /usr/bin/printf '%s BASH_ENV set function invoked\n' "${V04_MEASURE_STARTUP_ENV_SHADOW_SENTINEL:?}" >&2
+  /usr/bin/printf 'bash-env\n' >"${V04_MEASURE_STARTUP_ENV_BASH_MARKER:?}"
+  exit 97
+}
+BASHENV
+
+set +e
+(
+  cd "$fixture_root"
+  set() {
+    /usr/bin/printf '%s exported set function invoked\n' "${V04_MEASURE_STARTUP_ENV_SHADOW_SENTINEL:?}" >&2
+    /usr/bin/printf 'exported-set\n' >"${V04_MEASURE_STARTUP_ENV_EXPORT_MARKER:?}"
+    exit 97
+  }
+  export -f set
+  PATH="$startup_clean_bin:$PATH" \
+    FAKE_SWIFT_LOG="$fake_swift_log" \
+    FAKE_DOGFOOD_LOG="$marker_dir/dogfood-startup-env" \
+    LITHEPG_MEASURE_OUT_DIR="$startup_env_out_dir" \
+    V04_MEASURE_SHADOW_MARKER_DIR="$marker_dir" \
+    V04_MEASURE_SHADOW_ASSERT_HELPER="$fixture_root/assert_no_shadow_functions.sh" \
+    V04_MEASURE_COMMAND_SHADOW_SENTINEL="$command_sentinel" \
+    V04_MEASURE_BUILTIN_SHADOW_SENTINEL="$builtin_sentinel" \
+    V04_MEASURE_CD_SHADOW_SENTINEL="$cd_sentinel" \
+    V04_MEASURE_PWD_SHADOW_SENTINEL="$pwd_sentinel" \
+    V04_MEASURE_DOCKER_SHADOW_SENTINEL="$docker_sentinel" \
+    V04_MEASURE_KILL_SHADOW_SENTINEL="$kill_sentinel" \
+    V04_MEASURE_SLEEP_SHADOW_SENTINEL="$sleep_sentinel" \
+    V04_MEASURE_STARTUP_ENV_SHADOW_SENTINEL="$startup_env_shadow_sentinel" \
+    V04_MEASURE_STARTUP_ENV_BASH_MARKER="$startup_env_bash_marker" \
+    V04_MEASURE_STARTUP_ENV_EXPORT_MARKER="$startup_env_export_marker" \
+    BASH_ENV="$startup_env_bash_file" \
+    "$fixture_root/script/v04_measure.sh"
+) >"$output_file" 2>&1
+startup_env_shadow_status=$?
+set -e
+startup_env_shadow_output="$(<"$output_file")"
+if [[ "$startup_env_shadow_status" -ne 0 ]]; then
+  /usr/bin/printf '%s\n' "$startup_env_shadow_output" >&2
+  fail "v04_measure.sh executable startup was affected by BASH_ENV or exported shell functions"
+fi
+assert_not_contains "$startup_env_shadow_output" "$startup_env_shadow_sentinel"
+assert_not_contains "$startup_env_shadow_output" "set function invoked"
+assert_contains "$startup_env_shadow_output" "fake app build passed"
+assert_contains "$startup_env_shadow_output" "fake bench build passed"
+assert_contains "$startup_env_shadow_output" "Measurements written to $startup_env_out_dir"
+[[ ! -e "$startup_env_bash_marker" ]] || fail "v04_measure.sh invoked BASH_ENV-defined set function: $(<"$startup_env_bash_marker")"
+[[ ! -e "$startup_env_export_marker" ]] || fail "v04_measure.sh invoked exported set function: $(<"$startup_env_export_marker")"
+summary_file="$startup_env_out_dir/summary.json"
+[[ -f "$summary_file" ]] || fail "startup-env summary.json missing: $summary_file"
+assert_summary_json "$summary_file" "$startup_env_out_dir" "$expected_root/.build/release/LithePGApp"
+
+startup_perl_sentinel="V04_MEASURE_PERL_STARTUP_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+startup_perl_lib="$fixture_root/v04-measure-perl-lib"
+startup_perl_marker="$fixture_root/v04-measure-perl-marker"
+startup_perl_out_dir="$fixture_root/out/startup-perl-v04-measure"
+/bin/mkdir -p "$startup_perl_lib"
+/bin/cat >"$startup_perl_lib/V04MeasurePerlStartupPoison.pm" <<'PERLPOISON'
+BEGIN {
+  open my $fh, '>', $ENV{V04_MEASURE_PERL_STARTUP_MARKER} or die $!;
+  print {$fh} "perl-startup\n";
+  close $fh;
+  die "$ENV{V04_MEASURE_PERL_STARTUP_SHADOW_SENTINEL} Perl startup invoked\n";
+}
+1;
+PERLPOISON
+
+set +e
+(
+  cd "$fixture_root"
+  PATH="$startup_clean_bin:$PATH" \
+    FAKE_SWIFT_LOG="$fake_swift_log" \
+    FAKE_DOGFOOD_LOG="$marker_dir/dogfood-startup-perl" \
+    LITHEPG_MEASURE_OUT_DIR="$startup_perl_out_dir" \
+    V04_MEASURE_SHADOW_MARKER_DIR="$marker_dir" \
+    V04_MEASURE_SHADOW_ASSERT_HELPER="$fixture_root/assert_no_shadow_functions.sh" \
+    V04_MEASURE_COMMAND_SHADOW_SENTINEL="$command_sentinel" \
+    V04_MEASURE_BUILTIN_SHADOW_SENTINEL="$builtin_sentinel" \
+    V04_MEASURE_CD_SHADOW_SENTINEL="$cd_sentinel" \
+    V04_MEASURE_PWD_SHADOW_SENTINEL="$pwd_sentinel" \
+    V04_MEASURE_DOCKER_SHADOW_SENTINEL="$docker_sentinel" \
+    V04_MEASURE_KILL_SHADOW_SENTINEL="$kill_sentinel" \
+    V04_MEASURE_SLEEP_SHADOW_SENTINEL="$sleep_sentinel" \
+    V04_MEASURE_PERL_STARTUP_MARKER="$startup_perl_marker" \
+    V04_MEASURE_PERL_STARTUP_SHADOW_SENTINEL="$startup_perl_sentinel" \
+    PERL5LIB="$startup_perl_lib" \
+    PERLLIB="$startup_perl_lib" \
+    PERL5OPT=-MV04MeasurePerlStartupPoison \
+    "$fixture_root/script/v04_measure.sh"
+) >"$output_file" 2>&1
+startup_perl_status=$?
+set -e
+startup_perl_output="$(<"$output_file")"
+if [[ "$startup_perl_status" -ne 0 ]]; then
+  /usr/bin/printf '%s\n' "$startup_perl_output" >&2
+  fail "v04_measure.sh executable startup left Perl startup environment unsanitized"
+fi
+assert_not_contains "$startup_perl_output" "$startup_perl_sentinel"
+assert_not_contains "$startup_perl_output" "Perl startup invoked"
+assert_contains "$startup_perl_output" "fake app build passed"
+assert_contains "$startup_perl_output" "fake bench build passed"
+assert_contains "$startup_perl_output" "Measurements written to $startup_perl_out_dir"
+[[ ! -e "$startup_perl_marker" ]] || fail "v04_measure.sh honored Perl startup environment: $(<"$startup_perl_marker")"
+summary_file="$startup_perl_out_dir/summary.json"
+[[ -f "$summary_file" ]] || fail "startup-perl summary.json missing: $summary_file"
+assert_summary_json "$summary_file" "$startup_perl_out_dir" "$expected_root/.build/release/LithePGApp"
+
+startup_fail_closed_out_dir="$fixture_root/out/startup-fail-closed-v04-measure"
+set +e
+(
+  cd "$fixture_root"
+  PATH="$startup_clean_bin:$PATH" \
+    FAKE_SWIFT_LOG="$fake_swift_log" \
+    LITHEPG_MEASURE_OUT_DIR="$startup_fail_closed_out_dir" \
+    LITHEPG_V04_MEASURE_STARTUP_ENV_SANITIZED=1 \
+    PERL5OPT=-MV04MeasureSanitizerShouldFailClosed \
+    "$fixture_root/script/v04_measure.sh"
+) >"$output_file" 2>&1
+startup_fail_closed_status=$?
+set -e
+startup_fail_closed_output="$(<"$output_file")"
+if [[ "$startup_fail_closed_status" -eq 0 ]]; then
+  /usr/bin/printf '%s\n' "$startup_fail_closed_output" >&2
+  fail "v04_measure.sh startup sanitizer did not fail closed when sanitized marker still had dirty env"
+elif [[ "$startup_fail_closed_status" -ne 2 ]]; then
+  /usr/bin/printf '%s\n' "$startup_fail_closed_output" >&2
+  fail "v04_measure.sh startup sanitizer fail-closed exit was $startup_fail_closed_status, expected 2"
+fi
+assert_contains "$startup_fail_closed_output" "unsanitized startup environment remains after v04_measure sanitizer"
+assert_not_contains "$startup_fail_closed_output" "fake app build passed"
+assert_not_contains "$startup_fail_closed_output" '"outDir":'
 
 if ! run_helper_capture "$output_file" "$fixture_root" "$fake_bin" "$fake_swift_log" "$out_dir" "$outside_cwd" "$marker_dir" "$command_sentinel" "$builtin_sentinel" "$cd_sentinel" "$pwd_sentinel" "$docker_sentinel" "$kill_sentinel" "$sleep_sentinel"; then
   helper_output="$(<"$output_file")"

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v0.4 measurement helper startup Bash hardening evidence</title>
+  <desc id="desc">Evidence summary for the v04_measure.sh executable startup hardening slice, including TDD red/green checks, Swift verification, dogfood metrics, and publication safety status.</desc>
+  <rect width="1200" height="760" fill="#0b1020"/>
+  <rect x="36" y="32" width="1128" height="696" rx="22" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="64" y="86" fill="#e5e7eb" font-family="SF Pro Display, ui-sans-serif, system-ui" font-size="34" font-weight="700">v0.4 Measurement Helper Startup Hardening</text>
+  <text x="64" y="123" fill="#93c5fd" font-family="SF Mono, Menlo, monospace" font-size="17">script/v04_measure.sh · 2026-06-02 04:50 EDT · main@a444590 before commit</text>
+
+  <g transform="translate(64 160)">
+    <rect width="520" height="136" rx="16" fill="#172554" stroke="#2563eb"/>
+    <text x="24" y="38" fill="#bfdbfe" font-family="SF Pro Display, ui-sans-serif" font-size="22" font-weight="700">Change</text>
+    <text x="24" y="70" fill="#e5e7eb" font-family="SF Mono, Menlo, monospace" font-size="16">#!/usr/bin/env bash → #!/bin/bash -p</text>
+    <text x="24" y="96" fill="#e5e7eb" font-family="SF Mono, Menlo, monospace" font-size="16">Sanitizes BASH_ENV, BASH_FUNC_*, PERL5*</text>
+    <text x="24" y="122" fill="#e5e7eb" font-family="SF Mono, Menlo, monospace" font-size="16">Fail-closed marker: LITHEPG_V04_MEASURE_STARTUP_ENV_SANITIZED</text>
+  </g>
+
+  <g transform="translate(620 160)">
+    <rect width="500" height="136" rx="16" fill="#3f1d1d" stroke="#dc2626"/>
+    <text x="24" y="38" fill="#fecaca" font-family="SF Pro Display, ui-sans-serif" font-size="22" font-weight="700">RED first</text>
+    <text x="24" y="70" fill="#fee2e2" font-family="SF Mono, Menlo, monospace" font-size="16">bash script/test_v04_measure.sh</text>
+    <text x="24" y="96" fill="#fee2e2" font-family="SF Mono, Menlo, monospace" font-size="16">failed: fake PATH-selected bash invoked</text>
+    <text x="24" y="122" fill="#fee2e2" font-family="SF Mono, Menlo, monospace" font-size="16">proved executable startup regression</text>
+  </g>
+
+  <g transform="translate(64 330)">
+    <rect width="520" height="204" rx="16" fill="#052e1a" stroke="#16a34a"/>
+    <text x="24" y="38" fill="#bbf7d0" font-family="SF Pro Display, ui-sans-serif" font-size="22" font-weight="700">GREEN verification</text>
+    <text x="24" y="70" fill="#dcfce7" font-family="SF Mono, Menlo, monospace" font-size="16">✓ bash script/test_v04_measure.sh</text>
+    <text x="24" y="96" fill="#dcfce7" font-family="SF Mono, Menlo, monospace" font-size="16">✓ bash -n script/v04_measure.sh script/test_v04_measure.sh</text>
+    <text x="24" y="122" fill="#dcfce7" font-family="SF Mono, Menlo, monospace" font-size="16">✓ git diff --check</text>
+    <text x="24" y="148" fill="#dcfce7" font-family="SF Mono, Menlo, monospace" font-size="16">✓ swift build</text>
+    <text x="24" y="174" fill="#dcfce7" font-family="SF Mono, Menlo, monospace" font-size="16">✓ swift test: 127 tests / 20 suites</text>
+  </g>
+
+  <g transform="translate(620 330)">
+    <rect width="500" height="204" rx="16" fill="#1f2937" stroke="#64748b"/>
+    <text x="24" y="38" fill="#e5e7eb" font-family="SF Pro Display, ui-sans-serif" font-size="22" font-weight="700">Dogfood gate</text>
+    <text x="24" y="70" fill="#e5e7eb" font-family="SF Mono, Menlo, monospace" font-size="16">✓ ./script/dogfood_check.sh</text>
+    <text x="24" y="96" fill="#e5e7eb" font-family="SF Mono, Menlo, monospace" font-size="16">Artifacts: .build/dogfood-checks/20260602-045033/</text>
+    <text x="24" y="122" fill="#e5e7eb" font-family="SF Mono, Menlo, monospace" font-size="16">shell 131.07 ms · cold 241.38 ms</text>
+    <text x="24" y="148" fill="#e5e7eb" font-family="SF Mono, Menlo, monospace" font-size="16">binary 21.379 MiB · strip 11.980 MiB</text>
+    <text x="24" y="174" fill="#e5e7eb" font-family="SF Mono, Menlo, monospace" font-size="16">overhead SELECT1 0.040 ms · dogfood 0.030 ms</text>
+  </g>
+
+  <g transform="translate(64 568)">
+    <rect width="1056" height="104" rx="16" fill="#18181b" stroke="#52525b"/>
+    <text x="24" y="38" fill="#fef3c7" font-family="SF Pro Display, ui-sans-serif" font-size="22" font-weight="700">Safety</text>
+    <text x="24" y="70" fill="#fde68a" font-family="SF Mono, Menlo, monospace" font-size="16">No credentials shown. No signing, notarization, upload, Homebrew publication, GitHub Release, tag, or cron changes attempted.</text>
+  </g>
+</svg>
