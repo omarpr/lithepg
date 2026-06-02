@@ -1682,3 +1682,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-045033/`; metrics: shell readiness 131.07 ms, connected cold start 241.38 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.040 ms, dogfood query median overhead 0.030 ms.
 - Evidence artifact: `screenshots/evidence/2026-06-02-v04-measure-startup-bash-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 05:13 EDT — v1.0 create-release zip startup-env fail-closed hardening
+
+- Hardened `script/create_release_zip.sh` so dirty Bash/Perl startup environment detected after `LITHEPG_CREATE_RELEASE_ZIP_STARTUP_ENV_SANITIZED=1` fails closed with exit 2 instead of re-sanitizing and continuing.
+- Added strict-TDD coverage in `script/test_create_release_zip.sh` for a copied executable helper with dirty `BASH_ENV`, an exported Bash function, and the sanitizer marker already set. The test requires the generic redacted failure message, no sentinel/fixture-path leakage, and no created public zip.
+- RED verification: a temporary HEAD fixture using the new test but the old helper failed with `test_create_release_zip failed: create release zip sanitizer marker with dirty startup env should exit 2, got 0`.
+- GREEN verification: `bash script/test_create_release_zip.sh`, adjacent release-helper tests (`test_package_verify`, `test_sign_and_notarize`, `test_v10_release_gate`), `bash -n script/create_release_zip.sh script/test_create_release_zip.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-051314/`; metrics: shell readiness 130.19 ms, connected cold start 261.21 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.047 ms, dogfood query median overhead 0.025 ms.
+- Evidence artifact: `screenshots/evidence/2026-06-02-create-release-zip-startup-env-fail-closed.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

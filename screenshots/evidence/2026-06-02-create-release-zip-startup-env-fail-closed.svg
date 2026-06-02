@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG create_release_zip startup environment fail-closed verification</title>
+  <desc id="desc">Evidence for the 2026-06-02 hardening slice: RED test failed on the old helper, focused shell tests passed, Swift tests passed, and dogfood check passed.</desc>
+  <rect width="1200" height="760" fill="#0b1020"/>
+  <rect x="36" y="32" width="1128" height="696" rx="18" fill="#111827" stroke="#38bdf8" stroke-width="2"/>
+  <text x="64" y="80" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="24" font-weight="700">LithePG evidence — create_release_zip startup env fail-closed</text>
+  <text x="64" y="122" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="17">Timestamp: 2026-06-02 05:13 EDT • Branch: main • Base HEAD before commit: b1c56c4</text>
+
+  <text x="64" y="168" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">RED</text>
+  <text x="112" y="168" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="16">Temp HEAD helper + new test failed as expected:</text>
+  <text x="112" y="194" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="15">test_create_release_zip failed: create release zip sanitizer marker with dirty startup env should exit 2, got 0</text>
+
+  <text x="64" y="250" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">GREEN</text>
+  <text x="112" y="250" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="16">bash script/test_create_release_zip.sh → test_create_release_zip passed</text>
+  <text x="112" y="276" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="16">Adjacent shell gates: test_package_verify, test_sign_and_notarize, test_v10_release_gate → passed</text>
+  <text x="112" y="302" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="16">bash -n script/create_release_zip.sh script/test_create_release_zip.sh → passed</text>
+  <text x="112" y="328" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="16">git diff --check → passed</text>
+
+  <text x="64" y="384" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">SWIFT + DOGFOOD</text>
+  <text x="112" y="384" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="16">swift build → passed</text>
+  <text x="112" y="410" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="16">swift test → 127 Swift Testing tests across 20 suites passed; gated integration tests skipped as designed</text>
+  <text x="112" y="436" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="16">dogfood_check.sh → passed; artifacts: .build/dogfood-checks/20260602-051314/</text>
+  <text x="112" y="462" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="16">Metrics: shell 130.19 ms • connected 261.21 ms • raw 21.379 MiB • strip 11.980 MiB</text>
+  <text x="112" y="488" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="16">Query overhead: SELECT 1 median 0.047 ms • dogfood median 0.025 ms</text>
+
+  <text x="64" y="544" fill="#fde68a" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">CHANGE</text>
+  <text x="112" y="544" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="16">script/create_release_zip.sh now exits 2 with a generic redacted message if dirty startup env remains after sanitizer marker.</text>
+  <text x="112" y="570" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="16">No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication attempted.</text>
+
+  <rect x="64" y="622" width="1064" height="54" rx="10" fill="#052e16" stroke="#22c55e"/>
+  <text x="92" y="656" fill="#bbf7d0" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">Result: verified hardening slice ready for commit.</text>
+</svg>
