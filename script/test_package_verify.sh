@@ -603,6 +603,77 @@ assert_not_contains "$helper_output" "$perl_startup_env_set_shadow_sentinel"
 assert_not_contains "$helper_output" "set function invoked"
 [[ ! -e "$perl_startup_env_set_shadow_marker" ]] || fail "package verifier invoked exported set function under PERL5OPT: $(<"$perl_startup_env_set_shadow_marker")"
 
+startup_env_sanitizer_fail_closed_sentinel="PACKAGE_VERIFY_STARTUP_ENV_FAIL_CLOSED_SHOULD_NOT_LEAK"
+startup_env_sanitizer_fail_closed_fixture="$fixture_root/startup-env-sanitizer-fail-closed"
+startup_env_sanitizer_fail_closed_bash_env="$fixture_root/startup-env-sanitizer-fail-closed.bash_env"
+startup_env_sanitizer_fail_closed_marker="$fixture_root/startup-env-sanitizer-fail-closed-marker"
+/bin/mkdir -p "$startup_env_sanitizer_fail_closed_fixture/script" "$startup_env_sanitizer_fail_closed_fixture/dist"
+/bin/cp "$HELPER" "$startup_env_sanitizer_fail_closed_fixture/script/package_verify.sh"
+/bin/chmod +x "$startup_env_sanitizer_fail_closed_fixture/script/package_verify.sh"
+make_minimal_app_bundle "$startup_env_sanitizer_fail_closed_fixture/dist/LithePG.app"
+/bin/cat >"$startup_env_sanitizer_fail_closed_bash_env" <<'BASHENV'
+set() {
+  /usr/bin/printf '%s set function invoked\n' "${STARTUP_ENV_SANITIZER_FAIL_CLOSED_SENTINEL:?}" >&2
+  /usr/bin/printf 'set\n' >"${STARTUP_ENV_SANITIZER_FAIL_CLOSED_MARKER:?}"
+  exit 97
+}
+BASHENV
+set +e
+(
+  cd "$fixture_root"
+  set() {
+    /usr/bin/printf '%s exported set function invoked\n' "${STARTUP_ENV_SANITIZER_FAIL_CLOSED_SENTINEL:?}" >&2
+    /usr/bin/printf 'exported-set\n' >"${STARTUP_ENV_SANITIZER_FAIL_CLOSED_MARKER:?}"
+    exit 97
+  }
+  export -f set
+  STARTUP_ENV_SANITIZER_FAIL_CLOSED_SENTINEL="$startup_env_sanitizer_fail_closed_sentinel" \
+    STARTUP_ENV_SANITIZER_FAIL_CLOSED_MARKER="$startup_env_sanitizer_fail_closed_marker" \
+    BASH_ENV="$startup_env_sanitizer_fail_closed_bash_env" \
+    LITHEPG_PACKAGE_VERIFY_BASH_FUNCTIONS_SANITIZED=1 \
+    "$startup_env_sanitizer_fail_closed_fixture/script/package_verify.sh"
+) >"$output_file" 2>&1
+startup_env_sanitizer_fail_closed_status=$?
+set -e
+helper_output="$(<"$output_file")"
+if [[ "$startup_env_sanitizer_fail_closed_status" -ne 2 ]]; then
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier sanitizer marker with dirty startup env should exit 2, got $startup_env_sanitizer_fail_closed_status"
+fi
+assert_contains "$helper_output" "package verification failed: dirty startup environment remained after sanitization"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$startup_env_sanitizer_fail_closed_fixture"
+assert_not_contains "$helper_output" "$startup_env_sanitizer_fail_closed_sentinel"
+assert_not_contains "$helper_output" "set function invoked"
+[[ ! -e "$startup_env_sanitizer_fail_closed_marker" ]] || fail "package verifier sanitizer fail-closed invoked startup shadow: $(<"$startup_env_sanitizer_fail_closed_marker")"
+
+startup_env_sanitizer_fail_closed_perl_sentinel="PACKAGE_VERIFY_STARTUP_ENV_FAIL_CLOSED_PERL_SHOULD_NOT_LEAK"
+startup_env_sanitizer_fail_closed_perl_fixture="$fixture_root/startup-env-sanitizer-fail-closed-perl"
+/bin/mkdir -p "$startup_env_sanitizer_fail_closed_perl_fixture/script" "$startup_env_sanitizer_fail_closed_perl_fixture/dist"
+/bin/cp "$HELPER" "$startup_env_sanitizer_fail_closed_perl_fixture/script/package_verify.sh"
+/bin/chmod +x "$startup_env_sanitizer_fail_closed_perl_fixture/script/package_verify.sh"
+make_minimal_app_bundle "$startup_env_sanitizer_fail_closed_perl_fixture/dist/LithePG.app"
+set +e
+(
+  cd "$fixture_root"
+  STARTUP_ENV_SANITIZER_FAIL_CLOSED_PERL_SENTINEL="$startup_env_sanitizer_fail_closed_perl_sentinel" \
+    PERL5OPT=-Mdoesnotexist \
+    LITHEPG_PACKAGE_VERIFY_BASH_FUNCTIONS_SANITIZED=1 \
+    "$startup_env_sanitizer_fail_closed_perl_fixture/script/package_verify.sh"
+) >"$output_file" 2>&1
+startup_env_sanitizer_fail_closed_perl_status=$?
+set -e
+helper_output="$(<"$output_file")"
+if [[ "$startup_env_sanitizer_fail_closed_perl_status" -ne 2 ]]; then
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier sanitizer marker with dirty Perl startup env should exit 2, got $startup_env_sanitizer_fail_closed_perl_status"
+fi
+assert_contains "$helper_output" "package verification failed: dirty startup environment remained after sanitization"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$startup_env_sanitizer_fail_closed_perl_fixture"
+assert_not_contains "$helper_output" "$startup_env_sanitizer_fail_closed_perl_sentinel"
+assert_not_contains "$helper_output" "doesnotexist"
+
 if ! run_helper_capture "$output_file" "$app_bundle"; then
   helper_output="$(<"$output_file")"
   printf '%s\n' "$helper_output" >&2

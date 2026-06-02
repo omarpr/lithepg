@@ -2,15 +2,18 @@
 
 BASH_BIN=/bin/bash
 
-if /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
+if [[ -n "${BASH_ENV:-}" || -n "${PERL5OPT:-}" || -n "${PERL5LIB:-}" || -n "${PERLLIB:-}" ]] || /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
   my $sanitize_needed = 0;
   for my $key (keys %ENV) {
     $sanitize_needed = 1 if $key =~ /\ABASH_FUNC_/;
   }
-  $sanitize_needed = 1 if exists $ENV{BASH_ENV} && $ENV{BASH_ENV} ne "";
   exit 0 if $sanitize_needed;
   exit 1;
 '; then
+  if [[ "${LITHEPG_PACKAGE_VERIFY_BASH_FUNCTIONS_SANITIZED:-}" == "1" ]]; then
+    /usr/bin/printf 'package verification failed: dirty startup environment remained after sanitization\n' >&2
+    exit 2
+  fi
   /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     use strict;
     use warnings;
