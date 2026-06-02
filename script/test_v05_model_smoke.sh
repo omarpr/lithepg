@@ -44,6 +44,29 @@ run_helper_capture() {
   return "$status"
 }
 
+run_executable_helper_capture() {
+  local output_file="$1"
+  local fixture_root="$2"
+  local fake_bin="$3"
+  local fake_swift_log="$4"
+  local out_dir="$5"
+
+  set +e
+  (
+    cd "$fixture_root"
+    env \
+      -u LITHEPG_ENABLE_LOCAL_MODEL \
+      -u LITHEPG_LOCAL_MODEL_PATH \
+      PATH="$fake_bin:$PATH" \
+      FAKE_SWIFT_LOG="$fake_swift_log" \
+      LITHEPG_MODEL_SMOKE_OUT_DIR="$out_dir" \
+      "$fixture_root/script/v05_model_smoke.sh"
+  ) >"$output_file" 2>&1
+  local status=$?
+  set -e
+  return "$status"
+}
+
 assert_summary_json() {
   local summary_file="$1"
   local expected_path="$2"
@@ -116,6 +139,176 @@ case "$*" in
 esac
 SWIFT
 /bin/chmod +x "$fake_bin/swift"
+
+startup_fake_bash_sentinel="V05_MODEL_SMOKE_INITIAL_BASH_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+startup_fake_bash_marker="$fixture_root/startup-fake-bash-invoked"
+/bin/cat >"$fake_bin/bash" <<SHIM
+#!/bin/bash
+/usr/bin/printf '%s fake bash invoked\\n' '$startup_fake_bash_sentinel' >&2
+/usr/bin/printf 'fake-bash\\n' >'$startup_fake_bash_marker'
+exit 97
+SHIM
+/bin/chmod +x "$fake_bin/bash"
+
+executable_out_dir="$fixture_root/out/executable-model-smoke"
+if ! run_executable_helper_capture "$output_file" "$fixture_root" "$fake_bin" "$fake_swift_log" "$executable_out_dir"; then
+  helper_output="$(<"$output_file")"
+  /usr/bin/printf '%s\n' "$helper_output" >&2
+  fail "v05_model_smoke.sh executable invocation used PATH-selected bash"
+fi
+
+executable_output="$(<"$output_file")"
+assert_not_contains "$executable_output" "$startup_fake_bash_sentinel"
+assert_not_contains "$executable_output" "fake bash invoked"
+assert_contains "$executable_output" "fake local model tests passed"
+assert_contains "$executable_output" "fake release build passed"
+assert_contains "$executable_output" '"product": "LithePGApp"'
+assert_contains "$executable_output" "Model smoke measurements written to $executable_out_dir"
+[[ ! -e "$startup_fake_bash_marker" ]] || fail "v05_model_smoke.sh executable invocation used fake PATH bash: $(<"$startup_fake_bash_marker")"
+
+summary_file="$executable_out_dir/summary.json"
+[[ -f "$summary_file" ]] || fail "executable summary.json missing: $summary_file"
+expected_app_bin="$(/bin/realpath "$fixture_root")/.build/release/LithePGApp"
+assert_summary_json "$summary_file" "$expected_app_bin"
+
+startup_clean_bin="$fixture_root/startup-clean-bin"
+/bin/mkdir -p "$startup_clean_bin"
+/bin/cp "$fake_bin/swift" "$startup_clean_bin/swift"
+/bin/chmod +x "$startup_clean_bin/swift"
+
+startup_env_shadow_sentinel="V05_MODEL_SMOKE_STARTUP_ENV_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+startup_env_bash_file="$fixture_root/v05-model-smoke-bash-env"
+startup_env_bash_marker="$fixture_root/v05-model-smoke-bash-env-marker"
+startup_env_export_marker="$fixture_root/v05-model-smoke-exported-set-marker"
+startup_env_out_dir="$fixture_root/out/startup-env-model-smoke"
+/bin/cat >"$startup_env_bash_file" <<'BASHENV'
+set() {
+  /usr/bin/printf '%s BASH_ENV set function invoked\n' "${V05_MODEL_SMOKE_STARTUP_ENV_SHADOW_SENTINEL:?}" >&2
+  /usr/bin/printf 'bash-env\n' >"${V05_MODEL_SMOKE_STARTUP_ENV_BASH_MARKER:?}"
+  exit 97
+}
+BASHENV
+
+set +e
+(
+  cd "$fixture_root"
+  set() {
+    /usr/bin/printf '%s exported set function invoked\n' "${V05_MODEL_SMOKE_STARTUP_ENV_SHADOW_SENTINEL:?}" >&2
+    /usr/bin/printf 'exported-set\n' >"${V05_MODEL_SMOKE_STARTUP_ENV_EXPORT_MARKER:?}"
+    exit 97
+  }
+  export -f set
+  env \
+    -u LITHEPG_ENABLE_LOCAL_MODEL \
+    -u LITHEPG_LOCAL_MODEL_PATH \
+    PATH="$startup_clean_bin:$PATH" \
+    FAKE_SWIFT_LOG="$fake_swift_log" \
+    LITHEPG_MODEL_SMOKE_OUT_DIR="$startup_env_out_dir" \
+    V05_MODEL_SMOKE_STARTUP_ENV_SHADOW_SENTINEL="$startup_env_shadow_sentinel" \
+    V05_MODEL_SMOKE_STARTUP_ENV_BASH_MARKER="$startup_env_bash_marker" \
+    V05_MODEL_SMOKE_STARTUP_ENV_EXPORT_MARKER="$startup_env_export_marker" \
+    BASH_ENV="$startup_env_bash_file" \
+    "$fixture_root/script/v05_model_smoke.sh"
+) >"$output_file" 2>&1
+startup_env_shadow_status=$?
+set -e
+startup_env_shadow_output="$(<"$output_file")"
+if [[ "$startup_env_shadow_status" -ne 0 ]]; then
+  /usr/bin/printf '%s\n' "$startup_env_shadow_output" >&2
+  fail "v05_model_smoke.sh executable startup was affected by BASH_ENV or exported shell functions"
+fi
+assert_not_contains "$startup_env_shadow_output" "$startup_env_shadow_sentinel"
+assert_not_contains "$startup_env_shadow_output" "set function invoked"
+assert_contains "$startup_env_shadow_output" "fake local model tests passed"
+assert_contains "$startup_env_shadow_output" "fake release build passed"
+assert_contains "$startup_env_shadow_output" '"product": "LithePGApp"'
+assert_contains "$startup_env_shadow_output" "Model smoke measurements written to $startup_env_out_dir"
+[[ ! -e "$startup_env_bash_marker" ]] || fail "v05_model_smoke.sh invoked BASH_ENV-defined set function: $(<"$startup_env_bash_marker")"
+[[ ! -e "$startup_env_export_marker" ]] || fail "v05_model_smoke.sh invoked exported set function: $(<"$startup_env_export_marker")"
+
+summary_file="$startup_env_out_dir/summary.json"
+[[ -f "$summary_file" ]] || fail "startup-env summary.json missing: $summary_file"
+expected_app_bin="$(/bin/realpath "$fixture_root")/.build/release/LithePGApp"
+assert_summary_json "$summary_file" "$expected_app_bin"
+
+startup_perl_sentinel="V05_MODEL_SMOKE_PERL_STARTUP_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+startup_perl_lib="$fixture_root/v05-model-smoke-perl-lib"
+startup_perl_marker="$fixture_root/v05-model-smoke-perl-marker"
+startup_perl_out_dir="$fixture_root/out/startup-perl-model-smoke"
+/bin/mkdir -p "$startup_perl_lib"
+/bin/cat >"$startup_perl_lib/V05ModelSmokePerlStartupPoison.pm" <<'PERLPOISON'
+BEGIN {
+  open my $fh, '>', $ENV{V05_MODEL_SMOKE_PERL_STARTUP_MARKER} or die $!;
+  print {$fh} "perl-startup\n";
+  close $fh;
+  die "$ENV{V05_MODEL_SMOKE_PERL_STARTUP_SHADOW_SENTINEL} Perl startup invoked\n";
+}
+1;
+PERLPOISON
+
+set +e
+(
+  cd "$fixture_root"
+  env \
+    -u LITHEPG_ENABLE_LOCAL_MODEL \
+    -u LITHEPG_LOCAL_MODEL_PATH \
+    PATH="$startup_clean_bin:$PATH" \
+    FAKE_SWIFT_LOG="$fake_swift_log" \
+    LITHEPG_MODEL_SMOKE_OUT_DIR="$startup_perl_out_dir" \
+    V05_MODEL_SMOKE_PERL_STARTUP_MARKER="$startup_perl_marker" \
+    V05_MODEL_SMOKE_PERL_STARTUP_SHADOW_SENTINEL="$startup_perl_sentinel" \
+    PERL5LIB="$startup_perl_lib" \
+    PERLLIB="$startup_perl_lib" \
+    PERL5OPT=-MV05ModelSmokePerlStartupPoison \
+    "$fixture_root/script/v05_model_smoke.sh"
+) >"$output_file" 2>&1
+startup_perl_status=$?
+set -e
+startup_perl_output="$(<"$output_file")"
+if [[ "$startup_perl_status" -ne 0 ]]; then
+  /usr/bin/printf '%s\n' "$startup_perl_output" >&2
+  fail "v05_model_smoke.sh executable startup left Perl startup environment unsanitized"
+fi
+assert_not_contains "$startup_perl_output" "$startup_perl_sentinel"
+assert_not_contains "$startup_perl_output" "Perl startup invoked"
+assert_contains "$startup_perl_output" "fake local model tests passed"
+assert_contains "$startup_perl_output" "fake release build passed"
+assert_contains "$startup_perl_output" '"product": "LithePGApp"'
+assert_contains "$startup_perl_output" "Model smoke measurements written to $startup_perl_out_dir"
+[[ ! -e "$startup_perl_marker" ]] || fail "v05_model_smoke.sh honored Perl startup environment: $(<"$startup_perl_marker")"
+
+summary_file="$startup_perl_out_dir/summary.json"
+[[ -f "$summary_file" ]] || fail "startup-perl summary.json missing: $summary_file"
+expected_app_bin="$(/bin/realpath "$fixture_root")/.build/release/LithePGApp"
+assert_summary_json "$summary_file" "$expected_app_bin"
+
+startup_fail_closed_out_dir="$fixture_root/out/startup-fail-closed-model-smoke"
+set +e
+(
+  cd "$fixture_root"
+  env \
+    -u LITHEPG_ENABLE_LOCAL_MODEL \
+    -u LITHEPG_LOCAL_MODEL_PATH \
+    PATH="$startup_clean_bin:$PATH" \
+    FAKE_SWIFT_LOG="$fake_swift_log" \
+    LITHEPG_MODEL_SMOKE_OUT_DIR="$startup_fail_closed_out_dir" \
+    LITHEPG_V05_MODEL_SMOKE_STARTUP_ENV_SANITIZED=1 \
+    PERL5OPT=-MV05ModelSmokeSanitizerShouldFailClosed \
+    "$fixture_root/script/v05_model_smoke.sh"
+) >"$output_file" 2>&1
+startup_fail_closed_status=$?
+set -e
+startup_fail_closed_output="$(<"$output_file")"
+if [[ "$startup_fail_closed_status" -eq 0 ]]; then
+  /usr/bin/printf '%s\n' "$startup_fail_closed_output" >&2
+  fail "v05_model_smoke.sh startup sanitizer did not fail closed when sanitized marker still had dirty env"
+elif [[ "$startup_fail_closed_status" -ne 2 ]]; then
+  /usr/bin/printf '%s\n' "$startup_fail_closed_output" >&2
+  fail "v05_model_smoke.sh startup sanitizer fail-closed exit was $startup_fail_closed_status, expected 2"
+fi
+assert_contains "$startup_fail_closed_output" "unsanitized startup environment remains after v05_model_smoke sanitizer"
+assert_not_contains "$startup_fail_closed_output" "fake local model tests passed"
+assert_not_contains "$startup_fail_closed_output" '"product": "LithePGApp"'
 
 if ! run_helper_capture "$output_file" "$fixture_root" "$fake_bin" "$fake_swift_log" "$out_dir"; then
   helper_output="$(<"$output_file")"

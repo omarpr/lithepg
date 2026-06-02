@@ -1659,3 +1659,15 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED; pre-commit JSON review passed with no security concerns or logic errors.
 - Evidence artifact: `screenshots/evidence/2026-06-02-run-dogfood-app-startup-bash-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 04:20 EDT — v0.5 model smoke executable startup Bash hardening
+
+- Hardened `script/v05_model_smoke.sh` executable startup by switching from PATH-selected `#!/usr/bin/env bash` to absolute privileged Bash (`#!/bin/bash -p`), so copied/direct model-smoke invocation cannot be routed through a fake `bash` on `PATH` before local-model gate checks begin.
+- Added startup sanitization before normal model-smoke logic: nonempty `BASH_ENV`, exported Bash functions (`BASH_FUNC_*`), and Perl startup env (`PERL5OPT`, `PERL5LIB`, `PERLLIB`) trigger a `/bin/bash -p` re-exec with those entries removed. Dirty startup env after the sanitizer marker fails closed with exit 2.
+- Added strict-TDD coverage in `script/test_v05_model_smoke.sh` for direct executable invocation with fake PATH-selected `bash`, BASH_ENV/exported `set` function shadowing, Perl startup poisoning, dirty-env-after-sanitizer fail-closed behavior, and continued fake PATH-resolved `swift` selection.
+- RED verification: `bash script/test_v05_model_smoke.sh` failed first with `V05_MODEL_SMOKE_INITIAL_BASH_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN fake bash invoked` before production hardening.
+- GREEN verification: `bash script/test_v05_model_smoke.sh`, adjacent release-helper shell tests, `bash -n script/v05_model_smoke.sh script/test_v05_model_smoke.sh`, `git diff --check`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Live model-smoke verification passed: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/v05_model_smoke.sh` wrote artifacts to `.build/v05-model-smoke/20260602-042035/`; `LocalModelAIQueryService` selected tests passed, release `LithePGApp` build passed, CoreML.framework is linked, no model artifact is bundled, and the release executable is 21.379 MiB.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-02-v05-model-smoke-startup-bash-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
