@@ -50,6 +50,11 @@ run_helper_capture() {
     export LITHEPG_DOGFOOD_PORT="$ambient_fixture_port"
     export LITHEPG_DOGFOOD_PASSWORD="$ambient_fixture_password"
     export LITHEPG_DOGFOOD_DATABASE="$ambient_fixture_database"
+    command() {
+      /usr/bin/printf '%s command invoked\n' "${COMMAND_SHADOW_SENTINEL:?}" >&2
+      /usr/bin/printf 'command\n' >"${SHADOW_MARKER_DIR:?}/command"
+      exit 97
+    }
     builtin() {
       /usr/bin/printf '%s builtin invoked\n' "${BUILTIN_SHADOW_SENTINEL:?}" >&2
       /usr/bin/printf 'builtin\n' >"${SHADOW_MARKER_DIR:?}/builtin"
@@ -65,6 +70,7 @@ run_helper_capture() {
       /usr/bin/printf 'pwd\n' >"${SHADOW_MARKER_DIR:?}/pwd"
       exit 97
     }
+    export -f command
     export -f builtin
     export -f cd
     export -f pwd
@@ -72,6 +78,7 @@ run_helper_capture() {
       FAKE_DOCKER_LOG="$docker_log" \
       FAKE_READY_COUNTER="$ready_counter" \
       SHADOW_MARKER_DIR="$marker_dir" \
+      COMMAND_SHADOW_SENTINEL="$command_sentinel" \
       BUILTIN_SHADOW_SENTINEL="$builtin_sentinel" \
       CD_SHADOW_SENTINEL="$cd_sentinel" \
       PWD_SHADOW_SENTINEL="$pwd_sentinel" \
@@ -110,6 +117,7 @@ fixture_root="$(/usr/bin/mktemp -d)"
 trap '/bin/rm -f "$output_file"; /bin/rm -rf "$fixture_root"' EXIT
 
 sentinel="DOGFOOD_POSTGRES_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN"
+command_sentinel="DOGFOOD_POSTGRES_COMMAND_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
 builtin_sentinel="DOGFOOD_POSTGRES_BUILTIN_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
 cd_sentinel="DOGFOOD_POSTGRES_CD_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
 pwd_sentinel="DOGFOOD_POSTGRES_PWD_FUNCTION_SHADOW_SENTINEL_SHOULD_NOT_RUN"
@@ -202,6 +210,7 @@ fi
 
 helper_output="$(<"$output_file")"
 assert_not_contains "$helper_output" "$sentinel"
+assert_not_contains "$helper_output" "$command_sentinel"
 assert_not_contains "$helper_output" "$builtin_sentinel"
 assert_not_contains "$helper_output" "$cd_sentinel"
 assert_not_contains "$helper_output" "$pwd_sentinel"
@@ -239,6 +248,7 @@ ready_attempts="$(/bin/cat "$ready_counter")"
 for tool in dirname grep realpath sleep; do
   [[ ! -e "$marker_dir/$tool" ]] || fail "PATH-shadowed $tool was invoked"
 done
+[[ ! -e "$marker_dir/command" ]] || fail "function-shadowed command was invoked"
 [[ ! -e "$marker_dir/builtin" ]] || fail "function-shadowed builtin was invoked"
 [[ ! -e "$marker_dir/cd" ]] || fail "function-shadowed cd was invoked"
 [[ ! -e "$marker_dir/pwd" ]] || fail "function-shadowed pwd was invoked"

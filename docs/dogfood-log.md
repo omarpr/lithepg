@@ -1567,3 +1567,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-01-build-run-command-function-shadow-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 22:38 EDT — v1.0 dogfood Postgres command function-shadow hardening
+
+- Hardened `script/dogfood_postgres.sh` so its Docker availability check no longer calls shell `command -v docker`, avoiding exported `command()` function interception before Docker setup starts while preserving intentionally PATH-selected Docker/fake-Docker behavior.
+- Added strict-TDD coverage in `script/test_dogfood_postgres.sh` with an exported `command()` sentinel alongside the existing `builtin`, `cd`, `pwd`, and PATH-shadow sentinels. The helper must still complete through fake Docker fixtures, keep the demo URL redacted as `postgres:***`, and avoid invoking/leaking any command-shadow sentinel.
+- RED verification: `bash script/test_dogfood_postgres.sh` failed first with `dogfood_postgres.sh was affected by PATH-shadowed core utilities` before the Docker lookup was changed.
+- GREEN verification: `bash script/test_dogfood_postgres.sh`, adjacent `bash script/test_dogfood_check.sh`, syntax checks, `git diff --check`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-01-dogfood-postgres-command-function-shadow-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

@@ -9,7 +9,7 @@ PASSWORD="${LITHEPG_DOGFOOD_PASSWORD:-postgres}"
 DATABASE="${LITHEPG_DOGFOOD_DATABASE:-postgres}"
 SEED_SQL="$ROOT_DIR/script/dogfood_seed.sql"
 
-if ! command -v docker >/dev/null 2>&1; then
+if ! /usr/bin/which docker >/dev/null 2>&1; then
   echo "docker is required for LithePG dogfood Postgres" >&2
   exit 1
 fi
