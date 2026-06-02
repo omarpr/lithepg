@@ -1868,3 +1868,11 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Historical dogfood examples touched by this docs sync were kept in credential-redacted form, and the v0.4 redaction/concurrency receipt wording remains intact.
 - Evidence artifact: `screenshots/evidence/2026-06-02-v10-public-status-metrics-refresh.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 13:06 EDT — dogfood_check empty BASH_ENV receipt sync
+
+- Receipt sync for the already-committed `script/dogfood_check.sh` startup-env hardening from `c21955e` (`[verified] chore(dogfood): harden check startup env`); no Swift/code behavior changed in this slice.
+- Clarified the detail omitted from the prior dogfood-check receipt: the helper treats an empty-but-present `BASH_ENV` key as dirty startup environment and fails closed after sanitizer-marked reentry instead of continuing into dogfood work.
+- Existing fail-closed coverage is in `script/test_dogfood_check.sh`: it invokes the helper with `LITHEPG_DOGFOOD_CHECK_STARTUP_ENV_SANITIZED=1` and `BASH_ENV=""`, expects the generic sanitizer failure path, and ensures normal dogfood startup output is skipped.
+- Evidence artifact: `screenshots/evidence/2026-06-02-dogfood-check-empty-bash-env-receipt-sync.svg`.
+- This is docs/evidence only; no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

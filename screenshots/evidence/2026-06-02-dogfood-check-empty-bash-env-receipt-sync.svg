@@ -1,0 +1,56 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG dogfood_check empty BASH_ENV receipt sync</title>
+  <desc id="desc">Docs-only evidence receipt for commit c21955e recording empty-but-present BASH_ENV fail-closed coverage in dogfood_check.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#1e293b"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 34px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #f8fafc; }
+      .subtitle { font: 500 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #cbd5e1; }
+      .card-title { font: 700 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #e2e8f0; }
+      .label { font: 600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #94a3b8; }
+      .value { font: 600 17px Menlo, Monaco, Consolas, monospace; fill: #f8fafc; }
+      .ok { fill: #34d399; }
+      .warn { fill: #fbbf24; }
+      .small { font: 500 13px Menlo, Monaco, Consolas, monospace; fill: #cbd5e1; }
+      .tiny { font: 500 12px Menlo, Monaco, Consolas, monospace; fill: #94a3b8; }
+    </style>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <rect x="42" y="36" width="1196" height="648" rx="28" fill="#020617" stroke="#38bdf8" stroke-width="2"/>
+
+  <text x="76" y="92" class="title">dogfood_check empty BASH_ENV receipt sync</text>
+  <text x="76" y="122" class="subtitle">2026-06-02 13:06 EDT · docs/evidence only · commit c21955e already landed</text>
+
+  <rect x="76" y="158" width="548" height="210" rx="18" fill="#111827" stroke="#334155"/>
+  <text x="104" y="196" class="card-title">Receipt subject</text>
+  <text x="104" y="236" class="label">committed change</text>
+  <text x="104" y="266" class="value">[verified] chore(dogfood): harden check startup env</text>
+  <text x="104" y="306" class="label">specific detail synced</text>
+  <text x="104" y="336" class="value">empty-but-present BASH_ENV ⇒ dirty startup env</text>
+
+  <rect x="656" y="158" width="504" height="210" rx="18" fill="#111827" stroke="#334155"/>
+  <text x="684" y="196" class="card-title">Files touched by this slice</text>
+  <circle cx="696" cy="235" r="7" class="ok"/><text x="716" y="241" class="value">docs/dogfood-log.md</text>
+  <circle cx="696" cy="277" r="7" class="ok"/><text x="716" y="283" class="value">screenshots/evidence/2026-06-02-...</text>
+  <circle cx="696" cy="319" r="7" class="warn"/><text x="716" y="325" class="value">no Swift or shell code edits</text>
+
+  <rect x="76" y="400" width="548" height="194" rx="18" fill="#111827" stroke="#334155"/>
+  <text x="104" y="438" class="card-title">Coverage recorded</text>
+  <text x="104" y="478" class="small">script/test_dogfood_check.sh sets BASH_ENV=&quot;&quot;</text>
+  <text x="104" y="508" class="small">sanitizer marker: LITHEPG_DOGFOOD_CHECK_STARTUP_ENV_SANITIZED=1</text>
+  <text x="104" y="538" class="small">expected result: generic fail-closed sanitizer message</text>
+  <text x="104" y="568" class="small">normal dogfood startup output is skipped</text>
+
+  <rect x="656" y="400" width="504" height="194" rx="18" fill="#111827" stroke="#334155"/>
+  <text x="684" y="438" class="card-title">Verification commands / blockers</text>
+  <text x="684" y="478" class="small">bash -n script/dogfood_check.sh script/test_dogfood_check.sh</text>
+  <text x="684" y="508" class="small">git diff --check</text>
+  <text x="684" y="538" class="small">no-secret text scan for this evidence artifact</text>
+  <text x="684" y="568" class="small">no signing, notary, upload, Homebrew, release, tag, or cron publication</text>
+
+  <text x="76" y="636" class="subtitle">Blockers unchanged: external publication inputs remain Omar-controlled and untouched.</text>
+  <text x="76" y="660" class="tiny">No credentials, network endpoints, or secret values are embedded in this visual receipt.</text>
+</svg>
