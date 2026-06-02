@@ -3,7 +3,7 @@
 BASH_BIN=/bin/bash
 
 startup_env_sanitize_needed=0
-if [[ "${BASH_ENV+x}" == x || "${PERL5OPT+x}" == x || "${PERL5LIB+x}" == x || "${PERLLIB+x}" == x ]]; then
+if [[ "${BASH_ENV+x}" == x || "${PERL5OPT+x}" == x || "${PERL5LIB+x}" == x || "${PERLLIB+x}" == x || "${RUBYOPT+x}" == x || "${RUBYLIB+x}" == x || "${RUBYGEMS_GEMDEPS+x}" == x ]]; then
   startup_env_sanitize_needed=1
 elif /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
   for my $key (keys %ENV) {
@@ -16,7 +16,11 @@ fi
 
 if [[ "$startup_env_sanitize_needed" == "1" ]]; then
   if [[ "${LITHEPG_V10_RELEASE_GATE_STARTUP_ENV_SANITIZED:-}" == "1" ]]; then
-    /usr/bin/printf 'unsanitized startup environment remains after v10_release_gate sanitizer\n' >&2
+    if [[ "${RUBYOPT+x}" == x || "${RUBYLIB+x}" == x || "${RUBYGEMS_GEMDEPS+x}" == x ]]; then
+      /usr/bin/printf 'unsanitized Ruby startup environment remains\n' >&2
+    else
+      /usr/bin/printf 'unsanitized startup environment remains after v10_release_gate sanitizer\n' >&2
+    fi
     exit 2
   fi
   /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
@@ -30,6 +34,9 @@ if [[ "$startup_env_sanitize_needed" == "1" ]]; then
     delete $ENV{PERL5OPT};
     delete $ENV{PERL5LIB};
     delete $ENV{PERLLIB};
+    delete $ENV{RUBYOPT};
+    delete $ENV{RUBYLIB};
+    delete $ENV{RUBYGEMS_GEMDEPS};
     $ENV{LITHEPG_V10_RELEASE_GATE_STARTUP_ENV_SANITIZED} = "1";
     exec { $bash } $bash, "-p", @ARGV;
     die "exec $bash: $!\n";
@@ -37,7 +44,10 @@ if [[ "$startup_env_sanitize_needed" == "1" ]]; then
   exit $?
 fi
 
-if [[ "${PERL5OPT+x}" == x || "${PERL5LIB+x}" == x || "${PERLLIB+x}" == x ]]; then
+if [[ "${RUBYOPT+x}" == x || "${RUBYLIB+x}" == x || "${RUBYGEMS_GEMDEPS+x}" == x ]]; then
+  /usr/bin/printf 'unsanitized Ruby startup environment remains\n' >&2
+  exit 2
+elif [[ "${PERL5OPT+x}" == x || "${PERL5LIB+x}" == x || "${PERLLIB+x}" == x ]]; then
   /usr/bin/printf 'unsanitized Perl startup environment remains\n' >&2
   exit 2
 elif ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
@@ -1506,7 +1516,7 @@ if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
   if [[ ! -x /usr/bin/ruby ]]; then
     printf 'Homebrew cask Ruby syntax: ruby unavailable\n'
     mark_blocker
-  elif /usr/bin/ruby -c "$homebrew_cask_file" >/dev/null 2>&1; then
+  elif /usr/bin/env -u RUBYOPT -u RUBYLIB -u RUBYGEMS_GEMDEPS /usr/bin/ruby --disable=gems --disable=rubyopt -c "$homebrew_cask_file" >/dev/null 2>&1; then
     printf 'Homebrew cask Ruby syntax: valid\n'
   else
     printf 'Homebrew cask Ruby syntax: invalid\n'

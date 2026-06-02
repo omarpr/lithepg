@@ -144,6 +144,10 @@ initial_bash_path_shadow_output="$(mktemp)"
 startup_env_shadow_output="$(mktemp)"
 startup_fail_closed_output="$(mktemp)"
 startup_empty_bash_env_fail_closed_output="$(mktemp)"
+ruby_startup_env_shadow_output="$(mktemp)"
+ruby_startup_fail_closed_output="$(mktemp)"
+ruby_startup_empty_fail_closed_output="$(mktemp)"
+rubygems_gemdeps_fail_closed_output="$(mktemp)"
 path_shadowed_dirname_output="$(mktemp)"
 root_resolution_shadow_output="$(mktemp)"
 path_shadowed_rm_output="$(mktemp)"
@@ -388,6 +392,10 @@ cleanup() {
     "$startup_env_shadow_output" \
     "$startup_fail_closed_output" \
     "$startup_empty_bash_env_fail_closed_output" \
+    "$ruby_startup_env_shadow_output" \
+    "$ruby_startup_fail_closed_output" \
+    "$ruby_startup_empty_fail_closed_output" \
+    "$rubygems_gemdeps_fail_closed_output" \
     "$path_shadowed_dirname_output" \
     "$root_resolution_shadow_output" \
     "$path_shadowed_rm_output" \
@@ -2616,6 +2624,128 @@ if [[ "$startup_empty_bash_env_fail_closed_status" -ne 2 ]]; then
 fi
 assert_contains "$startup_empty_bash_env_fail_closed_text" "unsanitized startup environment remains after v10_release_gate sanitizer"
 assert_not_contains "$startup_empty_bash_env_fail_closed_text" "Usage: script/v10_release_gate.sh"
+
+# Ruby startup environments must be sanitized before the Homebrew cask Ruby syntax
+# check, and private RUBYOPT/RUBYLIB sentinel values must never reach output.
+ruby_startup_env_shadow_sentinel="V10_RELEASE_GATE_RUBY_STARTUP_ENV_SHADOW_SENTINEL_DO_NOT_PRINT"
+ruby_startup_env_shadow_lib="$startup_hardening_root/ruby-startup-env-shadow/ruby-lib"
+ruby_startup_env_shadow_marker="$startup_hardening_root/ruby-startup-env-shadow/ruby-startup-invoked"
+mkdir -p "$ruby_startup_env_shadow_lib"
+cat >"$ruby_startup_env_shadow_lib/V10ReleaseGateRubyStartupPoison.rb" <<'RUBYMOD'
+module V10ReleaseGateRubyStartupPoison
+  sentinel = ENV.fetch("V10_RELEASE_GATE_RUBY_STARTUP_ENV_SHADOW_SENTINEL", "")
+  marker = ENV.fetch("V10_RELEASE_GATE_RUBY_STARTUP_ENV_SHADOW_MARKER", "")
+  unless marker.empty?
+    File.write(marker, "ruby\n")
+  end
+  warn "#{sentinel} Ruby startup invoked"
+  exit 97
+end
+RUBYMOD
+set +e
+(
+  cd "$ROOT_DIR"
+  env -i \
+    PATH="$fake_path" \
+    FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+    V10_RELEASE_GATE_RUBY_STARTUP_ENV_SHADOW_SENTINEL="$ruby_startup_env_shadow_sentinel" \
+    V10_RELEASE_GATE_RUBY_STARTUP_ENV_SHADOW_MARKER="$ruby_startup_env_shadow_marker" \
+    RUBYLIB="$ruby_startup_env_shadow_lib" \
+    RUBYOPT=-rV10ReleaseGateRubyStartupPoison \
+    LITHEPG_RELEASE_COPY_PATH="$placeholder_free_release_copy" \
+    LITHEPG_HOMEBREW_CASK_PATH="$placeholder_free_homebrew_cask" \
+    LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+    LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+    LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
+    LITHEPG_CODESIGN_IDENTITY="configured" \
+    LITHEPG_NOTARY_PROFILE="configured" \
+    LITHEPG_SECURITY_CONTACT="configured" \
+    LITHEPG_HOMEBREW_TAP="configured" \
+    LITHEPG_GITHUB_ACTIONS_READY="approved" \
+    LITHEPG_RELEASE_COPY_APPROVED="approved" \
+    LITHEPG_PUBLICATION_APPROVED="approved" \
+    "$HELPER"
+) >"$ruby_startup_env_shadow_output" 2>&1
+ruby_startup_env_shadow_status=$?
+set -e
+ruby_startup_env_shadow_text="$(<"$ruby_startup_env_shadow_output")"
+if [[ "$ruby_startup_env_shadow_status" -ne 0 ]]; then
+  printf '%s\n' "$ruby_startup_env_shadow_text" >&2
+  fail "v10 release gate did not sanitize Ruby startup env before Homebrew cask Ruby syntax check"
+fi
+assert_contains "$ruby_startup_env_shadow_text" "Homebrew cask Ruby syntax: valid"
+assert_contains "$ruby_startup_env_shadow_text" "v1.0 fast preflight is clear"
+assert_not_contains "$ruby_startup_env_shadow_text" "$ruby_startup_env_shadow_sentinel"
+assert_not_contains "$ruby_startup_env_shadow_text" "Ruby startup invoked"
+[[ ! -e "$ruby_startup_env_shadow_marker" ]] || fail "v10 release gate honored Ruby startup environment before cask syntax check: $(<"$ruby_startup_env_shadow_marker")"
+
+# If the sanitizer marker is already set and dirty Ruby startup env remains, fail closed.
+ruby_startup_fail_closed_sentinel="V10_RELEASE_GATE_RUBY_STARTUP_FAIL_CLOSED_SENTINEL_DO_NOT_PRINT"
+set +e
+(
+  cd "$default_security_docs_repo"
+  env -i \
+    PATH="$fake_path" \
+    LITHEPG_V10_RELEASE_GATE_STARTUP_ENV_SANITIZED=1 \
+    RUBYOPT="$ruby_startup_fail_closed_sentinel" \
+    "$default_security_docs_helper" --help
+) >"$ruby_startup_fail_closed_output" 2>&1
+ruby_startup_fail_closed_status=$?
+set -e
+ruby_startup_fail_closed_text="$(<"$ruby_startup_fail_closed_output")"
+if [[ "$ruby_startup_fail_closed_status" -ne 2 ]]; then
+  printf '%s\n' "$ruby_startup_fail_closed_text" >&2
+  fail "v10 release gate startup sanitizer did not fail closed with exit 2 when RUBYOPT remained after sanitizer marker"
+fi
+assert_contains "$ruby_startup_fail_closed_text" "unsanitized Ruby startup environment remains"
+assert_not_contains "$ruby_startup_fail_closed_text" "$ruby_startup_fail_closed_sentinel"
+assert_not_contains "$ruby_startup_fail_closed_text" "Usage: script/v10_release_gate.sh"
+
+# If the sanitizer marker is already set, even empty-but-present Ruby startup env is dirty.
+ruby_startup_empty_fail_closed_sentinel="V10_RELEASE_GATE_EMPTY_RUBY_STARTUP_FAIL_CLOSED_SENTINEL_DO_NOT_PRINT"
+set +e
+(
+  cd "$default_security_docs_repo"
+  env -i \
+    PATH="$fake_path" \
+    LITHEPG_V10_RELEASE_GATE_STARTUP_ENV_SANITIZED=1 \
+    V10_RELEASE_GATE_EMPTY_RUBY_STARTUP_FAIL_CLOSED_SENTINEL="$ruby_startup_empty_fail_closed_sentinel" \
+    RUBYOPT="" \
+    RUBYLIB="" \
+    "$default_security_docs_helper" --help
+) >"$ruby_startup_empty_fail_closed_output" 2>&1
+ruby_startup_empty_fail_closed_status=$?
+set -e
+ruby_startup_empty_fail_closed_text="$(<"$ruby_startup_empty_fail_closed_output")"
+if [[ "$ruby_startup_empty_fail_closed_status" -ne 2 ]]; then
+  printf '%s\n' "$ruby_startup_empty_fail_closed_text" >&2
+  fail "v10 release gate startup sanitizer did not fail closed with exit 2 for empty Ruby startup env after sanitizer marker"
+fi
+assert_contains "$ruby_startup_empty_fail_closed_text" "unsanitized Ruby startup environment remains"
+assert_not_contains "$ruby_startup_empty_fail_closed_text" "$ruby_startup_empty_fail_closed_sentinel"
+assert_not_contains "$ruby_startup_empty_fail_closed_text" "Usage: script/v10_release_gate.sh"
+
+# If the sanitizer marker is already set and dirty RubyGems gemdeps remains, fail closed.
+rubygems_gemdeps_fail_closed_sentinel="V10_RELEASE_GATE_RUBYGEMS_GEMDEPS_FAIL_CLOSED_SENTINEL_DO_NOT_PRINT"
+set +e
+(
+  cd "$default_security_docs_repo"
+  env -i \
+    PATH="$fake_path" \
+    LITHEPG_V10_RELEASE_GATE_STARTUP_ENV_SANITIZED=1 \
+    RUBYGEMS_GEMDEPS="$rubygems_gemdeps_fail_closed_sentinel" \
+    "$default_security_docs_helper" --help
+) >"$rubygems_gemdeps_fail_closed_output" 2>&1
+rubygems_gemdeps_fail_closed_status=$?
+set -e
+rubygems_gemdeps_fail_closed_text="$(<"$rubygems_gemdeps_fail_closed_output")"
+if [[ "$rubygems_gemdeps_fail_closed_status" -ne 2 ]]; then
+  printf '%s\n' "$rubygems_gemdeps_fail_closed_text" >&2
+  fail "v10 release gate startup sanitizer did not fail closed with exit 2 when RUBYGEMS_GEMDEPS remained after sanitizer marker"
+fi
+assert_contains "$rubygems_gemdeps_fail_closed_text" "unsanitized Ruby startup environment remains"
+assert_not_contains "$rubygems_gemdeps_fail_closed_text" "$rubygems_gemdeps_fail_closed_sentinel"
+assert_not_contains "$rubygems_gemdeps_fail_closed_text" "Usage: script/v10_release_gate.sh"
 
 if run_gate_capture "$path_shadowed_grep_output" env -i \
   PATH="$fake_path" \

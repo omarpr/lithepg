@@ -1887,3 +1887,15 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-02-package-verify-empty-perl-env-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 14:17 EDT — v1.0 release gate Ruby startup-env fail-closed hardening
+
+- Hardened `script/v10_release_gate.sh` so Ruby startup env keys (`RUBYOPT`, `RUBYLIB`, and `RUBYGEMS_GEMDEPS`) are treated as dirty startup environment before the Homebrew cask Ruby syntax check. Sanitizer-marked reentry now fails closed with exit 2 if any of those keys remain, and the cask syntax check runs with those variables scrubbed plus Ruby startup/gems disabled.
+- Added strict-TDD coverage in `script/test_v10_release_gate.sh` for poisoned Ruby startup env, empty-but-present Ruby startup env, and `RUBYGEMS_GEMDEPS` fail-closed behavior; tests assert synthetic private sentinel values do not leak.
+- RED verification: `bash script/test_v10_release_gate.sh` first failed with `v10 release gate startup sanitizer did not fail closed with exit 2 when RUBYOPT remained after sanitizer marker`, then again for the `RUBYGEMS_GEMDEPS` regression before the final fix.
+- GREEN verification: `bash script/test_v10_release_gate.sh`, `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-141646/`; metrics: shell readiness 134.11 ms, connected cold start 248.31 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.065 ms, dogfood query median overhead 0.051 ms.
+- Fast publication preflight check: `./script/v10_release_gate.sh --check-remote` remained safely blocked on the expected dirty-tree/external-publication placeholders and approvals while confirming `origin` has `v0.5` and does not have `v1.0`.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED after the `RUBYGEMS_GEMDEPS` hardening fix.
+- Evidence artifact: `screenshots/evidence/2026-06-02-v10-ruby-startup-env-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
