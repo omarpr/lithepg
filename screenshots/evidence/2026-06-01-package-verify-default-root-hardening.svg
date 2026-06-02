@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG package verifier default-root hardening evidence</title>
+  <desc id="desc">Synthetic terminal-style evidence for the package_verify default repository-root app path hardening slice.</desc>
+  <rect width="1200" height="760" fill="#0b1020"/>
+  <rect x="36" y="32" width="1128" height="696" rx="18" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="64" y="78" fill="#f8fafc" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="27" font-weight="700">LithePG evidence — package_verify default-root hardening</text>
+  <text x="64" y="118" fill="#93c5fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">2026-06-01 20:47 EDT · seeded/synthetic fixture only · no secrets</text>
+
+  <rect x="64" y="150" width="1072" height="154" rx="12" fill="#020617" stroke="#1e293b"/>
+  <text x="88" y="188" fill="#fbbf24" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="19">TDD RED (before production change)</text>
+  <text x="88" y="224" fill="#e2e8f0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">$ bash script/test_package_verify.sh</text>
+  <text x="88" y="254" fill="#fecaca" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">package verification failed: app bundle not found</text>
+  <text x="88" y="284" fill="#fecaca" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">test_package_verify failed: default app path did not resolve from helper repo root</text>
+
+  <rect x="64" y="326" width="1072" height="232" rx="12" fill="#020617" stroke="#1e293b"/>
+  <text x="88" y="364" fill="#86efac" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="19">GREEN verification</text>
+  <text x="88" y="400" fill="#e2e8f0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">$ bash script/test_package_verify.sh</text>
+  <text x="88" y="430" fill="#bbf7d0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">test_package_verify passed</text>
+  <text x="88" y="466" fill="#e2e8f0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">$ bash -n script/package_verify.sh script/test_package_verify.sh &amp;&amp; git diff --check</text>
+  <text x="88" y="496" fill="#bbf7d0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">passed with no output</text>
+  <text x="88" y="532" fill="#e2e8f0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">$ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test</text>
+  <text x="88" y="562" fill="#bbf7d0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">127 tests across 20 suites passed</text>
+
+  <rect x="64" y="584" width="1072" height="114" rx="12" fill="#052e16" stroke="#166534"/>
+  <text x="88" y="622" fill="#dcfce7" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">Dogfood check passed: .build/dogfood-checks/20260601-204727/</text>
+  <text x="88" y="652" fill="#dcfce7" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">shell 128.98 ms · connected 230.80 ms · raw 21.379 MiB · strip 11.980 MiB</text>
+  <text x="88" y="682" fill="#dcfce7" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">No signing, upload, tag, cron changes, or external publication.</text>
+</svg>

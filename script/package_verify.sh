@@ -6,6 +6,7 @@ BUNDLE_NAME="LithePG"
 EXPECTED_BUNDLE_ID="dev.omarpr.lithepg"
 EXPECTED_MIN_SYSTEM_VERSION="14.0"
 HARD_CAP_BYTES=$((50 * 1024 * 1024))
+ROOT_DIR="$(/bin/realpath "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/..")"
 
 fail() {
   printf 'package verification failed: %s\n' "$1" >&2
@@ -32,7 +33,11 @@ case "${1:-}" in
     ;;
 esac
 
-APP_BUNDLE="${1:-dist/LithePG.app}"
+if [[ "$#" -eq 0 ]]; then
+  APP_BUNDLE="$ROOT_DIR/dist/LithePG.app"
+else
+  APP_BUNDLE="$1"
+fi
 
 if [[ "$#" -eq 1 && "$APP_BUNDLE" == */ && ! "$APP_BUNDLE" =~ ^/+$ ]]; then
   fail "app bundle path must not end with a slash"

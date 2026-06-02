@@ -122,6 +122,71 @@ trap 'rm -f "$output_file"; rm -rf "$fixture_root"' EXIT
 app_bundle="$fixture_root/LithePG.app"
 make_minimal_app_bundle "$app_bundle"
 
+default_root_sentinel="PACKAGE_VERIFY_DEFAULT_ROOT_SHADOW_SHOULD_NOT_RUN"
+default_root_repo="$fixture_root/default-root-repo"
+default_root_outside_cwd="$fixture_root/default-root-outside-cwd"
+default_root_fake_bin="$fixture_root/default-root-fake-bin"
+default_root_marker_dir="$fixture_root/default-root-shadow-markers"
+/bin/mkdir -p "$default_root_repo/script" "$default_root_repo/dist" "$default_root_outside_cwd" "$default_root_fake_bin" "$default_root_marker_dir"
+/bin/cp "$HELPER" "$default_root_repo/script/package_verify.sh"
+/bin/chmod +x "$default_root_repo/script/package_verify.sh"
+make_minimal_app_bundle "$default_root_repo/dist/LithePG.app"
+for tool in dirname realpath; do
+  /bin/cat >"$default_root_fake_bin/$tool" <<SHIM
+#!/usr/bin/env bash
+/usr/bin/printf '%s %s invoked\\n' "$default_root_sentinel" "$tool" >&2
+/usr/bin/printf '%s\\n' "$tool" >"$default_root_marker_dir/$tool"
+exit 97
+SHIM
+  /bin/chmod +x "$default_root_fake_bin/$tool"
+done
+set +e
+(
+  cd "$default_root_outside_cwd"
+  command() {
+    /usr/bin/printf '%s command function invoked\\n' "${DEFAULT_ROOT_SHADOW_SENTINEL:?}" >&2
+    /usr/bin/printf 'command\\n' >"${DEFAULT_ROOT_MARKER_DIR:?}/command"
+    exit 97
+  }
+  builtin() {
+    /usr/bin/printf '%s builtin function invoked\\n' "${DEFAULT_ROOT_SHADOW_SENTINEL:?}" >&2
+    /usr/bin/printf 'builtin\\n' >"${DEFAULT_ROOT_MARKER_DIR:?}/builtin"
+    exit 97
+  }
+  cd() {
+    /usr/bin/printf '%s cd function invoked\\n' "${DEFAULT_ROOT_SHADOW_SENTINEL:?}" >&2
+    /usr/bin/printf 'cd\\n' >"${DEFAULT_ROOT_MARKER_DIR:?}/cd"
+    exit 97
+  }
+  pwd() {
+    /usr/bin/printf '%s pwd function invoked\\n' "${DEFAULT_ROOT_SHADOW_SENTINEL:?}" >&2
+    /usr/bin/printf 'pwd\\n' >"${DEFAULT_ROOT_MARKER_DIR:?}/pwd"
+    exit 97
+  }
+  export -f command
+  export -f builtin
+  export -f cd
+  export -f pwd
+  DEFAULT_ROOT_SHADOW_SENTINEL="$default_root_sentinel" \
+    DEFAULT_ROOT_MARKER_DIR="$default_root_marker_dir" \
+    PATH="$default_root_fake_bin:$PATH" \
+    "$default_root_repo/script/package_verify.sh"
+) >"$output_file" 2>&1
+default_root_status=$?
+set -e
+if [[ "$default_root_status" -ne 0 ]]; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier default app path did not resolve from the helper repo root"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "Package verified: LithePG.app"
+assert_not_contains "$helper_output" "$default_root_sentinel"
+assert_not_contains "$helper_output" "function invoked"
+for tool in dirname realpath command builtin cd pwd; do
+  [[ ! -e "$default_root_marker_dir/$tool" ]] || fail "package verifier default root handling invoked shadowed $tool"
+done
+
 help_cat_path_shadow_sentinel="PACKAGE_VERIFY_HELP_CAT_PATH_SHADOW_SHOULD_NOT_RUN"
 help_cat_path_shadow_fake_bin="$fixture_root/help-cat-path-shadow-fake-bin"
 help_cat_path_shadow_marker="$fixture_root/help-cat-path-shadow-invoked"

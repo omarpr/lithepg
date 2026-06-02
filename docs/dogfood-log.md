@@ -1536,3 +1536,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-01-v05-model-smoke-root-chdir-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 20:47 EDT — v1.0 package verifier default-root hardening
+
+- Hardened `script/package_verify.sh` so its no-argument default app path resolves to the helper repository root's `dist/LithePG.app` instead of the caller's current working directory. Explicit app-bundle arguments keep their existing semantics.
+- Added strict-TDD coverage in `script/test_package_verify.sh` with a copied helper repo, an outside starting cwd, PATH-shadowed `dirname`/`realpath`, and exported function-shadow sentinels for `command`, `builtin`, `cd`, and `pwd`. The verifier must still validate the repo-root `dist/LithePG.app` default and avoid invoking/leaking any shadow sentinel.
+- RED verification: `bash script/test_package_verify.sh` failed first with `package verification failed: app bundle not found` and `test_package_verify failed: package verifier default app path did not resolve from the helper repo root` before production hardening.
+- GREEN verification: `bash script/test_package_verify.sh`, `bash -n script/package_verify.sh script/test_package_verify.sh`, `git diff --check`, adjacent release-helper tests (`test_create_release_zip`, `test_sign_and_notarize`, `test_v10_release_gate`, `test_build_and_run`, `test_dogfood_check`, `test_v05_model_smoke`), `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260601-204727/`; metrics: shell readiness 128.98 ms, connected cold start 230.80 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.035 ms, dogfood query median overhead 0.022 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-01-package-verify-default-root-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
