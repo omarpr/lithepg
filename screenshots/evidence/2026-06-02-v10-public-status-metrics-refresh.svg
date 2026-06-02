@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 public status metrics refresh evidence</title>
+  <desc id="desc">Visual evidence for the 2026-06-02 docs-only public status metrics refresh from the latest committed dogfood receipt.</desc>
+  <rect width="1200" height="760" fill="#08111f"/>
+  <rect x="42" y="42" width="1116" height="676" rx="26" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+
+  <text x="74" y="96" fill="#f8fafc" font-family="Menlo, Consolas, monospace" font-size="30" font-weight="700">LithePG v1.0 public status metrics refresh</text>
+  <text x="74" y="135" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="18">2026-06-02 12:05 EDT · docs-only sync · no publication actions</text>
+
+  <rect x="74" y="168" width="1052" height="122" rx="16" fill="#172554" stroke="#60a5fa" stroke-width="2"/>
+  <text x="100" y="208" fill="#bfdbfe" font-family="Menlo, Consolas, monospace" font-size="20" font-weight="700">Receipt source</text>
+  <text x="100" y="244" fill="#e0f2fe" font-family="Menlo, Consolas, monospace" font-size="17">.build/dogfood-checks/20260602-114721/</text>
+  <text x="100" y="270" fill="#e0f2fe" font-family="Menlo, Consolas, monospace" font-size="17">main at 4b89b9d · safe public metrics only · no connection URLs</text>
+
+  <rect x="74" y="320" width="330" height="210" rx="16" fill="#052e16" stroke="#22c55e" stroke-width="2"/>
+  <text x="100" y="360" fill="#bbf7d0" font-family="Menlo, Consolas, monospace" font-size="20" font-weight="700">Pass gates</text>
+  <text x="100" y="398" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="17">defaultSwiftTest: passed</text>
+  <text x="100" y="430" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="17">liveSwiftTest: passed</text>
+  <text x="100" y="462" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="17">v04Measure: passed</text>
+  <text x="100" y="504" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="16">README / CHANGELOG / draft synced</text>
+
+  <rect x="435" y="320" width="691" height="210" rx="16" fill="#3f1d05" stroke="#f59e0b" stroke-width="2"/>
+  <text x="462" y="360" fill="#fde68a" font-family="Menlo, Consolas, monospace" font-size="20" font-weight="700">Metrics</text>
+  <text x="462" y="398" fill="#ffedd5" font-family="Menlo, Consolas, monospace" font-size="17">Startup: shell 132.73 ms · connected cold start 282.45 ms</text>
+  <text x="462" y="430" fill="#ffedd5" font-family="Menlo, Consolas, monospace" font-size="17">Executable: raw release 21.379 MiB · strip-probe 11.980 MiB</text>
+  <text x="462" y="462" fill="#ffedd5" font-family="Menlo, Consolas, monospace" font-size="17">Query overhead: SELECT 1 median 0.032 ms · dogfood median 0.026 ms</text>
+  <text x="462" y="504" fill="#ffedd5" font-family="Menlo, Consolas, monospace" font-size="16">v1.0 blockers and REPLACE_WITH_* placeholders remain intact.</text>
+
+  <rect x="74" y="560" width="1052" height="94" rx="16" fill="#1f2937" stroke="#6b7280" stroke-width="2"/>
+  <text x="100" y="604" fill="#f9fafb" font-family="Menlo, Consolas, monospace" font-size="18">No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron,</text>
+  <text x="100" y="634" fill="#f9fafb" font-family="Menlo, Consolas, monospace" font-size="18">or external publication was attempted.</text>
+</svg>

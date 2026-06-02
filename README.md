@@ -24,12 +24,12 @@ v0.5 is the current tagged milestone. v1.0 public launch work is in progress and
 
 Latest local verification receipts:
 
-- **v1.0 local gate:** latest 2026-06-02 receipt on `main` at `e24a9b2` passed full `swift test` plus seeded `script/dogfood_check.sh`; earlier package build and `script/package_verify.sh dist/LithePG.app` gates passed before any public release/tag publication.
+- **v1.0 local gate:** latest 2026-06-02 receipt on `main` at `4b89b9d` passed full `swift test` plus seeded `script/dogfood_check.sh`; earlier package build and `script/package_verify.sh dist/LithePG.app` gates passed before any public release/tag publication.
 - **AI drafting:** deterministic local Ask flow drafts runnable SQL for simple single-table prompts and two-table joins using schema/foreign-key metadata; drafts are inserted for human review and never auto-run.
 - **Model posture:** the CoreML adapter scaffold is disabled by default, requires a user-provided external model artifact, and keeps prompts, schema context, query results, history, and credentials on-device.
 - **Binary budget:** 21.379 MiB raw release executable / 11.980 MiB strip-probe executable / 11.93 MiB packaged executable, under the 50 MiB hard cap and 30 MiB stretch goal.
-- **Startup:** 130.93 ms shell readiness; 241.57 ms connected startup through seeded dogfood Postgres.
-- **Query overhead:** 0.035 ms median overhead versus `psql` for `SELECT 1`; 0.011 ms for the dogfood query.
+- **Startup:** 132.73 ms shell readiness; 282.45 ms connected startup through seeded dogfood Postgres.
+- **Query overhead:** 0.032 ms median overhead versus `psql` for `SELECT 1`; 0.026 ms for the dogfood query.
 - **Stability:** v0.4 seven-day zero-crash dogfood window satisfied; v0.5 and v1.0 local dogfood/test/measurement gates passed.
 - **Release blockers:** public v1.0 still needs Omar-controlled codesigning/notarization credentials, an approved security-reporting contact, Homebrew tap target, GitHub Actions account/settings fix, release-copy approval, and explicit publication approval.
 
@@ -80,7 +80,7 @@ Start the local Docker Postgres with synthetic sample data, then launch the app 
 
 ```sh
 ./script/dogfood_postgres.sh
-LITHEPG_STARTUP_URL="postgres://postgres:postgres@localhost:55432/postgres?sslmode=disable" \
+LITHEPG_STARTUP_URL="postgres://postgres:***@localhost:55432/postgres?sslmode=disable" \
 LITHEPG_STARTUP_QUERY="SELECT * FROM lithepg_demo.customer_revenue ORDER BY revenue_cents DESC;" \
 .build/arm64-apple-macosx/debug/LithePGApp
 ```
@@ -88,7 +88,7 @@ LITHEPG_STARTUP_QUERY="SELECT * FROM lithepg_demo.customer_revenue ORDER BY reve
 Or use the helper, which seeds Docker, builds `LithePGApp`, injects the startup URL/query, and launches the app:
 
 ```sh
-POSTGRES_TEST_URL="postgres://postgres:postgres@localhost:55432/postgres?sslmode=disable" ./script/run_dogfood_app.sh
+POSTGRES_TEST_URL="postgres://postgres:***@localhost:55432/postgres?sslmode=disable" ./script/run_dogfood_app.sh
 ```
 
 The startup environment variables are intentionally opt-in for dogfood and smoke runs. Normal app launches show the connection sheet.
