@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v04 measurement hardening verification</title>
+  <desc id="desc">Evidence artifact for the commit hardening script/v04_measure.sh against PATH-shadowed utilities and exported Bash functions.</desc>
+  <rect width="1280" height="720" fill="#0b1020"/>
+  <rect x="48" y="44" width="1184" height="632" rx="24" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="80" y="96" fill="#f8fafc" font-family="Menlo, Consolas, monospace" font-size="30" font-weight="700">LithePG v04 measurement hardening</text>
+  <text x="80" y="132" fill="#94a3b8" font-family="Menlo, Consolas, monospace" font-size="18">Generated 2026-06-01 21:37:25 EDT • repo /Users/omar/projects/lithepg</text>
+
+  <rect x="80" y="168" width="1080" height="390" rx="16" fill="#020617" stroke="#1e293b"/>
+  <text x="112" y="214" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="22">✓ bash script/test_v04_measure.sh</text>
+  <text x="148" y="246" fill="#d1fae5" font-family="Menlo, Consolas, monospace" font-size="18">test_v04_measure passed</text>
+
+  <text x="112" y="294" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="22">✓ bash -n script/v04_measure.sh script/test_v04_measure.sh &amp;&amp; git diff --check</text>
+  <text x="148" y="326" fill="#d1fae5" font-family="Menlo, Consolas, monospace" font-size="18">passed with no output</text>
+
+  <text x="112" y="374" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="22">✓ bash script/test_dogfood_check.sh</text>
+  <text x="148" y="406" fill="#d1fae5" font-family="Menlo, Consolas, monospace" font-size="18">test_dogfood_check passed</text>
+
+  <text x="112" y="454" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="22">✓ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test</text>
+  <text x="148" y="486" fill="#d1fae5" font-family="Menlo, Consolas, monospace" font-size="18">Test run with 127 tests in 20 suites passed; live integration tests skipped by env gates</text>
+
+  <text x="112" y="534" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="18">Independent reviews: spec PASS; quality APPROVED. Security added-line scan: no findings.</text>
+
+  <text x="80" y="604" fill="#fbbf24" font-family="Menlo, Consolas, monospace" font-size="20" font-weight="700">Scope</text>
+  <text x="80" y="636" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="18">script/v04_measure.sh + script/test_v04_measure.sh hardened against PATH shadowing, parent/child exported Bash function leaks, and paths with spaces.</text>
+</svg>

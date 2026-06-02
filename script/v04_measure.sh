@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+BASH_BIN=/bin/bash
+PERL_BIN=/usr/bin/perl
 DIRNAME_BIN=/usr/bin/dirname
+REALPATH_BIN=/bin/realpath
 DATE_BIN=/bin/date
 MKDIR_BIN=/bin/mkdir
 CP_BIN=/bin/cp
@@ -10,11 +13,56 @@ MKTEMP_BIN=/usr/bin/mktemp
 STRIP_BIN=/usr/bin/strip
 RM_BIN=/bin/rm
 CAT_BIN=/bin/cat
-PWD_BIN=/bin/pwd
 PYTHON3_BIN=/usr/bin/python3
 
-ROOT_DIR="$(cd "$("$DIRNAME_BIN" "${BASH_SOURCE[0]}")/.." && "$PWD_BIN")"
-cd "$ROOT_DIR"
+if "$PERL_BIN" -e '
+  for my $key (keys %ENV) {
+    exit 0 if $key =~ /\ABASH_FUNC_/;
+  }
+  exit 1;
+'; then
+  exec "$PERL_BIN" -e '
+    use strict;
+    use warnings;
+    my $bash = shift @ARGV;
+    for my $key (keys %ENV) {
+      delete $ENV{$key} if $key =~ /\ABASH_FUNC_/;
+    }
+    exec { $bash } $bash, @ARGV;
+    die "exec $bash: $!\n";
+  ' "$BASH_BIN" "${BASH_SOURCE[0]}" "$@"
+fi
+
+ROOT_DIR="$("$REALPATH_BIN" "$("$DIRNAME_BIN" "${BASH_SOURCE[0]}")/..")"
+
+sanitized_exec() {
+  "$PERL_BIN" -e '
+    use strict;
+    use warnings;
+    for my $key (keys %ENV) {
+      delete $ENV{$key} if $key =~ /\ABASH_FUNC_/;
+    }
+    @ARGV or die "exec: missing command\n";
+    exec { $ARGV[0] } @ARGV;
+    die "exec $ARGV[0]: $!\n";
+  ' "$@"
+}
+
+run_from_root() {
+  "$PERL_BIN" -e '
+    use strict;
+    use warnings;
+    for my $key (keys %ENV) {
+      delete $ENV{$key} if $key =~ /\ABASH_FUNC_/;
+    }
+    my $root = shift @ARGV;
+    chdir $root or die "chdir $root: $!\n";
+    $ENV{PWD} = $root;
+    @ARGV or die "exec: missing command\n";
+    exec { $ARGV[0] } @ARGV;
+    die "exec $ARGV[0]: $!\n";
+  ' "$ROOT_DIR" "$@"
+}
 
 DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 export DEVELOPER_DIR
@@ -33,12 +81,12 @@ PSQL_BIN="${PSQL_BIN:-}"
 "$MKDIR_BIN" -p "$OUT_DIR"
 
 if [[ "${LITHEPG_SKIP_DOGFOOD_DB:-0}" != "1" ]]; then
-  ./script/dogfood_postgres.sh >/tmp/lithepg-dogfood-postgres.log
+  run_from_root "$ROOT_DIR/script/dogfood_postgres.sh" >/tmp/lithepg-dogfood-postgres.log
   "$CP_BIN" /tmp/lithepg-dogfood-postgres.log "$OUT_DIR/dogfood-postgres.log"
 fi
 
-swift build -c release --product LithePGApp
-swift build -c release --product lithepg-bench
+run_from_root swift build -c release --product LithePGApp
+run_from_root swift build -c release --product lithepg-bench
 APP_BIN="$ROOT_DIR/.build/release/LithePGApp"
 BENCH_BIN="$ROOT_DIR/.build/release/lithepg-bench"
 
@@ -80,7 +128,7 @@ PY
 run_lithepg_bench() {
   local slug="$1"
   local query="$2"
-  "$BENCH_BIN" \
+  sanitized_exec "$BENCH_BIN" \
     --url "$BENCH_URL" \
     --query "$query" \
     --warmup "$WARMUP" \
@@ -91,8 +139,20 @@ run_lithepg_bench() {
 find_psql() {
   if [[ -n "$PSQL_BIN" && -x "$PSQL_BIN" ]]; then
     printf '%s\n' "$PSQL_BIN"
-  elif command -v psql >/dev/null 2>&1; then
-    command -v psql
+  elif "$PERL_BIN" -e '
+    use strict;
+    use warnings;
+    for my $dir (split /:/, $ENV{PATH} // "") {
+      $dir = "." if $dir eq "";
+      my $path = "$dir/psql";
+      if (-x $path && ! -d $path) {
+        print "$path\n";
+        exit 0;
+      }
+    }
+    exit 1;
+  '; then
+    :
   elif [[ -x /opt/homebrew/opt/libpq/bin/psql ]]; then
     printf '%s\n' /opt/homebrew/opt/libpq/bin/psql
   else
@@ -122,7 +182,7 @@ print(r'\timing on')
 for _ in range(warmup + iterations):
     print(query)
 PY
-  "$psql" "$BENCH_URL" -X -q -v ON_ERROR_STOP=1 -f "$sql_file" > "$raw_file" 2>&1
+  sanitized_exec "$psql" "$BENCH_URL" -X -q -v ON_ERROR_STOP=1 -f "$sql_file" > "$raw_file" 2>&1
   "$PYTHON3_BIN" - <<PY > "$OUT_DIR/psql-$slug.json"
 import json, math, re, statistics
 raw = open("$raw_file", encoding="utf-8", errors="replace").read()
@@ -161,7 +221,7 @@ capture_app_metrics() {
   local log_path="$2"
   shift 2
   "$RM_BIN" -f "$metrics_path"
-  env \
+  sanitized_exec env \
     -u LITHEPG_STARTUP_URL \
     -u LITHEPG_UI_SMOKE_URL \
     -u LITHEPG_STARTUP_QUERY \
