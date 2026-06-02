@@ -1964,3 +1964,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Gate statuses synced: `defaultSwiftTest`, `liveSwiftTest`, and `v04Measure` passed.
 - Evidence artifact: `screenshots/evidence/2026-06-02-v10-public-status-metrics-sync-python-isolation.svg`.
 - This docs-only status sync attempted no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication.
+
+## 2026-06-02 17:36 EDT — v1.0 artifact-only gate receipt sync
+
+- Synced the committed artifact-only release-gate slice from `4895035` (`[verified] feat(release): add v1.0 artifact-only gate`) into this dogfood log after `main` advanced and pushed to `origin/main`.
+- That slice added `script/v10_release_gate.sh --artifact-only` plus `LITHEPG_ARTIFACT_ONLY=1` as a narrowly scoped final-artifact validator. It checks the `LithePG.app.zip` path, app wrapper, metadata, code-signature/runtime inspection, and approved SHA-256 match without printing SHA values.
+- The artifact-only mode is intentionally **not** a publication gate: it skips tag readiness, release-copy, Homebrew cask, security policy, external credential, approval, and publication checks, and it does not approve tagging or publishing.
+- Existing TDD coverage in `script/test_v10_release_gate.sh` proves the valid artifact-only CLI/env paths, missing SHA blocker, mismatched SHA blocker, redacted digest output, and absence of external publication sections in artifact-only output.
+- Existing verification from the committed slice: `bash script/test_v10_release_gate.sh`, full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test`, and `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` passed; the dogfood gate wrote artifacts under `.build/dogfood-checks/20260602-171838/`.
+- Original evidence artifact: `docs/evidence/20260602-v10-artifact-only-release-gate.svg`; receipt-sync evidence artifact: `screenshots/evidence/2026-06-02-v10-artifact-only-receipt-sync.svg`.
+- This docs/evidence receipt sync attempted no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication.
