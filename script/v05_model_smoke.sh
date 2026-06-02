@@ -1,8 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/.." && /bin/pwd)"
-cd "$ROOT_DIR"
+ROOT_DIR="$(/bin/realpath "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/..")"
+
+run_from_root() {
+  /usr/bin/perl -e '
+    use strict;
+    use warnings;
+    my $root = shift @ARGV;
+    chdir $root or die "chdir $root: $!\n";
+    exec @ARGV;
+    die "exec $ARGV[0]: $!\n";
+  ' "$ROOT_DIR" "$@"
+}
 
 DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 export DEVELOPER_DIR
@@ -10,8 +20,8 @@ export DEVELOPER_DIR
 OUT_DIR="${LITHEPG_MODEL_SMOKE_OUT_DIR:-$ROOT_DIR/.build/v05-model-smoke/$(/bin/date +%Y%m%d-%H%M%S)}"
 /bin/mkdir -p "$OUT_DIR"
 
-swift test --filter LocalModelAIQueryService | /usr/bin/tee "$OUT_DIR/local-model-tests.log"
-swift build -c release --product LithePGApp | /usr/bin/tee "$OUT_DIR/release-build.log"
+run_from_root swift test --filter LocalModelAIQueryService | /usr/bin/tee "$OUT_DIR/local-model-tests.log"
+run_from_root swift build -c release --product LithePGApp | /usr/bin/tee "$OUT_DIR/release-build.log"
 
 APP_BIN="$ROOT_DIR/.build/release/LithePGApp"
 if [[ ! -x "$APP_BIN" ]]; then

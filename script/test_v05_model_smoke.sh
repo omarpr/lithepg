@@ -69,7 +69,7 @@ PY
 
 output_file="$(/usr/bin/mktemp)"
 fixture_root="$(/usr/bin/mktemp -d)"
-trap '/bin/rm -f "$output_file"; /bin/rm -rf "$fixture_root"' EXIT
+trap '/bin/rm -f "$output_file" "${function_shadow_output_file:-}"; /bin/rm -rf "$fixture_root"' EXIT
 
 sentinel="V05_MODEL_SMOKE_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN"
 fake_bin="$fixture_root/fake-bin"
@@ -79,7 +79,7 @@ out_dir="$fixture_root/out/model-smoke"
 /bin/cp "$HELPER" "$fixture_root/script/v05_model_smoke.sh"
 /bin/chmod +x "$fixture_root/script/v05_model_smoke.sh"
 
-for tool in dirname date mkdir tee otool grep cat pwd; do
+for tool in realpath dirname date mkdir tee otool grep cat pwd; do
   /bin/cat >"$fake_bin/$tool" <<SHIM
 #!/bin/bash
 /usr/bin/printf '%s %s invoked\\n' '$sentinel' '$tool' >&2
@@ -138,9 +138,86 @@ assert_contains "$fake_swift_output" "fake swift build -c release --product Lith
 
 summary_file="$out_dir/summary.json"
 [[ -f "$summary_file" ]] || fail "summary.json missing: $summary_file"
-assert_summary_json "$summary_file" "$fixture_root/.build/release/LithePGApp"
+expected_app_bin="$(/bin/realpath "$fixture_root")/.build/release/LithePGApp"
+assert_summary_json "$summary_file" "$expected_app_bin"
 
 [[ -s "$out_dir/local-model-tests.log" ]] || fail "local-model-tests.log missing"
 [[ -s "$out_dir/release-build.log" ]] || fail "release-build.log missing"
+
+function_shadow_output_file="$(/usr/bin/mktemp)"
+function_shadow_out_dir="$fixture_root/out/function-shadow-model-smoke"
+function_shadow_marker_dir="$fixture_root/function-shadow-markers"
+outside_cwd="$fixture_root/outside-cwd"
+/bin/mkdir -p "$function_shadow_marker_dir" "$outside_cwd"
+
+set +e
+(
+  cd "$outside_cwd"
+
+  command() {
+    /usr/bin/printf '%s command function invoked\n' "${V05_FUNCTION_SENTINEL:?}" >&2
+    /usr/bin/touch "${V05_SENTINEL_MARKER_DIR:?}/command"
+    return 97
+  }
+
+  builtin() {
+    /usr/bin/printf '%s builtin function invoked\n' "${V05_FUNCTION_SENTINEL:?}" >&2
+    /usr/bin/touch "${V05_SENTINEL_MARKER_DIR:?}/builtin"
+    return 97
+  }
+
+  cd() {
+    /usr/bin/printf '%s cd function invoked\n' "${V05_FUNCTION_SENTINEL:?}" >&2
+    /usr/bin/touch "${V05_SENTINEL_MARKER_DIR:?}/cd"
+    return 97
+  }
+
+  pwd() {
+    /usr/bin/printf '%s pwd function invoked\n' "${V05_FUNCTION_SENTINEL:?}" >&2
+    /usr/bin/touch "${V05_SENTINEL_MARKER_DIR:?}/pwd"
+    return 97
+  }
+
+  export -f command builtin cd pwd
+  env \
+    -u LITHEPG_ENABLE_LOCAL_MODEL \
+    -u LITHEPG_LOCAL_MODEL_PATH \
+    PATH="$fake_bin:$PATH" \
+    FAKE_SWIFT_LOG="$fake_swift_log" \
+    LITHEPG_MODEL_SMOKE_OUT_DIR="$function_shadow_out_dir" \
+    V05_FUNCTION_SENTINEL="$sentinel" \
+    V05_SENTINEL_MARKER_DIR="$function_shadow_marker_dir" \
+    /bin/bash "$fixture_root/script/v05_model_smoke.sh"
+) >"$function_shadow_output_file" 2>&1
+function_shadow_status=$?
+set -e
+
+if [[ "$function_shadow_status" -ne 0 ]]; then
+  helper_output="$(<"$function_shadow_output_file")"
+  /usr/bin/printf '%s\n' "$helper_output" >&2
+  fail "v05_model_smoke.sh was affected by function-shadowed shell builtins during root/chdir setup"
+fi
+
+function_shadow_output="$(<"$function_shadow_output_file")"
+assert_not_contains "$function_shadow_output" "$sentinel"
+assert_not_contains "$function_shadow_output" "function invoked"
+assert_contains "$function_shadow_output" "fake local model tests passed"
+assert_contains "$function_shadow_output" "fake release build passed"
+assert_contains "$function_shadow_output" '"product": "LithePGApp"'
+assert_contains "$function_shadow_output" "Model smoke measurements written to $function_shadow_out_dir"
+
+for marker in command builtin cd pwd; do
+  [[ ! -e "$function_shadow_marker_dir/$marker" ]] || fail "function-shadowed $marker was invoked"
+done
+
+summary_file="$function_shadow_out_dir/summary.json"
+[[ -f "$summary_file" ]] || fail "function-shadow summary.json missing: $summary_file"
+expected_app_bin="$(/bin/realpath "$fixture_root")/.build/release/LithePGApp"
+assert_summary_json "$summary_file" "$expected_app_bin"
+
+[[ -s "$function_shadow_out_dir/local-model-tests.log" ]] || fail "function-shadow local-model-tests.log missing"
+[[ -s "$function_shadow_out_dir/release-build.log" ]] || fail "function-shadow release-build.log missing"
+
+/bin/rm -f "$function_shadow_output_file"
 
 /usr/bin/printf 'test_v05_model_smoke passed\n'

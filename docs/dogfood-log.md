@@ -1525,3 +1525,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-01-dogfood-check-root-chdir-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-01 20:29 EDT — v0.5 model smoke root/chdir function-shadow hardening
+
+- Hardened `script/v05_model_smoke.sh` so repository-root setup uses absolute `/bin/realpath` plus `/usr/bin/dirname`, and removed the shell `cd "$ROOT_DIR"` dependency. The helper now runs its `swift test --filter LocalModelAIQueryService` and release `swift build` commands from the repository root through a small `/usr/bin/perl` `chdir`/`exec` wrapper, preserving intentionally PATH-resolved `swift` while avoiding exported shell functions named `command`, `builtin`, `cd`, or `pwd`.
+- Added strict-TDD coverage in `script/test_v05_model_smoke.sh` with a PATH-shadowed fake `realpath`, exported function-shadow sentinels for `command`, `builtin`, `cd`, and `pwd`, an outside starting cwd, and a fake PATH-resolved `swift`. The fixture still verifies local-model logs and `summary.json` are produced without invoking or leaking any shadow sentinel.
+- RED verification: `bash script/test_v05_model_smoke.sh` failed first with `V05_MODEL_SMOKE_PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN cd function invoked` before production hardening.
+- GREEN verification: `bash script/test_v05_model_smoke.sh`, `bash -n script/v05_model_smoke.sh script/test_v05_model_smoke.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Live model-smoke verification passed: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/v05_model_smoke.sh` wrote artifacts to `.build/v05-model-smoke/20260601-202553/`; `LocalModelAIQueryService` selected tests passed, release `LithePGApp` build passed, CoreML.framework is linked, no model artifact is bundled, and the release executable is 21.379 MiB.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-01-v05-model-smoke-root-chdir-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
