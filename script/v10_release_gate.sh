@@ -64,6 +64,7 @@ set -euo pipefail
 
 VERSION="1.0"
 CHECK_REMOTE_TAGS="${LITHEPG_CHECK_REMOTE_TAGS:-0}"
+ARTIFACT_ONLY="${LITHEPG_ARTIFACT_ONLY:-0}"
 RELEASE_COPY_PATH="${LITHEPG_RELEASE_COPY_PATH:-docs/releases/v1.0-draft.md}"
 HOMEBREW_CASK_PATH="${LITHEPG_HOMEBREW_CASK_PATH:-packaging/homebrew/lithepg.rb}"
 SECURITY_DOC_PATH="${LITHEPG_SECURITY_DOC_PATH:-}"
@@ -72,15 +73,22 @@ RELEASE_ZIP_SHA256="${LITHEPG_RELEASE_ZIP_SHA256:-}"
 
 usage() {
   /bin/cat <<'USAGE'
-Usage: script/v10_release_gate.sh [--version <version>] [--check-remote]
+Usage: script/v10_release_gate.sh [--version <version>] [--check-remote] [--artifact-only]
 
 Fast v1.0 publication preflight. Summarizes local tag readiness and required
 external release inputs without running long build/test/dogfood gates, contacting
 origin by default, or printing secret/contact/tap environment values.
 
+Pass --artifact-only to validate only the final public zip artifact path and
+approved SHA-256. Artifact-only mode is intentionally not a publication gate: it
+skips tag readiness, release copy, Homebrew cask, security policy, external
+credential, and approval checks.
+
 Pass --check-remote or set LITHEPG_CHECK_REMOTE_TAGS=1 to opt into a non-fatal
-origin tag lookup. Set LITHEPG_RELEASE_COPY_PATH or LITHEPG_HOMEBREW_CASK_PATH
-to scan non-default release copy or Homebrew cask files. Set
+origin tag lookup. Pass --artifact-only or set LITHEPG_ARTIFACT_ONLY=1 to run
+only the final public zip artifact validation. Set LITHEPG_RELEASE_COPY_PATH or
+LITHEPG_HOMEBREW_CASK_PATH to scan non-default release copy or Homebrew cask
+files. Set
 LITHEPG_SECURITY_DOC_PATH to scan one alternate security policy file instead of
 the default SECURITY.md and docs/SECURITY.md files (paths may be relative to the
 repository root or absolute). Set LITHEPG_RELEASE_ZIP_PATH to the final public
@@ -100,6 +108,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --check-remote)
       CHECK_REMOTE_TAGS=1
+      shift
+      ;;
+    --artifact-only)
+      ARTIFACT_ONLY=1
       shift
       ;;
     -h|--help)
@@ -1164,7 +1176,11 @@ release_zip_top_level_entries_status() {
 
 printf 'LithePG %s fast publication preflight\n' "$TAG"
 printf 'Repository: %s\n' "$ROOT_DIR"
-printf '\nLocal git/tag readiness:\n'
+if is_approved_value "$ARTIFACT_ONLY"; then
+  printf 'Artifact-only mode: enabled\n'
+  printf 'Artifact-only mode is not a publication gate and does not approve tagging or publishing.\n'
+else
+  printf '\nLocal git/tag readiness:\n'
 
 if git_in_repo rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   branch="$(git_in_repo branch --show-current 2>/dev/null || true)"
@@ -1566,6 +1582,7 @@ for security_doc_path in "${SECURITY_DOC_PATHS[@]}"; do
     esac
   fi
 done
+fi
 
 printf '\nRelease artifact readiness:\n'
 release_zip_file="$(release_zip_full_path)"
@@ -1910,6 +1927,19 @@ elif [[ "$release_zip_present" -eq 1 ]]; then
       mark_blocker
     fi
   fi
+fi
+
+if is_approved_value "$ARTIFACT_ONLY"; then
+  printf '\n'
+  if [[ "$BLOCKERS" -eq 0 ]]; then
+    printf '%s artifact-only preflight is clear.\n' "$TAG"
+    printf 'Artifact-only mode is not a publication gate.\n'
+    exit 0
+  fi
+
+  printf '%s artifact-only blocked: %s blocker(s) found.\n' "$TAG" "$BLOCKERS"
+  printf 'Resolve the release artifact zip and approved SHA-256 issues before using the artifact for public release validation.\n'
+  exit 1
 fi
 
 printf '\nExternal publication inputs (values redacted):\n'

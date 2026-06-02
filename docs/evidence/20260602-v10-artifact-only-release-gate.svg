@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 artifact-only release gate evidence</title>
+  <desc id="desc">Visual verification artifact for the commit adding artifact-only release gate validation.</desc>
+  <rect width="1200" height="720" fill="#0b1020"/>
+  <rect x="48" y="44" width="1104" height="632" rx="28" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="90" y="116" fill="#e5f3ff" font-family="Menlo, Consolas, monospace" font-size="34" font-weight="700">LithePG v1.0 Release Gate</text>
+  <text x="90" y="162" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="22">Artifact-only validation slice • 2026-06-02 UTC</text>
+
+  <rect x="90" y="210" width="1020" height="72" rx="14" fill="#052e1a" stroke="#22c55e" stroke-width="2"/>
+  <text x="122" y="255" fill="#bbf7d0" font-family="Menlo, Consolas, monospace" font-size="24">✓ bash script/test_v10_release_gate.sh — test_v10_release_gate passed</text>
+
+  <rect x="90" y="310" width="1020" height="72" rx="14" fill="#052e1a" stroke="#22c55e" stroke-width="2"/>
+  <text x="122" y="355" fill="#bbf7d0" font-family="Menlo, Consolas, monospace" font-size="24">✓ DEVELOPER_DIR=… swift test — 127 tests passed</text>
+
+  <rect x="90" y="410" width="1020" height="72" rx="14" fill="#052e1a" stroke="#22c55e" stroke-width="2"/>
+  <text x="122" y="455" fill="#bbf7d0" font-family="Menlo, Consolas, monospace" font-size="24">✓ ./script/dogfood_check.sh — default/live/v0.4 measure passed</text>
+
+  <rect x="90" y="522" width="1020" height="96" rx="14" fill="#1e293b" stroke="#64748b" stroke-width="2"/>
+  <text x="122" y="558" fill="#e2e8f0" font-family="Menlo, Consolas, monospace" font-size="20">New gate mode: --artifact-only / LITHEPG_ARTIFACT_ONLY=1</text>
+  <text x="122" y="590" fill="#cbd5e1" font-family="Menlo, Consolas, monospace" font-size="18">Checks final LithePG.app.zip + SHA match without printing SHA values.</text>
+  <text x="122" y="620" fill="#cbd5e1" font-family="Menlo, Consolas, monospace" font-size="18">Skips publication approvals, credentials, Homebrew, release copy, security policy, and tag checks.</text>
+</svg>

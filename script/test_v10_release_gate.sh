@@ -65,6 +65,10 @@ run_specific_gate_capture() {
 
 missing_output="$(mktemp)"
 redaction_output="$(mktemp)"
+artifact_only_output="$(mktemp)"
+artifact_only_env_output="$(mktemp)"
+artifact_only_missing_sha_output="$(mktemp)"
+artifact_only_mismatched_sha_output="$(mktemp)"
 missing_artifact_output="$(mktemp)"
 symlink_artifact_output="$(mktemp)"
 missing_artifact_zip="$(mktemp)"
@@ -313,6 +317,10 @@ cleanup() {
   rm -f \
     "$missing_output" \
     "$redaction_output" \
+    "$artifact_only_output" \
+    "$artifact_only_env_output" \
+    "$artifact_only_missing_sha_output" \
+    "$artifact_only_mismatched_sha_output" \
     "$missing_artifact_output" \
     "$symlink_artifact_output" \
     "$missing_artifact_zip" \
@@ -2921,6 +2929,98 @@ assert_not_contains "$redaction_text" "$secret_identity"
 assert_not_contains "$redaction_text" "$secret_notary"
 assert_not_contains "$redaction_text" "$secret_contact"
 assert_not_contains "$redaction_text" "$secret_tap"
+
+if ! run_gate_capture "$artifact_only_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
+  /bin/bash -c 'exec "$1" --artifact-only' _; then
+  artifact_only_text="$(<"$artifact_only_output")"
+  assert_not_contains "$artifact_only_text" "$release_zip_sha"
+  fail "artifact-only gate unexpectedly failed for a valid release zip fixture"
+fi
+artifact_only_text="$(<"$artifact_only_output")"
+assert_contains "$artifact_only_text" "Artifact-only mode: enabled"
+assert_contains "$artifact_only_text" "Release artifact filename: matches"
+assert_contains "$artifact_only_text" "Release artifact zip: present"
+assert_contains "$artifact_only_text" "Release artifact code signature verification: valid"
+assert_contains "$artifact_only_text" "Release artifact code signature runtime: present"
+assert_contains "$artifact_only_text" "Release artifact SHA-256: matches"
+assert_contains "$artifact_only_text" "v1.0 artifact-only preflight is clear"
+assert_contains "$artifact_only_text" "Artifact-only mode is not a publication gate"
+assert_not_contains "$artifact_only_text" "Release copy placeholders:"
+assert_not_contains "$artifact_only_text" "Homebrew cask placeholders:"
+assert_not_contains "$artifact_only_text" "Security policy placeholders:"
+assert_not_contains "$artifact_only_text" "Local git/tag readiness"
+assert_not_contains "$artifact_only_text" "Remote origin"
+assert_not_contains "$artifact_only_text" "External publication inputs"
+assert_not_contains "$artifact_only_text" "LITHEPG_CODESIGN_IDENTITY"
+assert_not_contains "$artifact_only_text" "LITHEPG_PUBLICATION_APPROVED"
+assert_not_contains "$artifact_only_text" "$release_zip_sha"
+
+if ! run_gate_capture "$artifact_only_env_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_ARTIFACT_ONLY=1 \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="$release_zip_sha" \
+  /bin/bash -c 'exec "$1"' _; then
+  artifact_only_env_text="$(<"$artifact_only_env_output")"
+  assert_not_contains "$artifact_only_env_text" "$release_zip_sha"
+  fail "artifact-only env gate unexpectedly failed for a valid release zip fixture"
+fi
+artifact_only_env_text="$(<"$artifact_only_env_output")"
+assert_contains "$artifact_only_env_text" "Artifact-only mode: enabled"
+assert_contains "$artifact_only_env_text" "Release artifact SHA-256: matches"
+assert_contains "$artifact_only_env_text" "v1.0 artifact-only preflight is clear"
+assert_not_contains "$artifact_only_env_text" "Local git/tag readiness"
+assert_not_contains "$artifact_only_env_text" "Remote origin"
+assert_not_contains "$artifact_only_env_text" "External publication inputs"
+assert_not_contains "$artifact_only_env_text" "$release_zip_sha"
+
+if run_gate_capture "$artifact_only_missing_sha_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  /bin/bash -c 'exec "$1" --artifact-only' _; then
+  fail "artifact-only gate unexpectedly passed with missing SHA-256"
+fi
+artifact_only_missing_sha_text="$(<"$artifact_only_missing_sha_output")"
+assert_contains "$artifact_only_missing_sha_text" "Artifact-only mode: enabled"
+assert_contains "$artifact_only_missing_sha_text" "Release artifact SHA-256: missing"
+assert_contains "$artifact_only_missing_sha_text" "v1.0 artifact-only blocked"
+assert_not_contains "$artifact_only_missing_sha_text" "Release copy placeholders:"
+assert_not_contains "$artifact_only_missing_sha_text" "Homebrew cask placeholders:"
+assert_not_contains "$artifact_only_missing_sha_text" "External publication inputs"
+
+if run_gate_capture "$artifact_only_mismatched_sha_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$release_zip_fixture" \
+  LITHEPG_RELEASE_ZIP_SHA256="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" \
+  /bin/bash -c 'exec "$1" --artifact-only' _; then
+  fail "artifact-only gate unexpectedly passed with mismatched SHA-256"
+fi
+artifact_only_mismatched_sha_text="$(<"$artifact_only_mismatched_sha_output")"
+assert_contains "$artifact_only_mismatched_sha_text" "Artifact-only mode: enabled"
+assert_contains "$artifact_only_mismatched_sha_text" "Release artifact SHA-256: mismatch"
+assert_contains "$artifact_only_mismatched_sha_text" "v1.0 artifact-only blocked"
+assert_not_contains "$artifact_only_mismatched_sha_text" "$release_zip_sha"
+assert_not_contains "$artifact_only_mismatched_sha_text" "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+assert_not_contains "$artifact_only_mismatched_sha_text" "External publication inputs"
 
 if run_gate_capture "$missing_artifact_output" env -i \
   PATH="$fake_path" \
