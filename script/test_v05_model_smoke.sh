@@ -310,6 +310,34 @@ assert_contains "$startup_fail_closed_output" "unsanitized startup environment r
 assert_not_contains "$startup_fail_closed_output" "fake local model tests passed"
 assert_not_contains "$startup_fail_closed_output" '"product": "LithePGApp"'
 
+# If the sanitizer marker is already set, even an empty-but-present BASH_ENV is dirty.
+startup_empty_bash_env_private="V05_MODEL_SMOKE_EMPTY_BASH_ENV_PRIVATE_SENTINEL_SHOULD_NOT_LEAK"
+set +e
+(
+  cd "$fixture_root"
+  env \
+    -u LITHEPG_ENABLE_LOCAL_MODEL \
+    -u LITHEPG_LOCAL_MODEL_PATH \
+    PATH="$startup_clean_bin:$PATH" \
+    FAKE_SWIFT_LOG="$fake_swift_log" \
+    LITHEPG_MODEL_SMOKE_OUT_DIR="$startup_fail_closed_out_dir" \
+    LITHEPG_V05_MODEL_SMOKE_STARTUP_ENV_SANITIZED=1 \
+    V05_MODEL_SMOKE_EMPTY_BASH_ENV_PRIVATE="$startup_empty_bash_env_private" \
+    BASH_ENV="" \
+    "$fixture_root/script/v05_model_smoke.sh"
+) >"$output_file" 2>&1
+startup_empty_bash_env_fail_closed_status=$?
+set -e
+startup_empty_bash_env_fail_closed_output="$(<"$output_file")"
+if [[ "$startup_empty_bash_env_fail_closed_status" -ne 2 ]]; then
+  /usr/bin/printf '%s\n' "$startup_empty_bash_env_fail_closed_output" >&2
+  fail "v05_model_smoke.sh startup sanitizer did not fail closed with exit 2 for empty BASH_ENV after sanitizer marker"
+fi
+assert_contains "$startup_empty_bash_env_fail_closed_output" "unsanitized startup environment remains after v05_model_smoke sanitizer"
+assert_not_contains "$startup_empty_bash_env_fail_closed_output" "$startup_empty_bash_env_private"
+assert_not_contains "$startup_empty_bash_env_fail_closed_output" "fake local model tests passed"
+assert_not_contains "$startup_empty_bash_env_fail_closed_output" '"product": "LithePGApp"'
+
 if ! run_helper_capture "$output_file" "$fixture_root" "$fake_bin" "$fake_swift_log" "$out_dir"; then
   helper_output="$(<"$output_file")"
   /usr/bin/printf '%s\n' "$helper_output" >&2
