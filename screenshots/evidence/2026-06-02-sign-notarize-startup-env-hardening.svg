@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG sign_and_notarize startup-env hardening evidence</title>
+  <desc id="desc">Strict TDD red and green verification receipt for script/sign_and_notarize.sh startup hardening on 2026-06-02.</desc>
+  <rect width="1200" height="720" fill="#0f172a"/>
+  <rect x="40" y="36" width="1120" height="648" rx="24" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="70" y="88" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="30" font-weight="700">sign_and_notarize.sh startup hardening</text>
+  <text x="70" y="126" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="18">Slice: absolute privileged Bash + startup env sanitization before signing/notary logic</text>
+
+  <rect x="70" y="162" width="1060" height="122" rx="14" fill="#450a0a" stroke="#f87171"/>
+  <text x="94" y="198" fill="#fecaca" font-family="Menlo, Consolas, monospace" font-size="20" font-weight="700">RED (before production change)</text>
+  <text x="94" y="232" fill="#fee2e2" font-family="Menlo, Consolas, monospace" font-size="16">$ bash script/test_sign_and_notarize.sh</text>
+  <text x="94" y="258" fill="#fee2e2" font-family="Menlo, Consolas, monospace" font-size="16">SIGN_AND_NOTARIZE_INITIAL_BASH_PATH_SHADOW_SENTINEL_DO_NOT_PRINT fake bash invoked</text>
+  <text x="94" y="278" fill="#fee2e2" font-family="Menlo, Consolas, monospace" font-size="16">test_sign_and_notarize failed: sign/notarize executable invocation used PATH-selected bash</text>
+
+  <rect x="70" y="318" width="1060" height="210" rx="14" fill="#052e16" stroke="#34d399"/>
+  <text x="94" y="354" fill="#bbf7d0" font-family="Menlo, Consolas, monospace" font-size="20" font-weight="700">GREEN verification</text>
+  <text x="94" y="388" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="16">$ bash script/test_sign_and_notarize.sh  →  test_sign_and_notarize passed</text>
+  <text x="94" y="414" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="16">$ bash script/test_package_verify.sh  →  test_package_verify passed</text>
+  <text x="94" y="440" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="16">$ bash script/test_create_release_zip.sh  →  test_create_release_zip passed</text>
+  <text x="94" y="466" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="16">$ bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh  →  pass</text>
+  <text x="94" y="492" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="16">$ git diff --check  →  pass</text>
+  <text x="94" y="518" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="16">$ swift build + swift test  →  build complete; 127 Swift Testing tests passed</text>
+  <text x="94" y="544" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="16">$ ./script/dogfood_check.sh  →  passed; artifacts .build/dogfood-checks/20260602-004834/</text>
+
+  <rect x="70" y="564" width="1060" height="92" rx="14" fill="#1e293b" stroke="#64748b"/>
+  <text x="94" y="598" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="17">No signing, notarization, upload, tag, Homebrew/GitHub publication, cron changes, or secrets used.</text>
+  <text x="94" y="628" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="17">Hardened against PATH-selected bash, BASH_ENV, BASH_FUNC_* exported functions, PERL5OPT/PERL5LIB/PERLLIB.</text>
+</svg>

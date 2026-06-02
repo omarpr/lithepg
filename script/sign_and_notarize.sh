@@ -1,4 +1,47 @@
-#!/usr/bin/env bash
+#!/bin/bash -p
+
+BASH_BIN=/bin/bash
+
+startup_env_sanitize_needed=0
+if [[ -n "${BASH_ENV:-}" || "${PERL5OPT+x}" == x || "${PERL5LIB+x}" == x || "${PERLLIB+x}" == x ]]; then
+  startup_env_sanitize_needed=1
+elif /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
+  for my $key (keys %ENV) {
+    exit 0 if $key =~ /\ABASH_FUNC_/;
+  }
+  exit 1;
+'; then
+  startup_env_sanitize_needed=1
+fi
+
+if [[ "$startup_env_sanitize_needed" == "1" ]]; then
+  /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
+    use strict;
+    use warnings;
+    my $bash = shift @ARGV;
+    for my $key (keys %ENV) {
+      delete $ENV{$key} if $key =~ /\ABASH_FUNC_/;
+    }
+    delete $ENV{BASH_ENV};
+    delete $ENV{PERL5OPT};
+    delete $ENV{PERL5LIB};
+    delete $ENV{PERLLIB};
+    $ENV{LITHEPG_SIGN_AND_NOTARIZE_STARTUP_ENV_SANITIZED} = "1";
+    exec { $bash } $bash, "-p", @ARGV;
+    die "exec $bash: $!\n";
+  ' "$BASH_BIN" "${BASH_SOURCE[0]}" "$@"
+else
+  if [[ "${PERL5OPT+x}" == x || "${PERL5LIB+x}" == x || "${PERLLIB+x}" == x ]]; then
+    /usr/bin/printf 'unsanitized Perl startup environment remains\n' >&2
+    /usr/bin/false
+  elif /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
+    for my $key (keys %ENV) {
+      die "unsanitized bash function environment key remains: $key\n" if $key =~ /\ABASH_FUNC_/;
+    }
+    die "unsanitized BASH_ENV remains\n" if exists $ENV{BASH_ENV} && $ENV{BASH_ENV} ne "";
+    exit 0;
+  '; then
+
 set -euo pipefail
 
 usage() {
@@ -315,3 +358,7 @@ run_quiet "spctl assessment failed" spctl --assess --type execute --verbose=4 "$
 
 printf 'Signed and notarized: LithePG.app\n'
 printf 'Notary zip: created (redacted)\n'
+  else
+    /usr/bin/false
+  fi
+fi

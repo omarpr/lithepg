@@ -54,6 +54,22 @@ PLIST
   chmod +x "$app_bundle/Contents/MacOS/LithePGApp"
 }
 
+make_startup_hardening_fixture() {
+  local fixture="$1"
+  mkdir -p "$fixture/script" "$fixture/dist" "$fixture/Sources/LithePGApp"
+  cp "$HELPER" "$fixture/script/sign_and_notarize.sh"
+  chmod +x "$fixture/script/sign_and_notarize.sh"
+  make_minimal_app_bundle "$fixture/dist/LithePG.app"
+  printf '<plist version="1.0"><dict/></plist>\n' >"$fixture/Sources/LithePGApp/LithePGApp.entitlements"
+
+  cat >"$fixture/script/package_verify.sh" <<'FAKE_VERIFY'
+#!/usr/bin/env bash
+set -euo pipefail
+printf 'fake package verified: %s\n' "${1##*/}"
+FAKE_VERIFY
+  chmod +x "$fixture/script/package_verify.sh"
+}
+
 run_helper_capture() {
   local output_file="$1"
   shift
@@ -87,6 +103,174 @@ codesign_sentinel='Developer ID Application: SHOULD_NOT_LEAK'
 notary_sentinel='NOTARY_PROFILE_SHOULD_NOT_LEAK'
 
 make_minimal_app_bundle "$app_bundle"
+
+# Executable startup must not route through PATH-selected bash before helper code runs.
+initial_bash_path_shadow_sentinel="SIGN_AND_NOTARIZE_INITIAL_BASH_PATH_SHADOW_SENTINEL_DO_NOT_PRINT"
+initial_bash_path_shadow_fixture="$fixture_root/initial-bash-path-shadow"
+initial_bash_path_shadow_fake_bin="$initial_bash_path_shadow_fixture/fake-bin"
+initial_bash_path_shadow_marker="$initial_bash_path_shadow_fixture/fake-bash-invoked"
+make_startup_hardening_fixture "$initial_bash_path_shadow_fixture"
+mkdir -p "$initial_bash_path_shadow_fake_bin"
+cat >"$initial_bash_path_shadow_fake_bin/bash" <<'FAKE_BASH'
+#!/bin/sh
+/usr/bin/printf '%s fake bash invoked\n' "${SIGN_AND_NOTARIZE_INITIAL_BASH_PATH_SHADOW_SENTINEL:-}" >&2
+/usr/bin/printf 'bash\n' >"${SIGN_AND_NOTARIZE_INITIAL_BASH_PATH_SHADOW_MARKER:?}"
+exit 97
+FAKE_BASH
+chmod +x "$initial_bash_path_shadow_fake_bin/bash"
+set +e
+(
+  cd "$initial_bash_path_shadow_fixture"
+  SIGN_AND_NOTARIZE_INITIAL_BASH_PATH_SHADOW_SENTINEL="$initial_bash_path_shadow_sentinel" \
+    SIGN_AND_NOTARIZE_INITIAL_BASH_PATH_SHADOW_MARKER="$initial_bash_path_shadow_marker" \
+    PATH="$initial_bash_path_shadow_fake_bin:$PATH" \
+    "$initial_bash_path_shadow_fixture/script/sign_and_notarize.sh" --help
+) >"$output_file" 2>&1
+initial_bash_path_shadow_status=$?
+set -e
+initial_bash_path_shadow_output="$(<"$output_file")"
+if [[ "$initial_bash_path_shadow_status" -ne 0 ]]; then
+  printf '%s\n' "$initial_bash_path_shadow_output" >&2
+  fail "sign/notarize executable invocation used PATH-selected bash"
+fi
+assert_contains "$initial_bash_path_shadow_output" "Usage: sign_and_notarize.sh [--dry-run] [app-bundle]"
+assert_not_contains "$initial_bash_path_shadow_output" "$initial_bash_path_shadow_sentinel"
+assert_not_contains "$initial_bash_path_shadow_output" "fake bash invoked"
+[[ ! -e "$initial_bash_path_shadow_marker" ]] || fail "sign/notarize executable invocation used PATH-selected bash: $(<"$initial_bash_path_shadow_marker")"
+
+# Bash and Perl startup environments, including exported shell functions, must be
+# sanitized before normal dry-run helper logic or the fake package verifier can observe them.
+startup_env_shadow_sentinel="SIGN_AND_NOTARIZE_STARTUP_ENV_SHADOW_SENTINEL_DO_NOT_PRINT"
+startup_env_shadow_fixture="$fixture_root/startup-env-shadow"
+startup_env_shadow_bash_env="$startup_env_shadow_fixture/poison.bash_env"
+startup_env_shadow_perl_lib="$startup_env_shadow_fixture/perl-lib"
+startup_env_shadow_bash_marker="$startup_env_shadow_fixture/bash-startup-invoked"
+startup_env_shadow_export_marker="$startup_env_shadow_fixture/exported-function-invoked"
+startup_env_shadow_perl_marker="$startup_env_shadow_fixture/perl-startup-invoked"
+startup_env_shadow_notary_zip="$startup_env_shadow_fixture/dist/LithePG-notary.zip"
+make_startup_hardening_fixture "$startup_env_shadow_fixture"
+mkdir -p "$startup_env_shadow_perl_lib"
+cat >"$startup_env_shadow_bash_env" <<'BASHENV'
+set() {
+  /usr/bin/printf '%s BASH_ENV set function invoked\n' "${SIGN_AND_NOTARIZE_STARTUP_ENV_SHADOW_SENTINEL:?}" >&2
+  /usr/bin/printf 'bash-env\n' >"${SIGN_AND_NOTARIZE_STARTUP_ENV_BASH_MARKER:?}"
+  exit 97
+}
+BASHENV
+cat >"$startup_env_shadow_perl_lib/SignAndNotarizeStartupPoison.pm" <<'PERLMOD'
+package SignAndNotarizeStartupPoison;
+BEGIN {
+  my $sentinel = $ENV{SIGN_AND_NOTARIZE_STARTUP_ENV_SHADOW_SENTINEL} // '';
+  my $marker = $ENV{SIGN_AND_NOTARIZE_STARTUP_ENV_PERL_MARKER} // '';
+  if ($marker ne '' && open(my $fh, '>', $marker)) {
+    print {$fh} "perl\n";
+    close $fh;
+  }
+  print STDERR "$sentinel Perl startup invoked\n";
+  exit 97;
+}
+1;
+PERLMOD
+set +e
+(
+  command cd "$startup_env_shadow_fixture"
+  set() {
+    /usr/bin/printf '%s exported set function invoked\n' "${SIGN_AND_NOTARIZE_STARTUP_ENV_SHADOW_SENTINEL:?}" >&2
+    /usr/bin/printf 'exported-set\n' >"${SIGN_AND_NOTARIZE_STARTUP_ENV_EXPORT_MARKER:?}"
+    exit 97
+  }
+  export -f set
+  SIGN_AND_NOTARIZE_STARTUP_ENV_SHADOW_SENTINEL="$startup_env_shadow_sentinel" \
+    SIGN_AND_NOTARIZE_STARTUP_ENV_BASH_MARKER="$startup_env_shadow_bash_marker" \
+    SIGN_AND_NOTARIZE_STARTUP_ENV_EXPORT_MARKER="$startup_env_shadow_export_marker" \
+    SIGN_AND_NOTARIZE_STARTUP_ENV_PERL_MARKER="$startup_env_shadow_perl_marker" \
+    BASH_ENV="$startup_env_shadow_bash_env" \
+    PERL5LIB="$startup_env_shadow_perl_lib" \
+    PERLLIB="$startup_env_shadow_perl_lib" \
+    PERL5OPT=-MSignAndNotarizeStartupPoison \
+    LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+    LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+    LITHEPG_NOTARY_ZIP="$startup_env_shadow_notary_zip" \
+    "$startup_env_shadow_fixture/script/sign_and_notarize.sh" --dry-run dist/LithePG.app
+) >"$output_file" 2>&1
+startup_env_shadow_status=$?
+set -e
+startup_env_shadow_output="$(<"$output_file")"
+if [[ "$startup_env_shadow_status" -ne 0 ]]; then
+  printf '%s\n' "$startup_env_shadow_output" >&2
+  fail "sign/notarize was affected by Bash/Perl startup environment shadowing"
+fi
+assert_contains "$startup_env_shadow_output" "fake package verified: LithePG.app"
+assert_contains "$startup_env_shadow_output" "Signing/notarization dry run OK"
+assert_contains "$startup_env_shadow_output" "Codesign identity: present (redacted)"
+assert_contains "$startup_env_shadow_output" "Notary profile: present (redacted)"
+assert_not_contains "$startup_env_shadow_output" "$startup_env_shadow_fixture"
+assert_not_contains "$startup_env_shadow_output" "$startup_env_shadow_sentinel"
+assert_not_contains "$startup_env_shadow_output" "BASH_ENV set function invoked"
+assert_not_contains "$startup_env_shadow_output" "exported set function invoked"
+assert_not_contains "$startup_env_shadow_output" "Perl startup invoked"
+assert_not_contains "$startup_env_shadow_output" "$codesign_sentinel"
+assert_not_contains "$startup_env_shadow_output" "$notary_sentinel"
+[[ ! -e "$startup_env_shadow_bash_marker" ]] || fail "sign/notarize invoked BASH_ENV-defined set function: $(<"$startup_env_shadow_bash_marker")"
+[[ ! -e "$startup_env_shadow_export_marker" ]] || fail "sign/notarize invoked exported set function: $(<"$startup_env_shadow_export_marker")"
+[[ ! -e "$startup_env_shadow_perl_marker" ]] || fail "sign/notarize honored Perl startup environment: $(<"$startup_env_shadow_perl_marker")"
+[[ ! -e "$startup_env_shadow_notary_zip" ]] || fail "startup-env dry run created notary zip: $startup_env_shadow_notary_zip"
+
+# Perl startup environment alone must trigger sanitization before the helper's
+# own /usr/bin/perl calls can observe PERL5OPT/PERL5LIB/PERLLIB.
+perl_startup_shadow_sentinel="SIGN_AND_NOTARIZE_PERL_STARTUP_SHADOW_SENTINEL_DO_NOT_PRINT"
+perl_startup_shadow_fixture="$fixture_root/perl-startup-shadow"
+perl_startup_shadow_perl_lib="$perl_startup_shadow_fixture/perl-lib"
+perl_startup_shadow_perl_marker="$perl_startup_shadow_fixture/perl-startup-invoked"
+perl_startup_shadow_notary_zip="$perl_startup_shadow_fixture/dist/LithePG-notary.zip"
+make_startup_hardening_fixture "$perl_startup_shadow_fixture"
+mkdir -p "$perl_startup_shadow_perl_lib"
+cat >"$perl_startup_shadow_perl_lib/SignAndNotarizePerlStartupPoison.pm" <<'PERLMOD'
+package SignAndNotarizePerlStartupPoison;
+BEGIN {
+  my $sentinel = $ENV{SIGN_AND_NOTARIZE_PERL_STARTUP_SHADOW_SENTINEL} // '';
+  my $marker = $ENV{SIGN_AND_NOTARIZE_PERL_STARTUP_MARKER} // '';
+  if ($marker ne '' && open(my $fh, '>', $marker)) {
+    print {$fh} "perl\n";
+    close $fh;
+  }
+  print STDERR "$sentinel Perl startup invoked\n";
+  exit 97;
+}
+1;
+PERLMOD
+set +e
+(
+  command cd "$perl_startup_shadow_fixture"
+  unset BASH_ENV
+  SIGN_AND_NOTARIZE_PERL_STARTUP_SHADOW_SENTINEL="$perl_startup_shadow_sentinel" \
+    SIGN_AND_NOTARIZE_PERL_STARTUP_MARKER="$perl_startup_shadow_perl_marker" \
+    PERL5LIB="$perl_startup_shadow_perl_lib" \
+    PERLLIB="$perl_startup_shadow_perl_lib" \
+    PERL5OPT=-MSignAndNotarizePerlStartupPoison \
+    LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+    LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+    LITHEPG_NOTARY_ZIP="$perl_startup_shadow_notary_zip" \
+    "$perl_startup_shadow_fixture/script/sign_and_notarize.sh" --dry-run dist/LithePG.app
+) >"$output_file" 2>&1
+perl_startup_shadow_status=$?
+set -e
+perl_startup_shadow_output="$(<"$output_file")"
+if [[ "$perl_startup_shadow_status" -ne 0 ]]; then
+  printf '%s\n' "$perl_startup_shadow_output" >&2
+  fail "sign/notarize was affected by Perl-only startup environment shadowing"
+fi
+assert_contains "$perl_startup_shadow_output" "fake package verified: LithePG.app"
+assert_contains "$perl_startup_shadow_output" "Signing/notarization dry run OK"
+assert_contains "$perl_startup_shadow_output" "Codesign identity: present (redacted)"
+assert_contains "$perl_startup_shadow_output" "Notary profile: present (redacted)"
+assert_not_contains "$perl_startup_shadow_output" "$perl_startup_shadow_fixture"
+assert_not_contains "$perl_startup_shadow_output" "$perl_startup_shadow_sentinel"
+assert_not_contains "$perl_startup_shadow_output" "Perl startup invoked"
+assert_not_contains "$perl_startup_shadow_output" "$codesign_sentinel"
+assert_not_contains "$perl_startup_shadow_output" "$notary_sentinel"
+[[ ! -e "$perl_startup_shadow_perl_marker" ]] || fail "sign/notarize honored Perl-only startup environment: $(<"$perl_startup_shadow_perl_marker")"
+[[ ! -e "$perl_startup_shadow_notary_zip" ]] || fail "perl-startup dry run created notary zip: $perl_startup_shadow_notary_zip"
 
 help_cat_path_shadow_sentinel="SIGN_AND_NOTARIZE_HELP_CAT_PATH_SHADOW_SHOULD_NOT_RUN"
 help_cat_path_shadow_fake_bin="$fixture_root/help-cat-path-shadow-fake-bin"

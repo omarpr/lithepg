@@ -1588,3 +1588,15 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-01-package-verify-startup-env-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 00:40 EDT — v1.0 sign/notarize startup-env hardening
+
+- Hardened `script/sign_and_notarize.sh` executable startup by switching from PATH-selected `#!/usr/bin/env bash` to absolute privileged Bash (`#!/bin/bash -p`) so copied executable invocation cannot be routed through a fake `bash` on `PATH` before helper code runs.
+- Added startup sanitization before normal signing/notary logic: probes run via `/usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl`, sanitize-needed includes nonempty `BASH_ENV`, `BASH_FUNC_*`, and Perl startup env, the re-exec deletes `BASH_ENV`, `BASH_FUNC_*`, `PERL5OPT`, `PERL5LIB`, and `PERLLIB`, and the helper fails closed if unsanitized startup env remains.
+- Added strict-TDD coverage in `script/test_sign_and_notarize.sh` for copied-helper executable fake-`bash` interception, `BASH_ENV`-defined `set`, exported `set`, and Perl startup env poisoning of the helper's own `/usr/bin/perl` calls. Tests use dry-run/help fixtures with redacted codesign identity/notary values only.
+- RED verification: `bash script/test_sign_and_notarize.sh` failed first with `SIGN_AND_NOTARIZE_INITIAL_BASH_PATH_SHADOW_SENTINEL_DO_NOT_PRINT fake bash invoked` and `test_sign_and_notarize failed: sign/notarize executable invocation used PATH-selected bash` before production hardening.
+- GREEN verification: `bash script/test_sign_and_notarize.sh`, `bash script/test_package_verify.sh`, `bash script/test_create_release_zip.sh`, `bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-004834/`; metrics: shell readiness 132.16 ms, connected cold start 228.67 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.050 ms, dogfood query median overhead 0.044 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED; pre-commit JSON review passed with no security concerns or logic errors.
+- Evidence artifact: `screenshots/evidence/2026-06-02-sign-notarize-startup-env-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
