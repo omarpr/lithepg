@@ -15,6 +15,10 @@ elif /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
 fi
 
 if [[ "$startup_env_sanitize_needed" == "1" ]]; then
+  if [[ "${LITHEPG_SIGN_AND_NOTARIZE_STARTUP_ENV_SANITIZED:-}" == "1" ]]; then
+    /usr/bin/printf 'unsanitized startup environment remains after sign_and_notarize sanitizer\n' >&2
+    exit 2
+  fi
   /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     use strict;
     use warnings;
