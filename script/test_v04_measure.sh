@@ -473,6 +473,42 @@ assert_contains "$startup_fail_closed_output" "unsanitized startup environment r
 assert_not_contains "$startup_fail_closed_output" "fake app build passed"
 assert_not_contains "$startup_fail_closed_output" '"outDir":'
 
+empty_bash_env_fail_closed_private_sentinel="V04_MEASURE_EMPTY_BASH_ENV_PRIVATE_SENTINEL_SHOULD_NOT_LEAK"
+empty_bash_env_fail_closed_out_dir="$fixture_root/out/empty-bash-env-fail-closed-v04-measure"
+empty_bash_env_fail_closed_swift_log="$fixture_root/empty-bash-env-fail-closed-swift.log"
+set +e
+(
+  cd "$fixture_root"
+  PATH="$startup_clean_bin:$PATH" \
+    FAKE_SWIFT_LOG="$empty_bash_env_fail_closed_swift_log" \
+    FAKE_DOGFOOD_LOG="$marker_dir/dogfood-empty-bash-env-fail-closed" \
+    LITHEPG_MEASURE_OUT_DIR="$empty_bash_env_fail_closed_out_dir" \
+    LITHEPG_V04_MEASURE_STARTUP_ENV_SANITIZED=1 \
+    V04_MEASURE_EMPTY_BASH_ENV_PRIVATE_SENTINEL="$empty_bash_env_fail_closed_private_sentinel" \
+    BASH_ENV="" \
+    "$fixture_root/script/v04_measure.sh"
+) >"$output_file" 2>&1
+empty_bash_env_fail_closed_status=$?
+set -e
+empty_bash_env_fail_closed_output="$(<"$output_file")"
+if [[ "$empty_bash_env_fail_closed_status" -ne 2 ]]; then
+  /usr/bin/printf '%s\n' "$empty_bash_env_fail_closed_output" >&2
+  fail "v04_measure.sh sanitizer marker with exported empty BASH_ENV should exit 2, got $empty_bash_env_fail_closed_status"
+fi
+if [[ "$empty_bash_env_fail_closed_output" != "unsanitized startup environment remains after v04_measure sanitizer" ]]; then
+  /usr/bin/printf '%s\n' "$empty_bash_env_fail_closed_output" >&2
+  fail "v04_measure.sh sanitizer empty BASH_ENV fail-closed output was not generic and redacted"
+fi
+assert_not_contains "$empty_bash_env_fail_closed_output" "$empty_bash_env_fail_closed_private_sentinel"
+assert_not_contains "$empty_bash_env_fail_closed_output" "fake dogfood postgres ready"
+assert_not_contains "$empty_bash_env_fail_closed_output" "fake app build passed"
+assert_not_contains "$empty_bash_env_fail_closed_output" "fake bench build passed"
+assert_not_contains "$empty_bash_env_fail_closed_output" '"outDir":'
+[[ ! -s "$empty_bash_env_fail_closed_swift_log" ]] || fail "sanitizer empty BASH_ENV fail-closed invoked fake swift: $(<"$empty_bash_env_fail_closed_swift_log")"
+[[ ! -s "$marker_dir/dogfood-empty-bash-env-fail-closed" ]] || fail "sanitizer empty BASH_ENV fail-closed invoked fake dogfood: $(<"$marker_dir/dogfood-empty-bash-env-fail-closed")"
+[[ ! -e "$empty_bash_env_fail_closed_out_dir" ]] || fail "sanitizer empty BASH_ENV fail-closed created out dir: $empty_bash_env_fail_closed_out_dir"
+[[ ! -e "$empty_bash_env_fail_closed_out_dir/summary.json" ]] || fail "sanitizer empty BASH_ENV fail-closed wrote summary.json"
+
 if ! run_helper_capture "$output_file" "$fixture_root" "$fake_bin" "$fake_swift_log" "$out_dir" "$outside_cwd" "$marker_dir" "$command_sentinel" "$builtin_sentinel" "$cd_sentinel" "$pwd_sentinel" "$docker_sentinel" "$kill_sentinel" "$sleep_sentinel"; then
   helper_output="$(<"$output_file")"
   /usr/bin/printf '%s\n' "$helper_output" >&2

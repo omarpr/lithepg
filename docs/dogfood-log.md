@@ -1848,3 +1848,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-02-dogfood-postgres-empty-bash-env-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 11:47 EDT — v0.4 measurement empty BASH_ENV fail-closed hardening
+
+- Hardened `script/v04_measure.sh` so an empty-but-present `BASH_ENV` is treated as dirty startup environment, matching the current release-helper sanitizer posture. Sanitizer-marked reentry with any remaining `BASH_ENV` now fails closed with exit 2 before dogfood setup, Swift builds, benchmark runs, metrics output, or summary generation can run.
+- Added strict-TDD coverage in `script/test_v04_measure.sh` for direct helper invocation with `LITHEPG_V04_MEASURE_STARTUP_ENV_SANITIZED=1` and `BASH_ENV=""`; the helper must emit only the generic v04_measure sanitizer failure, avoid synthetic private sentinel leakage, skip fake dogfood/app/bench work, and create no measurement output directory or `summary.json`.
+- RED verification: `bash script/test_v04_measure.sh` failed first because the old helper proceeded into fake dogfood setup instead of failing closed for empty `BASH_ENV` after the sanitizer marker.
+- GREEN verification: `bash script/test_v04_measure.sh`, `bash -n script/v04_measure.sh script/test_v04_measure.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-114721/`; metrics: shell readiness 132.73 ms, connected cold start 282.45 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.032 ms, dogfood query median overhead 0.026 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-02-v04-measure-empty-bash-env-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.

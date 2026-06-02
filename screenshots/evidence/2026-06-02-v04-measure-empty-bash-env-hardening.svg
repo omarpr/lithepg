@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v0.4 measurement helper empty BASH_ENV hardening evidence</title>
+  <desc id="desc">Visual evidence for the commit hardening script/v04_measure.sh against empty but present BASH_ENV after sanitizer-marked reentry.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#101827"/>
+      <stop offset="1" stop-color="#182135"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 34px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #f8fafc; }
+      .subtitle { font: 500 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #cbd5e1; }
+      .card-title { font: 700 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #e2e8f0; }
+      .label { font: 600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #94a3b8; }
+      .value { font: 600 17px Menlo, Monaco, Consolas, monospace; fill: #f8fafc; }
+      .ok { fill: #34d399; }
+      .warn { fill: #fbbf24; }
+      .muted { fill: #94a3b8; }
+      .small { font: 500 13px Menlo, Monaco, Consolas, monospace; fill: #cbd5e1; }
+    </style>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <rect x="40" y="36" width="1200" height="648" rx="28" fill="#0f172a" stroke="#334155" stroke-width="2"/>
+
+  <text x="76" y="92" class="title">v04_measure empty BASH_ENV fail-closed hardening</text>
+  <text x="76" y="122" class="subtitle">2026-06-02 11:47 EDT · LithePG main · no credentials, signing, release upload, tag, or cron changes</text>
+
+  <rect x="76" y="158" width="548" height="210" rx="18" fill="#111c30" stroke="#273548"/>
+  <text x="104" y="196" class="card-title">Changed behavior</text>
+  <text x="104" y="236" class="label">script/v04_measure.sh</text>
+  <text x="104" y="266" class="value">BASH_ENV key presence ⇒ dirty startup env</text>
+  <text x="104" y="306" class="label">sanitizer-marked reentry</text>
+  <text x="104" y="336" class="value">exit 2 before dogfood/build/bench/output</text>
+
+  <rect x="656" y="158" width="504" height="210" rx="18" fill="#111c30" stroke="#273548"/>
+  <text x="684" y="196" class="card-title">TDD receipt</text>
+  <circle cx="696" cy="235" r="7" class="warn"/><text x="716" y="241" class="value">RED: old helper proceeded instead of exit 2</text>
+  <circle cx="696" cy="277" r="7" class="ok"/><text x="716" y="283" class="value">GREEN: script/test_v04_measure.sh passed</text>
+  <circle cx="696" cy="319" r="7" class="ok"/><text x="716" y="325" class="value">Generic output; no sentinel/work/output leak</text>
+
+  <rect x="76" y="400" width="548" height="194" rx="18" fill="#111c30" stroke="#273548"/>
+  <text x="104" y="438" class="card-title">Verification</text>
+  <text x="104" y="478" class="small">✓ bash script/test_v04_measure.sh</text>
+  <text x="104" y="508" class="small">✓ bash -n script/v04_measure.sh script/test_v04_measure.sh</text>
+  <text x="104" y="538" class="small">✓ git diff --check</text>
+  <text x="104" y="568" class="small">✓ swift build &amp;&amp; swift test — 127 tests / 20 suites</text>
+
+  <rect x="656" y="400" width="504" height="194" rx="18" fill="#111c30" stroke="#273548"/>
+  <text x="684" y="438" class="card-title">Dogfood check · .build/dogfood-checks/20260602-114721</text>
+  <text x="684" y="478" class="small">✓ default Swift tests · live dogfood slice · v04 measurement</text>
+  <text x="684" y="508" class="small">shell 132.73 ms · connected cold start 282.45 ms</text>
+  <text x="684" y="538" class="small">raw 21.379 MiB · strip-probe 11.980 MiB</text>
+  <text x="684" y="568" class="small">SELECT 1 overhead 0.032 ms · dogfood overhead 0.026 ms</text>
+
+  <text x="76" y="636" class="subtitle">Independent reviews: spec compliance PASS · code quality/security APPROVED</text>
+</svg>
