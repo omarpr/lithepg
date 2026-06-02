@@ -1899,3 +1899,11 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED after the `RUBYGEMS_GEMDEPS` hardening fix.
 - Evidence artifact: `screenshots/evidence/2026-06-02-v10-ruby-startup-env-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 14:35 EDT — v1.0 public status metrics sync
+
+- Refreshed `README.md`, `CHANGELOG.md`, and `docs/releases/v1.0-draft.md` from the latest committed local dogfood gate at `.build/dogfood-checks/20260602-141646/` on `main` at `d4f402a`.
+- Safe metrics synced: 134.11 ms shell readiness; 248.31 ms connected cold start; 21.379 MiB raw release executable; 11.980 MiB strip-probe executable; 0.065 ms median `SELECT 1` overhead; 0.051 ms median dogfood-query overhead.
+- Gate statuses synced: `defaultSwiftTest`, `liveSwiftTest`, and `v04Measure` passed.
+- Evidence artifact: `screenshots/evidence/2026-06-02-v10-public-status-metrics-sync.svg`.
+- This docs-only status sync attempted no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication.
