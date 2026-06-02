@@ -140,6 +140,9 @@ remote_opt_in_output="$(mktemp)"
 remote_v05_missing_output="$(mktemp)"
 status_failure_output="$(mktemp)"
 grep_error_output="$(mktemp)"
+initial_bash_path_shadow_output="$(mktemp)"
+startup_env_shadow_output="$(mktemp)"
+startup_fail_closed_output="$(mktemp)"
 path_shadowed_dirname_output="$(mktemp)"
 root_resolution_shadow_output="$(mktemp)"
 path_shadowed_rm_output="$(mktemp)"
@@ -298,6 +301,7 @@ rm -f "$missing_artifact_zip"
 fake_git_dir="$(mktemp -d)"
 fake_git_marker="$fake_git_dir/ls-remote-called"
 default_security_docs_repo="$(mktemp -d)"
+startup_hardening_root="$(mktemp -d)"
 root_resolution_shadow_fake_bin="$(mktemp -d)"
 root_resolution_shadow_marker_dir="$(mktemp -d)"
 cleanup() {
@@ -379,6 +383,9 @@ cleanup() {
     "$remote_v05_missing_output" \
     "$status_failure_output" \
     "$grep_error_output" \
+    "$initial_bash_path_shadow_output" \
+    "$startup_env_shadow_output" \
+    "$startup_fail_closed_output" \
     "$path_shadowed_dirname_output" \
     "$root_resolution_shadow_output" \
     "$path_shadowed_rm_output" \
@@ -503,7 +510,7 @@ cleanup() {
     "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$startup_hardening_root" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
@@ -2468,6 +2475,125 @@ cp "$HELPER" "$default_security_docs_helper"
 chmod +x "$default_security_docs_helper"
 printf 'Report vulnerabilities using the configured private security advisory flow.\n' >"$default_security_docs_repo/SECURITY.md"
 printf 'Report vulnerabilities to [security contact pending].\n' >"$default_security_docs_repo/docs/SECURITY.md"
+
+# Executable startup must not route through PATH-selected bash before helper code runs.
+initial_bash_path_shadow_sentinel="V10_RELEASE_GATE_INITIAL_BASH_PATH_SHADOW_SENTINEL_DO_NOT_PRINT"
+initial_bash_path_shadow_fake_bin="$startup_hardening_root/initial-bash-path-shadow/fake-bin"
+initial_bash_path_shadow_marker="$startup_hardening_root/initial-bash-path-shadow/fake-bash-invoked"
+mkdir -p "$initial_bash_path_shadow_fake_bin"
+cat >"$initial_bash_path_shadow_fake_bin/bash" <<'FAKE_BASH'
+#!/bin/sh
+/usr/bin/printf '%s fake bash invoked\n' "${V10_RELEASE_GATE_INITIAL_BASH_PATH_SHADOW_SENTINEL:-}" >&2
+/usr/bin/printf 'bash\n' >"${V10_RELEASE_GATE_INITIAL_BASH_PATH_SHADOW_MARKER:?}"
+exit 97
+FAKE_BASH
+chmod +x "$initial_bash_path_shadow_fake_bin/bash"
+set +e
+(
+  cd "$default_security_docs_repo"
+  env -i \
+    PATH="$initial_bash_path_shadow_fake_bin:$fake_path" \
+    V10_RELEASE_GATE_INITIAL_BASH_PATH_SHADOW_SENTINEL="$initial_bash_path_shadow_sentinel" \
+    V10_RELEASE_GATE_INITIAL_BASH_PATH_SHADOW_MARKER="$initial_bash_path_shadow_marker" \
+    "$default_security_docs_helper" --help
+) >"$initial_bash_path_shadow_output" 2>&1
+initial_bash_path_shadow_status=$?
+set -e
+initial_bash_path_shadow_text="$(<"$initial_bash_path_shadow_output")"
+if [[ "$initial_bash_path_shadow_status" -ne 0 ]]; then
+  printf '%s\n' "$initial_bash_path_shadow_text" >&2
+  fail "v10 release gate executable invocation used PATH-selected bash"
+fi
+assert_contains "$initial_bash_path_shadow_text" "Usage: script/v10_release_gate.sh"
+assert_not_contains "$initial_bash_path_shadow_text" "$initial_bash_path_shadow_sentinel"
+assert_not_contains "$initial_bash_path_shadow_text" "fake bash invoked"
+[[ ! -e "$initial_bash_path_shadow_marker" ]] || fail "v10 release gate executable invocation used PATH-selected bash: $(<"$initial_bash_path_shadow_marker")"
+
+# Bash and Perl startup environments, including exported shell functions, must be
+# sanitized before normal helper logic or child probes can observe them.
+startup_env_shadow_sentinel="V10_RELEASE_GATE_STARTUP_ENV_SHADOW_SENTINEL_DO_NOT_PRINT"
+startup_env_shadow_bash_env="$startup_hardening_root/startup-env-shadow/poison.bash_env"
+startup_env_shadow_perl_lib="$startup_hardening_root/startup-env-shadow/perl-lib"
+startup_env_shadow_bash_marker="$startup_hardening_root/startup-env-shadow/bash-startup-invoked"
+startup_env_shadow_export_marker="$startup_hardening_root/startup-env-shadow/exported-function-invoked"
+startup_env_shadow_perl_marker="$startup_hardening_root/startup-env-shadow/perl-startup-invoked"
+mkdir -p "$(dirname "$startup_env_shadow_bash_env")" "$startup_env_shadow_perl_lib"
+cat >"$startup_env_shadow_bash_env" <<'BASHENV'
+set() {
+  /usr/bin/printf '%s BASH_ENV set function invoked\n' "${V10_RELEASE_GATE_STARTUP_ENV_SHADOW_SENTINEL:?}" >&2
+  /usr/bin/printf 'bash-env\n' >"${V10_RELEASE_GATE_STARTUP_ENV_BASH_MARKER:?}"
+  exit 97
+}
+BASHENV
+cat >"$startup_env_shadow_perl_lib/V10ReleaseGateStartupPoison.pm" <<'PERLMOD'
+package V10ReleaseGateStartupPoison;
+BEGIN {
+  my $sentinel = $ENV{V10_RELEASE_GATE_STARTUP_ENV_SHADOW_SENTINEL} // '';
+  my $marker = $ENV{V10_RELEASE_GATE_STARTUP_ENV_PERL_MARKER} // '';
+  if ($marker ne '' && open(my $fh, '>', $marker)) {
+    print {$fh} "perl\n";
+    close $fh;
+  }
+  print STDERR "$sentinel Perl startup invoked\n";
+  exit 97;
+}
+1;
+PERLMOD
+set +e
+(
+  command cd "$default_security_docs_repo"
+  set() {
+    /usr/bin/printf '%s exported set function invoked\n' "${V10_RELEASE_GATE_STARTUP_ENV_SHADOW_SENTINEL:?}" >&2
+    /usr/bin/printf 'exported-set\n' >"${V10_RELEASE_GATE_STARTUP_ENV_EXPORT_MARKER:?}"
+    exit 97
+  }
+  export -f set
+  PATH="$fake_path" \
+    FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+    V10_RELEASE_GATE_STARTUP_ENV_SHADOW_SENTINEL="$startup_env_shadow_sentinel" \
+    V10_RELEASE_GATE_STARTUP_ENV_BASH_MARKER="$startup_env_shadow_bash_marker" \
+    V10_RELEASE_GATE_STARTUP_ENV_EXPORT_MARKER="$startup_env_shadow_export_marker" \
+    V10_RELEASE_GATE_STARTUP_ENV_PERL_MARKER="$startup_env_shadow_perl_marker" \
+    BASH_ENV="$startup_env_shadow_bash_env" \
+    PERL5LIB="$startup_env_shadow_perl_lib" \
+    PERLLIB="$startup_env_shadow_perl_lib" \
+    PERL5OPT=-MV10ReleaseGateStartupPoison \
+    "$default_security_docs_helper"
+) >"$startup_env_shadow_output" 2>&1
+startup_env_shadow_status=$?
+set -e
+startup_env_shadow_text="$(<"$startup_env_shadow_output")"
+if [[ "$startup_env_shadow_status" -eq 0 ]]; then
+  fail "v10 release gate unexpectedly passed with required inputs missing under dirty startup env"
+fi
+assert_contains "$startup_env_shadow_text" "v1.0 publication blocked"
+assert_contains "$startup_env_shadow_text" "LITHEPG_CODESIGN_IDENTITY: missing"
+assert_not_contains "$startup_env_shadow_text" "$startup_env_shadow_sentinel"
+assert_not_contains "$startup_env_shadow_text" "BASH_ENV set function invoked"
+assert_not_contains "$startup_env_shadow_text" "exported set function invoked"
+assert_not_contains "$startup_env_shadow_text" "Perl startup invoked"
+[[ ! -e "$startup_env_shadow_bash_marker" ]] || fail "v10 release gate invoked BASH_ENV-defined set function: $(<"$startup_env_shadow_bash_marker")"
+[[ ! -e "$startup_env_shadow_export_marker" ]] || fail "v10 release gate invoked exported set function: $(<"$startup_env_shadow_export_marker")"
+[[ ! -e "$startup_env_shadow_perl_marker" ]] || fail "v10 release gate honored Perl startup environment: $(<"$startup_env_shadow_perl_marker")"
+
+# If the sanitizer marker is already set and dirty startup env remains, fail closed.
+set +e
+(
+  cd "$default_security_docs_repo"
+  env -i \
+    PATH="$fake_path" \
+    LITHEPG_V10_RELEASE_GATE_STARTUP_ENV_SANITIZED=1 \
+    PERL5OPT=-MV10ReleaseGateSanitizerShouldFailClosed \
+    "$default_security_docs_helper" --help
+) >"$startup_fail_closed_output" 2>&1
+startup_fail_closed_status=$?
+set -e
+startup_fail_closed_text="$(<"$startup_fail_closed_output")"
+if [[ "$startup_fail_closed_status" -eq 0 ]]; then
+  fail "v10 release gate startup sanitizer did not fail closed when sanitized marker still had dirty env"
+fi
+assert_contains "$startup_fail_closed_text" "unsanitized startup environment remains after v10_release_gate sanitizer"
+assert_not_contains "$startup_fail_closed_text" "Usage: script/v10_release_gate.sh"
 
 if run_gate_capture "$path_shadowed_grep_output" env -i \
   PATH="$fake_path" \

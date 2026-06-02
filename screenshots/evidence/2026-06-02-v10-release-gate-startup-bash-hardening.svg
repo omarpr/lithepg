@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="740" viewBox="0 0 1200 740" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release gate startup Bash hardening evidence</title>
+  <desc id="desc">Visual evidence for the v10 release gate startup hardening commit, showing TDD red/green, verification, review, and dogfood baseline blocker status.</desc>
+  <rect width="1200" height="740" fill="#0b1020"/>
+  <rect x="32" y="28" width="1136" height="684" rx="18" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="60" y="76" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="26" font-weight="700">LithePG evidence — v10 release gate startup hardening</text>
+  <text x="60" y="112" fill="#94a3b8" font-family="Menlo, Consolas, monospace" font-size="16">2026-06-02 03:01 EDT • local cron output only • no signing/notarization/upload/tag/publication</text>
+
+  <rect x="60" y="144" width="1080" height="118" rx="12" fill="#1f2937" stroke="#475569"/>
+  <text x="84" y="178" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">RED</text>
+  <text x="84" y="207" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="15">bash script/test_v10_release_gate.sh</text>
+  <text x="84" y="232" fill="#fecaca" font-family="Menlo, Consolas, monospace" font-size="15">V10_RELEASE_GATE_INITIAL_BASH_PATH_SHADOW_SENTINEL_DO_NOT_PRINT fake bash invoked</text>
+  <text x="84" y="252" fill="#fecaca" font-family="Menlo, Consolas, monospace" font-size="15">test_v10_release_gate failed: executable invocation used PATH-selected bash</text>
+
+  <rect x="60" y="286" width="1080" height="158" rx="12" fill="#102a1f" stroke="#22c55e"/>
+  <text x="84" y="320" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">GREEN / VERIFICATION</text>
+  <text x="84" y="349" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="15">bash script/test_v10_release_gate.sh → test_v10_release_gate passed</text>
+  <text x="84" y="374" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="15">bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh → passed</text>
+  <text x="84" y="399" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="15">git diff --check → passed • swift build → passed • swift test → 127 tests / 20 suites passed</text>
+  <text x="84" y="424" fill="#dcfce7" font-family="Menlo, Consolas, monospace" font-size="15">./script/v10_release_gate.sh --check-remote → safely blocked on expected publication inputs</text>
+
+  <rect x="60" y="468" width="1080" height="108" rx="12" fill="#1e1b4b" stroke="#818cf8"/>
+  <text x="84" y="502" fill="#c7d2fe" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">REVIEW</text>
+  <text x="84" y="531" fill="#e0e7ff" font-family="Menlo, Consolas, monospace" font-size="15">Spec compliance reviewer: PASS</text>
+  <text x="84" y="556" fill="#e0e7ff" font-family="Menlo, Consolas, monospace" font-size="15">Code quality/security reviewer: APPROVED — no critical/important/minor issues</text>
+
+  <rect x="60" y="600" width="1080" height="70" rx="12" fill="#422006" stroke="#f59e0b"/>
+  <text x="84" y="630" fill="#fde68a" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">BASELINE DOGFOOD NOTE</text>
+  <text x="84" y="655" fill="#fef3c7" font-family="Menlo, Consolas, monospace" font-size="15">script/dogfood_check.sh live slice failed on HEAD and with this diff; manual live slice passed after container warmup.</text>
+</svg>

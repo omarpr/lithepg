@@ -1624,3 +1624,16 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED after the fail-closed follow-up.
 - Evidence artifact: `screenshots/evidence/2026-06-02-build-run-startup-bash-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 03:01 EDT — v1.0 release gate executable startup Bash hardening
+
+- Hardened `script/v10_release_gate.sh` executable startup by switching from PATH-selected `#!/usr/bin/env bash` to absolute privileged Bash (`#!/bin/bash -p`), so direct helper invocation cannot be routed through a fake `bash` on `PATH` before publication-preflight logic begins.
+- Added startup sanitization before normal v1.0 gate logic: nonempty `BASH_ENV`, exported Bash functions (`BASH_FUNC_*`), and Perl startup env (`PERL5OPT`, `PERL5LIB`, `PERLLIB`) trigger a `/bin/bash -p` re-exec with those entries removed; if dirty startup env remains with the sanitizer marker already set, the helper fails closed instead of continuing or looping.
+- Added strict-TDD coverage in `script/test_v10_release_gate.sh` for copied-helper executable invocation with fake PATH-selected `bash`, BASH_ENV-defined and exported `set` function shadows, Perl startup poisoning of helper probes, and the dirty-env-after-sanitizer fail-closed path.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `V10_RELEASE_GATE_INITIAL_BASH_PATH_SHADOW_SENTINEL_DO_NOT_PRINT fake bash invoked` and `test_v10_release_gate failed: v10 release gate executable invocation used PATH-selected bash` before production hardening.
+- GREEN verification: `bash script/test_v10_release_gate.sh`, `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Fast release preflight verification: `./script/v10_release_gate.sh --check-remote` remained safely blocked on expected publication inputs/placeholders while confirming `origin` has `v0.5` and does not have `v1.0`.
+- Release-impact dogfood note: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` failed in the live Swift slice both with this diff (`.build/dogfood-checks/20260602-025850/`, `.build/dogfood-checks/20260602-030007/`) and on a stashed clean HEAD baseline (`.build/dogfood-checks/20260602-030124/`). The same live Swift slice passed manually after the dogfood container was warm, so this is recorded as a pre-existing/transient dogfood-check startup race to fix separately, not a v10 release-gate regression.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-02-v10-release-gate-startup-bash-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
