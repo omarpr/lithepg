@@ -271,6 +271,44 @@ assert_not_contains "$startup_env_sanitizer_fail_closed_output" "$notary_sentine
 [[ ! -e "$startup_env_sanitizer_fail_closed_bash_marker" ]] || fail "sign/notarize invoked BASH_ENV-defined set function: $(<"$startup_env_sanitizer_fail_closed_bash_marker")"
 [[ ! -e "$startup_env_sanitizer_fail_closed_export_marker" ]] || fail "sign/notarize invoked exported set function: $(<"$startup_env_sanitizer_fail_closed_export_marker")"
 
+# An empty-but-present BASH_ENV is still dirty startup environment. If the
+# sanitizer marker is already set, the copied helper must fail closed before
+# normal usage/package/dry-run output.
+startup_env_sanitizer_empty_bash_env_fail_closed_sentinel="SIGN_AND_NOTARIZE_EMPTY_BASH_ENV_FAIL_CLOSED_SENTINEL_DO_NOT_PRINT"
+startup_env_sanitizer_empty_bash_env_fail_closed_fixture="$fixture_root/startup-env-sanitizer-empty-bash-env-fail-closed"
+startup_env_sanitizer_empty_bash_env_fail_closed_notary_zip="$startup_env_sanitizer_empty_bash_env_fail_closed_fixture/dist/LithePG-notary.zip"
+make_startup_hardening_fixture "$startup_env_sanitizer_empty_bash_env_fail_closed_fixture"
+set +e
+(
+  command cd "$startup_env_sanitizer_empty_bash_env_fail_closed_fixture"
+  SIGN_AND_NOTARIZE_EMPTY_BASH_ENV_FAIL_CLOSED_SENTINEL="$startup_env_sanitizer_empty_bash_env_fail_closed_sentinel" \
+    LITHEPG_CODESIGN_IDENTITY="$codesign_sentinel" \
+    LITHEPG_NOTARY_PROFILE="$notary_sentinel" \
+    LITHEPG_NOTARY_ZIP="$startup_env_sanitizer_empty_bash_env_fail_closed_notary_zip" \
+    LITHEPG_SIGN_AND_NOTARIZE_STARTUP_ENV_SANITIZED=1 \
+    BASH_ENV="" \
+    "$startup_env_sanitizer_empty_bash_env_fail_closed_fixture/script/sign_and_notarize.sh" --dry-run dist/LithePG.app
+) >"$output_file" 2>&1
+startup_env_sanitizer_empty_bash_env_fail_closed_status=$?
+set -e
+startup_env_sanitizer_empty_bash_env_fail_closed_output="$(<"$output_file")"
+if [[ "$startup_env_sanitizer_empty_bash_env_fail_closed_status" -ne 2 ]]; then
+  printf '%s\n' "$startup_env_sanitizer_empty_bash_env_fail_closed_output" >&2
+  fail "sign/notarize sanitizer marker with empty BASH_ENV should exit 2, got $startup_env_sanitizer_empty_bash_env_fail_closed_status"
+fi
+if [[ "$startup_env_sanitizer_empty_bash_env_fail_closed_output" != "unsanitized startup environment remains after sign_and_notarize sanitizer" ]]; then
+  printf '%s\n' "$startup_env_sanitizer_empty_bash_env_fail_closed_output" >&2
+  fail "sign/notarize empty BASH_ENV fail-closed output was not exactly generic and redacted"
+fi
+assert_not_contains "$startup_env_sanitizer_empty_bash_env_fail_closed_output" "Usage: sign_and_notarize.sh"
+assert_not_contains "$startup_env_sanitizer_empty_bash_env_fail_closed_output" "fake package verified:"
+assert_not_contains "$startup_env_sanitizer_empty_bash_env_fail_closed_output" "Signing/notarization dry run OK"
+assert_not_contains "$startup_env_sanitizer_empty_bash_env_fail_closed_output" "$startup_env_sanitizer_empty_bash_env_fail_closed_fixture"
+assert_not_contains "$startup_env_sanitizer_empty_bash_env_fail_closed_output" "$startup_env_sanitizer_empty_bash_env_fail_closed_sentinel"
+assert_not_contains "$startup_env_sanitizer_empty_bash_env_fail_closed_output" "$codesign_sentinel"
+assert_not_contains "$startup_env_sanitizer_empty_bash_env_fail_closed_output" "$notary_sentinel"
+[[ ! -e "$startup_env_sanitizer_empty_bash_env_fail_closed_notary_zip" ]] || fail "sanitizer fail-closed dry run created notary zip: $startup_env_sanitizer_empty_bash_env_fail_closed_notary_zip"
+
 # Perl startup environment alone must trigger sanitization before the helper's
 # own /usr/bin/perl calls can observe PERL5OPT/PERL5LIB/PERLLIB.
 perl_startup_shadow_sentinel="SIGN_AND_NOTARIZE_PERL_STARTUP_SHADOW_SENTINEL_DO_NOT_PRINT"

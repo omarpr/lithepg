@@ -1826,3 +1826,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-02-run-dogfood-app-empty-bash-env-hardening.svg`.
 - No real app launch outside the fake test fixture, signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 11:01 EDT — v1.0 sign/notarize empty BASH_ENV fail-closed hardening
+
+- Hardened `script/sign_and_notarize.sh` so an empty-but-present `BASH_ENV` is treated as dirty startup environment, matching the current release-helper sanitizer posture. Sanitizer-marked reentry with any remaining `BASH_ENV` now fails closed with exit 2 before package verification, dry-run planning, signing, zipping, notarization, stapling, or validation can run.
+- Added strict-TDD coverage in `script/test_sign_and_notarize.sh` for direct copied-helper invocation with `LITHEPG_SIGN_AND_NOTARIZE_STARTUP_ENV_SANITIZED=1` and `BASH_ENV=""`; the helper must emit the exact generic sanitizer failure, avoid usage/fake package/dry-run output, avoid sentinel/codesign/notary/fixture-path leakage, and create no notary zip.
+- RED verification: `bash script/test_sign_and_notarize.sh` failed first because the old helper continued through fake package verification and dry-run output instead of failing closed for empty `BASH_ENV` after the sanitizer marker.
+- GREEN verification: `bash script/test_sign_and_notarize.sh`, adjacent release-helper tests (`test_create_release_zip`, `test_package_verify`), `bash -n script/sign_and_notarize.sh script/test_sign_and_notarize.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-110100/`; metrics: shell readiness 133.75 ms, connected cold start 238.64 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.028 ms, dogfood query median overhead 0.025 ms.
+- Independent reviews: spec compliance PASS; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-02-sign-notarize-empty-bash-env-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
