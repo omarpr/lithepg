@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG package verifier empty BASH_ENV hardening evidence</title>
+  <desc id="desc">Visual evidence for the 2026-06-02 package verifier hardening commit: empty BASH_ENV fail-closed test, release helper checks, Swift tests, and dogfood gate passed.</desc>
+  <rect width="1200" height="760" fill="#0d1117"/>
+  <rect x="36" y="32" width="1128" height="696" rx="24" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+  <text x="72" y="88" fill="#58a6ff" font-family="Menlo, Consolas, monospace" font-size="28" font-weight="700">LithePG evidence — package verifier empty BASH_ENV hardening</text>
+  <text x="72" y="128" fill="#8b949e" font-family="Menlo, Consolas, monospace" font-size="18">2026-06-02 09:12 EDT · repo: /Users/omar/projects/lithepg · branch: main</text>
+
+  <rect x="72" y="164" width="1056" height="164" rx="14" fill="#0d1117" stroke="#30363d"/>
+  <text x="96" y="204" fill="#f0f6fc" font-family="Menlo, Consolas, monospace" font-size="20" font-weight="700">Change</text>
+  <text x="96" y="240" fill="#c9d1d9" font-family="Menlo, Consolas, monospace" font-size="18">script/package_verify.sh now treats BASH_ENV as dirty when present, even if empty.</text>
+  <text x="96" y="274" fill="#c9d1d9" font-family="Menlo, Consolas, monospace" font-size="18">With LITHEPG_PACKAGE_VERIFY_BASH_FUNCTIONS_SANITIZED=1 and BASH_ENV=, it fails closed.</text>
+  <text x="96" y="308" fill="#c9d1d9" font-family="Menlo, Consolas, monospace" font-size="18">The new test asserts generic output and no fixture/sentinel/ambient-private-value leakage.</text>
+
+  <rect x="72" y="356" width="1056" height="260" rx="14" fill="#0d1117" stroke="#30363d"/>
+  <text x="96" y="396" fill="#3fb950" font-family="Menlo, Consolas, monospace" font-size="20" font-weight="700">Verification passed</text>
+  <text x="96" y="436" fill="#c9d1d9" font-family="Menlo, Consolas, monospace" font-size="18">✓ bash script/test_package_verify.sh</text>
+  <text x="96" y="468" fill="#c9d1d9" font-family="Menlo, Consolas, monospace" font-size="18">✓ bash script/test_create_release_zip.sh</text>
+  <text x="96" y="500" fill="#c9d1d9" font-family="Menlo, Consolas, monospace" font-size="18">✓ bash script/test_sign_and_notarize.sh</text>
+  <text x="96" y="532" fill="#c9d1d9" font-family="Menlo, Consolas, monospace" font-size="18">✓ bash script/test_v10_release_gate.sh · bash -n · git diff --check</text>
+  <text x="96" y="564" fill="#c9d1d9" font-family="Menlo, Consolas, monospace" font-size="18">✓ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build</text>
+  <text x="96" y="596" fill="#c9d1d9" font-family="Menlo, Consolas, monospace" font-size="18">✓ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test — 127 tests / 20 suites</text>
+
+  <rect x="72" y="640" width="1056" height="72" rx="14" fill="#0d1117" stroke="#30363d"/>
+  <text x="96" y="684" fill="#c9d1d9" font-family="Menlo, Consolas, monospace" font-size="18">Dogfood: .build/dogfood-checks/20260602-091144 passed · shell 131.01 ms · cold start 285.49 ms</text>
+</svg>

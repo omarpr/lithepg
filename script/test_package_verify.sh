@@ -649,6 +649,36 @@ assert_not_contains "$helper_output" "$startup_env_sanitizer_fail_closed_sentine
 assert_not_contains "$helper_output" "set function invoked"
 [[ ! -e "$startup_env_sanitizer_fail_closed_marker" ]] || fail "package verifier sanitizer fail-closed invoked startup shadow: $(<"$startup_env_sanitizer_fail_closed_marker")"
 
+startup_env_sanitizer_empty_bash_env_fail_closed_sentinel="PACKAGE_VERIFY_EMPTY_BASH_ENV_FAIL_CLOSED_SHOULD_NOT_LEAK"
+startup_env_sanitizer_empty_bash_env_fail_closed_private_value="synthetic-package-verify-empty-bash-env-private-value-SHOULD_NOT_LEAK"
+startup_env_sanitizer_empty_bash_env_fail_closed_fixture="$fixture_root/startup-env-sanitizer-empty-bash-env-fail-closed-$startup_env_sanitizer_empty_bash_env_fail_closed_sentinel"
+/bin/mkdir -p "$startup_env_sanitizer_empty_bash_env_fail_closed_fixture/script" "$startup_env_sanitizer_empty_bash_env_fail_closed_fixture/dist"
+/bin/cp "$HELPER" "$startup_env_sanitizer_empty_bash_env_fail_closed_fixture/script/package_verify.sh"
+/bin/chmod +x "$startup_env_sanitizer_empty_bash_env_fail_closed_fixture/script/package_verify.sh"
+make_minimal_app_bundle "$startup_env_sanitizer_empty_bash_env_fail_closed_fixture/dist/LithePG.app"
+set +e
+(
+  cd "$fixture_root"
+  STARTUP_ENV_SANITIZER_EMPTY_BASH_ENV_FAIL_CLOSED_SENTINEL="$startup_env_sanitizer_empty_bash_env_fail_closed_sentinel" \
+    LITHEPG_TEST_AMBIENT_PRIVATE_VALUE="$startup_env_sanitizer_empty_bash_env_fail_closed_private_value" \
+    BASH_ENV= \
+    LITHEPG_PACKAGE_VERIFY_BASH_FUNCTIONS_SANITIZED=1 \
+    "$startup_env_sanitizer_empty_bash_env_fail_closed_fixture/script/package_verify.sh"
+) >"$output_file" 2>&1
+startup_env_sanitizer_empty_bash_env_fail_closed_status=$?
+set -e
+helper_output="$(<"$output_file")"
+if [[ "$startup_env_sanitizer_empty_bash_env_fail_closed_status" -ne 2 ]]; then
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier sanitizer marker with empty BASH_ENV should exit 2, got $startup_env_sanitizer_empty_bash_env_fail_closed_status"
+fi
+assert_contains "$helper_output" "package verification failed: dirty startup environment remained after sanitization"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "Usage:"
+assert_not_contains "$helper_output" "$startup_env_sanitizer_empty_bash_env_fail_closed_fixture"
+assert_not_contains "$helper_output" "$startup_env_sanitizer_empty_bash_env_fail_closed_sentinel"
+assert_not_contains "$helper_output" "$startup_env_sanitizer_empty_bash_env_fail_closed_private_value"
+
 startup_env_sanitizer_fail_closed_perl_sentinel="PACKAGE_VERIFY_STARTUP_ENV_FAIL_CLOSED_PERL_SHOULD_NOT_LEAK"
 startup_env_sanitizer_fail_closed_perl_fixture="$fixture_root/startup-env-sanitizer-fail-closed-perl"
 /bin/mkdir -p "$startup_env_sanitizer_fail_closed_perl_fixture/script" "$startup_env_sanitizer_fail_closed_perl_fixture/dist"

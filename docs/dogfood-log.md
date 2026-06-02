@@ -1770,3 +1770,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-02-v10-release-gate-empty-bash-env-hardening.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-02 09:12 EDT — v1.0 package verifier empty BASH_ENV fail-closed hardening
+
+- Hardened `script/package_verify.sh` so an empty-but-present `BASH_ENV` is treated as dirty startup environment, matching the v1.0 release-gate sanitizer posture. The initial sanitizer path now scrubs `BASH_ENV` even when it is empty, and the sanitizer-marked fail-closed guard rejects any remaining `BASH_ENV` key before package verification can continue.
+- Added strict-TDD coverage in `script/test_package_verify.sh` for direct copied-helper invocation with `LITHEPG_PACKAGE_VERIFY_BASH_FUNCTIONS_SANITIZED=1` and `BASH_ENV=""`; the helper must exit 2 with the generic dirty-startup-environment message and must not print package success, usage, fixture paths, sentinel text, or a synthetic ambient private value.
+- RED verification: the new regression failed first on the old helper with `test_package_verify failed: package verifier sanitizer marker with empty BASH_ENV should exit 2, got 0` after printing package verification success.
+- GREEN verification: `bash script/test_package_verify.sh`, adjacent release-helper tests (`test_create_release_zip`, `test_sign_and_notarize`, `test_v10_release_gate`), `bash -n script/package_verify.sh script/test_package_verify.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed. Swift Testing reported 127 tests across 20 suites.
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260602-091144/`; metrics: shell readiness 131.01 ms, connected cold start 285.49 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.033 ms, dogfood query median overhead 0.044 ms.
+- Independent reviews: spec compliance PASS after the credential-leakage assertion fix; code quality/security APPROVED.
+- Evidence artifact: `screenshots/evidence/2026-06-02-package-verify-empty-bash-env-hardening.svg`.
+- No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
