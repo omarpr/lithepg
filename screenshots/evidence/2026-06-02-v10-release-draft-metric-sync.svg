@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release draft metric sync evidence</title>
+  <desc id="desc">Visual receipt showing the v1.0 draft release copy synced to the latest local dogfood metrics while publication blockers remain.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <style>
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .title { fill: #f8fafc; font-size: 34px; font-weight: 700; }
+      .subtitle { fill: #cbd5e1; font-size: 18px; }
+      .label { fill: #93c5fd; font-size: 15px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+      .metric { fill: #ecfeff; font-size: 24px; font-weight: 700; }
+      .caption { fill: #cbd5e1; font-size: 15px; }
+      .blocker { fill: #fed7aa; font-size: 16px; }
+      .ok { fill: #bbf7d0; font-size: 16px; }
+      .muted { fill: #94a3b8; font-size: 14px; }
+    </style>
+  </defs>
+  <rect width="1200" height="760" fill="url(#bg)"/>
+  <rect x="46" y="44" width="1108" height="672" rx="28" fill="#020617" stroke="#334155" stroke-width="2"/>
+
+  <text x="82" y="104" class="sans title">v1.0 draft release copy metric sync</text>
+  <text x="82" y="136" class="sans subtitle">docs/releases/v1.0-draft.md now matches the latest local dogfood receipt used by README and CHANGELOG.</text>
+
+  <rect x="82" y="172" width="1036" height="176" rx="18" fill="#0f172a" stroke="#1d4ed8"/>
+  <text x="112" y="216" class="sans label">Receipt source</text>
+  <text x="112" y="252" class="mono metric">.build/dogfood-checks/20260602-071038/</text>
+  <text x="112" y="286" class="sans caption">Recorded from main at e24a9b2; synced in this docs-only slice on 2026-06-02 08:00 EDT.</text>
+  <text x="112" y="318" class="sans ok">No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication attempted.</text>
+
+  <g transform="translate(82 384)">
+    <rect width="314" height="112" rx="16" fill="#082f49" stroke="#38bdf8"/>
+    <text x="24" y="36" class="sans label">Shell readiness</text>
+    <text x="24" y="78" class="mono metric">130.93 ms</text>
+  </g>
+  <g transform="translate(426 384)">
+    <rect width="314" height="112" rx="16" fill="#052e16" stroke="#22c55e"/>
+    <text x="24" y="36" class="sans label">Connected startup</text>
+    <text x="24" y="78" class="mono metric">241.57 ms</text>
+  </g>
+  <g transform="translate(770 384)">
+    <rect width="348" height="112" rx="16" fill="#312e81" stroke="#818cf8"/>
+    <text x="24" y="36" class="sans label">Binary budget</text>
+    <text x="24" y="78" class="mono metric">21.379 MiB raw</text>
+  </g>
+
+  <g transform="translate(82 526)">
+    <rect width="314" height="112" rx="16" fill="#3f1d05" stroke="#fb923c"/>
+    <text x="24" y="36" class="sans label">Strip probe</text>
+    <text x="24" y="78" class="mono metric">11.980 MiB</text>
+  </g>
+  <g transform="translate(426 526)">
+    <rect width="314" height="112" rx="16" fill="#1e1b4b" stroke="#a78bfa"/>
+    <text x="24" y="36" class="sans label">Packaged executable</text>
+    <text x="24" y="78" class="mono metric">11.93 MiB</text>
+  </g>
+  <g transform="translate(770 526)">
+    <rect width="348" height="112" rx="16" fill="#450a0a" stroke="#f87171"/>
+    <text x="24" y="36" class="sans label">Query overhead</text>
+    <text x="24" y="68" class="mono metric">0.035 / 0.011 ms</text>
+    <text x="24" y="94" class="sans muted">SELECT 1 / dogfood median</text>
+  </g>
+
+  <text x="82" y="682" class="sans blocker">Still blocked: release-copy placeholders, Homebrew/security placeholders, approved SHA-256, signing/notary credentials, Actions readiness, and explicit publication approval.</text>
+</svg>

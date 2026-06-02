@@ -1743,3 +1743,11 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Current public-reader status now reports shell readiness 130.93 ms, connected cold start 241.57 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, `SELECT 1` median overhead 0.035 ms, and dogfood query median overhead 0.011 ms, while keeping the public `v1.0` blockers unchanged.
 - Evidence artifact: `screenshots/evidence/2026-06-02-v10-public-status-receipt-refresh.svg`.
 - This docs-only receipt refresh attempted no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication.
+
+## 2026-06-02 08:00 EDT — v1.0 release draft metric sync
+
+- Synced `docs/releases/v1.0-draft.md` with the same latest local dogfood metrics already published in `README.md` and `CHANGELOG.md` from `.build/dogfood-checks/20260602-071038/` on `main` at `e24a9b2`.
+- The draft now reports shell readiness 130.93 ms, connected cold start 241.57 ms, raw release executable 21.379 MiB, strip-probe executable 11.980 MiB, packaged executable 11.93 MiB, `SELECT 1` median overhead 0.035 ms, and dogfood-query median overhead 0.011 ms.
+- The release copy, Homebrew, security contact, signing/notary, GitHub Actions, SHA-256, and publication approval placeholders remain intentionally blocked pending Omar-controlled external inputs.
+- Evidence artifact: `screenshots/evidence/2026-06-02-v10-release-draft-metric-sync.svg`.
+- This docs-only release-draft sync attempted no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication.
