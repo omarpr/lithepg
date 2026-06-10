@@ -9,7 +9,6 @@ let package = Package(
     products: [
         .library(name: "LithePGCore", targets: ["LithePGCore"]),
         .executable(name: "lithepg", targets: ["lithepg"]),
-        .executable(name: "LithePGApp", targets: ["LithePGApp"]),
         .executable(name: "lithepg-bench", targets: ["LithePGBench"]),
     ],
     dependencies: [
@@ -24,9 +23,9 @@ let package = Package(
         ),
         .executableTarget(
             name: "lithepg",
-            dependencies: ["LithePGCore"]
+            dependencies: ["LithePGCore", "LithePGApp"]
         ),
-        .executableTarget(
+        .target(
             name: "LithePGApp",
             dependencies: ["LithePGCore"],
             exclude: ["LithePGApp.entitlements"]

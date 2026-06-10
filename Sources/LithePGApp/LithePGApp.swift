@@ -1,11 +1,12 @@
 import AppKit
 import SwiftUI
 
-@main
-struct LithePGApp: App {
+public struct LithePGApp: App {
     @State private var state = AppState()
 
-    var body: some Scene {
+    public init() {}
+
+    public var body: some Scene {
         WindowGroup {
             RootView(state: state)
         }

@@ -3,9 +3,27 @@ import LithePGCore
 import UniformTypeIdentifiers
 
 struct ConnectSheet: View {
+  enum InputMode: String, CaseIterable {
+    case url = "Paste connection string"
+    case fields = "Enter details"
+  }
+
+  struct DiscoveredInstance: Identifiable {
+    let port: Int
+    var id: Int { port }
+    var label: String { "localhost:\(port)" }
+  }
+
   @Bindable var state: AppState
+  @State private var inputMode: InputMode = Self.initialDisplayURL().isEmpty ? .fields : .url
   @State private var url: String = Self.initialDisplayURL()
   @State private var sensitivePrefilledURL: String? = Self.initialSensitiveURL()
+  @State private var fieldHost: String = ""
+  @State private var fieldPort: String = "5432"
+  @State private var fieldDatabase: String = ""
+  @State private var fieldUsername: String = ""
+  @State private var fieldPassword: String = ""
+  @State private var discoveredInstances: [DiscoveredInstance] = []
   @State private var tls = Self.initialTLSPreference()
   @State private var tlsCAPath: String =
     ProcessInfo.processInfo.environment["POSTGRES_TLS_CA"] ?? ""
@@ -18,97 +36,192 @@ struct ConnectSheet: View {
   @State private var pendingDelete: SavedConnectionMetadata?
 
   private var cleartextWarning: String? {
-    guard !tls, !useSSH, let config = try? ConnectionConfig(url: effectiveURL), config.tlsMode == .disable else {
-      return nil
+    guard !tls, !useSSH else { return nil }
+    let host: String
+    if inputMode == .url {
+      guard let config = try? ConnectionConfig(url: effectiveURL), config.tlsMode == .disable else {
+        return nil
+      }
+      host = config.host
+    } else {
+      host = fieldHost
     }
-    guard !Self.isLoopback(host: config.host) else { return nil }
-    return "Cleartext remote connection. Enable TLS or add ?sslmode=require before connecting outside localhost."
+    guard !host.isEmpty, !Self.isLoopback(host: host) else { return nil }
+    return "Cleartext remote connection. Enable TLS before connecting outside localhost."
   }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 16) {
-      HStack(spacing: 10) {
-        Image(systemName: "cylinder.split.1x2")
-          .font(.title)
-          .foregroundStyle(.tint)
-        VStack(alignment: .leading) {
-          Text("Connect to Postgres")
-            .font(.title2.bold())
-          Text("Save metadata locally; passwords go through the credential store.")
-            .foregroundStyle(.secondary)
-        }
-      }
-
-      savedConnectionsSection
-
-      TextField("postgres://user:password@host:5432/database", text: $url)
-        .textFieldStyle(.roundedBorder)
-        .accessibilityIdentifier("postgres-url-field")
-        .onChange(of: url) { _, newValue in
-          if newValue != Self.redactedURLForDisplay(sensitivePrefilledURL) {
-            sensitivePrefilledURL = nil
-          }
-          tls = Self.defaultTLSPreference(for: effectiveURL)
-        }
-
-      Toggle("TLS verify-full", isOn: $tls)
-        .onChange(of: tls) { _, enabled in
-          if enabled { useSSH = false }
-        }
-      if let cleartextWarning {
-        Label(cleartextWarning, systemImage: "exclamationmark.triangle.fill")
-          .font(.caption)
-          .foregroundStyle(.orange)
-          .textSelection(.enabled)
-      }
-      if tls {
-        HStack {
-          TextField("CA certificate path", text: $tlsCAPath)
-            .textFieldStyle(.roundedBorder)
-          Button("Choose…") {
-            showingCAImporter = true
+    Form {
+      Section {
+        HStack(spacing: 10) {
+          Image(systemName: "cylinder.split.1x2")
+            .font(.title)
+            .foregroundStyle(.tint)
+          VStack(alignment: .leading) {
+            Text("Connect to Postgres")
+              .font(.title2.bold())
+            Text("Save metadata locally; passwords go through the credential store.")
+              .foregroundStyle(.secondary)
           }
         }
       }
 
-      Toggle("SSH tunnel", isOn: $useSSH)
-        .disabled(tls)
-        .onChange(of: useSSH) { _, enabled in
-          if enabled { tls = false }
+      if !state.savedConnections.isEmpty {
+        Section("Saved connections") {
+          ForEach(state.savedConnections) { connection in
+            HStack(spacing: 8) {
+              VStack(alignment: .leading, spacing: 2) {
+                Text(connection.name)
+                  .font(.subheadline.bold())
+                Text(connection.connectionLabel)
+                  .font(.caption)
+                  .foregroundStyle(.secondary)
+              }
+              Spacer()
+              Text(connection.environment.displayName)
+                .font(.caption2.bold())
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(environmentColor(connection.environment).opacity(0.16), in: Capsule())
+                .foregroundStyle(environmentColor(connection.environment))
+              Button("Connect") {
+                Task { await state.connectSavedConnection(id: connection.id) }
+              }
+              .buttonStyle(.bordered)
+
+              Button(role: .destructive) {
+                pendingDelete = connection
+              } label: {
+                Label("Delete saved connection", systemImage: "trash")
+                  .labelStyle(.iconOnly)
+              }
+              .buttonStyle(.borderless)
+              .help("Delete saved connection")
+            }
+          }
         }
-      if useSSH && !tls {
-        TextField("user@host[:port]", text: $sshTarget)
-          .textFieldStyle(.roundedBorder)
       }
 
-      saveConnectionSection
+      if !discoveredInstances.isEmpty {
+        Section("Local servers") {
+          ForEach(discoveredInstances) { instance in
+            HStack {
+              Label(instance.label, systemImage: "desktopcomputer")
+              Spacer()
+              Button("Connect") {
+                Task { await connectDiscovered(instance) }
+              }
+              .buttonStyle(.bordered)
+              .disabled(state.connectionState == .connecting)
+            }
+          }
+        }
+      }
+
+      Section {
+        Picker("Input mode", selection: $inputMode) {
+          ForEach(InputMode.allCases, id: \.self) { mode in
+            Text(mode.rawValue).tag(mode)
+          }
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+
+        if inputMode == .url {
+          TextField("postgres://user:password@host:5432/database", text: $url)
+            .accessibilityIdentifier("postgres-url-field")
+            .onChange(of: url) { _, newValue in
+              if newValue != Self.redactedURLForDisplay(sensitivePrefilledURL) {
+                sensitivePrefilledURL = nil
+              }
+              tls = Self.defaultTLSPreference(for: effectiveURL)
+            }
+        } else {
+          TextField("Host", text: $fieldHost)
+            .accessibilityIdentifier("field-host")
+          TextField("Port", text: $fieldPort)
+            .accessibilityIdentifier("field-port")
+          TextField("Database", text: $fieldDatabase)
+            .accessibilityIdentifier("field-database")
+          TextField("Username", text: $fieldUsername)
+            .accessibilityIdentifier("field-username")
+          SecureField("Password", text: $fieldPassword)
+            .accessibilityIdentifier("field-password")
+        }
+      }
+
+      Section {
+        Toggle("TLS verify-full", isOn: $tls)
+          .onChange(of: tls) { _, enabled in
+            if enabled { useSSH = false }
+          }
+        if let cleartextWarning {
+          Label(cleartextWarning, systemImage: "exclamationmark.triangle.fill")
+            .font(.caption)
+            .foregroundStyle(.orange)
+        }
+        if tls {
+          HStack {
+            TextField("CA certificate path", text: $tlsCAPath)
+            Button("Choose…") {
+              showingCAImporter = true
+            }
+          }
+        }
+
+        Toggle("SSH tunnel", isOn: $useSSH)
+          .disabled(tls)
+          .onChange(of: useSSH) { _, enabled in
+            if enabled { tls = false }
+          }
+        if useSSH && !tls {
+          TextField("user@host[:port]", text: $sshTarget)
+        }
+      }
+
+      Section {
+        Toggle("Save this connection", isOn: $saveConnection)
+        if saveConnection {
+          TextField("Connection name", text: $connectionName)
+          Picker("Environment", selection: $environment) {
+            ForEach(ConnectionEnvironment.allCases) { environment in
+              Text(environment.displayName).tag(environment)
+            }
+          }
+          .pickerStyle(.segmented)
+        }
+      }
 
       if let error = state.lastError ?? state.persistenceError {
-        ErrorBanner(message: error)
-          .clipShape(RoundedRectangle(cornerRadius: 8))
+        Section {
+          ErrorBanner(message: error)
+        }
       }
 
-      HStack {
-        Spacer()
-        Button {
-          Task { await connectAndMaybeSave() }
-        } label: {
-          if state.connectionState == .connecting {
-            ProgressView()
-              .controlSize(.small)
-          } else {
-            Text("Connect")
+      Section {
+        HStack {
+          Spacer()
+          Button {
+            Task { await connectAndMaybeSave() }
+          } label: {
+            if state.connectionState == .connecting {
+              ProgressView()
+                .controlSize(.small)
+            } else {
+              Text("Connect")
+            }
           }
+          .accessibilityIdentifier("connect-button")
+          .keyboardShortcut(.defaultAction)
+          .disabled(connectDisabled)
         }
-        .accessibilityIdentifier("connect-button")
-        .keyboardShortcut(.defaultAction)
-        .disabled(connectDisabled)
       }
     }
-    .padding(24)
+    .formStyle(.grouped)
     .frame(width: 560)
     .task {
       await state.loadSavedConnections()
+      discoveredInstances = Self.scanLocalInstances()
     }
     .confirmationDialog(
       "Delete saved connection?",
@@ -143,69 +256,16 @@ struct ConnectSheet: View {
     }
   }
 
-  private var savedConnectionsSection: some View {
-    Group {
-      if !state.savedConnections.isEmpty {
-        VStack(alignment: .leading, spacing: 8) {
-          Text("Saved connections")
-            .font(.caption.bold())
-            .foregroundStyle(.secondary)
-          ForEach(state.savedConnections) { connection in
-            HStack(spacing: 8) {
-              VStack(alignment: .leading, spacing: 2) {
-                Text(connection.name)
-                  .font(.subheadline.bold())
-                Text(connection.connectionLabel)
-                  .font(.caption)
-                  .foregroundStyle(.secondary)
-              }
-              Spacer()
-              Text(connection.environment.displayName)
-                .font(.caption2.bold())
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(environmentColor(connection.environment).opacity(0.16), in: Capsule())
-                .foregroundStyle(environmentColor(connection.environment))
-              Button("Connect") {
-                Task { await state.connectSavedConnection(id: connection.id) }
-              }
-              .buttonStyle(.bordered)
-
-              Button(role: .destructive) {
-                pendingDelete = connection
-              } label: {
-                Label("Delete saved connection", systemImage: "trash")
-                  .labelStyle(.iconOnly)
-              }
-              .buttonStyle(.borderless)
-              .help("Delete saved connection")
-            }
-            .padding(10)
-            .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 10))
-          }
-        }
-      }
-    }
-  }
-
-  private var saveConnectionSection: some View {
-    VStack(alignment: .leading, spacing: 10) {
-      Toggle("Save this connection", isOn: $saveConnection)
-      if saveConnection {
-        TextField("Connection name", text: $connectionName)
-          .textFieldStyle(.roundedBorder)
-        Picker("Environment", selection: $environment) {
-          ForEach(ConnectionEnvironment.allCases) { environment in
-            Text(environment.displayName).tag(environment)
-          }
-        }
-        .pickerStyle(.segmented)
-      }
-    }
-  }
-
   private var connectDisabled: Bool {
-    effectiveURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    let inputEmpty: Bool
+    if inputMode == .url {
+      inputEmpty = effectiveURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    } else {
+      inputEmpty = fieldHost.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        || fieldDatabase.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        || fieldUsername.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+    return inputEmpty
       || state.connectionState == .connecting
       || (saveConnection && connectionName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
   }
@@ -218,23 +278,64 @@ struct ConnectSheet: View {
   }
 
   private func connectAndMaybeSave() async {
-    await state.connect(
-      url: effectiveURL,
-      tls: tls,
-      tlsCAPath: tls ? tlsCAPath : nil,
-      sshTarget: useSSH && !tls ? sshTarget : nil
-    )
+    let tlsCA = tls ? tlsCAPath : nil
+    let ssh = useSSH && !tls ? sshTarget : nil
+
+    if inputMode == .url {
+      await state.connect(url: effectiveURL, tls: tls, tlsCAPath: tlsCA, sshTarget: ssh)
+    } else {
+      let port = Int(fieldPort) ?? 5432
+      await state.connect(
+        host: fieldHost, port: port, database: fieldDatabase,
+        username: fieldUsername, password: fieldPassword,
+        tls: tls, tlsCAPath: tlsCA, sshTarget: ssh)
+    }
+
     guard saveConnection, state.isConnected else { return }
-    if let metadata = await state.saveConnection(
-      name: connectionName,
-      url: effectiveURL,
-      tls: tls,
-      tlsCAPath: tls ? tlsCAPath : nil,
-      sshTarget: useSSH && !tls ? sshTarget : nil,
-      environment: environment
-    ) {
+
+    let metadata: SavedConnectionMetadata?
+    if inputMode == .url {
+      metadata = await state.saveConnection(
+        name: connectionName, url: effectiveURL, tls: tls, tlsCAPath: tlsCA,
+        sshTarget: ssh, environment: environment)
+    } else {
+      let port = Int(fieldPort) ?? 5432
+      metadata = await state.saveConnection(
+        name: connectionName,
+        host: fieldHost, port: port, database: fieldDatabase,
+        username: fieldUsername, password: fieldPassword,
+        tls: tls, tlsCAPath: tlsCA, sshTarget: ssh, environment: environment)
+    }
+
+    if let metadata {
       state.activeSavedConnection = metadata
     }
+  }
+
+  private func connectDiscovered(_ instance: DiscoveredInstance) async {
+    let username = NSUserName()
+    await state.connect(
+      host: "localhost", port: instance.port, database: "postgres",
+      username: username, password: "")
+    guard !state.isConnected else { return }
+    inputMode = .fields
+    fieldHost = "localhost"
+    fieldPort = String(instance.port)
+    fieldDatabase = "postgres"
+    fieldUsername = username
+    fieldPassword = ""
+  }
+
+  private static func scanLocalInstances() -> [DiscoveredInstance] {
+    let fm = FileManager.default
+    guard let entries = try? fm.contentsOfDirectory(atPath: "/tmp") else { return [] }
+    return entries.compactMap { name -> DiscoveredInstance? in
+      guard name.hasPrefix(".s.PGSQL."), !name.hasSuffix(".lock") else { return nil }
+      let portString = String(name.dropFirst(".s.PGSQL.".count))
+      guard let port = Int(portString), (1...65535).contains(port) else { return nil }
+      return DiscoveredInstance(port: port)
+    }
+    .sorted { $0.port < $1.port }
   }
 
   private func environmentColor(_ environment: ConnectionEnvironment) -> Color {

@@ -1,4 +1,5 @@
 import Foundation
+import LithePGApp
 import LithePGCore
 
 @main
@@ -18,19 +19,22 @@ struct LithePGMain {
             exit(1)
         }
 
+        guard let base = args.base else {
+            LithePGApp.main()
+            return
+        }
+
         let config = ConnectionConfig(
-            host: args.base.host,
-            port: args.base.port,
-            database: args.base.database,
-            username: args.base.username,
-            password: args.base.password,
-            tlsMode: args.tls ? .verifyFull : args.base.tlsMode,
+            host: base.host,
+            port: base.port,
+            database: base.database,
+            username: base.username,
+            password: base.password,
+            tlsMode: args.tls ? .verifyFull : base.tlsMode,
             pinnedRootCertificatePath: args.tlsCA,
             sshConfig: args.ssh
         )
 
-        // `defer` bodies can't `await`, so the event-loop-group shutdown has to ride
-        // both the success and failure paths explicitly.
         let connector = PostgresConnector()
         do {
             let value = try await connector.runSelect1(config: config)
@@ -46,7 +50,7 @@ struct LithePGMain {
 }
 
 private struct Args {
-    let base: ConnectionConfig
+    let base: ConnectionConfig?
     let tls: Bool
     let tlsCA: String?
     let ssh: ConnectionConfig.SSHConfig?
@@ -92,13 +96,12 @@ private struct Args {
             }
         }
 
-        guard let url else { throw ParseError.usage("--url is required") }
+        guard let url else {
+            return Args(base: nil, tls: tls, tlsCA: tlsCA, ssh: nil)
+        }
         if tlsCA != nil && !tls {
             throw ParseError.usage("--tls-ca requires --tls")
         }
-        // v0.1 terminates SSH tunnels at 127.0.0.1, so TLS SNI for the original
-        // host no longer matches. Reject the combination explicitly rather than
-        // silently downgrading TLS. A future milestone can thread an SNI override.
         if tls && sshRaw != nil {
             throw ParseError.usage("--tls and --ssh together are not supported in v0.1")
         }
