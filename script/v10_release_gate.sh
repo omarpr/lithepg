@@ -947,6 +947,38 @@ sys.exit(0)
 PY
 }
 
+release_zip_directory_mode_safety_status() {
+  local zip_file="$1"
+
+  if [[ ! -x /usr/bin/python3 ]]; then
+    return 2
+  fi
+
+  /usr/bin/python3 -I - "$zip_file" <<'PY'
+import stat
+import sys
+import zipfile
+
+zip_path = sys.argv[1]
+unsafe_bits = stat.S_ISUID | stat.S_ISGID | stat.S_ISVTX | 0o022
+
+try:
+    with zipfile.ZipFile(zip_path) as archive:
+        for entry in archive.infolist():
+            if not entry.filename.startswith("LithePG.app/") or not entry.filename.endswith("/"):
+                continue
+            mode = (entry.external_attr >> 16) & 0xFFFF
+            if mode == 0 or not stat.S_ISDIR(mode):
+                sys.exit(2)
+            if mode & unsafe_bits:
+                sys.exit(1)
+except (zipfile.BadZipFile, OSError):
+    sys.exit(2)
+
+sys.exit(0)
+PY
+}
+
 release_zip_app_executable_format_status() {
   local zip_file="$1"
   local executable_temp_dir=""
@@ -1731,6 +1763,21 @@ if [[ "$release_zip_present" -eq 1 ]]; then
     fi
 
     if [[ "$release_zip_file_types_ready" -eq 1 && "$release_zip_essential_entries_ready" -eq 1 ]]; then
+      if release_zip_directory_mode_safety_status "$release_zip_file"; then
+        printf 'Release artifact directory modes: safe\n'
+      else
+        release_zip_directory_mode_status=$?
+        case "$release_zip_directory_mode_status" in
+          1)
+            printf 'Release artifact directory modes: unsafe\n'
+            ;;
+          *)
+            printf 'Release artifact directory modes: could not inspect\n'
+            ;;
+        esac
+        mark_blocker
+      fi
+
       if release_zip_info_plist_metadata_status "$release_zip_file" "$VERSION"; then
         printf 'Release artifact Info.plist metadata: matches\n'
       else

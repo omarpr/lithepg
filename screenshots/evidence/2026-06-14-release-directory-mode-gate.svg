@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release gate directory-mode hardening evidence</title>
+  <desc id="desc">Visual evidence for the commit that rejects unsafe directory modes in release artifact zip files.</desc>
+  <rect width="1200" height="720" fill="#0f172a"/>
+  <rect x="40" y="40" width="1120" height="640" rx="18" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="72" y="92" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="30" font-weight="700">LithePG release gate hardening</text>
+  <text x="72" y="132" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="18">2026-06-14 17:16 EDT — non-UI evidence artifact</text>
+
+  <rect x="72" y="170" width="1056" height="140" rx="12" fill="#020617" stroke="#1f2937"/>
+  <text x="96" y="205" fill="#67e8f9" font-family="Menlo, Consolas, monospace" font-size="20">Change</text>
+  <text x="96" y="240" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="17">script/v10_release_gate.sh now inspects LithePG.app/ directory entries inside LithePG.app.zip.</text>
+  <text x="96" y="270" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="17">Unsafe setuid/setgid/sticky or group/world writable mode bits block artifact-only validation.</text>
+
+  <rect x="72" y="340" width="1056" height="200" rx="12" fill="#020617" stroke="#1f2937"/>
+  <text x="96" y="375" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="20">Verification</text>
+  <text x="96" y="410" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="17">✓ bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh</text>
+  <text x="96" y="440" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="17">✓ ./script/test_v10_release_gate.sh → test_v10_release_gate passed</text>
+  <text x="96" y="470" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="17">✓ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test → 127 tests passed</text>
+  <text x="96" y="500" fill="#fde68a" font-family="Menlo, Consolas, monospace" font-size="17">ⓘ ./script/v10_release_gate.sh --artifact-only blocks without approved SHA-256, as expected</text>
+
+  <rect x="72" y="570" width="1056" height="72" rx="12" fill="#022c22" stroke="#10b981"/>
+  <text x="96" y="615" fill="#d1fae5" font-family="Menlo, Consolas, monospace" font-size="18">Review: spec PASS, quality APPROVED, independent JSON reviewer passed. Docker unavailable for dogfood_check.</text>
+</svg>

@@ -82,6 +82,8 @@ artifact_bundle_executable_permission_output="$(mktemp)"
 artifact_bundle_owner_execute_permission_output="$(mktemp)"
 artifact_bundle_special_mode_output="$(mktemp)"
 artifact_bundle_writable_mode_output="$(mktemp)"
+artifact_directory_mode_unsafe_output="$(mktemp)"
+artifact_root_directory_mode_unsafe_output="$(mktemp)"
 artifact_info_plist_writable_mode_output="$(mktemp)"
 artifact_info_plist_mode_decoy_output="$(mktemp)"
 artifact_executable_format_invalid_output="$(mktemp)"
@@ -233,6 +235,10 @@ writable_mode_bundle_zip_dir="$(mktemp -d)"
 writable_mode_bundle_zip="$writable_mode_bundle_zip_dir/LithePG.app.zip"
 writable_mode_bundle_release_copy="$(mktemp)"
 writable_mode_bundle_homebrew_cask="$(mktemp)"
+unsafe_directory_mode_zip_dir="$(mktemp -d)"
+unsafe_directory_mode_zip="$unsafe_directory_mode_zip_dir/LithePG.app.zip"
+unsafe_root_directory_mode_zip_dir="$(mktemp -d)"
+unsafe_root_directory_mode_zip="$unsafe_root_directory_mode_zip_dir/LithePG.app.zip"
 writable_info_plist_mode_zip_dir="$(mktemp -d)"
 writable_info_plist_mode_zip="$writable_info_plist_mode_zip_dir/LithePG.app.zip"
 writable_info_plist_mode_release_copy="$(mktemp)"
@@ -334,6 +340,8 @@ cleanup() {
     "$artifact_bundle_owner_execute_permission_output" \
     "$artifact_bundle_special_mode_output" \
     "$artifact_bundle_writable_mode_output" \
+    "$artifact_directory_mode_unsafe_output" \
+    "$artifact_root_directory_mode_unsafe_output" \
     "$artifact_info_plist_writable_mode_output" \
     "$artifact_info_plist_mode_decoy_output" \
     "$artifact_executable_format_invalid_output" \
@@ -474,6 +482,8 @@ cleanup() {
     "$writable_mode_bundle_zip" \
     "$writable_mode_bundle_release_copy" \
     "$writable_mode_bundle_homebrew_cask" \
+    "$unsafe_directory_mode_zip" \
+    "$unsafe_root_directory_mode_zip" \
     "$writable_info_plist_mode_zip" \
     "$writable_info_plist_mode_release_copy" \
     "$writable_info_plist_mode_homebrew_cask" \
@@ -528,7 +538,7 @@ cleanup() {
     "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$startup_hardening_root" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$startup_hardening_root" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$unsafe_directory_mode_zip_dir" "$unsafe_root_directory_mode_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
@@ -887,6 +897,40 @@ with zipfile.ZipFile(destination_zip, "w") as destination:
 PY
 writable_mode_bundle_zip_sha="$(/usr/bin/shasum -a 256 "$writable_mode_bundle_zip" | /usr/bin/cut -d ' ' -f 1)"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$writable_mode_bundle_zip_sha" >"$writable_mode_bundle_release_copy"
+/usr/bin/python3 - "$release_zip_fixture" "$unsafe_directory_mode_zip" <<'PY'
+import sys
+import zipfile
+
+source_zip, destination_zip = sys.argv[1:3]
+
+with zipfile.ZipFile(source_zip, "r") as source:
+    entries = [(entry, source.read(entry.filename)) for entry in source.infolist()]
+
+with zipfile.ZipFile(destination_zip, "w") as destination:
+    for entry, payload in entries:
+        if entry.filename == "LithePG.app/Contents/":
+            entry.create_system = 3
+            entry.external_attr = (0o40777 & 0xFFFF) << 16
+        destination.writestr(entry, payload)
+PY
+unsafe_directory_mode_zip_sha="$(/usr/bin/shasum -a 256 "$unsafe_directory_mode_zip" | /usr/bin/cut -d ' ' -f 1)"
+/usr/bin/python3 - "$release_zip_fixture" "$unsafe_root_directory_mode_zip" <<'PY'
+import sys
+import zipfile
+
+source_zip, destination_zip = sys.argv[1:3]
+
+with zipfile.ZipFile(source_zip, "r") as source:
+    entries = [(entry, source.read(entry.filename)) for entry in source.infolist()]
+
+with zipfile.ZipFile(destination_zip, "w") as destination:
+    for entry, payload in entries:
+        if entry.filename == "LithePG.app/":
+            entry.create_system = 3
+            entry.external_attr = (0o40777 & 0xFFFF) << 16
+        destination.writestr(entry, payload)
+PY
+unsafe_root_directory_mode_zip_sha="$(/usr/bin/shasum -a 256 "$unsafe_root_directory_mode_zip" | /usr/bin/cut -d ' ' -f 1)"
 /usr/bin/python3 - "$release_zip_fixture" "$writable_info_plist_mode_zip" <<'PY'
 import sys
 import zipfile
@@ -2495,7 +2539,7 @@ printf 'Report vulnerabilities using the configured private security advisory fl
 printf 'Report vulnerabilities to [security contact pending].\n' >"$default_security_docs_repo/docs/SECURITY.md"
 
 helper_contents="$(<"$HELPER")"
-assert_occurrences "$helper_contents" '/usr/bin/python3 -I -' 2
+assert_occurrences "$helper_contents" '/usr/bin/python3 -I -' 3
 assert_not_contains "$helper_contents" '/usr/bin/python3 - "'
 
 # Executable startup must not route through PATH-selected bash before helper code runs.
@@ -2947,6 +2991,7 @@ artifact_only_text="$(<"$artifact_only_output")"
 assert_contains "$artifact_only_text" "Artifact-only mode: enabled"
 assert_contains "$artifact_only_text" "Release artifact filename: matches"
 assert_contains "$artifact_only_text" "Release artifact zip: present"
+assert_contains "$artifact_only_text" "Release artifact directory modes: safe"
 assert_contains "$artifact_only_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_only_text" "Release artifact code signature runtime: present"
 assert_contains "$artifact_only_text" "Release artifact SHA-256: matches"
@@ -2984,6 +3029,60 @@ assert_not_contains "$artifact_only_env_text" "Local git/tag readiness"
 assert_not_contains "$artifact_only_env_text" "Remote origin"
 assert_not_contains "$artifact_only_env_text" "External publication inputs"
 assert_not_contains "$artifact_only_env_text" "$release_zip_sha"
+
+if run_gate_capture "$artifact_directory_mode_unsafe_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$unsafe_directory_mode_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$unsafe_directory_mode_zip_sha" \
+  /bin/bash -c 'exec "$1" --artifact-only' _; then
+  artifact_directory_mode_unsafe_text="$(<"$artifact_directory_mode_unsafe_output")"
+  assert_not_contains "$artifact_directory_mode_unsafe_text" "$unsafe_directory_mode_zip_sha"
+  assert_not_contains "$artifact_directory_mode_unsafe_text" "$unsafe_directory_mode_zip"
+  assert_not_contains "$artifact_directory_mode_unsafe_text" "drwxrwxrwx"
+  assert_not_contains "$artifact_directory_mode_unsafe_text" "40777"
+  fail "artifact-only gate unexpectedly passed with unsafe release artifact directory mode"
+fi
+artifact_directory_mode_unsafe_text="$(<"$artifact_directory_mode_unsafe_output")"
+assert_contains "$artifact_directory_mode_unsafe_text" "Artifact-only mode: enabled"
+assert_contains "$artifact_directory_mode_unsafe_text" "Release artifact zip: present"
+assert_contains "$artifact_directory_mode_unsafe_text" "Release artifact directory modes: unsafe"
+assert_contains "$artifact_directory_mode_unsafe_text" "v1.0 artifact-only blocked"
+assert_not_contains "$artifact_directory_mode_unsafe_text" "$unsafe_directory_mode_zip_sha"
+assert_not_contains "$artifact_directory_mode_unsafe_text" "$unsafe_directory_mode_zip"
+assert_not_contains "$artifact_directory_mode_unsafe_text" "drwxrwxrwx"
+assert_not_contains "$artifact_directory_mode_unsafe_text" "40777"
+assert_not_contains "$artifact_directory_mode_unsafe_text" "External publication inputs"
+
+if run_gate_capture "$artifact_root_directory_mode_unsafe_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$unsafe_root_directory_mode_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$unsafe_root_directory_mode_zip_sha" \
+  /bin/bash -c 'exec "$1" --artifact-only' _; then
+  artifact_root_directory_mode_unsafe_text="$(<"$artifact_root_directory_mode_unsafe_output")"
+  assert_not_contains "$artifact_root_directory_mode_unsafe_text" "$unsafe_root_directory_mode_zip_sha"
+  assert_not_contains "$artifact_root_directory_mode_unsafe_text" "$unsafe_root_directory_mode_zip"
+  assert_not_contains "$artifact_root_directory_mode_unsafe_text" "drwxrwxrwx"
+  assert_not_contains "$artifact_root_directory_mode_unsafe_text" "40777"
+  fail "artifact-only gate unexpectedly passed with unsafe release artifact root directory mode"
+fi
+artifact_root_directory_mode_unsafe_text="$(<"$artifact_root_directory_mode_unsafe_output")"
+assert_contains "$artifact_root_directory_mode_unsafe_text" "Artifact-only mode: enabled"
+assert_contains "$artifact_root_directory_mode_unsafe_text" "Release artifact zip: present"
+assert_contains "$artifact_root_directory_mode_unsafe_text" "Release artifact directory modes: unsafe"
+assert_contains "$artifact_root_directory_mode_unsafe_text" "v1.0 artifact-only blocked"
+assert_not_contains "$artifact_root_directory_mode_unsafe_text" "$unsafe_root_directory_mode_zip_sha"
+assert_not_contains "$artifact_root_directory_mode_unsafe_text" "$unsafe_root_directory_mode_zip"
+assert_not_contains "$artifact_root_directory_mode_unsafe_text" "drwxrwxrwx"
+assert_not_contains "$artifact_root_directory_mode_unsafe_text" "40777"
+assert_not_contains "$artifact_root_directory_mode_unsafe_text" "External publication inputs"
 
 if run_gate_capture "$artifact_only_missing_sha_output" env -i \
   PATH="$fake_path" \
