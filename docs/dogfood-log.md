@@ -1996,3 +1996,20 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent reviews: spec compliance PASS; code quality/security APPROVED.
 - Evidence artifact: `screenshots/evidence/2026-06-02-create-release-zip-artifact-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
+
+## 2026-06-14 17:17 EDT — v1.0 release gate directory-mode safety checks
+
+- Hardened `script/v10_release_gate.sh` to check directory permissions inside `LithePG.app.zip`. Unsafe directory permissions (setuid, setgid, sticky bits, or group/world writable modes) will now fail validation in artifact-only mode.
+- Added strict-TDD coverage in `script/test_v10_release_gate.sh` with zip fixtures containing unsafe directory modes, verifying that they fail validation.
+- RED verification: test failed as expected before the hardening fix was applied.
+- GREEN verification passed: `bash script/test_v10_release_gate.sh`, adjacent tests, and `swift test` all passed.
+- Evidence artifact: `screenshots/evidence/2026-06-14-release-directory-mode-gate.svg`.
+
+## 2026-06-14 17:35 EDT — v1.0 file protection background cron fix
+
+- Migrated `JSONFileSavedConnectionStore` and `JSONFileQueryHistoryStore` write options from `.completeFileProtectionUnlessOpen` to `.completeFileProtectionUntilFirstUserAuthentication`.
+- This resolves POSIX `EPERM` "Operation not permitted" (Code 1) failures on macOS when the test suite is run via background cron/SSH jobs while the device/screen is locked. Since passwords and secrets are stored separately in the secure macOS Keychain (`KeychainCredentialStore`), these non-credential JSON files are safe to be accessed with first-user-authentication file protection level.
+- RED verification: standard `swift test` failed with permission errors on the three persistence model tests under background cron run when the host was locked.
+- GREEN verification passed: full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with all 127 tests in 20 suites perfectly green!
+- Evidence artifact: `screenshots/evidence/2026-06-14-persistence-file-protection-cron-fix.svg`.
+

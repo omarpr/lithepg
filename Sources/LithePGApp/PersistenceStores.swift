@@ -75,7 +75,7 @@ public actor JSONFileSavedConnectionStore: SavedConnectionStore {
   private func writeAll(_ connections: [SavedConnectionMetadata]) throws {
     try PersistenceFileProtection.prepareSecureJSONFile(at: fileURL)
     let data = try encoder.encode(connections)
-    try data.write(to: fileURL, options: [.atomic, .completeFileProtectionUnlessOpen])
+    try data.write(to: fileURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
     try PersistenceFileProtection.applyJSONFilePermissions(to: fileURL)
   }
 
@@ -275,7 +275,7 @@ public actor JSONFileQueryHistoryStore: QueryHistoryStore {
   private func writeAll(_ entries: [QueryHistoryEntry]) throws {
     try PersistenceFileProtection.prepareSecureJSONFile(at: fileURL)
     let data = try encoder.encode(entries)
-    try data.write(to: fileURL, options: [.atomic, .completeFileProtectionUnlessOpen])
+    try data.write(to: fileURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
     try PersistenceFileProtection.applyJSONFilePermissions(to: fileURL)
   }
 }
