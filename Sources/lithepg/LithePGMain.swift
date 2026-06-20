@@ -1,5 +1,5 @@
 import Foundation
-import LithePGApp
+import LithePGAppUI
 import LithePGCore
 
 @main

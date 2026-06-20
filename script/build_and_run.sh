@@ -118,8 +118,10 @@ APP_BUNDLE="$DIST_DIR/$BUNDLE_NAME.app"
 APP_CONTENTS="$APP_BUNDLE/Contents"
 APP_MACOS="$APP_CONTENTS/MacOS"
 APP_BINARY="$APP_MACOS/$APP_NAME"
+APP_RESOURCES="$APP_CONTENTS/Resources"
 INFO_PLIST="$APP_CONTENTS/Info.plist"
 ENTITLEMENTS="$ROOT_DIR/Sources/LithePGApp/LithePGApp.entitlements"
+ICON_SOURCE="$ROOT_DIR/packaging/AppIcon.icns"
 NOTARY_ZIP="$DIST_DIR/$BUNDLE_NAME-notary.zip"
 
 if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode.app/Contents/Developer ]]; then
@@ -162,11 +164,20 @@ else
   BUILD_BINARY="$(run_from_root swift build --show-bin-path)/$APP_NAME"
 fi
 
+if [[ ! -f "$ICON_SOURCE" || -L "$ICON_SOURCE" ]]; then
+  /usr/bin/printf 'build_and_run failed: app icon asset missing\n' >&2
+  exit 2
+fi
+
 "$RM" -rf "$APP_BUNDLE"
 "$MKDIR" -p "$APP_MACOS"
 "$CHMOD" 755 "$APP_BUNDLE" "$APP_CONTENTS" "$APP_MACOS"
 "$CP" "$BUILD_BINARY" "$APP_BINARY"
 "$CHMOD" 755 "$APP_BINARY"
+"$MKDIR" -p "$APP_RESOURCES"
+"$CHMOD" 755 "$APP_RESOURCES"
+"$CP" "$ICON_SOURCE" "$APP_RESOURCES/AppIcon.icns"
+"$CHMOD" 644 "$APP_RESOURCES/AppIcon.icns"
 if [[ "$BUILD_CONFIG" == "release" ]]; then
   BEFORE_BYTES=$("$STAT" -f%z "$APP_BINARY")
   "$STRIP" -x "$APP_BINARY" >/dev/null 2>&1 || true
@@ -190,6 +201,8 @@ fi
   <string>$BUILD_VERSION</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
   <key>LSMinimumSystemVersion</key>
   <string>$MIN_SYSTEM_VERSION</string>
   <key>NSPrincipalClass</key>

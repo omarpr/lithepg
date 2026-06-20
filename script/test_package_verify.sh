@@ -39,6 +39,8 @@ make_minimal_app_bundle() {
   <string>LithePG</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
   <key>CFBundleShortVersionString</key>
   <string>1.0</string>
   <key>CFBundleVersion</key>
@@ -55,6 +57,11 @@ PLIST
 
   cp /usr/bin/true "$app_bundle/Contents/MacOS/LithePGApp"
   chmod 755 "$app_bundle/Contents/MacOS/LithePGApp"
+
+  mkdir -p "$app_bundle/Contents/Resources"
+  chmod 755 "$app_bundle/Contents/Resources"
+  printf 'fixture-icns\n' >"$app_bundle/Contents/Resources/AppIcon.icns"
+  chmod 644 "$app_bundle/Contents/Resources/AppIcon.icns"
 }
 
 make_text_executable_app_bundle() {
@@ -307,6 +314,34 @@ assert_not_contains "$helper_output" "$success_path_sentinel"
 assert_contains "$helper_output" "Package verified: LithePG.app"
 assert_contains "$helper_output" "Bundle ID: dev.omarpr.lithepg"
 assert_contains "$helper_output" "Version: 1.0 (100)"
+
+icon_missing_sentinel="ICON_MISSING_SENTINEL_SHOULD_NOT_LEAK"
+icon_missing_bundle="$fixture_root/icon-missing-$icon_missing_sentinel/LithePG.app"
+make_minimal_app_bundle "$icon_missing_bundle"
+rm "$icon_missing_bundle/Contents/Resources/AppIcon.icns"
+if run_helper_capture "$output_file" "$icon_missing_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted a bundle without AppIcon.icns"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "app icon must be a regular file"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$icon_missing_sentinel"
+
+icon_name_sentinel="ICON_NAME_SENTINEL_SHOULD_NOT_LEAK"
+icon_name_bundle="$fixture_root/icon-name-$icon_name_sentinel/LithePG.app"
+make_minimal_app_bundle "$icon_name_bundle"
+/usr/bin/sed -i '' 's|<string>AppIcon</string>|<string>WrongIcon</string>|' "$icon_name_bundle/Contents/Info.plist"
+if run_helper_capture "$output_file" "$icon_name_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted a mismatched CFBundleIconFile"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "CFBundleIconFile mismatch"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$icon_name_sentinel"
 
 path_shadow_sentinel="PATH_SHADOW_SENTINEL_SHOULD_NOT_RUN"
 path_shadow_fake_bin="$fixture_root/path-shadow-fake-bin"

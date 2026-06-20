@@ -1,5 +1,5 @@
 import Testing
-@testable import LithePGApp
+@testable import LithePGAppUI
 import LithePGCore
 
 @Suite("SchemaSidebar")

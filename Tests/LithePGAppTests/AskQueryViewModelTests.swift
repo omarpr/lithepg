@@ -1,7 +1,7 @@
 import LithePGCore
 import Testing
 
-@testable import LithePGApp
+@testable import LithePGAppUI
 
 @Suite("AskQueryViewModel")
 struct AskQueryViewModelTests {

@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import LithePGApp
+@testable import LithePGAppUI
 import LithePGCore
 
 @Suite("ResultsTable presentation")

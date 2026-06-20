@@ -213,6 +213,13 @@ done
 [[ -f "$root_shadow_safe_pkill_marker" ]] || fail "build_and_run root-shadow fixture did not invoke safe pkill override"
 assert_equals "$(<"$root_shadow_safe_pkill_marker")" "safe pkill -x LithePGApp"
 
+root_shadow_icon="$ROOT_DIR/dist/LithePG.app/Contents/Resources/AppIcon.icns"
+[[ -f "$root_shadow_icon" && ! -L "$root_shadow_icon" ]] || fail "build_and_run did not install Contents/Resources/AppIcon.icns"
+assert_equals "$(/usr/bin/stat -f%Lp "$root_shadow_icon")" "644"
+root_shadow_plist="$(<"$ROOT_DIR/dist/LithePG.app/Contents/Info.plist")"
+assert_contains "$root_shadow_plist" "CFBundleIconFile"
+assert_contains "$root_shadow_plist" "<string>AppIcon</string>"
+
 startup_helper_repo="$fixture_root/startup-helper-repo"
 startup_helper="$startup_helper_repo/script/build_and_run.sh"
 startup_fake_bin="$fixture_root/startup-fake-bin"
@@ -221,6 +228,8 @@ startup_fake_bash_sentinel="BUILD_AND_RUN_INITIAL_BASH_PATH_SHADOW_SENTINEL_SHOU
 /bin/mkdir -p "$startup_helper_repo/script" "$startup_fake_bin"
 /bin/cp "$HELPER" "$startup_helper"
 /bin/chmod +x "$startup_helper"
+/bin/mkdir -p "$startup_helper_repo/packaging"
+/bin/cp "$ROOT_DIR/packaging/AppIcon.icns" "$startup_helper_repo/packaging/AppIcon.icns"
 /bin/cat >"$startup_fake_bin/bash" <<SHIM
 #!/bin/bash
 /usr/bin/printf '%s fake bash invoked\\n' '$startup_fake_bash_sentinel' >&2
@@ -389,6 +398,61 @@ assert_contains "$startup_perl_output" "$startup_helper_repo/dist/LithePG.app"
 assert_not_contains "$startup_perl_output" "$startup_perl_sentinel"
 assert_not_contains "$startup_perl_output" "Perl startup invoked"
 [[ ! -e "$startup_perl_marker" ]] || fail "build_and_run invoked Perl startup env: $(<"$startup_perl_marker")"
+[[ -f "$startup_helper_repo/dist/LithePG.app/Contents/Resources/AppIcon.icns" ]] || fail "build_and_run did not install AppIcon.icns in the fixture bundle"
+
+icon_missing_repo="$fixture_root/icon-missing-repo"
+icon_missing_helper="$icon_missing_repo/script/build_and_run.sh"
+icon_missing_fake_bin="$fixture_root/icon-missing-fake-bin"
+icon_missing_swift_bin_dir="$fixture_root/icon-missing-swift-bin"
+icon_missing_swift_marker="$fixture_root/icon-missing-fake-swift-used"
+icon_missing_safe_pkill="$fixture_root/icon-missing-safe-pkill"
+/bin/mkdir -p "$icon_missing_repo/script" "$icon_missing_fake_bin" "$icon_missing_swift_bin_dir"
+/bin/cp "$HELPER" "$icon_missing_helper"
+/bin/chmod +x "$icon_missing_helper"
+/bin/cat >"$icon_missing_fake_bin/swift" <<'SWIFT'
+#!/bin/bash
+set -euo pipefail
+/usr/bin/printf 'fake icon-missing swift used\n' >"${FAKE_SWIFT_MARKER:?}"
+case "$*" in
+  "build --product LithePGApp")
+    /bin/mkdir -p "${FAKE_SWIFT_BIN_DIR:?}"
+    /bin/cp /usr/bin/true "$FAKE_SWIFT_BIN_DIR/LithePGApp"
+    /bin/chmod 755 "$FAKE_SWIFT_BIN_DIR/LithePGApp"
+    ;;
+  "build --show-bin-path")
+    /usr/bin/printf '%s\n' "${FAKE_SWIFT_BIN_DIR:?}"
+    ;;
+  *)
+    /usr/bin/printf 'unexpected fake icon-missing swift invocation: %s\n' "$*" >&2
+    exit 98
+    ;;
+esac
+SWIFT
+/bin/chmod +x "$icon_missing_fake_bin/swift"
+/bin/cat >"$icon_missing_safe_pkill" <<'SHIM'
+#!/bin/bash
+exit 0
+SHIM
+/bin/chmod +x "$icon_missing_safe_pkill"
+
+set +e
+(
+  PATH="$icon_missing_fake_bin:$PATH" \
+    FAKE_SWIFT_BIN_DIR="$icon_missing_swift_bin_dir" \
+    FAKE_SWIFT_MARKER="$icon_missing_swift_marker" \
+    LITHEPG_BUILD_AND_RUN_PKILL="$icon_missing_safe_pkill" \
+    LITHEPG_MARKETING_VERSION="1.0" \
+    LITHEPG_BUILD_VERSION="100" \
+    "$icon_missing_helper" --print-bundle-path
+) >"$output_file" 2>&1
+icon_missing_status=$?
+set -e
+icon_missing_output="$(<"$output_file")"
+if [[ "$icon_missing_status" -eq 0 ]]; then
+  /usr/bin/printf '%s\n' "$icon_missing_output" >&2
+  fail "build_and_run unexpectedly succeeded without packaging/AppIcon.icns"
+fi
+assert_contains "$icon_missing_output" "build_and_run failed: app icon asset missing"
 
 print_bundle_sentinel="BUILD_AND_RUN_FAKE_PKILL_SENTINEL_SHOULD_NOT_RUN"
 print_bundle_fake_bin="$fixture_root/print-bundle-fake-bin"

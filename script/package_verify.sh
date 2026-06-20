@@ -132,6 +132,12 @@ info_plist_mode="$(/usr/bin/stat -f%p "$INFO_PLIST")"
 if (( (8#$info_plist_mode & 07022) != 0 )); then
   fail "Info.plist mode is unsafe"
 fi
+APP_ICON="$CONTENTS_DIR/Resources/AppIcon.icns"
+[[ -f "$APP_ICON" && ! -L "$APP_ICON" ]] || fail "app icon must be a regular file"
+app_icon_mode="$(/usr/bin/stat -f%p "$APP_ICON")"
+if (( (8#$app_icon_mode & 07022) != 0 )); then
+  fail "app icon mode is unsafe"
+fi
 symlink_match=""
 if ! symlink_match="$(/usr/bin/find "$APP_BUNDLE" -type l -print -quit 2>/dev/null)"; then
   fail "app bundle must not contain symlinks"
@@ -187,6 +193,7 @@ if [[ -n "$finder_metadata_match" ]]; then
 fi
 
 executable="$(plist_value CFBundleExecutable)"
+icon_file="$(plist_value CFBundleIconFile)"
 bundle_id="$(plist_value CFBundleIdentifier)"
 bundle_name="$(plist_value CFBundleName)"
 package_type="$(plist_value CFBundlePackageType)"
@@ -196,6 +203,7 @@ marketing_version="$(plist_value CFBundleShortVersionString)"
 build_version="$(plist_value CFBundleVersion)"
 
 [[ "$executable" == "$APP_NAME" ]] || fail "CFBundleExecutable mismatch"
+[[ "$icon_file" == "AppIcon" ]] || fail "CFBundleIconFile mismatch"
 [[ "$bundle_id" == "$EXPECTED_BUNDLE_ID" ]] || fail "CFBundleIdentifier mismatch"
 [[ "$bundle_name" == "$BUNDLE_NAME" ]] || fail "CFBundleName mismatch"
 [[ "$package_type" == "APPL" ]] || fail "CFBundlePackageType mismatch"

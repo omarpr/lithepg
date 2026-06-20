@@ -38,6 +38,8 @@ make_minimal_app_bundle() {
   <string>LithePG</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
   <key>CFBundleShortVersionString</key>
   <string>1.0.0</string>
   <key>CFBundleVersion</key>
@@ -52,6 +54,11 @@ PLIST
 
   cp /usr/bin/true "$app_bundle/Contents/MacOS/LithePGApp"
   chmod +x "$app_bundle/Contents/MacOS/LithePGApp"
+
+  mkdir -p "$app_bundle/Contents/Resources"
+  chmod 755 "$app_bundle/Contents/Resources"
+  printf 'fixture-icns\n' >"$app_bundle/Contents/Resources/AppIcon.icns"
+  chmod 644 "$app_bundle/Contents/Resources/AppIcon.icns"
 }
 
 make_startup_hardening_fixture() {

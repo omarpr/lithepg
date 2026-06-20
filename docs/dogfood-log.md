@@ -1997,6 +1997,18 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Evidence artifact: `screenshots/evidence/2026-06-02-create-release-zip-artifact-gate.svg`.
 - No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted.
 
+## 2026-06-10 12:55 EDT — app icon + LithePGApp packaging product restore
+
+- Restored the `LithePGApp` executable product that the `jun 10` single-binary refactor removed: the SwiftUI module now builds as the `LithePGAppUI` library (still at `Sources/LithePGApp/` so packaging scripts keep resolving `LithePGApp.entitlements`), and a thin `Sources/LithePGAppMain/main.swift` executable target named `LithePGApp` fixes the built binary name that `build_and_run.sh`, `run_dogfood_app.sh`, and `package_verify.sh` require. `swift run lithepg` still launches the GUI when run without `--url`.
+- Added the first app icon: `packaging/AppIcon.png` (1024×1024 master) and `packaging/AppIcon.icns`, generated reproducibly by the new `script/generate_app_icon.swift` (CoreGraphics; blue rounded-square plate with a white database-cylinder glyph; regeneration commands documented in the script header).
+- `script/build_and_run.sh` now fails closed (`build_and_run failed: app icon asset missing`) when `packaging/AppIcon.icns` is absent, installs it at `Contents/Resources/AppIcon.icns` with mode 644, and writes `CFBundleIconFile = AppIcon` into the generated Info.plist.
+- `script/package_verify.sh` now rejects bundles whose `Contents/Resources/AppIcon.icns` is missing, a symlink, or group/world-writable, and fails on `CFBundleIconFile` ≠ `AppIcon`.
+- Strict-TDD coverage: `test_build_and_run.sh` gained icon-installed/mode/plist assertions plus a missing-icon fail-closed fixture (RED: `build_and_run did not install Contents/Resources/AppIcon.icns`); `test_package_verify.sh` gained icon-missing and `CFBundleIconFile` mismatch fixtures (RED: `package verifier unexpectedly accepted a bundle without AppIcon.icns`); `test_sign_and_notarize.sh` fixtures updated to build icon-bearing bundles.
+- GREEN verification passed: `bash script/test_build_and_run.sh`, `bash script/test_package_verify.sh`, `bash script/test_create_release_zip.sh`, `bash script/test_sign_and_notarize.sh`, `bash script/test_v10_release_gate.sh`, `bash script/test_run_dogfood_app.sh`, `bash script/test_dogfood_check.sh`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `swift test` (127 tests across 20 suites). End-to-end `script/build_and_run.sh --package` produced a signed `dist/LithePG.app` with the icon installed and passed package verification (12.03 MiB after strip -x).
+- Release-impact dogfood verification passed with Docker available: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh` wrote artifacts to `.build/dogfood-checks/20260610-124920/`; metrics: shell readiness 823.61 ms, connected cold start 447.49 ms (both elevated — measured while parallel release-helper test suites were still running on the same machine), raw release executable 21.63 MiB, strip-probe executable 12.03 MiB, `SELECT 1` median overhead 0.078 ms.
+- Evidence artifact: `docs/evidence/2026-06-10-app-icon-and-lithepgapp-product-restore.svg`.
+- No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication was attempted (local ad-hoc codesign only via the existing `--package` default).
+
 ## 2026-06-14 17:17 EDT — v1.0 release gate directory-mode safety checks
 
 - Hardened `script/v10_release_gate.sh` to check directory permissions inside `LithePG.app.zip`. Unsafe directory permissions (setuid, setgid, sticky bits, or group/world writable modes) will now fail validation in artifact-only mode.
@@ -2012,4 +2024,3 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - RED verification: standard `swift test` failed with permission errors on the three persistence model tests under background cron run when the host was locked.
 - GREEN verification passed: full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with all 127 tests in 20 suites perfectly green!
 - Evidence artifact: `screenshots/evidence/2026-06-14-persistence-file-protection-cron-fix.svg`.
-

@@ -2,7 +2,7 @@ import Foundation
 import LithePGCore
 import Testing
 
-@testable import LithePGApp
+@testable import LithePGAppUI
 
 private let appStateLivePostgresURL = ProcessInfo.processInfo.environment["POSTGRES_TEST_URL"]
 

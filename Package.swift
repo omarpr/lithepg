@@ -9,6 +9,7 @@ let package = Package(
     products: [
         .library(name: "LithePGCore", targets: ["LithePGCore"]),
         .executable(name: "lithepg", targets: ["lithepg"]),
+        .executable(name: "LithePGApp", targets: ["LithePGApp"]),
         .executable(name: "lithepg-bench", targets: ["LithePGBench"]),
     ],
     dependencies: [
@@ -23,12 +24,22 @@ let package = Package(
         ),
         .executableTarget(
             name: "lithepg",
-            dependencies: ["LithePGCore", "LithePGApp"]
+            dependencies: ["LithePGCore", "LithePGAppUI"]
         ),
+        // UI module keeps the Sources/LithePGApp path so packaging scripts can
+        // resolve LithePGApp.entitlements at its long-standing location.
         .target(
-            name: "LithePGApp",
+            name: "LithePGAppUI",
             dependencies: ["LithePGCore"],
+            path: "Sources/LithePGApp",
             exclude: ["LithePGApp.entitlements"]
+        ),
+        // Thin launcher: the target name fixes the built binary name to
+        // LithePGApp, which build_and_run.sh and package_verify.sh require.
+        .executableTarget(
+            name: "LithePGApp",
+            dependencies: ["LithePGAppUI"],
+            path: "Sources/LithePGAppMain"
         ),
         .executableTarget(
             name: "LithePGBench",
@@ -41,7 +52,7 @@ let package = Package(
         ),
         .testTarget(
             name: "LithePGAppTests",
-            dependencies: ["LithePGApp"],
+            dependencies: ["LithePGAppUI"],
             swiftSettings: [.enableExperimentalFeature("Testing")]
         ),
         .testTarget(
