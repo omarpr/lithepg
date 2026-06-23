@@ -160,7 +160,9 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     "icl4", "icl8", "il32", "l8mk", "ich#", "ich4", "ich8", "ih32", "h8mk",
     "it32", "t8mk", "icp4", "icp5", "icp6", "ic07", "ic08", "ic09", "ic10", "ic11", "ic12", "ic13", "ic14",
   );
+  my %high_resolution_image_types = map { $_ => 1 } ("ic10", "ic14");
   my $has_image_payload = 0;
+  my $has_high_resolution_image = 0;
   my $offset = 8;
   while ($offset < $total_length) {
     exit 1 if $offset + 8 > $total_length;
@@ -169,10 +171,14 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     exit 1 if $element_type !~ /\A[\x20-\x7e]{4}\z/;
     exit 1 if $element_length < 8;
     exit 1 if $offset + $element_length > $total_length;
-    $has_image_payload = 1 if $image_element_types{$element_type} && $element_length > 8;
+    if ($image_element_types{$element_type} && $element_length > 8) {
+      $has_image_payload = 1;
+      $has_high_resolution_image = 1 if $high_resolution_image_types{$element_type};
+    }
     $offset += $element_length;
   }
   exit 1 unless $has_image_payload;
+  exit 1 unless $has_high_resolution_image;
 
   exit 0;
 ' "$APP_ICON"; then

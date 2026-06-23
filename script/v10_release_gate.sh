@@ -999,7 +999,9 @@ image_element_types = {
     b"ich8", b"ih32", b"h8mk", b"it32", b"t8mk", b"icp4", b"icp5", b"icp6",
     b"ic07", b"ic08", b"ic09", b"ic10", b"ic11", b"ic12", b"ic13", b"ic14",
 }
+high_resolution_image_types = {b"ic10", b"ic14"}
 has_image_payload = False
+has_high_resolution_image = False
 offset = 8
 while offset < len(icon_data):
     if offset + 8 > len(icon_data):
@@ -1014,9 +1016,13 @@ while offset < len(icon_data):
         sys.exit(4)
     if element_type in image_element_types and element_length > 8:
         has_image_payload = True
+        if element_type in high_resolution_image_types:
+            has_high_resolution_image = True
     offset += element_length
 
 if not has_image_payload:
+    sys.exit(4)
+if not has_high_resolution_image:
     sys.exit(4)
 
 sys.exit(0)
