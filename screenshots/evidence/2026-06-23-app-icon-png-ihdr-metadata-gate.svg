@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 app-icon PNG IHDR metadata gate evidence</title>
+  <desc id="desc">Evidence summary for release package and artifact gates rejecting invalid high-resolution PNG IHDR metadata in AppIcon.icns.</desc>
+  <rect width="1200" height="760" rx="28" fill="#0f172a"/>
+  <rect x="36" y="36" width="1128" height="688" rx="22" fill="#111827" stroke="#38bdf8" stroke-width="2"/>
+  <text x="70" y="94" fill="#e0f2fe" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="28" font-weight="700">LithePG v1.0 release hardening</text>
+  <text x="70" y="132" fill="#93c5fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">AppIcon.icns high-resolution PNG IHDR metadata validation</text>
+
+  <g font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">
+    <text x="70" y="190" fill="#fbbf24">RED</text>
+    <text x="150" y="190" fill="#e5e7eb">test_package_verify failed: accepted invalid high-resolution PNG IHDR metadata</text>
+    <text x="150" y="220" fill="#e5e7eb">test_v10_release_gate failed: artifact-only gate accepted malformed release app icon</text>
+
+    <text x="70" y="276" fill="#34d399">GREEN</text>
+    <text x="150" y="276" fill="#e5e7eb">test_package_verify passed</text>
+    <text x="150" y="306" fill="#e5e7eb">test_v10_release_gate passed</text>
+    <text x="150" y="336" fill="#e5e7eb">test_sign_and_notarize, test_create_release_zip, test_build_and_run passed</text>
+    <text x="150" y="366" fill="#e5e7eb">swift build passed; swift test passed: 127 tests across 20 suites</text>
+
+    <text x="70" y="430" fill="#a78bfa">ARTIFACT</text>
+    <text x="180" y="430" fill="#e5e7eb">package_verify dist/LithePG.app passed</text>
+    <text x="180" y="460" fill="#e5e7eb">v10_release_gate --artifact-only passed for dist/LithePG.app.zip</text>
+    <text x="180" y="490" fill="#e5e7eb">Release artifact app icon: present; SHA-256: matches (digest not printed)</text>
+
+    <text x="70" y="554" fill="#fb7185">DOGFOOD</text>
+    <text x="180" y="554" fill="#e5e7eb">script/dogfood_check.sh not run in this cron environment: docker command missing</text>
+
+    <text x="70" y="622" fill="#38bdf8">FILES</text>
+    <text x="150" y="622" fill="#e5e7eb">script/package_verify.sh + script/v10_release_gate.sh</text>
+    <text x="150" y="652" fill="#e5e7eb">script/test_package_verify.sh + script/test_v10_release_gate.sh</text>
+  </g>
+</svg>

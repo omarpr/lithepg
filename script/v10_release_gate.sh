@@ -1001,13 +1001,37 @@ image_element_types = {
 }
 high_resolution_image_types = {b"ic10", b"ic14"}
 def png_dimensions_are_valid(payload, minimum_dimension):
+    if len(payload) < 33:
+        return False
+    if not payload.startswith(b"\x89PNG\r\n\x1a\n"):
+        return False
+    if int.from_bytes(payload[8:12], byteorder="big") != 13:
+        return False
+    if payload[12:16] != b"IHDR":
+        return False
+
+    width = int.from_bytes(payload[16:20], byteorder="big")
+    height = int.from_bytes(payload[20:24], byteorder="big")
+    bit_depth = payload[24]
+    color_type = payload[25]
+    compression_method = payload[26]
+    filter_method = payload[27]
+    interlace_method = payload[28]
+    valid_bit_depths = {
+        0: {1, 2, 4, 8, 16},
+        2: {8, 16},
+        3: {1, 2, 4, 8},
+        4: {8, 16},
+        6: {8, 16},
+    }
+
     return (
-        len(payload) >= 33
-        and payload.startswith(b"\x89PNG\r\n\x1a\n")
-        and int.from_bytes(payload[8:12], byteorder="big") == 13
-        and payload[12:16] == b"IHDR"
-        and int.from_bytes(payload[16:20], byteorder="big") >= minimum_dimension
-        and int.from_bytes(payload[20:24], byteorder="big") >= minimum_dimension
+        width >= minimum_dimension
+        and height >= minimum_dimension
+        and bit_depth in valid_bit_depths.get(color_type, set())
+        and compression_method == 0
+        and filter_method == 0
+        and interlace_method in {0, 1}
     )
 
 

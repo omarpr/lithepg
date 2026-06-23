@@ -169,6 +169,23 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     return 0 unless substr($payload, 12, 4) eq "IHDR";
     my $width = unpack("N", substr($payload, 16, 4));
     my $height = unpack("N", substr($payload, 20, 4));
+    my $bit_depth = unpack("C", substr($payload, 24, 1));
+    my $color_type = unpack("C", substr($payload, 25, 1));
+    my $compression_method = unpack("C", substr($payload, 26, 1));
+    my $filter_method = unpack("C", substr($payload, 27, 1));
+    my $interlace_method = unpack("C", substr($payload, 28, 1));
+    my $valid_bit_depth = 0;
+
+    $valid_bit_depth = 1 if $color_type == 0 && ($bit_depth == 1 || $bit_depth == 2 || $bit_depth == 4 || $bit_depth == 8 || $bit_depth == 16);
+    $valid_bit_depth = 1 if $color_type == 2 && ($bit_depth == 8 || $bit_depth == 16);
+    $valid_bit_depth = 1 if $color_type == 3 && ($bit_depth == 1 || $bit_depth == 2 || $bit_depth == 4 || $bit_depth == 8);
+    $valid_bit_depth = 1 if $color_type == 4 && ($bit_depth == 8 || $bit_depth == 16);
+    $valid_bit_depth = 1 if $color_type == 6 && ($bit_depth == 8 || $bit_depth == 16);
+
+    return 0 unless $valid_bit_depth;
+    return 0 unless $compression_method == 0;
+    return 0 unless $filter_method == 0;
+    return 0 unless $interlace_method == 0 || $interlace_method == 1;
     return $width >= $minimum_dimension && $height >= $minimum_dimension;
   }
 

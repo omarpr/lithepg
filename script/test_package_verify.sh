@@ -441,6 +441,22 @@ assert_not_contains "$helper_output" "Package verified:"
 assert_not_contains "$helper_output" "$icon_png_header_sentinel"
 assert_not_contains "$helper_output" "$icon_png_header_bundle"
 
+icon_png_ihdr_metadata_sentinel="ICON_PNG_IHDR_METADATA_SENTINEL_SHOULD_NOT_LEAK"
+icon_png_ihdr_metadata_bundle="$fixture_root/icon-png-ihdr-metadata-$icon_png_ihdr_metadata_sentinel/LithePG.app"
+make_minimal_app_bundle "$icon_png_ihdr_metadata_bundle"
+printf '\x69\x63\x6e\x73\x00\x00\x00\x31ic10\x00\x00\x00\x29\x89\x50\x4e\x47\x0d\x0a\x1a\x0a\x00\x00\x00\x0dIHDR\x00\x00\x04\x00\x00\x00\x04\x00\x00\x06\x00\x00\x00\x00\x00\x00\x00' >"$icon_png_ihdr_metadata_bundle/Contents/Resources/AppIcon.icns"
+chmod 644 "$icon_png_ihdr_metadata_bundle/Contents/Resources/AppIcon.icns"
+if run_helper_capture "$output_file" "$icon_png_ihdr_metadata_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted an AppIcon.icns whose high-resolution PNG IHDR metadata is invalid"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "app icon format is invalid"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$icon_png_ihdr_metadata_sentinel"
+assert_not_contains "$helper_output" "$icon_png_ihdr_metadata_bundle"
+
 icon_name_sentinel="ICON_NAME_SENTINEL_SHOULD_NOT_LEAK"
 icon_name_bundle="$fixture_root/icon-name-$icon_name_sentinel/LithePG.app"
 make_minimal_app_bundle "$icon_name_bundle"
