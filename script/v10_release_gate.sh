@@ -1084,7 +1084,7 @@ def png_dimensions_are_valid(payload, minimum_dimension):
     )
     if not scanline_payload_lengths:
         return False
-    if not png_idat_stream_is_valid(payload, scanline_payload_lengths):
+    if not png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type):
         return False
 
     return width >= minimum_dimension and height >= minimum_dimension
@@ -1131,11 +1131,12 @@ def png_expected_scanline_payload_lengths(width, height, bit_depth, color_type, 
     return scanline_payload_lengths
 
 
-def png_idat_stream_is_valid(payload, scanline_payload_lengths):
+def png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type):
     offset = 8
     idat_data = b""
     seen_idat = False
     idat_sequence_closed = False
+    seen_plte = False
 
     while offset < len(payload):
         if offset + 12 > len(payload):
@@ -1150,7 +1151,11 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths):
         actual_crc = zlib.crc32(payload[offset + 4:chunk_crc_offset]) & 0xFFFFFFFF
         if actual_crc != expected_crc:
             return False
-        if chunk_type == b"IDAT":
+        if chunk_type == b"PLTE":
+            if seen_idat:
+                return False
+            seen_plte = True
+        elif chunk_type == b"IDAT":
             if idat_sequence_closed:
                 return False
             seen_idat = True
@@ -1160,6 +1165,8 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths):
         offset = chunk_crc_offset + 4
 
     if not idat_data or offset != len(payload):
+        return False
+    if color_type == 3 and not seen_plte:
         return False
     try:
         inflated = zlib.decompress(idat_data)
