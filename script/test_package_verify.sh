@@ -60,7 +60,7 @@ PLIST
 
   mkdir -p "$app_bundle/Contents/Resources"
   chmod 755 "$app_bundle/Contents/Resources"
-  printf '\x69\x63\x6e\x73\x00\x00\x00\x4a\x69\x63\x31\x30\x00\x00\x00\x42\x89\x50\x4e\x47\x0d\x0a\x1a\x0a\x00\x00\x00\x0d\x49\x48\x44\x52\x00\x00\x04\x00\x00\x00\x04\x00\x08\x06\x00\x00\x00\x7f\x1d\x2b\x83\x00\x00\x00\x01\x49\x44\x41\x54\x78\x76\xe6\x84\xe6\x00\x00\x00\x00\x49\x45\x4e\x44\xae\x42\x60\x82' >"$app_bundle/Contents/Resources/AppIcon.icns"
+  printf '\x69\x63\x6e\x73\x00\x00\x00\x52\x69\x63\x31\x30\x00\x00\x00\x4a\x89\x50\x4e\x47\x0d\x0a\x1a\x0a\x00\x00\x00\x0d\x49\x48\x44\x52\x00\x00\x04\x00\x00\x00\x04\x00\x08\x06\x00\x00\x00\x7f\x1d\x2b\x83\x00\x00\x00\x09\x49\x44\x41\x54\x78\x9c\x63\x00\x00\x00\x01\x00\x01\x5e\xff\x7d\xf9\x00\x00\x00\x00\x49\x45\x4e\x44\xae\x42\x60\x82' >"$app_bundle/Contents/Resources/AppIcon.icns"
   chmod 644 "$app_bundle/Contents/Resources/AppIcon.icns"
 }
 
@@ -504,6 +504,22 @@ assert_contains "$helper_output" "app icon format is invalid"
 assert_not_contains "$helper_output" "Package verified:"
 assert_not_contains "$helper_output" "$icon_png_idat_sentinel"
 assert_not_contains "$helper_output" "$icon_png_idat_bundle"
+
+icon_png_idat_zlib_sentinel="ICON_PNG_IDAT_ZLIB_SENTINEL_SHOULD_NOT_LEAK"
+icon_png_idat_zlib_bundle="$fixture_root/icon-png-idat-zlib-$icon_png_idat_zlib_sentinel/LithePG.app"
+make_minimal_app_bundle "$icon_png_idat_zlib_bundle"
+printf '\x69\x63\x6e\x73\x00\x00\x00\x4a\x69\x63\x31\x30\x00\x00\x00\x42\x89\x50\x4e\x47\x0d\x0a\x1a\x0a\x00\x00\x00\x0d\x49\x48\x44\x52\x00\x00\x04\x00\x00\x00\x04\x00\x08\x06\x00\x00\x00\x7f\x1d\x2b\x83\x00\x00\x00\x01\x49\x44\x41\x54\x78\x76\xe6\x84\xe6\x00\x00\x00\x00\x49\x45\x4e\x44\xae\x42\x60\x82' >"$icon_png_idat_zlib_bundle/Contents/Resources/AppIcon.icns"
+chmod 644 "$icon_png_idat_zlib_bundle/Contents/Resources/AppIcon.icns"
+if run_helper_capture "$output_file" "$icon_png_idat_zlib_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted an AppIcon.icns whose high-resolution PNG IDAT stream is not valid zlib data"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "app icon format is invalid"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$icon_png_idat_zlib_sentinel"
+assert_not_contains "$helper_output" "$icon_png_idat_zlib_bundle"
 
 icon_name_sentinel="ICON_NAME_SENTINEL_SHOULD_NOT_LEAK"
 icon_name_bundle="$fixture_root/icon-name-$icon_name_sentinel/LithePG.app"

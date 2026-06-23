@@ -1055,7 +1055,7 @@ def png_dimensions_are_valid(payload, minimum_dimension):
         return False
     if zlib.crc32(payload[-8:-4]) & 0xFFFFFFFF != int.from_bytes(payload[-4:], byteorder="big"):
         return False
-    if not png_has_nonempty_idat_chunk(payload):
+    if not png_idat_stream_is_valid(payload):
         return False
 
     width = int.from_bytes(payload[16:20], byteorder="big")
@@ -1083,9 +1083,9 @@ def png_dimensions_are_valid(payload, minimum_dimension):
     )
 
 
-def png_has_nonempty_idat_chunk(payload):
+def png_idat_stream_is_valid(payload):
     offset = 8
-    has_idat_data = False
+    idat_data = b""
 
     while offset < len(payload):
         if offset + 12 > len(payload):
@@ -1100,11 +1100,17 @@ def png_has_nonempty_idat_chunk(payload):
         actual_crc = zlib.crc32(payload[offset + 4:chunk_crc_offset]) & 0xFFFFFFFF
         if actual_crc != expected_crc:
             return False
-        if chunk_type == b"IDAT" and chunk_length > 0:
-            has_idat_data = True
+        if chunk_type == b"IDAT":
+            idat_data += payload[chunk_data_start:chunk_crc_offset]
         offset = chunk_crc_offset + 4
 
-    return has_idat_data and offset == len(payload)
+    if not idat_data or offset != len(payload):
+        return False
+    try:
+        inflated = zlib.decompress(idat_data)
+    except zlib.error:
+        return False
+    return len(inflated) > 0
 
 
 def has_high_resolution_encoded_image(element_type, payload):

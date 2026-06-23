@@ -141,6 +141,7 @@ fi
 if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
   use strict;
   use warnings;
+  use Compress::Zlib qw(uncompress);
 
   my ($icon_path) = @ARGV;
   open my $icon_fh, "<:raw", $icon_path or exit 2;
@@ -188,7 +189,7 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     return 0 unless unpack("N", substr($payload, -12, 4)) == 0;
     return 0 unless substr($payload, -8, 4) eq "IEND";
     return 0 unless crc32(substr($payload, -8, 4)) == unpack("N", substr($payload, -4, 4));
-    return 0 unless png_has_nonempty_idat_chunk($payload);
+    return 0 unless png_idat_stream_is_valid($payload);
     my $width = unpack("N", substr($payload, 16, 4));
     my $height = unpack("N", substr($payload, 20, 4));
     my $bit_depth = unpack("C", substr($payload, 24, 1));
@@ -211,10 +212,10 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     return $width >= $minimum_dimension && $height >= $minimum_dimension;
   }
 
-  sub png_has_nonempty_idat_chunk {
+  sub png_idat_stream_is_valid {
     my ($payload) = @_;
     my $offset = 8;
-    my $has_idat_data = 0;
+    my $idat_data = "";
 
     while ($offset < length($payload)) {
       return 0 if $offset + 12 > length($payload);
@@ -224,11 +225,13 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
       my $chunk_crc_offset = $chunk_data_start + $chunk_length;
       return 0 if $chunk_crc_offset + 4 > length($payload);
       return 0 unless crc32(substr($payload, $offset + 4, 4 + $chunk_length)) == unpack("N", substr($payload, $chunk_crc_offset, 4));
-      $has_idat_data = 1 if $chunk_type eq "IDAT" && $chunk_length > 0;
+      $idat_data .= substr($payload, $chunk_data_start, $chunk_length) if $chunk_type eq "IDAT";
       $offset = $chunk_crc_offset + 4;
     }
 
-    return $has_idat_data && $offset == length($payload);
+    return 0 unless length($idat_data) > 0 && $offset == length($payload);
+    my $inflated = uncompress($idat_data);
+    return defined($inflated) && length($inflated) > 0;
   }
 
   sub has_high_resolution_encoded_image {
