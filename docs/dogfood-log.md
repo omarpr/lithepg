@@ -2368,3 +2368,15 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Evidence artifact: `screenshots/evidence/2026-06-23-app-icon-size-cap-gate.svg`.
 - Codex standalone review was attempted once and remains blocked by stale OAuth (`refresh_token_reused` / `token_expired`), so no further Codex retries were attempted.
 - No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.
+
+## 2026-06-23 17:11 EDT — v1.0 artifact duplicate-ICNS-element hardening
+
+- Hardened `script/v10_release_gate.sh` so artifact-only/publication preflight rejects a release-zip `AppIcon.icns` that repeats an ICNS image element type such as duplicate `ic10` entries, matching the package verifier's fail-closed behavior for ambiguous app-icon payloads.
+- Added strict-TDD regression coverage in `script/test_v10_release_gate.sh`: the fixture builds a signed `LithePG.app.zip` with two valid high-resolution `ic10` image elements, then requires artifact-only mode to report `Release artifact app icon: invalid` while redacting the artifact path, SHA-256, marker string, and `AppIcon.icns` path.
+- RED verification passed as expected before the production fix: `bash -n script/test_v10_release_gate.sh && ./script/test_v10_release_gate.sh` failed with `artifact-only gate unexpectedly passed with duplicate ICNS image elements in release artifact app icon`.
+- GREEN verification passed: `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh`, `./script/test_v10_release_gate.sh`, `bash script/test_package_verify.sh`, `bash script/test_sign_and_notarize.sh`, `bash script/test_create_release_zip.sh`, `bash script/test_build_and_run.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` (127 tests across 20 suites).
+- Rebuilt the local v1.0 package with `LITHEPG_MARKETING_VERSION=1.0`; `script/package_verify.sh` passed with packaged executable 12,545,680 bytes / 11.96 MiB, and `script/create_release_zip.sh` produced `dist/LithePG.app.zip` with SHA-256 `798d654a06fddbdd1775cb273811aaa0b4f5f1805de21abf00e535309cc8b824`. Artifact-only preflight passed with `Release artifact app icon: present`, `Release artifact executable size: under budget`, and `v1.0 artifact-only preflight is clear`.
+- Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker unavailable; skipping dogfood_check.sh`).
+- Codex standalone review was attempted once and remains blocked by stale OAuth (`refresh_token_reused` / `token_expired`), so no further Codex retries were attempted.
+- Evidence artifact: `screenshots/evidence/2026-06-23-v10-release-gate-duplicate-icns-elements.svg`.
+- No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.

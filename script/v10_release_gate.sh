@@ -1219,6 +1219,7 @@ def has_high_resolution_encoded_image(element_type, payload):
 
 has_image_payload = False
 has_high_resolution_image = False
+seen_image_element_types = set()
 offset = 8
 while offset < len(icon_data):
     if offset + 8 > len(icon_data):
@@ -1231,6 +1232,10 @@ while offset < len(icon_data):
         sys.exit(4)
     if offset + element_length > len(icon_data):
         sys.exit(4)
+    if element_type in image_element_types:
+        if element_type in seen_image_element_types:
+            sys.exit(4)
+        seen_image_element_types.add(element_type)
     if element_type in image_element_types and element_length > 8:
         payload = icon_data[offset + 8:offset + element_length]
         has_image_payload = True
