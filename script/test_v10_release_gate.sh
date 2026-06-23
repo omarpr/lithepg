@@ -751,7 +751,7 @@ write_app_icon_fixture() {
   local app_bundle_path="$1"
 
   mkdir -p "$app_bundle_path/Contents/Resources"
-  printf '\x69\x63\x6e\x73\x00\x00\x00\x0cfix\n' >"$app_bundle_path/Contents/Resources/AppIcon.icns"
+  printf '\x69\x63\x6e\x73\x00\x00\x00\x10icp4\x00\x00\x00\x08' >"$app_bundle_path/Contents/Resources/AppIcon.icns"
   /bin/chmod 644 "$app_bundle_path/Contents/Resources/AppIcon.icns"
 }
 
@@ -1041,7 +1041,7 @@ write_valid_info_plist "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Con
 /bin/chmod 755 "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
 write_app_icon_fixture "$malformed_app_icon_zip_dir/fixture-root/LithePG.app"
 malformed_app_icon_marker="MALFORMED_APP_ICON_FIXTURE_SHOULD_NOT_LEAK"
-printf '\x69\x63\x6e\x73\x00\x00\x00\xff%s\n' "$malformed_app_icon_marker" >"$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Resources/AppIcon.icns"
+printf '\x69\x63\x6e\x73\x00\x00\x00\x0cBAD!' >"$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Resources/AppIcon.icns"
 /bin/chmod 644 "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Resources/AppIcon.icns"
 /usr/bin/codesign --force --sign - --options runtime "$malformed_app_icon_zip_dir/fixture-root/LithePG.app" >/dev/null 2>&1
 (

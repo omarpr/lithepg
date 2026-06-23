@@ -138,11 +138,38 @@ app_icon_mode="$(/usr/bin/stat -f%p "$APP_ICON")"
 if (( (8#$app_icon_mode & 07022) != 0 )); then
   fail "app icon mode is unsafe"
 fi
-app_icon_header="$(/usr/bin/xxd -p -l 8 "$APP_ICON" 2>/dev/null | /usr/bin/tr -d '[:space:]' || true)"
-[[ "${app_icon_header:0:8}" == "69636e73" && "${#app_icon_header}" -eq 16 ]] || fail "app icon format is invalid"
-app_icon_declared_size=$((16#${app_icon_header:8:8}))
-app_icon_actual_size="$(/usr/bin/stat -f%z "$APP_ICON")"
-[[ "$app_icon_declared_size" -eq "$app_icon_actual_size" ]] || fail "app icon format is invalid"
+if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
+  use strict;
+  use warnings;
+
+  my ($icon_path) = @ARGV;
+  open my $icon_fh, "<:raw", $icon_path or exit 2;
+  local $/;
+  my $data = <$icon_fh>;
+  defined $data or exit 2;
+
+  my $total_length = length($data);
+  exit 1 if $total_length < 16;
+  exit 1 if substr($data, 0, 4) ne "icns";
+
+  my $declared_length = unpack("N", substr($data, 4, 4));
+  exit 1 if $declared_length != $total_length;
+
+  my $offset = 8;
+  while ($offset < $total_length) {
+    exit 1 if $offset + 8 > $total_length;
+    my $element_type = substr($data, $offset, 4);
+    my $element_length = unpack("N", substr($data, $offset + 4, 4));
+    exit 1 if $element_type !~ /\A[\x20-\x7e]{4}\z/;
+    exit 1 if $element_length < 8;
+    exit 1 if $offset + $element_length > $total_length;
+    $offset += $element_length;
+  }
+
+  exit 0;
+' "$APP_ICON"; then
+  fail "app icon format is invalid"
+fi
 symlink_match=""
 if ! symlink_match="$(/usr/bin/find "$APP_BUNDLE" -type l -print -quit 2>/dev/null)"; then
   fail "app bundle must not contain symlinks"

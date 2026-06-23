@@ -968,7 +968,7 @@ try:
         matches = [entry for entry in archive.infolist() if entry.filename == app_icon_path]
         if len(matches) == 1:
             with archive.open(matches[0]) as icon:
-                header = icon.read(8)
+                icon_data = icon.read()
 except (zipfile.BadZipFile, OSError):
     sys.exit(2)
 
@@ -984,11 +984,28 @@ if mode == 0 or not stat.S_ISREG(mode):
 if mode & (stat.S_ISUID | stat.S_ISGID | stat.S_ISVTX | 0o022):
     sys.exit(3)
 
-if len(header) != 8 or header[:4] != b"icns":
+if len(icon_data) != matches[0].file_size:
     sys.exit(4)
 
-if int.from_bytes(header[4:8], byteorder="big") != matches[0].file_size:
+if len(icon_data) < 16 or icon_data[:4] != b"icns":
     sys.exit(4)
+
+if int.from_bytes(icon_data[4:8], byteorder="big") != len(icon_data):
+    sys.exit(4)
+
+offset = 8
+while offset < len(icon_data):
+    if offset + 8 > len(icon_data):
+        sys.exit(4)
+    element_type = icon_data[offset:offset + 4]
+    element_length = int.from_bytes(icon_data[offset + 4:offset + 8], byteorder="big")
+    if any(byte < 0x20 or byte > 0x7e for byte in element_type):
+        sys.exit(4)
+    if element_length < 8:
+        sys.exit(4)
+    if offset + element_length > len(icon_data):
+        sys.exit(4)
+    offset += element_length
 
 sys.exit(0)
 PY
