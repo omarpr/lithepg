@@ -2033,3 +2033,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Also left the later focused v1.0 release-gate directory-mode and background-cron file-protection receipts intact as post-icon verification notes.
 - Evidence artifact: `screenshots/evidence/2026-06-23-v10-public-status-sync-app-icon.svg`.
 - This docs/evidence receipt sync attempted no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication.
+
+## 2026-06-23 01:32 EDT — v1.0 publication preflight current-state receipt
+
+- Rechecked local and remote release state after the public-status sync: `main` was clean at `3a0ab0b`, `origin/main` matched, local/origin `v0.5` existed, and local/origin `v1.0` remained absent.
+- Ran `./script/v10_release_gate.sh --check-remote`; the fast publication preflight continued to pass local artifact inspection for `dist/LithePG.app.zip` (filename, wrapper, bundle contents, canonical entries, safe modes, Info.plist metadata, executable permissions/format, code-signature resources/verification/identifier/runtime, and clean top-level entries).
+- The preflight intentionally remained blocked with 12 blockers: release-copy/Homebrew/security placeholders, missing approved release-artifact SHA-256 input, missing codesign identity/notary profile/security contact/Homebrew tap, GitHub Actions not approved, release-copy approval not approved, and publication approval not approved.
+- Checked GitHub Actions with `gh run list --repo omarpr/lithepg --limit 5`; the latest run was still the existing manual `workflow_dispatch` CI failure (`26688293183`, `2026-05-30`, before this receipt), so no new passing remote CI signal was available.
+- Evidence artifact: `screenshots/evidence/2026-06-23-v10-publication-preflight-current.svg`.
+- This docs/evidence preflight receipt attempted no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication.
