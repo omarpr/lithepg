@@ -262,6 +262,8 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     my ($payload, $scanline_payload_lengths) = @_;
     my $offset = 8;
     my $idat_data = "";
+    my $seen_idat = 0;
+    my $idat_sequence_closed = 0;
 
     while ($offset < length($payload)) {
       return 0 if $offset + 12 > length($payload);
@@ -271,7 +273,13 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
       my $chunk_crc_offset = $chunk_data_start + $chunk_length;
       return 0 if $chunk_crc_offset + 4 > length($payload);
       return 0 unless crc32(substr($payload, $offset + 4, 4 + $chunk_length)) == unpack("N", substr($payload, $chunk_crc_offset, 4));
-      $idat_data .= substr($payload, $chunk_data_start, $chunk_length) if $chunk_type eq "IDAT";
+      if ($chunk_type eq "IDAT") {
+        return 0 if $idat_sequence_closed;
+        $seen_idat = 1;
+        $idat_data .= substr($payload, $chunk_data_start, $chunk_length);
+      } elsif ($seen_idat) {
+        $idat_sequence_closed = 1;
+      }
       $offset = $chunk_crc_offset + 4;
     }
 

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 app-icon PNG IDAT consecutive-chunk hardening evidence</title>
+  <desc id="desc">Visual release evidence showing RED and GREEN verification for the PNG IDAT consecutive chunk gate.</desc>
+  <rect width="1200" height="760" rx="28" fill="#0f172a"/>
+  <rect x="34" y="34" width="1132" height="692" rx="22" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="70" y="92" fill="#e5e7eb" font-family="SF Pro Display, Helvetica, Arial, sans-serif" font-size="34" font-weight="700">LithePG release gate evidence</text>
+  <text x="70" y="132" fill="#93c5fd" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">2026-06-23 · app-icon PNG IDAT consecutive-chunk validation</text>
+
+  <g transform="translate(70 180)">
+    <rect width="500" height="160" rx="18" fill="#1f2937" stroke="#ef4444" stroke-width="2"/>
+    <text x="26" y="44" fill="#fecaca" font-family="SF Pro Display, Helvetica, Arial, sans-serif" font-size="24" font-weight="700">RED: regression test failed first</text>
+    <text x="26" y="82" fill="#f8fafc" font-family="SF Mono, Menlo, Consolas, monospace" font-size="17">test_package_verify failed:</text>
+    <text x="26" y="112" fill="#f8fafc" font-family="SF Mono, Menlo, Consolas, monospace" font-size="17">accepted non-consecutive IDAT chunks</text>
+    <text x="26" y="142" fill="#fca5a5" font-family="SF Mono, Menlo, Consolas, monospace" font-size="15">test_v10_release_gate failed the same artifact gap</text>
+  </g>
+
+  <g transform="translate(630 180)">
+    <rect width="500" height="160" rx="18" fill="#1f2937" stroke="#22c55e" stroke-width="2"/>
+    <text x="26" y="44" fill="#bbf7d0" font-family="SF Pro Display, Helvetica, Arial, sans-serif" font-size="24" font-weight="700">GREEN: package + release gates pass</text>
+    <text x="26" y="82" fill="#f8fafc" font-family="SF Mono, Menlo, Consolas, monospace" font-size="17">bash script/test_package_verify.sh ✓</text>
+    <text x="26" y="112" fill="#f8fafc" font-family="SF Mono, Menlo, Consolas, monospace" font-size="17">bash script/test_v10_release_gate.sh ✓</text>
+    <text x="26" y="142" fill="#86efac" font-family="SF Mono, Menlo, Consolas, monospace" font-size="15">dist/LithePG.app.zip artifact-only preflight clear</text>
+  </g>
+
+  <g transform="translate(70 388)">
+    <rect width="1060" height="250" rx="18" fill="#020617" stroke="#475569" stroke-width="2"/>
+    <text x="28" y="44" fill="#e2e8f0" font-family="SF Pro Display, Helvetica, Arial, sans-serif" font-size="24" font-weight="700">Verification snapshot</text>
+    <text x="28" y="86" fill="#cbd5e1" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">bash -n script/package_verify.sh script/test_package_verify.sh script/v10_release_gate.sh script/test_v10_release_gate.sh ✓</text>
+    <text x="28" y="122" fill="#cbd5e1" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">git diff --check ✓</text>
+    <text x="28" y="158" fill="#cbd5e1" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build ✓</text>
+    <text x="28" y="194" fill="#cbd5e1" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">swift test: 127 tests across 20 suites passed ✓</text>
+    <text x="28" y="230" fill="#cbd5e1" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">Docker unavailable in cron: dogfood_check skipped before startup</text>
+  </g>
+
+  <text x="70" y="688" fill="#94a3b8" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16">No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication attempted.</text>
+</svg>

@@ -2246,3 +2246,15 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Independent Hermes spec/quality reviews were dispatched for this slice; if their summaries arrive after this cron tick, the next watchdog tick should incorporate any findings before further release hardening.
 - Evidence artifact: `screenshots/evidence/2026-06-23-app-icon-png-filter-byte-gate.svg`.
 - No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.
+
+## 2026-06-23 09:51 EDT — v1.0 app-icon PNG IDAT consecutive-chunk hardening
+
+- Hardened `script/package_verify.sh` so high-resolution PNG-backed ICNS image payloads reject PNG streams whose `IDAT` chunks are interrupted by another chunk before a later `IDAT`. PNG requires multiple `IDAT` chunks to be consecutive, so this prevents a non-canonical split stream from satisfying the package gate.
+- Hardened `script/v10_release_gate.sh` so artifact-only/publication preflight applies the same consecutive-`IDAT` validation inside `LithePG.app.zip` while continuing to redact artifact paths, SHA-256 values, icon paths, and fixture sentinels.
+- Added strict-TDD regression coverage: `script/test_package_verify.sh` now builds a valid-dimension/zlib-valid PNG-backed `AppIcon.icns` with `IDAT`, `tEXt`, then another `IDAT`; `script/test_v10_release_gate.sh` uses the same malformed icon pattern for the signed artifact fixture.
+- RED verification passed as expected before the production fix: `bash script/test_package_verify.sh` failed with `package verifier unexpectedly accepted an AppIcon.icns whose high-resolution PNG IDAT chunks are not consecutive`, and `bash script/test_v10_release_gate.sh` failed with `artifact-only gate unexpectedly passed with malformed release artifact app icon`.
+- GREEN verification passed: `bash -n script/package_verify.sh script/test_package_verify.sh script/v10_release_gate.sh script/test_v10_release_gate.sh`, `bash script/test_package_verify.sh`, `bash script/test_v10_release_gate.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` (127 tests across 20 suites).
+- Local artifact verification passed: `./script/package_verify.sh dist/LithePG.app` and artifact-only preflight for the existing `dist/LithePG.app.zip` with its computed SHA-256 both passed, including `Release artifact app icon: present`, `Release artifact executable size: under budget`, and `v1.0 artifact-only preflight is clear`.
+- Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker` command missing).
+- Evidence artifact: `screenshots/evidence/2026-06-23-app-icon-png-idat-consecutive-gate.svg`.
+- No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.

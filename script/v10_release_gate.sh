@@ -1134,6 +1134,8 @@ def png_expected_scanline_payload_lengths(width, height, bit_depth, color_type, 
 def png_idat_stream_is_valid(payload, scanline_payload_lengths):
     offset = 8
     idat_data = b""
+    seen_idat = False
+    idat_sequence_closed = False
 
     while offset < len(payload):
         if offset + 12 > len(payload):
@@ -1149,7 +1151,12 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths):
         if actual_crc != expected_crc:
             return False
         if chunk_type == b"IDAT":
+            if idat_sequence_closed:
+                return False
+            seen_idat = True
             idat_data += payload[chunk_data_start:chunk_crc_offset]
+        elif seen_idat:
+            idat_sequence_closed = True
         offset = chunk_crc_offset + 4
 
     if not idat_data or offset != len(payload):

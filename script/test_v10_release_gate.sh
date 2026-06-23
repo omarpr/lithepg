@@ -832,6 +832,50 @@ PY
   /bin/chmod 644 "$app_bundle_path/Contents/Resources/AppIcon.icns"
 }
 
+write_split_idat_app_icon_fixture() {
+  local app_bundle_path="$1"
+
+  mkdir -p "$app_bundle_path/Contents/Resources"
+  /usr/bin/python3 - "$app_bundle_path/Contents/Resources/AppIcon.icns" <<'PY'
+import binascii
+import struct
+import sys
+import zlib
+
+output_path = sys.argv[1]
+width = 1024
+height = 1024
+
+
+def png_chunk(chunk_type, data):
+    return (
+        len(data).to_bytes(4, "big")
+        + chunk_type
+        + data
+        + (binascii.crc32(chunk_type + data) & 0xFFFFFFFF).to_bytes(4, "big")
+    )
+
+
+raw_scanlines = b"".join(b"\x00" + (b"\x00" * width * 4) for _ in range(height))
+compressed = zlib.compress(raw_scanlines, 9)
+split_at = max(1, len(compressed) // 2)
+png_payload = (
+    b"\x89PNG\r\n\x1a\n"
+    + png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+    + png_chunk(b"IDAT", compressed[:split_at])
+    + png_chunk(b"tEXt", b"lithepg=nonconsecutive-idat")
+    + png_chunk(b"IDAT", compressed[split_at:])
+    + png_chunk(b"IEND", b"")
+)
+icns_element = b"ic10" + (len(png_payload) + 8).to_bytes(4, "big") + png_payload
+icns = b"icns" + (len(icns_element) + 8).to_bytes(4, "big") + icns_element
+
+with open(output_path, "wb") as icon_file:
+    icon_file.write(icns)
+PY
+  /bin/chmod 644 "$app_bundle_path/Contents/Resources/AppIcon.icns"
+}
+
 mkdir -p "$release_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
 write_valid_info_plist "$release_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 /bin/cp /usr/bin/true "$release_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
@@ -1116,7 +1160,7 @@ mkdir -p "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
 write_valid_info_plist "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 /bin/cp /usr/bin/true "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
 /bin/chmod 755 "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
-write_invalid_filter_app_icon_fixture "$malformed_app_icon_zip_dir/fixture-root/LithePG.app"
+write_split_idat_app_icon_fixture "$malformed_app_icon_zip_dir/fixture-root/LithePG.app"
 malformed_app_icon_marker="MALFORMED_APP_ICON_FIXTURE_SHOULD_NOT_LEAK"
 /usr/bin/codesign --force --sign - --options runtime "$malformed_app_icon_zip_dir/fixture-root/LithePG.app" >/dev/null 2>&1
 (
