@@ -167,6 +167,19 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     "it32", "t8mk", "icp4", "icp5", "icp6", "ic07", "ic08", "ic09", "ic10", "ic11", "ic12", "ic13", "ic14",
   );
   my %high_resolution_image_types = map { $_ => 1 } ("ic10", "ic14");
+  my %png_image_dimensions = (
+    "icp4" => 16,
+    "icp5" => 32,
+    "icp6" => 64,
+    "ic07" => 128,
+    "ic08" => 256,
+    "ic09" => 512,
+    "ic10" => 1024,
+    "ic11" => 32,
+    "ic12" => 64,
+    "ic13" => 256,
+    "ic14" => 512,
+  );
   sub crc32 {
     my ($bytes) = @_;
     my $crc = 0xffffffff;
@@ -348,9 +361,14 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
 
   sub has_high_resolution_encoded_image {
     my ($element_type, $payload) = @_;
-    my $expected_dimension = $element_type eq "ic10" ? 1024 : 512;
-    return 1 if png_dimensions_are_valid($payload, $expected_dimension);
-    return 0;
+    return 0 unless exists $png_image_dimensions{$element_type};
+    return png_dimensions_are_valid($payload, $png_image_dimensions{$element_type});
+  }
+  sub png_encoded_image_payload_is_valid {
+    my ($element_type, $payload) = @_;
+    return 1 unless exists $png_image_dimensions{$element_type};
+    return 1 unless length($payload) >= 8 && substr($payload, 0, 8) eq "\x89PNG\r\n\x1a\n";
+    return png_dimensions_are_valid($payload, $png_image_dimensions{$element_type});
   }
   my $has_image_payload = 0;
   my $has_high_resolution_image = 0;
@@ -369,6 +387,7 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     if ($image_element_types{$element_type} && $element_length > 8) {
       my $payload = substr($data, $offset + 8, $element_length - 8);
       $has_image_payload = 1;
+      exit 1 unless png_encoded_image_payload_is_valid($element_type, $payload);
       $has_high_resolution_image = 1 if $high_resolution_image_types{$element_type} && has_high_resolution_encoded_image($element_type, $payload);
     }
     $offset += $element_length;

@@ -59,6 +59,51 @@ with open(output_path, "wb") as icon_file:
 PY
 }
 
+write_bad_low_resolution_png_sibling_app_icon_fixture() {
+  local output_path="$1"
+
+  /usr/bin/python3 - "$output_path" <<'PY'
+import binascii
+import struct
+import sys
+import zlib
+
+output_path = sys.argv[1]
+
+
+def png_chunk(chunk_type, data):
+    return (
+        len(data).to_bytes(4, "big")
+        + chunk_type
+        + data
+        + (binascii.crc32(chunk_type + data) & 0xFFFFFFFF).to_bytes(4, "big")
+    )
+
+
+def rgba_png(width, height):
+    raw_scanlines = b"".join(b"\x00" + (b"\x00" * width * 4) for _ in range(height))
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+        + png_chunk(b"IDAT", zlib.compress(raw_scanlines, 9))
+        + png_chunk(b"IEND", b"")
+    )
+
+
+# The high-resolution ic10 payload is valid, but the PNG-encoded ic12 sibling
+# declares 65x64 instead of ic12's expected 64x64. Every PNG-encoded icon image
+# element must match its ICNS slot, not just the one satisfying the high-res gate.
+bad_sibling_payload = rgba_png(65, 64)
+valid_high_res_payload = rgba_png(1024, 1024)
+bad_sibling_element = b"ic12" + (len(bad_sibling_payload) + 8).to_bytes(4, "big") + bad_sibling_payload
+valid_high_res_element = b"ic10" + (len(valid_high_res_payload) + 8).to_bytes(4, "big") + valid_high_res_payload
+icns = b"icns" + (len(bad_sibling_element) + len(valid_high_res_element) + 8).to_bytes(4, "big") + bad_sibling_element + valid_high_res_element
+
+with open(output_path, "wb") as icon_file:
+    icon_file.write(icns)
+PY
+}
+
 write_duplicate_icns_image_element_app_icon_fixture() {
   local output_path="$1"
 
@@ -902,6 +947,22 @@ assert_contains "$helper_output" "app icon format is invalid"
 assert_not_contains "$helper_output" "Package verified:"
 assert_not_contains "$helper_output" "$icon_format_sentinel"
 assert_not_contains "$helper_output" "$icon_format_bundle"
+
+icon_bad_low_resolution_sibling_sentinel="ICON_BAD_LOW_RESOLUTION_SIBLING_SENTINEL_SHOULD_NOT_LEAK"
+icon_bad_low_resolution_sibling_bundle="$fixture_root/icon-bad-low-resolution-sibling-$icon_bad_low_resolution_sibling_sentinel/LithePG.app"
+make_minimal_app_bundle "$icon_bad_low_resolution_sibling_bundle"
+write_bad_low_resolution_png_sibling_app_icon_fixture "$icon_bad_low_resolution_sibling_bundle/Contents/Resources/AppIcon.icns"
+chmod 644 "$icon_bad_low_resolution_sibling_bundle/Contents/Resources/AppIcon.icns"
+if run_helper_capture "$output_file" "$icon_bad_low_resolution_sibling_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted an AppIcon.icns whose low-resolution PNG sibling has the wrong dimensions"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "app icon format is invalid"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$icon_bad_low_resolution_sibling_sentinel"
+assert_not_contains "$helper_output" "$icon_bad_low_resolution_sibling_bundle"
 
 icon_oversized_file_sentinel="ICON_OVERSIZED_FILE_SENTINEL_SHOULD_NOT_LEAK"
 icon_oversized_file_bundle="$fixture_root/icon-oversized-file-$icon_oversized_file_sentinel/LithePG.app"
