@@ -959,6 +959,7 @@ release_zip_app_icon_status() {
 import stat
 import sys
 import zipfile
+import zlib
 
 zip_path = sys.argv[1]
 app_icon_path = "LithePG.app/Contents/Resources/AppIcon.icns"
@@ -1008,6 +1009,8 @@ def png_dimensions_are_valid(payload, minimum_dimension):
     if int.from_bytes(payload[8:12], byteorder="big") != 13:
         return False
     if payload[12:16] != b"IHDR":
+        return False
+    if zlib.crc32(payload[12:29]) & 0xFFFFFFFF != int.from_bytes(payload[29:33], byteorder="big"):
         return False
 
     width = int.from_bytes(payload[16:20], byteorder="big")

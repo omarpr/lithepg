@@ -161,12 +161,29 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     "it32", "t8mk", "icp4", "icp5", "icp6", "ic07", "ic08", "ic09", "ic10", "ic11", "ic12", "ic13", "ic14",
   );
   my %high_resolution_image_types = map { $_ => 1 } ("ic10", "ic14");
+  sub crc32 {
+    my ($bytes) = @_;
+    my $crc = 0xffffffff;
+    for my $byte (unpack("C*", $bytes)) {
+      $crc ^= $byte;
+      for (1..8) {
+        if ($crc & 1) {
+          $crc = (($crc >> 1) ^ 0xedb88320) & 0xffffffff;
+        } else {
+          $crc = ($crc >> 1) & 0xffffffff;
+        }
+      }
+    }
+    return ($crc ^ 0xffffffff) & 0xffffffff;
+  }
+
   sub png_dimensions_are_valid {
     my ($payload, $minimum_dimension) = @_;
     return 0 unless length($payload) >= 33;
     return 0 unless substr($payload, 0, 8) eq "\x89PNG\r\n\x1a\n";
     return 0 unless unpack("N", substr($payload, 8, 4)) == 13;
     return 0 unless substr($payload, 12, 4) eq "IHDR";
+    return 0 unless crc32(substr($payload, 12, 17)) == unpack("N", substr($payload, 29, 4));
     my $width = unpack("N", substr($payload, 16, 4));
     my $height = unpack("N", substr($payload, 20, 4));
     my $bit_depth = unpack("C", substr($payload, 24, 1));
