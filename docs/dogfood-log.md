@@ -2042,3 +2042,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Checked GitHub Actions with `gh run list --repo omarpr/lithepg --limit 5`; the latest run was still the existing manual `workflow_dispatch` CI failure (`26688293183`, `2026-05-30`, before this receipt), so no new passing remote CI signal was available.
 - Evidence artifact: `screenshots/evidence/2026-06-23-v10-publication-preflight-current.svg`.
 - This docs/evidence preflight receipt attempted no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication.
+
+## 2026-06-23 02:04 EDT — v1.0 release gate icon metadata hardening
+
+- Hardened `script/v10_release_gate.sh` so release artifact Info.plist metadata validation now requires `CFBundleIconFile = AppIcon`, matching the app-icon packaging requirement already enforced by `script/package_verify.sh`.
+- Added strict-TDD coverage in `script/test_v10_release_gate.sh`: the valid release-artifact fixture now includes `CFBundleIconFile`, and the metadata-mismatch fixture is otherwise valid but intentionally omits that icon metadata.
+- RED verification: `bash script/test_v10_release_gate.sh` failed first with `expected output to contain: Release artifact Info.plist metadata: mismatch` because the old gate did not reject the iconless metadata fixture.
+- GREEN verification passed: `bash script/test_v10_release_gate.sh`, `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` (127 tests across 20 suites).
+- Release-impact dogfood verification was attempted but could not run on this tick because Docker is unavailable in the current environment: `script/dogfood_check.sh` stopped with `docker is required for LithePG dogfood Postgres` before seeded Postgres startup.
+- Refreshed the ignored local `dist/LithePG.app` / `dist/LithePG.app.zip` with `LITHEPG_MARKETING_VERSION=1.0`; the fast publication preflight now reports `Release artifact Info.plist metadata: matches` while remaining intentionally blocked on external placeholders, missing approved release-artifact SHA-256 input, missing signing/notary/security-contact/Homebrew tap inputs, GitHub Actions approval, release-copy approval, and publication approval.
+- Evidence artifact: `screenshots/evidence/2026-06-23-v10-release-gate-icon-metadata.svg`.
+- No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.

@@ -680,6 +680,8 @@ write_valid_info_plist() {
   <string>LithePG</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
   <key>CFBundleShortVersionString</key>
   <string>1.0</string>
   <key>CFBundleVersion</key>
@@ -806,7 +808,30 @@ printf 'unexpected public release top-level file\n' >"$unexpected_top_level_zip_
 unexpected_top_level_zip_sha="$(/usr/bin/shasum -a 256 "$unexpected_top_level_zip" | /usr/bin/cut -d ' ' -f 1)"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$unexpected_top_level_zip_sha" >"$unexpected_top_level_release_copy"
 mkdir -p "$invalid_metadata_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
-printf '<plist><dict></dict></plist>\n' >"$invalid_metadata_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
+cat >"$invalid_metadata_zip_dir/fixture-root/LithePG.app/Contents/Info.plist" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleExecutable</key>
+  <string>LithePGApp</string>
+  <key>CFBundleIdentifier</key>
+  <string>dev.omarpr.lithepg</string>
+  <key>CFBundleName</key>
+  <string>LithePG</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>1.0</string>
+  <key>CFBundleVersion</key>
+  <string>100</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>14.0</string>
+  <key>NSPrincipalClass</key>
+  <string>NSApplication</string>
+</dict>
+</plist>
+PLIST
 printf 'fake public release app executable fixture\n' >"$invalid_metadata_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
 /bin/chmod 755 "$invalid_metadata_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
 write_code_signature_resources "$invalid_metadata_zip_dir/fixture-root/LithePG.app"

@@ -812,6 +812,7 @@ release_zip_info_plist_metadata_status() {
     plist_key_matches "$plist_file" CFBundleIdentifier "dev.omarpr.lithepg" && \
     plist_key_matches "$plist_file" CFBundleName "LithePG" && \
     plist_key_matches "$plist_file" CFBundlePackageType "APPL" && \
+    plist_key_matches "$plist_file" CFBundleIconFile "AppIcon" && \
     plist_key_matches "$plist_file" CFBundleShortVersionString "$expected_version" && \
     plist_key_is_numeric "$plist_file" CFBundleVersion && \
     plist_key_matches "$plist_file" LSMinimumSystemVersion "14.0" && \
