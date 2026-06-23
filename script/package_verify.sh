@@ -45,6 +45,7 @@ BUNDLE_NAME="LithePG"
 EXPECTED_BUNDLE_ID="dev.omarpr.lithepg"
 EXPECTED_MIN_SYSTEM_VERSION="14.0"
 HARD_CAP_BYTES=$((50 * 1024 * 1024))
+APP_ICON_MAX_BYTES=$((10 * 1024 * 1024))
 ROOT_DIR="$(/bin/realpath "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/..")"
 
 fail() {
@@ -137,6 +138,10 @@ APP_ICON="$CONTENTS_DIR/Resources/AppIcon.icns"
 app_icon_mode="$(/usr/bin/stat -f%p "$APP_ICON")"
 if (( (8#$app_icon_mode & 07022) != 0 )); then
   fail "app icon mode is unsafe"
+fi
+app_icon_bytes="$(/usr/bin/stat -f%z "$APP_ICON")"
+if (( app_icon_bytes <= 0 || app_icon_bytes > APP_ICON_MAX_BYTES )); then
+  fail "app icon exceeds size cap"
 fi
 if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
   use strict;

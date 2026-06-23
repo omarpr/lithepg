@@ -71,6 +71,7 @@ SECURITY_DOC_PATH="${LITHEPG_SECURITY_DOC_PATH:-}"
 RELEASE_ZIP_PATH="${LITHEPG_RELEASE_ZIP_PATH:-dist/LithePG.app.zip}"
 RELEASE_ZIP_SHA256="${LITHEPG_RELEASE_ZIP_SHA256:-}"
 HARD_CAP_BYTES=$((50 * 1024 * 1024))
+APP_ICON_MAX_BYTES=$((10 * 1024 * 1024))
 
 usage() {
   /bin/cat <<'USAGE'
@@ -990,21 +991,19 @@ release_zip_app_icon_status() {
     return 2
   fi
 
-  /usr/bin/python3 -I - "$zip_file" <<'PY'
+  /usr/bin/python3 -I - "$zip_file" "$APP_ICON_MAX_BYTES" <<'PY'
 import stat
 import sys
 import zipfile
 import zlib
 
 zip_path = sys.argv[1]
+app_icon_max_bytes = int(sys.argv[2])
 app_icon_path = "LithePG.app/Contents/Resources/AppIcon.icns"
 
 try:
     with zipfile.ZipFile(zip_path) as archive:
         matches = [entry for entry in archive.infolist() if entry.filename == app_icon_path]
-        if len(matches) == 1:
-            with archive.open(matches[0]) as icon:
-                icon_data = icon.read()
 except (zipfile.BadZipFile, OSError):
     sys.exit(2)
 
@@ -1019,6 +1018,16 @@ if mode == 0 or not stat.S_ISREG(mode):
 
 if mode & (stat.S_ISUID | stat.S_ISGID | stat.S_ISVTX | 0o022):
     sys.exit(3)
+
+if matches[0].file_size <= 0 or matches[0].file_size > app_icon_max_bytes:
+    sys.exit(3)
+
+try:
+    with zipfile.ZipFile(zip_path) as archive:
+        with archive.open(matches[0]) as icon:
+            icon_data = icon.read()
+except (zipfile.BadZipFile, OSError):
+    sys.exit(2)
 
 if len(icon_data) != matches[0].file_size:
     sys.exit(4)

@@ -108,6 +108,7 @@ artifact_app_icon_malformed_output="$(mktemp)"
 artifact_app_icon_invalid_chunk_type_output="$(mktemp)"
 artifact_app_icon_unknown_critical_output="$(mktemp)"
 artifact_app_icon_oversized_dimensions_output="$(mktemp)"
+artifact_app_icon_oversized_file_output="$(mktemp)"
 missing_artifact_sha_output="$(mktemp)"
 invalid_artifact_sha_output="$(mktemp)"
 mismatched_artifact_sha_output="$(mktemp)"
@@ -273,6 +274,10 @@ oversized_dimensions_app_icon_zip_dir="$(mktemp -d)"
 oversized_dimensions_app_icon_zip="$oversized_dimensions_app_icon_zip_dir/LithePG.app.zip"
 oversized_dimensions_app_icon_release_copy="$(mktemp)"
 oversized_dimensions_app_icon_homebrew_cask="$(mktemp)"
+oversized_file_app_icon_zip_dir="$(mktemp -d)"
+oversized_file_app_icon_zip="$oversized_file_app_icon_zip_dir/LithePG.app.zip"
+oversized_file_app_icon_release_copy="$(mktemp)"
+oversized_file_app_icon_homebrew_cask="$(mktemp)"
 text_executable_bundle_zip_dir="$(mktemp -d)"
 text_executable_bundle_zip="$text_executable_bundle_zip_dir/LithePG.app.zip"
 text_executable_bundle_release_copy="$(mktemp)"
@@ -394,6 +399,7 @@ cleanup() {
     "$artifact_app_icon_invalid_chunk_type_output" \
     "$artifact_app_icon_unknown_critical_output" \
     "$artifact_app_icon_oversized_dimensions_output" \
+    "$artifact_app_icon_oversized_file_output" \
     "$missing_artifact_sha_output" \
     "$invalid_artifact_sha_output" \
     "$mismatched_artifact_sha_output" \
@@ -539,6 +545,9 @@ cleanup() {
     "$oversized_dimensions_app_icon_zip" \
     "$oversized_dimensions_app_icon_release_copy" \
     "$oversized_dimensions_app_icon_homebrew_cask" \
+    "$oversized_file_app_icon_zip" \
+    "$oversized_file_app_icon_release_copy" \
+    "$oversized_file_app_icon_homebrew_cask" \
     "$text_executable_bundle_zip" \
     "$text_executable_bundle_release_copy" \
     "$text_executable_bundle_homebrew_cask" \
@@ -588,7 +597,7 @@ cleanup() {
     "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$startup_hardening_root" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$unsafe_directory_mode_zip_dir" "$unsafe_root_directory_mode_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$missing_app_icon_zip_dir" "$malformed_app_icon_zip_dir" "$invalid_chunk_type_app_icon_zip_dir" "$unknown_critical_app_icon_zip_dir" "$oversized_dimensions_app_icon_zip_dir" "$text_executable_bundle_zip_dir" "$over_budget_executable_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$startup_hardening_root" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$unsafe_directory_mode_zip_dir" "$unsafe_root_directory_mode_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$missing_app_icon_zip_dir" "$malformed_app_icon_zip_dir" "$invalid_chunk_type_app_icon_zip_dir" "$unknown_critical_app_icon_zip_dir" "$oversized_dimensions_app_icon_zip_dir" "$oversized_file_app_icon_zip_dir" "$text_executable_bundle_zip_dir" "$over_budget_executable_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
@@ -815,6 +824,29 @@ icns = b"icns" + (len(icns_element) + 8).to_bytes(4, "big") + icns_element
 
 with open(output_path, "wb") as icon_file:
     icon_file.write(icns)
+PY
+  /bin/chmod 644 "$app_bundle_path/Contents/Resources/AppIcon.icns"
+}
+
+write_oversized_app_icon_file_fixture() {
+  local app_bundle_path="$1"
+
+  write_app_icon_fixture "$app_bundle_path"
+  /usr/bin/python3 - "$app_bundle_path/Contents/Resources/AppIcon.icns" <<'PY'
+import sys
+
+icon_path = sys.argv[1]
+max_icon_bytes = 10 * 1024 * 1024
+
+with open(icon_path, "rb") as icon_file:
+    icon = icon_file.read()
+
+padding_length = max_icon_bytes + 1 - len(icon)
+padding_element = b"zzzz" + (padding_length + 8).to_bytes(4, "big") + (b"\0" * padding_length)
+oversized_icon = b"icns" + (len(icon) + len(padding_element)).to_bytes(4, "big") + icon[8:] + padding_element
+
+with open(icon_path, "wb") as icon_file:
+    icon_file.write(oversized_icon)
 PY
   /bin/chmod 644 "$app_bundle_path/Contents/Resources/AppIcon.icns"
 }
@@ -1541,6 +1573,19 @@ oversized_dimensions_app_icon_marker="OVERSIZED_DIMENSIONS_APP_ICON_FIXTURE_SHOU
 )
 oversized_dimensions_app_icon_zip_sha="$(/usr/bin/shasum -a 256 "$oversized_dimensions_app_icon_zip" | /usr/bin/cut -d ' ' -f 1)"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$oversized_dimensions_app_icon_zip_sha" >"$oversized_dimensions_app_icon_release_copy"
+mkdir -p "$oversized_file_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
+write_valid_info_plist "$oversized_file_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
+/bin/cp /usr/bin/true "$oversized_file_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+/bin/chmod 755 "$oversized_file_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+write_oversized_app_icon_file_fixture "$oversized_file_app_icon_zip_dir/fixture-root/LithePG.app"
+oversized_file_app_icon_marker="OVERSIZED_FILE_APP_ICON_FIXTURE_SHOULD_NOT_LEAK"
+/usr/bin/codesign --force --sign - --options runtime "$oversized_file_app_icon_zip_dir/fixture-root/LithePG.app" >/dev/null 2>&1
+(
+  cd "$oversized_file_app_icon_zip_dir/fixture-root"
+  /usr/bin/zip -qr "$oversized_file_app_icon_zip" LithePG.app
+)
+oversized_file_app_icon_zip_sha="$(/usr/bin/shasum -a 256 "$oversized_file_app_icon_zip" | /usr/bin/cut -d ' ' -f 1)"
+printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$oversized_file_app_icon_zip_sha" >"$oversized_file_app_icon_release_copy"
 mkdir -p "$missing_code_resources_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
 write_valid_info_plist "$missing_code_resources_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 /bin/cp /usr/bin/true "$missing_code_resources_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
@@ -4423,6 +4468,37 @@ assert_not_contains "$artifact_app_icon_oversized_dimensions_text" "$oversized_d
 assert_not_contains "$artifact_app_icon_oversized_dimensions_text" "AppIcon.icns"
 assert_not_contains "$artifact_app_icon_oversized_dimensions_text" "External publication inputs"
 assert_not_contains "$artifact_app_icon_oversized_dimensions_text" "fast preflight is clear"
+
+if run_gate_capture "$artifact_app_icon_oversized_file_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$oversized_file_app_icon_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$oversized_file_app_icon_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$oversized_file_app_icon_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$oversized_file_app_icon_zip_sha" \
+  /bin/bash -c 'exec "$1" --artifact-only' _; then
+  artifact_app_icon_oversized_file_text="$(<"$artifact_app_icon_oversized_file_output")"
+  assert_not_contains "$artifact_app_icon_oversized_file_text" "$oversized_file_app_icon_zip_sha"
+  assert_not_contains "$artifact_app_icon_oversized_file_text" "$oversized_file_app_icon_zip"
+  assert_not_contains "$artifact_app_icon_oversized_file_text" "$oversized_file_app_icon_marker"
+  assert_not_contains "$artifact_app_icon_oversized_file_text" "AppIcon.icns"
+  fail "artifact-only gate unexpectedly passed with an over-size release artifact app icon"
+fi
+artifact_app_icon_oversized_file_text="$(<"$artifact_app_icon_oversized_file_output")"
+assert_contains "$artifact_app_icon_oversized_file_text" "Artifact-only mode: enabled"
+assert_contains "$artifact_app_icon_oversized_file_text" "Release artifact filename: matches"
+assert_contains "$artifact_app_icon_oversized_file_text" "Release artifact zip: present"
+assert_contains "$artifact_app_icon_oversized_file_text" "Release artifact Info.plist metadata: matches"
+assert_contains "$artifact_app_icon_oversized_file_text" "Release artifact app icon: unsafe"
+assert_contains "$artifact_app_icon_oversized_file_text" "Release artifact SHA-256: matches"
+assert_contains "$artifact_app_icon_oversized_file_text" "v1.0 artifact-only blocked"
+assert_not_contains "$artifact_app_icon_oversized_file_text" "$oversized_file_app_icon_zip_sha"
+assert_not_contains "$artifact_app_icon_oversized_file_text" "$oversized_file_app_icon_zip"
+assert_not_contains "$artifact_app_icon_oversized_file_text" "$oversized_file_app_icon_marker"
+assert_not_contains "$artifact_app_icon_oversized_file_text" "AppIcon.icns"
+assert_not_contains "$artifact_app_icon_oversized_file_text" "External publication inputs"
+assert_not_contains "$artifact_app_icon_oversized_file_text" "fast preflight is clear"
 
 if run_gate_capture "$artifact_executable_format_invalid_output" env -i \
   PATH="$fake_path" \

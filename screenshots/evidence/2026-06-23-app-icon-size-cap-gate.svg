@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 app-icon size-cap gate evidence</title>
+  <desc id="desc">Evidence summary for the release-helper hardening slice that rejects over-size AppIcon.icns files before parsing app bundles and release zip artifacts.</desc>
+  <rect width="1280" height="760" fill="#0b1020"/>
+  <rect x="48" y="44" width="1184" height="672" rx="28" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="88" y="104" fill="#e5f2ff" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="34" font-weight="700">LithePG release hardening: AppIcon.icns size cap</text>
+  <text x="88" y="152" fill="#93c5fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20">2026-06-23 15:19 EDT · non-UI release gate artifact</text>
+
+  <rect x="88" y="190" width="1104" height="118" rx="16" fill="#172554" stroke="#2563eb"/>
+  <text x="120" y="232" fill="#bfdbfe" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700">RED checks</text>
+  <text x="120" y="270" fill="#fca5a5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">test_package_verify failed: accepted an AppIcon.icns that exceeds the icon size cap</text>
+  <text x="120" y="296" fill="#fca5a5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">test_v10_release_gate failed: artifact-only gate accepted an over-size release artifact app icon</text>
+
+  <rect x="88" y="336" width="1104" height="174" rx="16" fill="#052e16" stroke="#22c55e"/>
+  <text x="120" y="378" fill="#bbf7d0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700">GREEN verification</text>
+  <text x="120" y="416" fill="#dcfce7" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">bash -n package/release scripts · PASS</text>
+  <text x="120" y="444" fill="#dcfce7" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">test_package_verify + test_v10_release_gate + release helper suites · PASS</text>
+  <text x="120" y="472" fill="#dcfce7" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">swift build + swift test · PASS (127 tests / 20 suites)</text>
+  <text x="120" y="500" fill="#dcfce7" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">dist/LithePG.app + dist/LithePG.app.zip artifact-only preflight · PASS</text>
+
+  <rect x="88" y="538" width="1104" height="118" rx="16" fill="#1f2937" stroke="#64748b"/>
+  <text x="120" y="580" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700">Release posture</text>
+  <text x="120" y="618" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">Package gate now rejects icons &gt; 10 MiB; artifact gate rejects before opening the zip entry.</text>
+  <text x="120" y="646" fill="#fde68a" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">dogfood_check skipped: Docker unavailable. No signing/notarization/publication attempted.</text>
+</svg>

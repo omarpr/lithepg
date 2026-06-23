@@ -59,6 +59,28 @@ with open(output_path, "wb") as icon_file:
 PY
 }
 
+write_oversized_app_icon_file_fixture() {
+  local output_path="$1"
+
+  write_valid_app_icon_fixture "$output_path"
+  /usr/bin/python3 - "$output_path" <<'PY'
+import sys
+
+icon_path = sys.argv[1]
+max_icon_bytes = 10 * 1024 * 1024
+
+with open(icon_path, "rb") as icon_file:
+    icon = icon_file.read()
+
+padding_length = max_icon_bytes + 1 - len(icon)
+padding_element = b"zzzz" + (padding_length + 8).to_bytes(4, "big") + (b"\0" * padding_length)
+oversized_icon = b"icns" + (len(icon) + len(padding_element)).to_bytes(4, "big") + icon[8:] + padding_element
+
+with open(icon_path, "wb") as icon_file:
+    icon_file.write(oversized_icon)
+PY
+}
+
 write_invalid_filter_app_icon_fixture() {
   local output_path="$1"
 
@@ -798,6 +820,22 @@ assert_contains "$helper_output" "app icon format is invalid"
 assert_not_contains "$helper_output" "Package verified:"
 assert_not_contains "$helper_output" "$icon_format_sentinel"
 assert_not_contains "$helper_output" "$icon_format_bundle"
+
+icon_oversized_file_sentinel="ICON_OVERSIZED_FILE_SENTINEL_SHOULD_NOT_LEAK"
+icon_oversized_file_bundle="$fixture_root/icon-oversized-file-$icon_oversized_file_sentinel/LithePG.app"
+make_minimal_app_bundle "$icon_oversized_file_bundle"
+write_oversized_app_icon_file_fixture "$icon_oversized_file_bundle/Contents/Resources/AppIcon.icns"
+chmod 644 "$icon_oversized_file_bundle/Contents/Resources/AppIcon.icns"
+if run_helper_capture "$output_file" "$icon_oversized_file_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted an AppIcon.icns that exceeds the icon size cap"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "app icon exceeds size cap"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$icon_oversized_file_sentinel"
+assert_not_contains "$helper_output" "$icon_oversized_file_bundle"
 
 icon_length_sentinel="ICON_LENGTH_SENTINEL_SHOULD_NOT_LEAK"
 icon_length_bundle="$fixture_root/icon-length-$icon_length_sentinel/LithePG.app"
