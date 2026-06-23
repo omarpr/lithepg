@@ -264,6 +264,7 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     my $idat_data = "";
     my $seen_idat = 0;
     my $idat_sequence_closed = 0;
+    my $seen_ihdr = 0;
     my $seen_plte = 0;
     my $seen_iend = 0;
 
@@ -278,7 +279,12 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
       return 0 if $chunk_crc_offset + 4 > length($payload);
       return 0 unless crc32(substr($payload, $offset + 4, 4 + $chunk_length)) == unpack("N", substr($payload, $chunk_crc_offset, 4));
       return 0 if $chunk_type =~ /\A[A-Z]/ && $chunk_type ne "IHDR" && $chunk_type ne "PLTE" && $chunk_type ne "IDAT" && $chunk_type ne "IEND";
-      if ($chunk_type eq "PLTE") {
+      if ($chunk_type eq "IHDR") {
+        return 0 if $seen_ihdr;
+        return 0 unless $offset == 8;
+        return 0 unless $chunk_length == 13;
+        $seen_ihdr = 1;
+      } elsif ($chunk_type eq "PLTE") {
         return 0 if $seen_idat;
         return 0 if $seen_plte;
         return 0 if $color_type == 0 || $color_type == 4;
@@ -298,6 +304,7 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
       $offset = $chunk_crc_offset + 4;
     }
 
+    return 0 unless $seen_ihdr;
     return 0 unless length($idat_data) > 0 && $offset == length($payload) && $seen_iend;
     return 0 if $color_type == 3 && !$seen_plte;
     my $inflated = uncompress($idat_data);
