@@ -948,6 +948,43 @@ sys.exit(0)
 PY
 }
 
+release_zip_app_icon_status() {
+  local zip_file="$1"
+
+  if [[ ! -x /usr/bin/python3 ]]; then
+    return 2
+  fi
+
+  /usr/bin/python3 -I - "$zip_file" <<'PY'
+import stat
+import sys
+import zipfile
+
+zip_path = sys.argv[1]
+app_icon_path = "LithePG.app/Contents/Resources/AppIcon.icns"
+
+try:
+    with zipfile.ZipFile(zip_path) as archive:
+        matches = [entry for entry in archive.infolist() if entry.filename == app_icon_path]
+except (zipfile.BadZipFile, OSError):
+    sys.exit(2)
+
+if len(matches) == 0:
+    sys.exit(1)
+if len(matches) != 1:
+    sys.exit(3)
+
+mode = (matches[0].external_attr >> 16) & 0xFFFF
+if mode == 0 or not stat.S_ISREG(mode):
+    sys.exit(3)
+
+if mode & (stat.S_ISUID | stat.S_ISGID | stat.S_ISVTX | 0o022):
+    sys.exit(3)
+
+sys.exit(0)
+PY
+}
+
 release_zip_directory_mode_safety_status() {
   local zip_file="$1"
 
@@ -1804,6 +1841,24 @@ if [[ "$release_zip_present" -eq 1 ]]; then
             ;;
           *)
             printf 'Release artifact Info.plist mode: could not inspect\n'
+            ;;
+        esac
+        mark_blocker
+      fi
+
+      if release_zip_app_icon_status "$release_zip_file"; then
+        printf 'Release artifact app icon: present\n'
+      else
+        release_zip_app_icon_status=$?
+        case "$release_zip_app_icon_status" in
+          1)
+            printf 'Release artifact app icon: missing\n'
+            ;;
+          3)
+            printf 'Release artifact app icon: unsafe\n'
+            ;;
+          *)
+            printf 'Release artifact app icon: could not inspect\n'
             ;;
         esac
         mark_blocker

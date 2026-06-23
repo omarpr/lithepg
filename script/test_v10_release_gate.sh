@@ -102,6 +102,7 @@ artifact_top_level_unexpected_output="$(mktemp)"
 artifact_info_plist_metadata_mismatch_output="$(mktemp)"
 artifact_info_plist_metadata_legacy_mismatch_output="$(mktemp)"
 artifact_info_plist_metadata_cannot_inspect_output="$(mktemp)"
+artifact_app_icon_missing_output="$(mktemp)"
 missing_artifact_sha_output="$(mktemp)"
 invalid_artifact_sha_output="$(mktemp)"
 mismatched_artifact_sha_output="$(mktemp)"
@@ -247,6 +248,10 @@ writable_info_plist_mode_decoy_zip_dir="$(mktemp -d)"
 writable_info_plist_mode_decoy_zip="$writable_info_plist_mode_decoy_zip_dir/LithePG.app.zip"
 writable_info_plist_mode_decoy_release_copy="$(mktemp)"
 writable_info_plist_mode_decoy_homebrew_cask="$(mktemp)"
+missing_app_icon_zip_dir="$(mktemp -d)"
+missing_app_icon_zip="$missing_app_icon_zip_dir/LithePG.app.zip"
+missing_app_icon_release_copy="$(mktemp)"
+missing_app_icon_homebrew_cask="$(mktemp)"
 text_executable_bundle_zip_dir="$(mktemp -d)"
 text_executable_bundle_zip="$text_executable_bundle_zip_dir/LithePG.app.zip"
 text_executable_bundle_release_copy="$(mktemp)"
@@ -360,6 +365,7 @@ cleanup() {
     "$artifact_info_plist_metadata_mismatch_output" \
     "$artifact_info_plist_metadata_legacy_mismatch_output" \
     "$artifact_info_plist_metadata_cannot_inspect_output" \
+    "$artifact_app_icon_missing_output" \
     "$missing_artifact_sha_output" \
     "$invalid_artifact_sha_output" \
     "$mismatched_artifact_sha_output" \
@@ -490,6 +496,9 @@ cleanup() {
     "$writable_info_plist_mode_decoy_zip" \
     "$writable_info_plist_mode_decoy_release_copy" \
     "$writable_info_plist_mode_decoy_homebrew_cask" \
+    "$missing_app_icon_zip" \
+    "$missing_app_icon_release_copy" \
+    "$missing_app_icon_homebrew_cask" \
     "$text_executable_bundle_zip" \
     "$text_executable_bundle_release_copy" \
     "$text_executable_bundle_homebrew_cask" \
@@ -538,7 +547,7 @@ cleanup() {
     "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$startup_hardening_root" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$unsafe_directory_mode_zip_dir" "$unsafe_root_directory_mode_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$startup_hardening_root" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$unsafe_directory_mode_zip_dir" "$unsafe_root_directory_mode_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$missing_app_icon_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
@@ -729,10 +738,19 @@ write_code_signature_resources() {
   printf 'fake code signature resources fixture\n' >"$app_bundle_path/Contents/_CodeSignature/CodeResources"
 }
 
+write_app_icon_fixture() {
+  local app_bundle_path="$1"
+
+  mkdir -p "$app_bundle_path/Contents/Resources"
+  printf 'fake app icon fixture\n' >"$app_bundle_path/Contents/Resources/AppIcon.icns"
+  /bin/chmod 644 "$app_bundle_path/Contents/Resources/AppIcon.icns"
+}
+
 mkdir -p "$release_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
 write_valid_info_plist "$release_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 /bin/cp /usr/bin/true "$release_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
 /bin/chmod 755 "$release_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+write_app_icon_fixture "$release_zip_dir/fixture-root/LithePG.app"
 /usr/bin/codesign --force --sign - --options runtime "$release_zip_dir/fixture-root/LithePG.app" >/dev/null 2>&1
 (
   cd "$release_zip_dir/fixture-root"
@@ -997,6 +1015,17 @@ with zipfile.ZipFile(destination_zip, "w") as destination:
 PY
 writable_info_plist_mode_decoy_zip_sha="$(/usr/bin/shasum -a 256 "$writable_info_plist_mode_decoy_zip" | /usr/bin/cut -d ' ' -f 1)"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$writable_info_plist_mode_decoy_zip_sha" >"$writable_info_plist_mode_decoy_release_copy"
+mkdir -p "$missing_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
+write_valid_info_plist "$missing_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
+/bin/cp /usr/bin/true "$missing_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+/bin/chmod 755 "$missing_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+/usr/bin/codesign --force --sign - --options runtime "$missing_app_icon_zip_dir/fixture-root/LithePG.app" >/dev/null 2>&1
+(
+  cd "$missing_app_icon_zip_dir/fixture-root"
+  /usr/bin/zip -qr "$missing_app_icon_zip" LithePG.app
+)
+missing_app_icon_zip_sha="$(/usr/bin/shasum -a 256 "$missing_app_icon_zip" | /usr/bin/cut -d ' ' -f 1)"
+printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$missing_app_icon_zip_sha" >"$missing_app_icon_release_copy"
 mkdir -p "$missing_code_resources_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
 write_valid_info_plist "$missing_code_resources_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 /bin/cp /usr/bin/true "$missing_code_resources_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
@@ -2564,7 +2593,7 @@ printf 'Report vulnerabilities using the configured private security advisory fl
 printf 'Report vulnerabilities to [security contact pending].\n' >"$default_security_docs_repo/docs/SECURITY.md"
 
 helper_contents="$(<"$HELPER")"
-assert_occurrences "$helper_contents" '/usr/bin/python3 -I -' 3
+assert_occurrences "$helper_contents" '/usr/bin/python3 -I -' 4
 assert_not_contains "$helper_contents" '/usr/bin/python3 - "'
 
 # Executable startup must not route through PATH-selected bash before helper code runs.
@@ -3685,6 +3714,36 @@ assert_not_contains "$artifact_info_plist_mode_decoy_text" "$writable_info_plist
 assert_not_contains "$artifact_info_plist_mode_decoy_text" "LithePG.app/Contents/Info.plist"
 assert_not_contains "$artifact_info_plist_mode_decoy_text" "100666"
 assert_not_contains "$artifact_info_plist_mode_decoy_text" "fast preflight is clear"
+
+if run_gate_capture "$artifact_app_icon_missing_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$missing_app_icon_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$missing_app_icon_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$missing_app_icon_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$missing_app_icon_zip_sha" \
+  /bin/bash -c 'exec "$1" --artifact-only' _; then
+  artifact_app_icon_missing_text="$(<"$artifact_app_icon_missing_output")"
+  assert_not_contains "$artifact_app_icon_missing_text" "$missing_app_icon_zip_sha"
+  assert_not_contains "$artifact_app_icon_missing_text" "$missing_app_icon_zip"
+  assert_not_contains "$artifact_app_icon_missing_text" "AppIcon.icns"
+  fail "artifact-only gate unexpectedly passed with missing release artifact app icon"
+fi
+artifact_app_icon_missing_text="$(<"$artifact_app_icon_missing_output")"
+assert_contains "$artifact_app_icon_missing_text" "Artifact-only mode: enabled"
+assert_contains "$artifact_app_icon_missing_text" "Release artifact filename: matches"
+assert_contains "$artifact_app_icon_missing_text" "Release artifact zip: present"
+assert_contains "$artifact_app_icon_missing_text" "Release artifact Info.plist metadata: matches"
+assert_contains "$artifact_app_icon_missing_text" "Release artifact app icon: missing"
+assert_contains "$artifact_app_icon_missing_text" "Release artifact code signature verification: valid"
+assert_contains "$artifact_app_icon_missing_text" "Release artifact SHA-256: matches"
+assert_contains "$artifact_app_icon_missing_text" "v1.0 artifact-only blocked"
+assert_not_contains "$artifact_app_icon_missing_text" "$missing_app_icon_zip_sha"
+assert_not_contains "$artifact_app_icon_missing_text" "$missing_app_icon_zip"
+assert_not_contains "$artifact_app_icon_missing_text" "AppIcon.icns"
+assert_not_contains "$artifact_app_icon_missing_text" "External publication inputs"
+assert_not_contains "$artifact_app_icon_missing_text" "fast preflight is clear"
 
 if run_gate_capture "$artifact_executable_format_invalid_output" env -i \
   PATH="$fake_path" \

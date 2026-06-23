@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="540" viewBox="0 0 1040 540" role="img" aria-labelledby="title desc">
+  <title id="title">v1.0 release gate app icon artifact hardening evidence</title>
+  <desc id="desc">Visual evidence that the v1.0 release artifact preflight now rejects signed app zip artifacts missing Contents/Resources/AppIcon.icns and passes the current artifact-only gate when the icon is present.</desc>
+  <rect width="1040" height="540" fill="#07111f"/>
+  <rect x="32" y="28" width="976" height="484" rx="20" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="64" y="76" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="26" font-weight="700">v1.0 release gate: AppIcon.icns artifact check</text>
+  <text x="64" y="112" fill="#93c5fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">2026-06-23 — final LithePG.app.zip must contain a safe Resources/AppIcon.icns</text>
+
+  <g font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">
+    <text x="72" y="166" fill="#fca5a5">RED</text>
+    <text x="168" y="166" fill="#e5e7eb">test_v10_release_gate first accepted an iconless signed artifact</text>
+    <text x="72" y="216" fill="#86efac">GREEN</text>
+    <text x="168" y="216" fill="#e5e7eb">artifact-only gate now reports: Release artifact app icon: missing</text>
+    <text x="72" y="266" fill="#c4b5fd">PASS</text>
+    <text x="168" y="266" fill="#e5e7eb">current dist/LithePG.app.zip reports: Release artifact app icon: present</text>
+    <text x="72" y="316" fill="#fcd34d">VERIFY</text>
+    <text x="168" y="316" fill="#e5e7eb">test_v10_release_gate, test_create_release_zip, swift build, swift test all passed</text>
+    <text x="72" y="366" fill="#fbbf24">BLOCKED</text>
+    <text x="168" y="366" fill="#e5e7eb">dogfood_check could not run: Docker unavailable in this cron environment</text>
+  </g>
+
+  <rect x="64" y="404" width="912" height="72" rx="10" fill="#020617" stroke="#1f2937"/>
+  <text x="88" y="436" fill="#a7f3d0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">No signing/notarization/upload/tag/publication attempted.</text>
+  <text x="88" y="462" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="15">External v1.0 blockers remain: credentials, security contact, Homebrew tap, CI readiness, and approvals.</text>
+</svg>
