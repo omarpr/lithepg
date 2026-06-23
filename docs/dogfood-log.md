@@ -2024,3 +2024,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - RED verification: standard `swift test` failed with permission errors on the three persistence model tests under background cron run when the host was locked.
 - GREEN verification passed: full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed with all 127 tests in 20 suites perfectly green!
 - Evidence artifact: `screenshots/evidence/2026-06-14-persistence-file-protection-cron-fix.svg`.
+
+## 2026-06-23 01:18 EDT — v1.0 public status receipt sync after app icon/product restore
+
+- Refreshed `README.md`, `CHANGELOG.md`, and `docs/releases/v1.0-draft.md` so the public-facing v1.0 status no longer points at the older 2026-06-02 receipt as the latest local gate.
+- Synced the current safe app-icon/product-restore facts from `main` at `1f3b8f1`: the `LithePGApp` executable product is restored for packaging, the packaged app includes the reproducible `AppIcon.icns` bundle resource, release-helper shell suites passed, full `swift test` passed with 127 tests in 20 suites, package build and verification passed, and seeded `script/dogfood_check.sh` passed.
+- Safe metrics synced from the app-icon/product-restore receipt: 21.63 MiB raw release executable; 12.03 MiB strip-probe/package executable; 823.61 ms shell readiness; 447.49 ms connected startup through seeded Postgres; and 0.078 ms median `SELECT 1` overhead. The startup figures are explicitly labeled as elevated because parallel release-helper tests were still running during that measurement.
+- Also left the later focused v1.0 release-gate directory-mode and background-cron file-protection receipts intact as post-icon verification notes.
+- Evidence artifact: `screenshots/evidence/2026-06-23-v10-public-status-sync-app-icon.svg`.
+- This docs/evidence receipt sync attempted no signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or external publication.

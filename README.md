@@ -24,12 +24,12 @@ v0.5 is the current tagged milestone. v1.0 public launch work is in progress and
 
 Latest local verification receipts:
 
-- **v1.0 local gate:** latest 2026-06-02 receipt on `main` at `958dd50` passed full `swift test` plus seeded `script/dogfood_check.sh`; earlier package build and `script/package_verify.sh dist/LithePG.app` gates passed before any public release/tag publication.
+- **v1.0 local gate:** latest app-icon/product-restore receipt on `main` at `1f3b8f1` passed the release-helper shell suites, full `swift test`, seeded `script/dogfood_check.sh`, package build, and `script/package_verify.sh dist/LithePG.app`; later focused v1.0 release-gate and cron file-protection checks also passed before any public release/tag publication.
 - **AI drafting:** deterministic local Ask flow drafts runnable SQL for simple single-table prompts and two-table joins using schema/foreign-key metadata; drafts are inserted for human review and never auto-run.
 - **Model posture:** the CoreML adapter scaffold is disabled by default, requires a user-provided external model artifact, and keeps prompts, schema context, query results, history, and credentials on-device.
-- **Binary budget:** 21.379 MiB raw release executable / 11.980 MiB strip-probe executable / 11.93 MiB packaged executable, under the 50 MiB hard cap and 30 MiB stretch goal.
-- **Startup:** 130.43 ms shell readiness; 253.83 ms connected startup through seeded dogfood Postgres.
-- **Query overhead:** 0.037 ms median overhead versus `psql` for `SELECT 1`; 0.017 ms for the dogfood query.
+- **Binary budget:** 21.63 MiB raw release executable / 12.03 MiB strip-probe and packaged executable, under the 50 MiB hard cap and 30 MiB stretch goal.
+- **Startup:** 823.61 ms shell readiness; 447.49 ms connected startup through seeded dogfood Postgres in the latest icon/product-restore receipt. These timings were captured while parallel release-helper tests were still running, so they are elevated but still within the 500 ms connected-startup gate.
+- **Query overhead:** 0.078 ms median overhead versus `psql` for `SELECT 1` in the latest icon/product-restore receipt; prior dogfood-query overhead receipts remained far below the 5 ms target.
 - **Stability:** v0.4 seven-day zero-crash dogfood window satisfied; v0.5 and v1.0 local dogfood/test/measurement gates passed.
 - **Release blockers:** public v1.0 still needs Omar-controlled codesigning/notarization credentials, an approved security-reporting contact, Homebrew tap target, GitHub Actions account/settings fix, release-copy approval, and explicit publication approval.
 

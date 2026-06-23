@@ -20,11 +20,12 @@ LithePG follows outcome-named milestones with semantic-version tags. v1.0 remain
 - Review-only release copy lives in [`docs/releases/v1.0-draft.md`](docs/releases/v1.0-draft.md) with unresolved `REPLACE_WITH_*` placeholders that must be resolved before publication.
 - [`script/create_release_zip.sh`](script/create_release_zip.sh) creates `LithePG.app.zip` from an existing verified `LithePG.app` using `ditto --keepParent`, refuses unsafe overwrites and outputs inside the app bundle, and prints the SHA-256 digest plus byte size without uploading, tagging, signing, notarizing, or contacting the network.
 - A repository-local Homebrew cask template and README live under [`packaging/homebrew/`](packaging/homebrew/) for the planned `LithePG.app.zip` artifact; external tap publication remains approval-gated.
+- The packaged app now has a reproducible first app icon (`packaging/AppIcon.png` / `packaging/AppIcon.icns`), and the Swift package exposes a restored `LithePGApp` executable product for packaging scripts while keeping the app UI in a reusable library target.
 
 ### Verified
 
-- Local v1.0 release gates passed on `main` before any public tag/release publication: `swift test`, `script/dogfood_check.sh`, `script/build_and_run.sh --package`, and `script/package_verify.sh dist/LithePG.app`.
-- The latest 2026-06-02 seeded dogfood receipt at `.build/dogfood-checks/20260602-164838/` on `main` at `958dd50` stayed within the lean/fast budgets: 130.43 ms shell readiness, 253.83 ms connected cold start, 21.379 MiB raw release executable, 11.980 MiB strip-probe executable, 0.037 ms median `SELECT 1` overhead, 0.017 ms median dogfood-query overhead, and the prior package gate produced a 12,507,504-byte / 11.93 MiB packaged executable.
+- Local v1.0 release gates passed on `main` before any public tag/release publication: release-helper shell suites, `swift test`, `script/dogfood_check.sh`, `script/build_and_run.sh --package`, and `script/package_verify.sh dist/LithePG.app`.
+- The latest app-icon/product-restore receipt on `main` at `1f3b8f1` stayed within the lean/fast budgets: 823.61 ms shell readiness and 447.49 ms connected cold start measured while parallel release-helper tests were still running, 21.63 MiB raw release executable, 12.03 MiB strip-probe/package executable, and 0.078 ms median `SELECT 1` overhead. Earlier dogfood-query receipts remained far below the 5 ms target.
 - Signing/notarization dry-run reached the expected external credential gate after package verification; real signing/notarization remains blocked by missing Apple Developer signing/notary environment credentials.
 
 ### Still blocked before release
