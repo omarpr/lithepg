@@ -336,6 +336,7 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
   }
   my $has_image_payload = 0;
   my $has_high_resolution_image = 0;
+  my %seen_image_element_types;
   my $offset = 8;
   while ($offset < $total_length) {
     exit 1 if $offset + 8 > $total_length;
@@ -344,6 +345,9 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     exit 1 if $element_type !~ /\A[\x20-\x7e]{4}\z/;
     exit 1 if $element_length < 8;
     exit 1 if $offset + $element_length > $total_length;
+    if ($image_element_types{$element_type}) {
+      exit 1 if $seen_image_element_types{$element_type}++;
+    }
     if ($image_element_types{$element_type} && $element_length > 8) {
       my $payload = substr($data, $offset + 8, $element_length - 8);
       $has_image_payload = 1;
