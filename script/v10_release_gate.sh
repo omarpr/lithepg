@@ -1241,8 +1241,12 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type, bit_
     if color_type == 3 and not seen_plte:
         return False
     try:
-        inflated = zlib.decompress(idat_data)
+        decompressor = zlib.decompressobj()
+        inflated = decompressor.decompress(idat_data)
+        inflated += decompressor.flush()
     except zlib.error:
+        return False
+    if not decompressor.eof or decompressor.unused_data or decompressor.unconsumed_tail:
         return False
 
     expected_inflated_length = sum(1 + row_length for row_length in scanline_payload_lengths)

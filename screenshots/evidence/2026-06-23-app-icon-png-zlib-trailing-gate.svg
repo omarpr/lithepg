@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 app icon PNG zlib trailing-data hardening evidence</title>
+  <desc id="desc">Visual evidence summarizing the red-green verification for rejecting trailing bytes after a PNG IDAT zlib stream.</desc>
+  <rect width="1200" height="720" fill="#0b1020"/>
+  <rect x="48" y="44" width="1104" height="632" rx="28" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="84" y="112" fill="#e5f2ff" font-family="SF Mono, Menlo, Consolas, monospace" font-size="34" font-weight="700">LithePG release gate hardening</text>
+  <text x="84" y="162" fill="#93c5fd" font-family="SF Mono, Menlo, Consolas, monospace" font-size="22">2026-06-23 18:50 EDT · app icon PNG IDAT zlib trailing-data gate</text>
+
+  <rect x="84" y="205" width="1032" height="94" rx="16" fill="#1f2937" stroke="#ef4444"/>
+  <text x="112" y="244" fill="#fecaca" font-family="SF Mono, Menlo, Consolas, monospace" font-size="22" font-weight="700">RED</text>
+  <text x="112" y="276" fill="#fee2e2" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">package verifier and artifact-only gate accepted a valid zlib stream with hidden trailing IDAT bytes.</text>
+
+  <rect x="84" y="325" width="1032" height="150" rx="16" fill="#12251c" stroke="#22c55e"/>
+  <text x="112" y="364" fill="#bbf7d0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="22" font-weight="700">GREEN</text>
+  <text x="112" y="397" fill="#dcfce7" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">bash script/test_package_verify.sh → passed</text>
+  <text x="112" y="428" fill="#dcfce7" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">bash script/test_v10_release_gate.sh → passed</text>
+  <text x="112" y="459" fill="#dcfce7" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">swift build + swift test → 127 Swift Testing tests passed</text>
+
+  <rect x="84" y="501" width="1032" height="118" rx="16" fill="#172033" stroke="#a78bfa"/>
+  <text x="112" y="540" fill="#ddd6fe" font-family="SF Mono, Menlo, Consolas, monospace" font-size="22" font-weight="700">Artifact check</text>
+  <text x="112" y="573" fill="#ede9fe" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">Rebuilt v1.0 local package: 12,545,680 bytes / 11.96 MiB executable</text>
+  <text x="112" y="604" fill="#ede9fe" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">Artifact-only preflight: app icon present · executable under budget · SHA-256 matches</text>
+
+  <text x="84" y="651" fill="#94a3b8" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16">No signing identity, notarization, upload, Homebrew publication, tag, cron, or Telegram action was attempted.</text>
+</svg>

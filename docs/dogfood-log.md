@@ -2402,3 +2402,15 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker unavailable; skipping dogfood_check.sh`).
 - Evidence artifact: `screenshots/evidence/2026-06-23-app-icon-png-trns-gate.svg`.
 - No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.
+
+## 2026-06-23 18:50 EDT — v1.0 app-icon PNG zlib trailing-data hardening
+
+- Hardened `script/package_verify.sh` so PNG-backed high-resolution `AppIcon.icns` payloads reject `IDAT` data with unused bytes after the zlib stream end marker, rather than accepting `Compress::Zlib::uncompress` output that silently ignored trailing payload data.
+- Hardened `script/v10_release_gate.sh` so artifact-only/publication preflight applies the same strict zlib-consumption check inside `LithePG.app.zip` while continuing to redact artifact paths, SHA-256 values, icon paths, and fixture sentinels.
+- Added strict-TDD regression coverage for a valid 1024×1024 RGBA PNG icon whose `IDAT` chunk contains a complete valid zlib stream followed by trailing marker bytes.
+- RED verification passed as expected before the production fix: `bash script/test_package_verify.sh` failed with `package verifier unexpectedly accepted an AppIcon.icns whose PNG IDAT zlib stream has trailing data`, and `bash script/test_v10_release_gate.sh` failed with `artifact-only gate unexpectedly passed with trailing zlib data in release artifact app icon`.
+- GREEN verification passed: `bash -n script/package_verify.sh script/test_package_verify.sh script/v10_release_gate.sh script/test_v10_release_gate.sh`, `bash script/test_package_verify.sh`, `bash script/test_v10_release_gate.sh`, `bash script/test_sign_and_notarize.sh`, `bash script/test_create_release_zip.sh`, `bash script/test_build_and_run.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` (127 tests across 20 suites).
+- Rebuilt the local v1.0 package with `LITHEPG_MARKETING_VERSION=1.0`; `script/package_verify.sh` passed with packaged executable 12,545,680 bytes / 11.96 MiB, and `script/create_release_zip.sh` produced `dist/LithePG.app.zip` with SHA-256 `0f3e3bfdbb391db438206f36f9dac55bc0ecbb480548aea10b823eff36d354b7`. Artifact-only preflight passed with `Release artifact app icon: present`, `Release artifact executable size: under budget`, and `v1.0 artifact-only preflight is clear`.
+- Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker unavailable; skipping dogfood_check.sh`).
+- Evidence artifact: `screenshots/evidence/2026-06-23-app-icon-png-zlib-trailing-gate.svg`.
+- No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.

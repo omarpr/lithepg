@@ -207,6 +207,48 @@ with open(output_path, "wb") as icon_file:
 PY
 }
 
+write_trailing_zlib_app_icon_fixture() {
+  local output_path="$1"
+
+  /usr/bin/python3 - "$output_path" <<'PY'
+import binascii
+import struct
+import sys
+import zlib
+
+output_path = sys.argv[1]
+width = 1024
+height = 1024
+
+
+def png_chunk(chunk_type, data):
+    return (
+        len(data).to_bytes(4, "big")
+        + chunk_type
+        + data
+        + (binascii.crc32(chunk_type + data) & 0xFFFFFFFF).to_bytes(4, "big")
+    )
+
+
+# The IDAT stream begins with a complete valid zlib stream but carries trailing
+# bytes after the zlib end marker. PNG decoders must not accept unused trailing
+# data hidden inside IDAT chunks.
+raw_scanlines = b"".join(b"\x00" + (b"\x00" * width * 4) for _ in range(height))
+idat_payload = zlib.compress(raw_scanlines, 9) + b"TRAILING_ZLIB_DATA_SHOULD_NOT_LEAK"
+png_payload = (
+    b"\x89PNG\r\n\x1a\n"
+    + png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+    + png_chunk(b"IDAT", idat_payload)
+    + png_chunk(b"IEND", b"")
+)
+icns_element = b"ic10" + (len(png_payload) + 8).to_bytes(4, "big") + png_payload
+icns = b"icns" + (len(icns_element) + 8).to_bytes(4, "big") + icns_element
+
+with open(output_path, "wb") as icon_file:
+    icon_file.write(icns)
+PY
+}
+
 write_split_idat_app_icon_fixture() {
   local output_path="$1"
 
@@ -1315,6 +1357,23 @@ assert_contains "$helper_output" "app icon format is invalid"
 assert_not_contains "$helper_output" "Package verified:"
 assert_not_contains "$helper_output" "$icon_png_post_iend_sentinel"
 assert_not_contains "$helper_output" "$icon_png_post_iend_bundle"
+
+icon_png_trailing_zlib_sentinel="ICON_PNG_TRAILING_ZLIB_SENTINEL_SHOULD_NOT_LEAK"
+icon_png_trailing_zlib_bundle="$fixture_root/icon-png-trailing-zlib-$icon_png_trailing_zlib_sentinel/LithePG.app"
+make_minimal_app_bundle "$icon_png_trailing_zlib_bundle"
+write_trailing_zlib_app_icon_fixture "$icon_png_trailing_zlib_bundle/Contents/Resources/AppIcon.icns"
+chmod 644 "$icon_png_trailing_zlib_bundle/Contents/Resources/AppIcon.icns"
+if run_helper_capture "$output_file" "$icon_png_trailing_zlib_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted an AppIcon.icns whose PNG IDAT zlib stream has trailing data"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "app icon format is invalid"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$icon_png_trailing_zlib_sentinel"
+assert_not_contains "$helper_output" "$icon_png_trailing_zlib_bundle"
+assert_not_contains "$helper_output" "TRAILING_ZLIB_DATA_SHOULD_NOT_LEAK"
 
 icon_png_chunk_type_sentinel="ICON_PNG_CHUNK_TYPE_SENTINEL_SHOULD_NOT_LEAK"
 icon_png_chunk_type_bundle="$fixture_root/icon-png-chunk-type-$icon_png_chunk_type_sentinel/LithePG.app"

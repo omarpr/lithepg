@@ -146,7 +146,7 @@ fi
 if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
   use strict;
   use warnings;
-  use Compress::Zlib qw(uncompress);
+  use Compress::Zlib qw(inflateInit Z_STREAM_END);
 
   my ($icon_path) = @ARGV;
   open my $icon_fh, "<:raw", $icon_path or exit 2;
@@ -343,8 +343,12 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     return 0 unless $seen_ihdr;
     return 0 unless length($idat_data) > 0 && $offset == length($payload) && $seen_iend;
     return 0 if $color_type == 3 && !$seen_plte;
-    my $inflated = uncompress($idat_data);
+    my $inflater = inflateInit();
+    return 0 unless defined($inflater);
+    my ($inflated, $inflate_status) = $inflater->inflate($idat_data);
     return 0 unless defined($inflated);
+    return 0 unless $inflate_status == Z_STREAM_END;
+    return 0 unless length($idat_data) == 0;
 
     my $expected_inflated_length = 0;
     $expected_inflated_length += 1 + $_ for @{$scanline_payload_lengths};

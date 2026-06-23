@@ -112,6 +112,7 @@ artifact_app_icon_invalid_chunk_type_output="$(mktemp)"
 artifact_app_icon_unknown_critical_output="$(mktemp)"
 artifact_app_icon_oversized_dimensions_output="$(mktemp)"
 artifact_app_icon_trns_alpha_output="$(mktemp)"
+artifact_app_icon_trailing_zlib_output="$(mktemp)"
 artifact_app_icon_oversized_file_output="$(mktemp)"
 missing_artifact_sha_output="$(mktemp)"
 invalid_artifact_sha_output="$(mktemp)"
@@ -294,6 +295,10 @@ trns_alpha_app_icon_zip_dir="$(mktemp -d)"
 trns_alpha_app_icon_zip="$trns_alpha_app_icon_zip_dir/LithePG.app.zip"
 trns_alpha_app_icon_release_copy="$(mktemp)"
 trns_alpha_app_icon_homebrew_cask="$(mktemp)"
+trailing_zlib_app_icon_zip_dir="$(mktemp -d)"
+trailing_zlib_app_icon_zip="$trailing_zlib_app_icon_zip_dir/LithePG.app.zip"
+trailing_zlib_app_icon_release_copy="$(mktemp)"
+trailing_zlib_app_icon_homebrew_cask="$(mktemp)"
 oversized_file_app_icon_zip_dir="$(mktemp -d)"
 oversized_file_app_icon_zip="$oversized_file_app_icon_zip_dir/LithePG.app.zip"
 oversized_file_app_icon_release_copy="$(mktemp)"
@@ -422,6 +427,8 @@ cleanup() {
     "$artifact_app_icon_invalid_chunk_type_output" \
     "$artifact_app_icon_unknown_critical_output" \
     "$artifact_app_icon_oversized_dimensions_output" \
+    "$artifact_app_icon_trns_alpha_output" \
+    "$artifact_app_icon_trailing_zlib_output" \
     "$artifact_app_icon_oversized_file_output" \
     "$missing_artifact_sha_output" \
     "$invalid_artifact_sha_output" \
@@ -577,6 +584,12 @@ cleanup() {
     "$oversized_dimensions_app_icon_zip" \
     "$oversized_dimensions_app_icon_release_copy" \
     "$oversized_dimensions_app_icon_homebrew_cask" \
+    "$trns_alpha_app_icon_zip" \
+    "$trns_alpha_app_icon_release_copy" \
+    "$trns_alpha_app_icon_homebrew_cask" \
+    "$trailing_zlib_app_icon_zip" \
+    "$trailing_zlib_app_icon_release_copy" \
+    "$trailing_zlib_app_icon_homebrew_cask" \
     "$oversized_file_app_icon_zip" \
     "$oversized_file_app_icon_release_copy" \
     "$oversized_file_app_icon_homebrew_cask" \
@@ -1280,6 +1293,47 @@ PY
   /bin/chmod 644 "$app_bundle_path/Contents/Resources/AppIcon.icns"
 }
 
+write_trailing_zlib_app_icon_fixture() {
+  local app_bundle_path="$1"
+
+  mkdir -p "$app_bundle_path/Contents/Resources"
+  /usr/bin/python3 - "$app_bundle_path/Contents/Resources/AppIcon.icns" <<'PY'
+import binascii
+import struct
+import sys
+import zlib
+
+output_path = sys.argv[1]
+width = 1024
+height = 1024
+
+
+def png_chunk(chunk_type, data):
+    return (
+        len(data).to_bytes(4, "big")
+        + chunk_type
+        + data
+        + (binascii.crc32(chunk_type + data) & 0xFFFFFFFF).to_bytes(4, "big")
+    )
+
+
+raw_scanlines = b"".join(b"\x00" + (b"\x00" * width * 4) for _ in range(height))
+idat_payload = zlib.compress(raw_scanlines, 9) + b"TRAILING_ZLIB_DATA_SHOULD_NOT_LEAK"
+png_payload = (
+    b"\x89PNG\r\n\x1a\n"
+    + png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+    + png_chunk(b"IDAT", idat_payload)
+    + png_chunk(b"IEND", b"")
+)
+icns_element = b"ic10" + (len(png_payload) + 8).to_bytes(4, "big") + png_payload
+icns = b"icns" + (len(icns_element) + 8).to_bytes(4, "big") + icns_element
+
+with open(output_path, "wb") as icon_file:
+    icon_file.write(icns)
+PY
+  /bin/chmod 644 "$app_bundle_path/Contents/Resources/AppIcon.icns"
+}
+
 write_invalid_png_chunk_type_app_icon_fixture() {
   local app_bundle_path="$1"
 
@@ -1804,6 +1858,19 @@ trns_alpha_app_icon_marker="TRNS_ALPHA_APP_ICON_FIXTURE_SHOULD_NOT_LEAK"
 )
 trns_alpha_app_icon_zip_sha="$(/usr/bin/shasum -a 256 "$trns_alpha_app_icon_zip" | /usr/bin/cut -d ' ' -f 1)"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$trns_alpha_app_icon_zip_sha" >"$trns_alpha_app_icon_release_copy"
+mkdir -p "$trailing_zlib_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
+write_valid_info_plist "$trailing_zlib_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
+/bin/cp /usr/bin/true "$trailing_zlib_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+/bin/chmod 755 "$trailing_zlib_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+write_trailing_zlib_app_icon_fixture "$trailing_zlib_app_icon_zip_dir/fixture-root/LithePG.app"
+trailing_zlib_app_icon_marker="TRAILING_ZLIB_APP_ICON_FIXTURE_SHOULD_NOT_LEAK"
+/usr/bin/codesign --force --sign - --options runtime "$trailing_zlib_app_icon_zip_dir/fixture-root/LithePG.app" >/dev/null 2>&1
+(
+  cd "$trailing_zlib_app_icon_zip_dir/fixture-root"
+  /usr/bin/zip -qr "$trailing_zlib_app_icon_zip" LithePG.app
+)
+trailing_zlib_app_icon_zip_sha="$(/usr/bin/shasum -a 256 "$trailing_zlib_app_icon_zip" | /usr/bin/cut -d ' ' -f 1)"
+printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$trailing_zlib_app_icon_zip_sha" >"$trailing_zlib_app_icon_release_copy"
 mkdir -p "$oversized_file_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
 write_valid_info_plist "$oversized_file_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 /bin/cp /usr/bin/true "$oversized_file_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
@@ -4827,6 +4894,40 @@ assert_not_contains "$artifact_app_icon_trns_alpha_text" "$trns_alpha_app_icon_m
 assert_not_contains "$artifact_app_icon_trns_alpha_text" "AppIcon.icns"
 assert_not_contains "$artifact_app_icon_trns_alpha_text" "External publication inputs"
 assert_not_contains "$artifact_app_icon_trns_alpha_text" "fast preflight is clear"
+
+if run_gate_capture "$artifact_app_icon_trailing_zlib_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$trailing_zlib_app_icon_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$trailing_zlib_app_icon_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$trailing_zlib_app_icon_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$trailing_zlib_app_icon_zip_sha" \
+  /bin/bash -c 'exec "$1" --artifact-only' _; then
+  artifact_app_icon_trailing_zlib_text="$(<"$artifact_app_icon_trailing_zlib_output")"
+  assert_not_contains "$artifact_app_icon_trailing_zlib_text" "$trailing_zlib_app_icon_zip_sha"
+  assert_not_contains "$artifact_app_icon_trailing_zlib_text" "$trailing_zlib_app_icon_zip"
+  assert_not_contains "$artifact_app_icon_trailing_zlib_text" "$trailing_zlib_app_icon_marker"
+  assert_not_contains "$artifact_app_icon_trailing_zlib_text" "TRAILING_ZLIB_DATA_SHOULD_NOT_LEAK"
+  assert_not_contains "$artifact_app_icon_trailing_zlib_text" "AppIcon.icns"
+  fail "artifact-only gate unexpectedly passed with trailing zlib data in release artifact app icon"
+fi
+artifact_app_icon_trailing_zlib_text="$(<"$artifact_app_icon_trailing_zlib_output")"
+assert_contains "$artifact_app_icon_trailing_zlib_text" "Artifact-only mode: enabled"
+assert_contains "$artifact_app_icon_trailing_zlib_text" "Release artifact filename: matches"
+assert_contains "$artifact_app_icon_trailing_zlib_text" "Release artifact zip: present"
+assert_contains "$artifact_app_icon_trailing_zlib_text" "Release artifact Info.plist metadata: matches"
+assert_contains "$artifact_app_icon_trailing_zlib_text" "Release artifact app icon: invalid"
+assert_contains "$artifact_app_icon_trailing_zlib_text" "Release artifact code signature verification: valid"
+assert_contains "$artifact_app_icon_trailing_zlib_text" "Release artifact SHA-256: matches"
+assert_contains "$artifact_app_icon_trailing_zlib_text" "v1.0 artifact-only blocked"
+assert_not_contains "$artifact_app_icon_trailing_zlib_text" "$trailing_zlib_app_icon_zip_sha"
+assert_not_contains "$artifact_app_icon_trailing_zlib_text" "$trailing_zlib_app_icon_zip"
+assert_not_contains "$artifact_app_icon_trailing_zlib_text" "$trailing_zlib_app_icon_marker"
+assert_not_contains "$artifact_app_icon_trailing_zlib_text" "TRAILING_ZLIB_DATA_SHOULD_NOT_LEAK"
+assert_not_contains "$artifact_app_icon_trailing_zlib_text" "AppIcon.icns"
+assert_not_contains "$artifact_app_icon_trailing_zlib_text" "External publication inputs"
+assert_not_contains "$artifact_app_icon_trailing_zlib_text" "fast preflight is clear"
 
 if run_gate_capture "$artifact_app_icon_oversized_file_output" env -i \
   PATH="$fake_path" \
