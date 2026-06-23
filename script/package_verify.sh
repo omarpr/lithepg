@@ -208,9 +208,9 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     return 0 unless $compression_method == 0;
     return 0 unless $filter_method == 0;
     return 0 unless $interlace_method == 0 || $interlace_method == 1;
-    my $expected_inflated_length = png_expected_inflated_length($width, $height, $bit_depth, $color_type, $interlace_method);
-    return 0 unless defined $expected_inflated_length;
-    return 0 unless png_idat_stream_is_valid($payload, $expected_inflated_length);
+    my @scanline_payload_lengths = png_expected_scanline_payload_lengths($width, $height, $bit_depth, $color_type, $interlace_method);
+    return 0 unless @scanline_payload_lengths;
+    return 0 unless png_idat_stream_is_valid($payload, \@scanline_payload_lengths);
     return $width >= $minimum_dimension && $height >= $minimum_dimension;
   }
 
@@ -219,7 +219,7 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     return int(($numerator + $denominator - 1) / $denominator);
   }
 
-  sub png_expected_inflated_length {
+  sub png_expected_scanline_payload_lengths {
     my ($width, $height, $bit_depth, $color_type, $interlace_method) = @_;
     my %channels_by_color_type = (
       0 => 1,
@@ -228,12 +228,14 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
       4 => 2,
       6 => 4,
     );
-    return undef unless exists $channels_by_color_type{$color_type};
+    return () unless exists $channels_by_color_type{$color_type};
 
     my $bits_per_pixel = $channels_by_color_type{$color_type} * $bit_depth;
+    my @scanline_payload_lengths;
     if ($interlace_method == 0) {
       my $row_bytes = ceil_div($width * $bits_per_pixel, 8);
-      return $height * (1 + $row_bytes);
+      @scanline_payload_lengths = ($row_bytes) x $height;
+      return @scanline_payload_lengths;
     }
 
     my @adam7_passes = (
@@ -245,20 +247,19 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
       [1, 0, 2, 2],
       [0, 1, 1, 2],
     );
-    my $expected = 0;
     for my $pass (@adam7_passes) {
       my ($start_x, $start_y, $step_x, $step_y) = @{$pass};
       next if $width <= $start_x || $height <= $start_y;
       my $pass_width = ceil_div($width - $start_x, $step_x);
       my $pass_height = ceil_div($height - $start_y, $step_y);
       my $row_bytes = ceil_div($pass_width * $bits_per_pixel, 8);
-      $expected += $pass_height * (1 + $row_bytes);
+      push @scanline_payload_lengths, (($row_bytes) x $pass_height);
     }
-    return $expected;
+    return @scanline_payload_lengths;
   }
 
   sub png_idat_stream_is_valid {
-    my ($payload, $expected_inflated_length) = @_;
+    my ($payload, $scanline_payload_lengths) = @_;
     my $offset = 8;
     my $idat_data = "";
 
@@ -276,7 +277,19 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
 
     return 0 unless length($idat_data) > 0 && $offset == length($payload);
     my $inflated = uncompress($idat_data);
-    return defined($inflated) && length($inflated) == $expected_inflated_length;
+    return 0 unless defined($inflated);
+
+    my $expected_inflated_length = 0;
+    $expected_inflated_length += 1 + $_ for @{$scanline_payload_lengths};
+    return 0 unless length($inflated) == $expected_inflated_length;
+
+    my $scanline_offset = 0;
+    for my $row_payload_length (@{$scanline_payload_lengths}) {
+      my $filter_byte = unpack("C", substr($inflated, $scanline_offset, 1));
+      return 0 unless $filter_byte <= 4;
+      $scanline_offset += 1 + $row_payload_length;
+    }
+    return $scanline_offset == length($inflated);
   }
 
   sub has_high_resolution_encoded_image {
