@@ -161,9 +161,21 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     "it32", "t8mk", "icp4", "icp5", "icp6", "ic07", "ic08", "ic09", "ic10", "ic11", "ic12", "ic13", "ic14",
   );
   my %high_resolution_image_types = map { $_ => 1 } ("ic10", "ic14");
-  sub has_encoded_image_signature {
-    my ($payload) = @_;
-    return 1 if length($payload) >= 8 && substr($payload, 0, 8) eq "\x89PNG\r\n\x1a\n";
+  sub png_dimensions_are_valid {
+    my ($payload, $minimum_dimension) = @_;
+    return 0 unless length($payload) >= 33;
+    return 0 unless substr($payload, 0, 8) eq "\x89PNG\r\n\x1a\n";
+    return 0 unless unpack("N", substr($payload, 8, 4)) == 13;
+    return 0 unless substr($payload, 12, 4) eq "IHDR";
+    my $width = unpack("N", substr($payload, 16, 4));
+    my $height = unpack("N", substr($payload, 20, 4));
+    return $width >= $minimum_dimension && $height >= $minimum_dimension;
+  }
+
+  sub has_high_resolution_encoded_image {
+    my ($element_type, $payload) = @_;
+    my $minimum_dimension = $element_type eq "ic10" ? 1024 : 512;
+    return 1 if png_dimensions_are_valid($payload, $minimum_dimension);
     return 1 if length($payload) >= 12 && substr($payload, 0, 12) eq "\x00\x00\x00\x0cjP  \r\n\x87\n";
     return 1 if length($payload) >= 4 && substr($payload, 0, 4) eq "\xff\x4f\xff\x51";
     return 0;
@@ -181,7 +193,7 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     if ($image_element_types{$element_type} && $element_length > 8) {
       my $payload = substr($data, $offset + 8, $element_length - 8);
       $has_image_payload = 1;
-      $has_high_resolution_image = 1 if $high_resolution_image_types{$element_type} && has_encoded_image_signature($payload);
+      $has_high_resolution_image = 1 if $high_resolution_image_types{$element_type} && has_high_resolution_encoded_image($element_type, $payload);
     }
     $offset += $element_length;
   }

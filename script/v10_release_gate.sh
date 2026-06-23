@@ -1000,9 +1000,21 @@ image_element_types = {
     b"ic07", b"ic08", b"ic09", b"ic10", b"ic11", b"ic12", b"ic13", b"ic14",
 }
 high_resolution_image_types = {b"ic10", b"ic14"}
-def has_encoded_image_signature(payload):
+def png_dimensions_are_valid(payload, minimum_dimension):
     return (
-        payload.startswith(b"\x89PNG\r\n\x1a\n")
+        len(payload) >= 33
+        and payload.startswith(b"\x89PNG\r\n\x1a\n")
+        and int.from_bytes(payload[8:12], byteorder="big") == 13
+        and payload[12:16] == b"IHDR"
+        and int.from_bytes(payload[16:20], byteorder="big") >= minimum_dimension
+        and int.from_bytes(payload[20:24], byteorder="big") >= minimum_dimension
+    )
+
+
+def has_high_resolution_encoded_image(element_type, payload):
+    minimum_dimension = 1024 if element_type == b"ic10" else 512
+    return (
+        png_dimensions_are_valid(payload, minimum_dimension)
         or payload.startswith(b"\x00\x00\x00\x0cjP  \r\n\x87\n")
         or payload.startswith(b"\xff\x4f\xff\x51")
     )
@@ -1024,7 +1036,7 @@ while offset < len(icon_data):
     if element_type in image_element_types and element_length > 8:
         payload = icon_data[offset + 8:offset + element_length]
         has_image_payload = True
-        if element_type in high_resolution_image_types and has_encoded_image_signature(payload):
+        if element_type in high_resolution_image_types and has_high_resolution_encoded_image(element_type, payload):
             has_high_resolution_image = True
     offset += element_length
 
