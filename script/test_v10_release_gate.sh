@@ -756,7 +756,7 @@ write_app_icon_fixture() {
   local app_bundle_path="$1"
 
   mkdir -p "$app_bundle_path/Contents/Resources"
-  printf '\x69\x63\x6e\x73\x00\x00\x00\x31ic10\x00\x00\x00\x29\x89\x50\x4e\x47\x0d\x0a\x1a\x0a\x00\x00\x00\x0dIHDR\x00\x00\x04\x00\x00\x00\x04\x00\x08\x06\x00\x00\x00\x7f\x1d\x2b\x83' >"$app_bundle_path/Contents/Resources/AppIcon.icns"
+  printf '\x69\x63\x6e\x73\x00\x00\x00\x3dic10\x00\x00\x00\x35\x89\x50\x4e\x47\x0d\x0a\x1a\x0a\x00\x00\x00\x0dIHDR\x00\x00\x04\x00\x00\x00\x04\x00\x08\x06\x00\x00\x00\x7f\x1d\x2b\x83\x00\x00\x00\x00IEND\xae\x42\x60\x82' >"$app_bundle_path/Contents/Resources/AppIcon.icns"
   /bin/chmod 644 "$app_bundle_path/Contents/Resources/AppIcon.icns"
 }
 
@@ -1046,7 +1046,7 @@ write_valid_info_plist "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Con
 /bin/chmod 755 "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
 write_app_icon_fixture "$malformed_app_icon_zip_dir/fixture-root/LithePG.app"
 malformed_app_icon_marker="MALFORMED_APP_ICON_FIXTURE_SHOULD_NOT_LEAK"
-printf '\x69\x63\x6e\x73\x00\x00\x00\x31ic10\x00\x00\x00\x29\x89\x50\x4e\x47\x0d\x0a\x1a\x0a\x00\x00\x00\x0dIHDR\x00\x00\x04\x00\x00\x00\x04\x00\x08\x06\x00\x00\x00\x00\x00\x00\x00' >"$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Resources/AppIcon.icns"
+printf '\x69\x63\x6e\x73\x00\x00\x00\x31ic10\x00\x00\x00\x29\x89\x50\x4e\x47\x0d\x0a\x1a\x0a\x00\x00\x00\x0dIHDR\x00\x00\x04\x00\x00\x00\x04\x00\x08\x06\x00\x00\x00\x7f\x1d\x2b\x83' >"$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Resources/AppIcon.icns"
 /bin/chmod 644 "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Resources/AppIcon.icns"
 /usr/bin/codesign --force --sign - --options runtime "$malformed_app_icon_zip_dir/fixture-root/LithePG.app" >/dev/null 2>&1
 (

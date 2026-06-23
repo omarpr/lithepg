@@ -1047,6 +1047,14 @@ def png_dimensions_are_valid(payload, minimum_dimension):
         return False
     if zlib.crc32(payload[12:29]) & 0xFFFFFFFF != int.from_bytes(payload[29:33], byteorder="big"):
         return False
+    if len(payload) < 45:
+        return False
+    if int.from_bytes(payload[-12:-8], byteorder="big") != 0:
+        return False
+    if payload[-8:-4] != b"IEND":
+        return False
+    if zlib.crc32(payload[-8:-4]) & 0xFFFFFFFF != int.from_bytes(payload[-4:], byteorder="big"):
+        return False
 
     width = int.from_bytes(payload[16:20], byteorder="big")
     height = int.from_bytes(payload[20:24], byteorder="big")

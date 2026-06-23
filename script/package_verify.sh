@@ -184,6 +184,10 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     return 0 unless unpack("N", substr($payload, 8, 4)) == 13;
     return 0 unless substr($payload, 12, 4) eq "IHDR";
     return 0 unless crc32(substr($payload, 12, 17)) == unpack("N", substr($payload, 29, 4));
+    return 0 unless length($payload) >= 45;
+    return 0 unless unpack("N", substr($payload, -12, 4)) == 0;
+    return 0 unless substr($payload, -8, 4) eq "IEND";
+    return 0 unless crc32(substr($payload, -8, 4)) == unpack("N", substr($payload, -4, 4));
     my $width = unpack("N", substr($payload, 16, 4));
     my $height = unpack("N", substr($payload, 20, 4));
     my $bit_depth = unpack("C", substr($payload, 24, 1));
