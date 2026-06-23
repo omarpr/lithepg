@@ -138,6 +138,8 @@ app_icon_mode="$(/usr/bin/stat -f%p "$APP_ICON")"
 if (( (8#$app_icon_mode & 07022) != 0 )); then
   fail "app icon mode is unsafe"
 fi
+app_icon_magic="$(/usr/bin/xxd -p -l 4 "$APP_ICON" 2>/dev/null || true)"
+[[ "$app_icon_magic" == "69636e73" ]] || fail "app icon format is invalid"
 symlink_match=""
 if ! symlink_match="$(/usr/bin/find "$APP_BUNDLE" -type l -print -quit 2>/dev/null)"; then
   fail "app bundle must not contain symlinks"

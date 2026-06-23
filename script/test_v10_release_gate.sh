@@ -103,6 +103,7 @@ artifact_info_plist_metadata_mismatch_output="$(mktemp)"
 artifact_info_plist_metadata_legacy_mismatch_output="$(mktemp)"
 artifact_info_plist_metadata_cannot_inspect_output="$(mktemp)"
 artifact_app_icon_missing_output="$(mktemp)"
+artifact_app_icon_malformed_output="$(mktemp)"
 missing_artifact_sha_output="$(mktemp)"
 invalid_artifact_sha_output="$(mktemp)"
 mismatched_artifact_sha_output="$(mktemp)"
@@ -252,6 +253,10 @@ missing_app_icon_zip_dir="$(mktemp -d)"
 missing_app_icon_zip="$missing_app_icon_zip_dir/LithePG.app.zip"
 missing_app_icon_release_copy="$(mktemp)"
 missing_app_icon_homebrew_cask="$(mktemp)"
+malformed_app_icon_zip_dir="$(mktemp -d)"
+malformed_app_icon_zip="$malformed_app_icon_zip_dir/LithePG.app.zip"
+malformed_app_icon_release_copy="$(mktemp)"
+malformed_app_icon_homebrew_cask="$(mktemp)"
 text_executable_bundle_zip_dir="$(mktemp -d)"
 text_executable_bundle_zip="$text_executable_bundle_zip_dir/LithePG.app.zip"
 text_executable_bundle_release_copy="$(mktemp)"
@@ -366,6 +371,7 @@ cleanup() {
     "$artifact_info_plist_metadata_legacy_mismatch_output" \
     "$artifact_info_plist_metadata_cannot_inspect_output" \
     "$artifact_app_icon_missing_output" \
+    "$artifact_app_icon_malformed_output" \
     "$missing_artifact_sha_output" \
     "$invalid_artifact_sha_output" \
     "$mismatched_artifact_sha_output" \
@@ -499,6 +505,9 @@ cleanup() {
     "$missing_app_icon_zip" \
     "$missing_app_icon_release_copy" \
     "$missing_app_icon_homebrew_cask" \
+    "$malformed_app_icon_zip" \
+    "$malformed_app_icon_release_copy" \
+    "$malformed_app_icon_homebrew_cask" \
     "$text_executable_bundle_zip" \
     "$text_executable_bundle_release_copy" \
     "$text_executable_bundle_homebrew_cask" \
@@ -742,7 +751,7 @@ write_app_icon_fixture() {
   local app_bundle_path="$1"
 
   mkdir -p "$app_bundle_path/Contents/Resources"
-  printf 'fake app icon fixture\n' >"$app_bundle_path/Contents/Resources/AppIcon.icns"
+  printf 'icns fake app icon fixture\n' >"$app_bundle_path/Contents/Resources/AppIcon.icns"
   /bin/chmod 644 "$app_bundle_path/Contents/Resources/AppIcon.icns"
 }
 
@@ -1026,6 +1035,21 @@ write_valid_info_plist "$missing_app_icon_zip_dir/fixture-root/LithePG.app/Conte
 )
 missing_app_icon_zip_sha="$(/usr/bin/shasum -a 256 "$missing_app_icon_zip" | /usr/bin/cut -d ' ' -f 1)"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$missing_app_icon_zip_sha" >"$missing_app_icon_release_copy"
+mkdir -p "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
+write_valid_info_plist "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
+/bin/cp /usr/bin/true "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+/bin/chmod 755 "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+write_app_icon_fixture "$malformed_app_icon_zip_dir/fixture-root/LithePG.app"
+malformed_app_icon_marker="MALFORMED_APP_ICON_FIXTURE_SHOULD_NOT_LEAK"
+printf '%s\n' "$malformed_app_icon_marker" >"$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Resources/AppIcon.icns"
+/bin/chmod 644 "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Resources/AppIcon.icns"
+/usr/bin/codesign --force --sign - --options runtime "$malformed_app_icon_zip_dir/fixture-root/LithePG.app" >/dev/null 2>&1
+(
+  cd "$malformed_app_icon_zip_dir/fixture-root"
+  /usr/bin/zip -qr "$malformed_app_icon_zip" LithePG.app
+)
+malformed_app_icon_zip_sha="$(/usr/bin/shasum -a 256 "$malformed_app_icon_zip" | /usr/bin/cut -d ' ' -f 1)"
+printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$malformed_app_icon_zip_sha" >"$malformed_app_icon_release_copy"
 mkdir -p "$missing_code_resources_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
 write_valid_info_plist "$missing_code_resources_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 /bin/cp /usr/bin/true "$missing_code_resources_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
@@ -3744,6 +3768,38 @@ assert_not_contains "$artifact_app_icon_missing_text" "$missing_app_icon_zip"
 assert_not_contains "$artifact_app_icon_missing_text" "AppIcon.icns"
 assert_not_contains "$artifact_app_icon_missing_text" "External publication inputs"
 assert_not_contains "$artifact_app_icon_missing_text" "fast preflight is clear"
+
+if run_gate_capture "$artifact_app_icon_malformed_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$malformed_app_icon_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$malformed_app_icon_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$malformed_app_icon_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$malformed_app_icon_zip_sha" \
+  /bin/bash -c 'exec "$1" --artifact-only' _; then
+  artifact_app_icon_malformed_text="$(<"$artifact_app_icon_malformed_output")"
+  assert_not_contains "$artifact_app_icon_malformed_text" "$malformed_app_icon_zip_sha"
+  assert_not_contains "$artifact_app_icon_malformed_text" "$malformed_app_icon_zip"
+  assert_not_contains "$artifact_app_icon_malformed_text" "$malformed_app_icon_marker"
+  assert_not_contains "$artifact_app_icon_malformed_text" "AppIcon.icns"
+  fail "artifact-only gate unexpectedly passed with malformed release artifact app icon"
+fi
+artifact_app_icon_malformed_text="$(<"$artifact_app_icon_malformed_output")"
+assert_contains "$artifact_app_icon_malformed_text" "Artifact-only mode: enabled"
+assert_contains "$artifact_app_icon_malformed_text" "Release artifact filename: matches"
+assert_contains "$artifact_app_icon_malformed_text" "Release artifact zip: present"
+assert_contains "$artifact_app_icon_malformed_text" "Release artifact Info.plist metadata: matches"
+assert_contains "$artifact_app_icon_malformed_text" "Release artifact app icon: invalid"
+assert_contains "$artifact_app_icon_malformed_text" "Release artifact code signature verification: valid"
+assert_contains "$artifact_app_icon_malformed_text" "Release artifact SHA-256: matches"
+assert_contains "$artifact_app_icon_malformed_text" "v1.0 artifact-only blocked"
+assert_not_contains "$artifact_app_icon_malformed_text" "$malformed_app_icon_zip_sha"
+assert_not_contains "$artifact_app_icon_malformed_text" "$malformed_app_icon_zip"
+assert_not_contains "$artifact_app_icon_malformed_text" "$malformed_app_icon_marker"
+assert_not_contains "$artifact_app_icon_malformed_text" "AppIcon.icns"
+assert_not_contains "$artifact_app_icon_malformed_text" "External publication inputs"
+assert_not_contains "$artifact_app_icon_malformed_text" "fast preflight is clear"
 
 if run_gate_capture "$artifact_executable_format_invalid_output" env -i \
   PATH="$fake_path" \

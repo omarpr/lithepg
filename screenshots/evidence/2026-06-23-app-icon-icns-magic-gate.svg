@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="760" viewBox="0 0 1180 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 app icon ICNS magic gate evidence</title>
+  <desc id="desc">Evidence snapshot for release-helper hardening that rejects malformed AppIcon.icns files in package and artifact gates.</desc>
+  <rect width="1180" height="760" fill="#0b1020"/>
+  <rect x="34" y="34" width="1112" height="692" rx="28" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="70" y="92" fill="#e5f4ff" font-family="SFMono-Regular, Menlo, monospace" font-size="30" font-weight="700">v1.0 release helper hardening</text>
+  <text x="70" y="132" fill="#93c5fd" font-family="SFMono-Regular, Menlo, monospace" font-size="18">Slice: require ICNS magic for AppIcon.icns</text>
+
+  <rect x="70" y="170" width="500" height="180" rx="18" fill="#0f172a" stroke="#22c55e" stroke-width="2"/>
+  <text x="96" y="212" fill="#bbf7d0" font-family="SFMono-Regular, Menlo, monospace" font-size="20" font-weight="700">Package verifier</text>
+  <text x="96" y="248" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, monospace" font-size="17">✓ regular AppIcon.icns</text>
+  <text x="96" y="278" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, monospace" font-size="17">✓ safe mode bits</text>
+  <text x="96" y="308" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, monospace" font-size="17">✓ first bytes == icns</text>
+
+  <rect x="610" y="170" width="500" height="180" rx="18" fill="#0f172a" stroke="#22c55e" stroke-width="2"/>
+  <text x="636" y="212" fill="#bbf7d0" font-family="SFMono-Regular, Menlo, monospace" font-size="20" font-weight="700">Artifact-only gate</text>
+  <text x="636" y="248" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, monospace" font-size="17">✓ exactly one app icon entry</text>
+  <text x="636" y="278" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, monospace" font-size="17">✓ regular + safe ZIP mode</text>
+  <text x="636" y="308" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, monospace" font-size="17">✓ malformed icon => invalid</text>
+
+  <rect x="70" y="388" width="1040" height="250" rx="18" fill="#020617" stroke="#475569" stroke-width="2"/>
+  <text x="96" y="430" fill="#f8fafc" font-family="SFMono-Regular, Menlo, monospace" font-size="20" font-weight="700">Verification</text>
+  <text x="96" y="468" fill="#a7f3d0" font-family="SFMono-Regular, Menlo, monospace" font-size="16">RED: malformed AppIcon.icns tests failed before implementation.</text>
+  <text x="96" y="500" fill="#a7f3d0" font-family="SFMono-Regular, Menlo, monospace" font-size="16">GREEN: release-helper shell tests passed.</text>
+  <text x="96" y="532" fill="#a7f3d0" font-family="SFMono-Regular, Menlo, monospace" font-size="16">GREEN: swift build + swift test passed (127 Swift Testing tests).</text>
+  <text x="96" y="564" fill="#fde68a" font-family="SFMono-Regular, Menlo, monospace" font-size="16">Dogfood gate attempted; Docker unavailable in this cron environment.</text>
+  <text x="96" y="596" fill="#a7f3d0" font-family="SFMono-Regular, Menlo, monospace" font-size="16">Artifact-only preflight passed with existing local dist/LithePG.app.zip.</text>
+
+  <text x="70" y="686" fill="#94a3b8" font-family="SFMono-Regular, Menlo, monospace" font-size="15">No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron, Telegram, or external publication attempted.</text>
+</svg>

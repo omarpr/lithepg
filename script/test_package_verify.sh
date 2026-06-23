@@ -60,7 +60,7 @@ PLIST
 
   mkdir -p "$app_bundle/Contents/Resources"
   chmod 755 "$app_bundle/Contents/Resources"
-  printf 'fixture-icns\n' >"$app_bundle/Contents/Resources/AppIcon.icns"
+  printf 'icnsfixture\n' >"$app_bundle/Contents/Resources/AppIcon.icns"
   chmod 644 "$app_bundle/Contents/Resources/AppIcon.icns"
 }
 
@@ -328,6 +328,22 @@ helper_output="$(<"$output_file")"
 assert_contains "$helper_output" "app icon must be a regular file"
 assert_not_contains "$helper_output" "Package verified:"
 assert_not_contains "$helper_output" "$icon_missing_sentinel"
+
+icon_format_sentinel="ICON_FORMAT_SENTINEL_SHOULD_NOT_LEAK"
+icon_format_bundle="$fixture_root/icon-format-$icon_format_sentinel/LithePG.app"
+make_minimal_app_bundle "$icon_format_bundle"
+printf '%s\n' "$icon_format_sentinel" >"$icon_format_bundle/Contents/Resources/AppIcon.icns"
+chmod 644 "$icon_format_bundle/Contents/Resources/AppIcon.icns"
+if run_helper_capture "$output_file" "$icon_format_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted a malformed AppIcon.icns"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "app icon format is invalid"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$icon_format_sentinel"
+assert_not_contains "$helper_output" "$icon_format_bundle"
 
 icon_name_sentinel="ICON_NAME_SENTINEL_SHOULD_NOT_LEAK"
 icon_name_bundle="$fixture_root/icon-name-$icon_name_sentinel/LithePG.app"

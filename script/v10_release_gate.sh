@@ -966,6 +966,9 @@ app_icon_path = "LithePG.app/Contents/Resources/AppIcon.icns"
 try:
     with zipfile.ZipFile(zip_path) as archive:
         matches = [entry for entry in archive.infolist() if entry.filename == app_icon_path]
+        if len(matches) == 1:
+            with archive.open(matches[0]) as icon:
+                magic = icon.read(4)
 except (zipfile.BadZipFile, OSError):
     sys.exit(2)
 
@@ -980,6 +983,9 @@ if mode == 0 or not stat.S_ISREG(mode):
 
 if mode & (stat.S_ISUID | stat.S_ISGID | stat.S_ISVTX | 0o022):
     sys.exit(3)
+
+if magic != b"icns":
+    sys.exit(4)
 
 sys.exit(0)
 PY
@@ -1856,6 +1862,9 @@ if [[ "$release_zip_present" -eq 1 ]]; then
             ;;
           3)
             printf 'Release artifact app icon: unsafe\n'
+            ;;
+          4)
+            printf 'Release artifact app icon: invalid\n'
             ;;
           *)
             printf 'Release artifact app icon: could not inspect\n'
