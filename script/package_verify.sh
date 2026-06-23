@@ -277,6 +277,7 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
       my $chunk_crc_offset = $chunk_data_start + $chunk_length;
       return 0 if $chunk_crc_offset + 4 > length($payload);
       return 0 unless crc32(substr($payload, $offset + 4, 4 + $chunk_length)) == unpack("N", substr($payload, $chunk_crc_offset, 4));
+      return 0 if $chunk_type =~ /\A[A-Z]/ && $chunk_type ne "IHDR" && $chunk_type ne "PLTE" && $chunk_type ne "IDAT" && $chunk_type ne "IEND";
       if ($chunk_type eq "PLTE") {
         return 0 if $seen_idat;
         return 0 if $seen_plte;

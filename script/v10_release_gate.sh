@@ -1156,6 +1156,8 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type, bit_
         actual_crc = zlib.crc32(payload[offset + 4:chunk_crc_offset]) & 0xFFFFFFFF
         if actual_crc != expected_crc:
             return False
+        if chunk_type[:1].isupper() and chunk_type not in {b"IHDR", b"PLTE", b"IDAT", b"IEND"}:
+            return False
         if chunk_type == b"PLTE":
             if seen_idat:
                 return False
