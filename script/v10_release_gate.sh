@@ -993,6 +993,13 @@ if len(icon_data) < 16 or icon_data[:4] != b"icns":
 if int.from_bytes(icon_data[4:8], byteorder="big") != len(icon_data):
     sys.exit(4)
 
+image_element_types = {
+    b"ICON", b"ICN#", b"icm#", b"icm4", b"icm8", b"ics#", b"ics4", b"ics8",
+    b"is32", b"s8mk", b"icl4", b"icl8", b"il32", b"l8mk", b"ich#", b"ich4",
+    b"ich8", b"ih32", b"h8mk", b"it32", b"t8mk", b"icp4", b"icp5", b"icp6",
+    b"ic07", b"ic08", b"ic09", b"ic10", b"ic11", b"ic12", b"ic13", b"ic14",
+}
+has_image_payload = False
 offset = 8
 while offset < len(icon_data):
     if offset + 8 > len(icon_data):
@@ -1005,7 +1012,12 @@ while offset < len(icon_data):
         sys.exit(4)
     if offset + element_length > len(icon_data):
         sys.exit(4)
+    if element_type in image_element_types and element_length > 8:
+        has_image_payload = True
     offset += element_length
+
+if not has_image_payload:
+    sys.exit(4)
 
 sys.exit(0)
 PY

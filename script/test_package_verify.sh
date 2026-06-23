@@ -60,7 +60,7 @@ PLIST
 
   mkdir -p "$app_bundle/Contents/Resources"
   chmod 755 "$app_bundle/Contents/Resources"
-  printf '\x69\x63\x6e\x73\x00\x00\x00\x10icp4\x00\x00\x00\x08' >"$app_bundle/Contents/Resources/AppIcon.icns"
+  printf '\x69\x63\x6e\x73\x00\x00\x00\x11icp4\x00\x00\x00\x09\x00' >"$app_bundle/Contents/Resources/AppIcon.icns"
   chmod 644 "$app_bundle/Contents/Resources/AppIcon.icns"
 }
 
@@ -376,6 +376,22 @@ assert_contains "$helper_output" "app icon format is invalid"
 assert_not_contains "$helper_output" "Package verified:"
 assert_not_contains "$helper_output" "$icon_element_sentinel"
 assert_not_contains "$helper_output" "$icon_element_bundle"
+
+icon_empty_image_sentinel="ICON_EMPTY_IMAGE_SENTINEL_SHOULD_NOT_LEAK"
+icon_empty_image_bundle="$fixture_root/icon-empty-image-$icon_empty_image_sentinel/LithePG.app"
+make_minimal_app_bundle "$icon_empty_image_bundle"
+printf '\x69\x63\x6e\x73\x00\x00\x00\x10icp4\x00\x00\x00\x08' >"$icon_empty_image_bundle/Contents/Resources/AppIcon.icns"
+chmod 644 "$icon_empty_image_bundle/Contents/Resources/AppIcon.icns"
+if run_helper_capture "$output_file" "$icon_empty_image_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted an AppIcon.icns without image payload data"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "app icon format is invalid"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$icon_empty_image_sentinel"
+assert_not_contains "$helper_output" "$icon_empty_image_bundle"
 
 icon_name_sentinel="ICON_NAME_SENTINEL_SHOULD_NOT_LEAK"
 icon_name_bundle="$fixture_root/icon-name-$icon_name_sentinel/LithePG.app"
