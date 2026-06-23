@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 app icon PNG IDAT gate evidence</title>
+  <desc id="desc">Verification receipt for the package and release artifact gates requiring non-empty IDAT image data in high-resolution PNG-backed ICNS app icons.</desc>
+  <rect width="1200" height="720" fill="#101827"/>
+  <rect x="36" y="36" width="1128" height="648" rx="28" fill="#162033" stroke="#5eead4" stroke-width="3"/>
+  <text x="72" y="96" fill="#f8fafc" font-family="SF Mono, Menlo, Consolas, monospace" font-size="32" font-weight="700">LithePG evidence — app icon PNG IDAT gate</text>
+  <text x="72" y="142" fill="#cbd5e1" font-family="SF Mono, Menlo, Consolas, monospace" font-size="20">2026-06-23 08:27 EDT • local cron output only • no external publication attempted</text>
+
+  <rect x="72" y="182" width="1056" height="318" rx="18" fill="#0f172a" stroke="#334155"/>
+  <text x="104" y="232" fill="#86efac" font-family="SF Mono, Menlo, Consolas, monospace" font-size="24">✓ RED checks</text>
+  <text x="136" y="270" fill="#e2e8f0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">test_package_verify rejected old acceptance path: missing IDAT image data</text>
+  <text x="136" y="302" fill="#e2e8f0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">test_v10_release_gate rejected malformed app-icon artifact fixture</text>
+
+  <text x="104" y="358" fill="#86efac" font-family="SF Mono, Menlo, Consolas, monospace" font-size="24">✓ GREEN checks</text>
+  <text x="136" y="396" fill="#e2e8f0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">bash -n package/release gate shell scripts</text>
+  <text x="136" y="428" fill="#e2e8f0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">test_package_verify, test_v10_release_gate, test_sign_and_notarize, test_create_release_zip, test_build_and_run</text>
+  <text x="136" y="460" fill="#e2e8f0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">swift build + full swift test: 127 tests / 20 suites passed</text>
+
+  <rect x="72" y="532" width="1056" height="104" rx="18" fill="#111827" stroke="#475569"/>
+  <text x="104" y="574" fill="#fbbf24" font-family="SF Mono, Menlo, Consolas, monospace" font-size="22">Dogfood note</text>
+  <text x="104" y="612" fill="#e2e8f0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">script/dogfood_check.sh could not run: Docker command unavailable in this cron environment.</text>
+  <text x="104" y="644" fill="#e2e8f0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">Local package_verify + artifact-only v1.0 release gate passed against dist/LithePG.app(.zip).</text>
+</svg>

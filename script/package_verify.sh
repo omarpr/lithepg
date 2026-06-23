@@ -188,6 +188,7 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     return 0 unless unpack("N", substr($payload, -12, 4)) == 0;
     return 0 unless substr($payload, -8, 4) eq "IEND";
     return 0 unless crc32(substr($payload, -8, 4)) == unpack("N", substr($payload, -4, 4));
+    return 0 unless png_has_nonempty_idat_chunk($payload);
     my $width = unpack("N", substr($payload, 16, 4));
     my $height = unpack("N", substr($payload, 20, 4));
     my $bit_depth = unpack("C", substr($payload, 24, 1));
@@ -208,6 +209,26 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     return 0 unless $filter_method == 0;
     return 0 unless $interlace_method == 0 || $interlace_method == 1;
     return $width >= $minimum_dimension && $height >= $minimum_dimension;
+  }
+
+  sub png_has_nonempty_idat_chunk {
+    my ($payload) = @_;
+    my $offset = 8;
+    my $has_idat_data = 0;
+
+    while ($offset < length($payload)) {
+      return 0 if $offset + 12 > length($payload);
+      my $chunk_length = unpack("N", substr($payload, $offset, 4));
+      my $chunk_type = substr($payload, $offset + 4, 4);
+      my $chunk_data_start = $offset + 8;
+      my $chunk_crc_offset = $chunk_data_start + $chunk_length;
+      return 0 if $chunk_crc_offset + 4 > length($payload);
+      return 0 unless crc32(substr($payload, $offset + 4, 4 + $chunk_length)) == unpack("N", substr($payload, $chunk_crc_offset, 4));
+      $has_idat_data = 1 if $chunk_type eq "IDAT" && $chunk_length > 0;
+      $offset = $chunk_crc_offset + 4;
+    }
+
+    return $has_idat_data && $offset == length($payload);
   }
 
   sub has_high_resolution_encoded_image {
