@@ -876,6 +876,24 @@ PY
   /bin/chmod 644 "$app_bundle_path/Contents/Resources/AppIcon.icns"
 }
 
+write_jpeg2000_magic_app_icon_fixture() {
+  local app_bundle_path="$1"
+
+  mkdir -p "$app_bundle_path/Contents/Resources"
+  /usr/bin/python3 - "$app_bundle_path/Contents/Resources/AppIcon.icns" <<'PY'
+import sys
+
+output_path = sys.argv[1]
+jp2_magic_only_payload = b"\x00\x00\x00\x0cjP  \r\n\x87\n"
+icns_element = b"ic10" + (len(jp2_magic_only_payload) + 8).to_bytes(4, "big") + jp2_magic_only_payload
+icns = b"icns" + (len(icns_element) + 8).to_bytes(4, "big") + icns_element
+
+with open(output_path, "wb") as icon_file:
+    icon_file.write(icns)
+PY
+  /bin/chmod 644 "$app_bundle_path/Contents/Resources/AppIcon.icns"
+}
+
 mkdir -p "$release_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
 write_valid_info_plist "$release_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 /bin/cp /usr/bin/true "$release_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
@@ -1160,7 +1178,7 @@ mkdir -p "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
 write_valid_info_plist "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 /bin/cp /usr/bin/true "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
 /bin/chmod 755 "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
-write_split_idat_app_icon_fixture "$malformed_app_icon_zip_dir/fixture-root/LithePG.app"
+write_jpeg2000_magic_app_icon_fixture "$malformed_app_icon_zip_dir/fixture-root/LithePG.app"
 malformed_app_icon_marker="MALFORMED_APP_ICON_FIXTURE_SHOULD_NOT_LEAK"
 /usr/bin/codesign --force --sign - --options runtime "$malformed_app_icon_zip_dir/fixture-root/LithePG.app" >/dev/null 2>&1
 (

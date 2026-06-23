@@ -1180,11 +1180,7 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths):
 
 def has_high_resolution_encoded_image(element_type, payload):
     minimum_dimension = 1024 if element_type == b"ic10" else 512
-    return (
-        png_dimensions_are_valid(payload, minimum_dimension)
-        or payload.startswith(b"\x00\x00\x00\x0cjP  \r\n\x87\n")
-        or payload.startswith(b"\xff\x4f\xff\x51")
-    )
+    return png_dimensions_are_valid(payload, minimum_dimension)
 
 has_image_payload = False
 has_high_resolution_image = False

@@ -545,6 +545,22 @@ assert_not_contains "$helper_output" "Package verified:"
 assert_not_contains "$helper_output" "$icon_high_resolution_payload_sentinel"
 assert_not_contains "$helper_output" "$icon_high_resolution_payload_bundle"
 
+icon_jpeg2000_magic_sentinel="ICON_JPEG2000_MAGIC_SENTINEL_SHOULD_NOT_LEAK"
+icon_jpeg2000_magic_bundle="$fixture_root/icon-jpeg2000-magic-$icon_jpeg2000_magic_sentinel/LithePG.app"
+make_minimal_app_bundle "$icon_jpeg2000_magic_bundle"
+printf '\x69\x63\x6e\x73\x00\x00\x00\x1cic10\x00\x00\x00\x14\x00\x00\x00\x0cjP  \x0d\x0a\x87\x0a' >"$icon_jpeg2000_magic_bundle/Contents/Resources/AppIcon.icns"
+chmod 644 "$icon_jpeg2000_magic_bundle/Contents/Resources/AppIcon.icns"
+if run_helper_capture "$output_file" "$icon_jpeg2000_magic_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted an AppIcon.icns whose high-resolution image payload only has a JPEG 2000 magic header"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "app icon format is invalid"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$icon_jpeg2000_magic_sentinel"
+assert_not_contains "$helper_output" "$icon_jpeg2000_magic_bundle"
+
 icon_png_header_sentinel="ICON_PNG_HEADER_SENTINEL_SHOULD_NOT_LEAK"
 icon_png_header_bundle="$fixture_root/icon-png-header-$icon_png_header_sentinel/LithePG.app"
 make_minimal_app_bundle "$icon_png_header_bundle"

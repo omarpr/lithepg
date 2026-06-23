@@ -304,8 +304,6 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     my ($element_type, $payload) = @_;
     my $minimum_dimension = $element_type eq "ic10" ? 1024 : 512;
     return 1 if png_dimensions_are_valid($payload, $minimum_dimension);
-    return 1 if length($payload) >= 12 && substr($payload, 0, 12) eq "\x00\x00\x00\x0cjP  \r\n\x87\n";
-    return 1 if length($payload) >= 4 && substr($payload, 0, 4) eq "\xff\x4f\xff\x51";
     return 0;
   }
   my $has_image_payload = 0;
