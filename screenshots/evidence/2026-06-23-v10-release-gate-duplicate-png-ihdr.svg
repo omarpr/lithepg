@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release gate duplicate PNG IHDR evidence</title>
+  <desc id="desc">Evidence artifact for the duplicate PNG IHDR hardening commit: RED failure, GREEN script tests, Swift build/test, package verification, and artifact-only preflight.</desc>
+  <rect width="1200" height="760" fill="#0b1020"/>
+  <rect x="36" y="36" width="1128" height="688" rx="28" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="72" y="96" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="34" font-weight="700">LithePG v1.0 release gate hardening</text>
+  <text x="72" y="140" fill="#93c5fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="22">2026-06-23 17:33 EDT — duplicate PNG IHDR rejection</text>
+
+  <rect x="72" y="178" width="1056" height="114" rx="16" fill="#1f2937" stroke="#f87171" stroke-width="2"/>
+  <text x="98" y="216" fill="#fecaca" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20" font-weight="700">RED</text>
+  <text x="98" y="250" fill="#f9fafb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">bash -n script/test_v10_release_gate.sh &amp;&amp; ./script/test_v10_release_gate.sh</text>
+  <text x="98" y="276" fill="#fecaca" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">failed: artifact-only gate unexpectedly passed with duplicate PNG IHDR chunks</text>
+
+  <rect x="72" y="322" width="1056" height="224" rx="16" fill="#052e16" stroke="#22c55e" stroke-width="2"/>
+  <text x="98" y="360" fill="#bbf7d0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20" font-weight="700">GREEN / VERIFICATION</text>
+  <text x="98" y="394" fill="#f0fdf4" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">✓ script/test_v10_release_gate.sh passed</text>
+  <text x="98" y="423" fill="#f0fdf4" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">✓ test_package_verify, test_sign_and_notarize, test_create_release_zip, test_build_and_run passed</text>
+  <text x="98" y="452" fill="#f0fdf4" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">✓ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build passed</text>
+  <text x="98" y="481" fill="#f0fdf4" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">✓ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test passed: 127 tests / 20 suites</text>
+  <text x="98" y="510" fill="#f0fdf4" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">✓ package_verify dist/LithePG.app and v10 artifact-only preflight passed</text>
+
+  <rect x="72" y="576" width="1056" height="92" rx="16" fill="#312e81" stroke="#a78bfa" stroke-width="2"/>
+  <text x="98" y="615" fill="#ddd6fe" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20" font-weight="700">Scope</text>
+  <text x="98" y="648" fill="#ede9fe" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">Artifact-only AppIcon.icns PNG parser now rejects duplicate IHDR chunks; no signing, notarization, upload, release, tag, cron, or Telegram action.</text>
+  <text x="72" y="704" fill="#94a3b8" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="14">Seeded/test fixtures only; no credentials, database URLs, query rows, SHA-256 digests, or local artifact paths are exposed.</text>
+</svg>

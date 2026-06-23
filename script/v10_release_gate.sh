@@ -1145,6 +1145,7 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type, bit_
     idat_data = b""
     seen_idat = False
     idat_sequence_closed = False
+    seen_ihdr = False
     seen_plte = False
     seen_iend = False
 
@@ -1167,7 +1168,13 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type, bit_
             return False
         if chunk_type[:1].isupper() and chunk_type not in {b"IHDR", b"PLTE", b"IDAT", b"IEND"}:
             return False
-        if chunk_type == b"PLTE":
+        if chunk_type == b"IHDR":
+            if seen_ihdr:
+                return False
+            if offset != 8 or chunk_length != 13:
+                return False
+            seen_ihdr = True
+        elif chunk_type == b"PLTE":
             if seen_idat:
                 return False
             if seen_plte:
@@ -1192,6 +1199,8 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type, bit_
             idat_sequence_closed = True
         offset = chunk_crc_offset + 4
 
+    if not seen_ihdr:
+        return False
     if not idat_data or offset != len(payload) or not seen_iend:
         return False
     if color_type == 3 and not seen_plte:
