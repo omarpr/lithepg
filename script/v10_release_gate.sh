@@ -1146,6 +1146,8 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type, bit_
             return False
         chunk_length = int.from_bytes(payload[offset:offset + 4], byteorder="big")
         chunk_type = payload[offset + 4:offset + 8]
+        if any(not (0x41 <= byte <= 0x5A or 0x61 <= byte <= 0x7A) for byte in chunk_type):
+            return False
         chunk_data_start = offset + 8
         chunk_crc_offset = chunk_data_start + chunk_length
         if chunk_crc_offset + 4 > len(payload):

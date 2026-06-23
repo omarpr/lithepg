@@ -105,6 +105,7 @@ artifact_info_plist_metadata_legacy_mismatch_output="$(mktemp)"
 artifact_info_plist_metadata_cannot_inspect_output="$(mktemp)"
 artifact_app_icon_missing_output="$(mktemp)"
 artifact_app_icon_malformed_output="$(mktemp)"
+artifact_app_icon_invalid_chunk_type_output="$(mktemp)"
 missing_artifact_sha_output="$(mktemp)"
 invalid_artifact_sha_output="$(mktemp)"
 mismatched_artifact_sha_output="$(mktemp)"
@@ -258,6 +259,10 @@ malformed_app_icon_zip_dir="$(mktemp -d)"
 malformed_app_icon_zip="$malformed_app_icon_zip_dir/LithePG.app.zip"
 malformed_app_icon_release_copy="$(mktemp)"
 malformed_app_icon_homebrew_cask="$(mktemp)"
+invalid_chunk_type_app_icon_zip_dir="$(mktemp -d)"
+invalid_chunk_type_app_icon_zip="$invalid_chunk_type_app_icon_zip_dir/LithePG.app.zip"
+invalid_chunk_type_app_icon_release_copy="$(mktemp)"
+invalid_chunk_type_app_icon_homebrew_cask="$(mktemp)"
 text_executable_bundle_zip_dir="$(mktemp -d)"
 text_executable_bundle_zip="$text_executable_bundle_zip_dir/LithePG.app.zip"
 text_executable_bundle_release_copy="$(mktemp)"
@@ -561,7 +566,7 @@ cleanup() {
     "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$startup_hardening_root" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$unsafe_directory_mode_zip_dir" "$unsafe_root_directory_mode_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$missing_app_icon_zip_dir" "$text_executable_bundle_zip_dir" "$over_budget_executable_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$startup_hardening_root" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$unsafe_directory_mode_zip_dir" "$unsafe_root_directory_mode_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$missing_app_icon_zip_dir" "$malformed_app_icon_zip_dir" "$invalid_chunk_type_app_icon_zip_dir" "$text_executable_bundle_zip_dir" "$over_budget_executable_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
@@ -1042,6 +1047,47 @@ PY
   /bin/chmod 644 "$app_bundle_path/Contents/Resources/AppIcon.icns"
 }
 
+write_invalid_png_chunk_type_app_icon_fixture() {
+  local app_bundle_path="$1"
+
+  mkdir -p "$app_bundle_path/Contents/Resources"
+  /usr/bin/python3 - "$app_bundle_path/Contents/Resources/AppIcon.icns" <<'PY'
+import binascii
+import struct
+import sys
+import zlib
+
+output_path = sys.argv[1]
+width = 1024
+height = 1024
+
+
+def png_chunk(chunk_type, data):
+    return (
+        len(data).to_bytes(4, "big")
+        + chunk_type
+        + data
+        + (binascii.crc32(chunk_type + data) & 0xFFFFFFFF).to_bytes(4, "big")
+    )
+
+
+raw_scanlines = b"".join(b"\x00" + (b"\x00" * width * 4) for _ in range(height))
+png_payload = (
+    b"\x89PNG\r\n\x1a\n"
+    + png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+    + png_chunk(b"1234", b"invalid chunk type")
+    + png_chunk(b"IDAT", zlib.compress(raw_scanlines, 9))
+    + png_chunk(b"IEND", b"")
+)
+icns_element = b"ic10" + (len(png_payload) + 8).to_bytes(4, "big") + png_payload
+icns = b"icns" + (len(icns_element) + 8).to_bytes(4, "big") + icns_element
+
+with open(output_path, "wb") as icon_file:
+    icon_file.write(icns)
+PY
+  /bin/chmod 644 "$app_bundle_path/Contents/Resources/AppIcon.icns"
+}
+
 write_jpeg2000_magic_app_icon_fixture() {
   local app_bundle_path="$1"
 
@@ -1353,6 +1399,19 @@ malformed_app_icon_marker="MALFORMED_APP_ICON_FIXTURE_SHOULD_NOT_LEAK"
 )
 malformed_app_icon_zip_sha="$(/usr/bin/shasum -a 256 "$malformed_app_icon_zip" | /usr/bin/cut -d ' ' -f 1)"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$malformed_app_icon_zip_sha" >"$malformed_app_icon_release_copy"
+mkdir -p "$invalid_chunk_type_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
+write_valid_info_plist "$invalid_chunk_type_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
+/bin/cp /usr/bin/true "$invalid_chunk_type_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+/bin/chmod 755 "$invalid_chunk_type_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+write_invalid_png_chunk_type_app_icon_fixture "$invalid_chunk_type_app_icon_zip_dir/fixture-root/LithePG.app"
+invalid_chunk_type_app_icon_marker="INVALID_CHUNK_TYPE_APP_ICON_FIXTURE_SHOULD_NOT_LEAK"
+/usr/bin/codesign --force --sign - --options runtime "$invalid_chunk_type_app_icon_zip_dir/fixture-root/LithePG.app" >/dev/null 2>&1
+(
+  cd "$invalid_chunk_type_app_icon_zip_dir/fixture-root"
+  /usr/bin/zip -qr "$invalid_chunk_type_app_icon_zip" LithePG.app
+)
+invalid_chunk_type_app_icon_zip_sha="$(/usr/bin/shasum -a 256 "$invalid_chunk_type_app_icon_zip" | /usr/bin/cut -d ' ' -f 1)"
+printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$invalid_chunk_type_app_icon_zip_sha" >"$invalid_chunk_type_app_icon_release_copy"
 mkdir -p "$missing_code_resources_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
 write_valid_info_plist "$missing_code_resources_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 /bin/cp /usr/bin/true "$missing_code_resources_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
@@ -4139,6 +4198,38 @@ assert_not_contains "$artifact_app_icon_malformed_text" "$malformed_app_icon_mar
 assert_not_contains "$artifact_app_icon_malformed_text" "AppIcon.icns"
 assert_not_contains "$artifact_app_icon_malformed_text" "External publication inputs"
 assert_not_contains "$artifact_app_icon_malformed_text" "fast preflight is clear"
+
+if run_gate_capture "$artifact_app_icon_invalid_chunk_type_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$invalid_chunk_type_app_icon_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$invalid_chunk_type_app_icon_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$invalid_chunk_type_app_icon_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$invalid_chunk_type_app_icon_zip_sha" \
+  /bin/bash -c 'exec "$1" --artifact-only' _; then
+  artifact_app_icon_invalid_chunk_type_text="$(<"$artifact_app_icon_invalid_chunk_type_output")"
+  assert_not_contains "$artifact_app_icon_invalid_chunk_type_text" "$invalid_chunk_type_app_icon_zip_sha"
+  assert_not_contains "$artifact_app_icon_invalid_chunk_type_text" "$invalid_chunk_type_app_icon_zip"
+  assert_not_contains "$artifact_app_icon_invalid_chunk_type_text" "$invalid_chunk_type_app_icon_marker"
+  assert_not_contains "$artifact_app_icon_invalid_chunk_type_text" "AppIcon.icns"
+  fail "artifact-only gate unexpectedly passed with invalid PNG chunk type in release artifact app icon"
+fi
+artifact_app_icon_invalid_chunk_type_text="$(<"$artifact_app_icon_invalid_chunk_type_output")"
+assert_contains "$artifact_app_icon_invalid_chunk_type_text" "Artifact-only mode: enabled"
+assert_contains "$artifact_app_icon_invalid_chunk_type_text" "Release artifact filename: matches"
+assert_contains "$artifact_app_icon_invalid_chunk_type_text" "Release artifact zip: present"
+assert_contains "$artifact_app_icon_invalid_chunk_type_text" "Release artifact Info.plist metadata: matches"
+assert_contains "$artifact_app_icon_invalid_chunk_type_text" "Release artifact app icon: invalid"
+assert_contains "$artifact_app_icon_invalid_chunk_type_text" "Release artifact code signature verification: valid"
+assert_contains "$artifact_app_icon_invalid_chunk_type_text" "Release artifact SHA-256: matches"
+assert_contains "$artifact_app_icon_invalid_chunk_type_text" "v1.0 artifact-only blocked"
+assert_not_contains "$artifact_app_icon_invalid_chunk_type_text" "$invalid_chunk_type_app_icon_zip_sha"
+assert_not_contains "$artifact_app_icon_invalid_chunk_type_text" "$invalid_chunk_type_app_icon_zip"
+assert_not_contains "$artifact_app_icon_invalid_chunk_type_text" "$invalid_chunk_type_app_icon_marker"
+assert_not_contains "$artifact_app_icon_invalid_chunk_type_text" "AppIcon.icns"
+assert_not_contains "$artifact_app_icon_invalid_chunk_type_text" "External publication inputs"
+assert_not_contains "$artifact_app_icon_invalid_chunk_type_text" "fast preflight is clear"
 
 if run_gate_capture "$artifact_executable_format_invalid_output" env -i \
   PATH="$fake_path" \

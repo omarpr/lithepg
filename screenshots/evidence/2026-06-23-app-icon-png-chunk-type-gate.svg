@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 app-icon PNG chunk-type gate evidence</title>
+  <desc id="desc">Terminal-style verification receipt for the release-helper hardening slice that rejects non-letter PNG chunk types inside ICNS app icons.</desc>
+  <rect width="1200" height="760" fill="#0b1020"/>
+  <rect x="40" y="40" width="1120" height="680" rx="24" fill="#111827" stroke="#374151" stroke-width="2"/>
+  <circle cx="76" cy="76" r="8" fill="#ef4444"/>
+  <circle cx="104" cy="76" r="8" fill="#f59e0b"/>
+  <circle cx="132" cy="76" r="8" fill="#22c55e"/>
+  <text x="60" y="126" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="24" font-weight="700">LithePG release gate hardening — PNG chunk types</text>
+  <text x="60" y="170" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="18">RED</text>
+  <text x="130" y="170" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="18">bash script/test_package_verify.sh</text>
+  <text x="130" y="198" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="18">failed: accepted AppIcon.icns whose PNG payload has invalid chunk type</text>
+  <text x="130" y="226" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="18">bash script/test_v10_release_gate.sh</text>
+  <text x="130" y="254" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="18">failed: artifact-only gate accepted invalid PNG chunk type</text>
+  <text x="60" y="310" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="18">GREEN</text>
+  <text x="130" y="310" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="18">bash -n package/release gate scripts</text>
+  <text x="130" y="338" fill="#bbf7d0" font-family="Menlo, Consolas, monospace" font-size="18">passed</text>
+  <text x="130" y="366" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="18">test_package_verify / test_v10_release_gate / sign / zip / build scripts</text>
+  <text x="130" y="394" fill="#bbf7d0" font-family="Menlo, Consolas, monospace" font-size="18">passed</text>
+  <text x="130" y="422" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="18">DEVELOPER_DIR=/Applications/Xcode.app/... swift build</text>
+  <text x="130" y="450" fill="#bbf7d0" font-family="Menlo, Consolas, monospace" font-size="18">Build complete</text>
+  <text x="130" y="478" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="18">DEVELOPER_DIR=/Applications/Xcode.app/... swift test</text>
+  <text x="130" y="506" fill="#bbf7d0" font-family="Menlo, Consolas, monospace" font-size="18">127 tests in 20 suites passed</text>
+  <text x="130" y="534" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="18">package_verify dist/LithePG.app + v10 artifact-only preflight</text>
+  <text x="130" y="562" fill="#bbf7d0" font-family="Menlo, Consolas, monospace" font-size="18">Release artifact app icon: present; executable under budget; SHA matches</text>
+  <text x="60" y="622" fill="#fbbf24" font-family="Menlo, Consolas, monospace" font-size="18">DOGFOOD</text>
+  <text x="160" y="622" fill="#fde68a" font-family="Menlo, Consolas, monospace" font-size="18">blocked in cron environment: docker is required for seeded Postgres</text>
+  <text x="60" y="668" fill="#9ca3af" font-family="Menlo, Consolas, monospace" font-size="16">No signing, notarization, GitHub Release, Homebrew publication, tag, cron, or Telegram action attempted.</text>
+</svg>
