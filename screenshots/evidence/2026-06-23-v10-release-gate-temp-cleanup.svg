@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="820" viewBox="0 0 1400 820">
+  <rect width="1400" height="820" fill="#0f172a"/>
+  <rect x="40" y="40" width="1320" height="740" rx="28" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="80" y="115" fill="#e5e7eb" font-family="SF Pro Display, -apple-system, BlinkMacSystemFont, sans-serif" font-size="42" font-weight="700">LithePG v1.0 release-gate cleanup receipt</text>
+  <text x="80" y="170" fill="#93c5fd" font-family="SF Mono, Menlo, monospace" font-size="24">2026-06-23 19:08 EDT · script/test_v10_release_gate.sh</text>
+  <g font-family="SF Mono, Menlo, monospace" font-size="24">
+    <text x="80" y="245" fill="#fca5a5">RED: mktemp dirs missing from cleanup: trailing_zlib_app_icon_zip_dir</text>
+    <text x="80" y="295" fill="#86efac">GREEN: cleanup self-check added and trailing_zlib_app_icon_zip_dir removed</text>
+    <text x="80" y="345" fill="#86efac">✓ bash script/test_v10_release_gate.sh → test_v10_release_gate passed</text>
+    <text x="80" y="395" fill="#86efac">✓ bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh</text>
+    <text x="80" y="445" fill="#86efac">✓ git diff --check</text>
+    <text x="80" y="495" fill="#86efac">✓ swift build</text>
+    <text x="80" y="545" fill="#86efac">✓ swift test → 127 tests across 20 suites passed</text>
+    <text x="80" y="595" fill="#fbbf24">Docker dogfood gate skipped: docker command missing in cron environment</text>
+    <text x="80" y="645" fill="#c4b5fd">Scope: test harness cleanup guard only; no signing/notarization/publication attempted</text>
+  </g>
+  <text x="80" y="725" fill="#64748b" font-family="SF Mono, Menlo, monospace" font-size="20">Artifact contains no secrets, credentials, SHA-256 values, or local temp paths.</text>
+</svg>

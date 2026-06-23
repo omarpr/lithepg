@@ -2414,3 +2414,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker unavailable; skipping dogfood_check.sh`).
 - Evidence artifact: `screenshots/evidence/2026-06-23-app-icon-png-zlib-trailing-gate.svg`.
 - No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.
+
+## 2026-06-23 19:08 EDT — v1.0 release-gate temp cleanup guard
+
+- Added a fail-fast self-check to `script/test_v10_release_gate.sh` that verifies every `mktemp -d` fixture directory declared by the release-gate test is listed in the cleanup trap.
+- RED verification passed as expected before the cleanup fix: `bash script/test_v10_release_gate.sh` failed with `mktemp dirs missing from cleanup: trailing_zlib_app_icon_zip_dir`.
+- GREEN verification passed after adding the missing cleanup entry for the trailing-zlib app-icon fixture directory: `bash script/test_v10_release_gate.sh` passed.
+- Additional verification: `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` (127 tests across 20 suites) passed.
+- Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker command missing`).
+- Evidence artifact: `screenshots/evidence/2026-06-23-v10-release-gate-temp-cleanup.svg`.
+- No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.

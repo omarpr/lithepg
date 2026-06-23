@@ -36,6 +36,29 @@ assert_occurrences() {
   [[ "$actual_count" -eq "$expected_count" ]] || fail "expected $expected_count occurrences of: $needle"
 }
 
+assert_mktemp_dirs_are_cleaned() {
+  /usr/bin/python3 - "$0" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+script_path = Path(sys.argv[1])
+source = script_path.read_text()
+mktemp_dirs = set(re.findall(r'^(\w+_dir)="\$\(mktemp -d\)"', source, re.MULTILINE))
+cleanup_match = re.search(r'cleanup\(\) \{(?P<body>.*?)\n\}\ntrap cleanup EXIT', source, re.DOTALL)
+if cleanup_match is None:
+    print("cleanup function not found", file=sys.stderr)
+    sys.exit(1)
+cleaned_dirs = set(re.findall(r'"\$(\w+_dir)"', cleanup_match.group("body")))
+missing = sorted(mktemp_dirs - cleaned_dirs)
+if missing:
+    print("mktemp dirs missing from cleanup: " + ", ".join(missing), file=sys.stderr)
+    sys.exit(1)
+PY
+}
+
+assert_mktemp_dirs_are_cleaned
+
 run_gate_capture() {
   local output_file="$1"
   shift
@@ -642,7 +665,7 @@ cleanup() {
     "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$startup_hardening_root" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$unsafe_directory_mode_zip_dir" "$unsafe_root_directory_mode_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$missing_app_icon_zip_dir" "$malformed_app_icon_zip_dir" "$bad_low_resolution_sibling_app_icon_zip_dir" "$duplicate_element_app_icon_zip_dir" "$duplicate_ihdr_app_icon_zip_dir" "$invalid_chunk_type_app_icon_zip_dir" "$unknown_critical_app_icon_zip_dir" "$oversized_dimensions_app_icon_zip_dir" "$trns_alpha_app_icon_zip_dir" "$oversized_file_app_icon_zip_dir" "$text_executable_bundle_zip_dir" "$over_budget_executable_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$startup_hardening_root" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$unsafe_directory_mode_zip_dir" "$unsafe_root_directory_mode_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$missing_app_icon_zip_dir" "$malformed_app_icon_zip_dir" "$bad_low_resolution_sibling_app_icon_zip_dir" "$duplicate_element_app_icon_zip_dir" "$duplicate_ihdr_app_icon_zip_dir" "$invalid_chunk_type_app_icon_zip_dir" "$unknown_critical_app_icon_zip_dir" "$oversized_dimensions_app_icon_zip_dir" "$trns_alpha_app_icon_zip_dir" "$trailing_zlib_app_icon_zip_dir" "$oversized_file_app_icon_zip_dir" "$text_executable_bundle_zip_dir" "$over_budget_executable_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
