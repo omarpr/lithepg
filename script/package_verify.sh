@@ -265,8 +265,10 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     my $seen_idat = 0;
     my $idat_sequence_closed = 0;
     my $seen_plte = 0;
+    my $seen_iend = 0;
 
     while ($offset < length($payload)) {
+      return 0 if $seen_iend;
       return 0 if $offset + 12 > length($payload);
       my $chunk_length = unpack("N", substr($payload, $offset, 4));
       my $chunk_type = substr($payload, $offset + 4, 4);
@@ -285,13 +287,16 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
         return 0 if $idat_sequence_closed;
         $seen_idat = 1;
         $idat_data .= substr($payload, $chunk_data_start, $chunk_length);
+      } elsif ($chunk_type eq "IEND") {
+        return 0 unless $chunk_length == 0;
+        $seen_iend = 1;
       } elsif ($seen_idat) {
         $idat_sequence_closed = 1;
       }
       $offset = $chunk_crc_offset + 4;
     }
 
-    return 0 unless length($idat_data) > 0 && $offset == length($payload);
+    return 0 unless length($idat_data) > 0 && $offset == length($payload) && $seen_iend;
     return 0 if $color_type == 3 && !$seen_plte;
     my $inflated = uncompress($idat_data);
     return 0 unless defined($inflated);
