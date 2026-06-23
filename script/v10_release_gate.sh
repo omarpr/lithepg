@@ -1084,7 +1084,7 @@ def png_dimensions_are_valid(payload, minimum_dimension):
     )
     if not scanline_payload_lengths:
         return False
-    if not png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type):
+    if not png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type, bit_depth):
         return False
 
     return width >= minimum_dimension and height >= minimum_dimension
@@ -1131,7 +1131,7 @@ def png_expected_scanline_payload_lengths(width, height, bit_depth, color_type, 
     return scanline_payload_lengths
 
 
-def png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type):
+def png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type, bit_depth):
     offset = 8
     idat_data = b""
     seen_idat = False
@@ -1153,6 +1153,12 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type):
             return False
         if chunk_type == b"PLTE":
             if seen_idat:
+                return False
+            if color_type in {0, 4}:
+                return False
+            if chunk_length == 0 or chunk_length % 3 != 0 or chunk_length > 768:
+                return False
+            if color_type == 3 and chunk_length // 3 > (1 << bit_depth):
                 return False
             seen_plte = True
         elif chunk_type == b"IDAT":

@@ -181,6 +181,47 @@ with open(output_path, "wb") as icon_file:
 PY
 }
 
+write_indexed_png_empty_plte_app_icon_fixture() {
+  local output_path="$1"
+
+  /usr/bin/python3 - "$output_path" <<'PY'
+import binascii
+import struct
+import sys
+import zlib
+
+output_path = sys.argv[1]
+width = 1024
+height = 1024
+
+
+def png_chunk(chunk_type, data):
+    return (
+        len(data).to_bytes(4, "big")
+        + chunk_type
+        + data
+        + (binascii.crc32(chunk_type + data) & 0xFFFFFFFF).to_bytes(4, "big")
+    )
+
+
+# Indexed-color PNG requires a non-empty PLTE whose length is a multiple of 3.
+# An empty palette before IDAT is still malformed and must not satisfy the gate.
+raw_scanlines = b"".join(b"\x00" + (b"\x00" * width) for _ in range(height))
+png_payload = (
+    b"\x89PNG\r\n\x1a\n"
+    + png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 3, 0, 0, 0))
+    + png_chunk(b"PLTE", b"")
+    + png_chunk(b"IDAT", zlib.compress(raw_scanlines, 9))
+    + png_chunk(b"IEND", b"")
+)
+icns_element = b"ic10" + (len(png_payload) + 8).to_bytes(4, "big") + png_payload
+icns = b"icns" + (len(icns_element) + 8).to_bytes(4, "big") + icns_element
+
+with open(output_path, "wb") as icon_file:
+    icon_file.write(icns)
+PY
+}
+
 make_minimal_app_bundle() {
   local app_bundle="$1"
   mkdir -p "$app_bundle/Contents/MacOS"
@@ -760,6 +801,22 @@ assert_contains "$helper_output" "app icon format is invalid"
 assert_not_contains "$helper_output" "Package verified:"
 assert_not_contains "$helper_output" "$icon_png_missing_plte_sentinel"
 assert_not_contains "$helper_output" "$icon_png_missing_plte_bundle"
+
+icon_png_empty_plte_sentinel="ICON_PNG_EMPTY_PLTE_SENTINEL_SHOULD_NOT_LEAK"
+icon_png_empty_plte_bundle="$fixture_root/icon-png-empty-plte-$icon_png_empty_plte_sentinel/LithePG.app"
+make_minimal_app_bundle "$icon_png_empty_plte_bundle"
+write_indexed_png_empty_plte_app_icon_fixture "$icon_png_empty_plte_bundle/Contents/Resources/AppIcon.icns"
+chmod 644 "$icon_png_empty_plte_bundle/Contents/Resources/AppIcon.icns"
+if run_helper_capture "$output_file" "$icon_png_empty_plte_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted an AppIcon.icns whose indexed PNG payload has an empty PLTE chunk"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "app icon format is invalid"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$icon_png_empty_plte_sentinel"
+assert_not_contains "$helper_output" "$icon_png_empty_plte_bundle"
 
 icon_name_sentinel="ICON_NAME_SENTINEL_SHOULD_NOT_LEAK"
 icon_name_bundle="$fixture_root/icon-name-$icon_name_sentinel/LithePG.app"

@@ -210,7 +210,7 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     return 0 unless $interlace_method == 0 || $interlace_method == 1;
     my @scanline_payload_lengths = png_expected_scanline_payload_lengths($width, $height, $bit_depth, $color_type, $interlace_method);
     return 0 unless @scanline_payload_lengths;
-    return 0 unless png_idat_stream_is_valid($payload, \@scanline_payload_lengths, $color_type);
+    return 0 unless png_idat_stream_is_valid($payload, \@scanline_payload_lengths, $color_type, $bit_depth);
     return $width >= $minimum_dimension && $height >= $minimum_dimension;
   }
 
@@ -259,7 +259,7 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
   }
 
   sub png_idat_stream_is_valid {
-    my ($payload, $scanline_payload_lengths, $color_type) = @_;
+    my ($payload, $scanline_payload_lengths, $color_type, $bit_depth) = @_;
     my $offset = 8;
     my $idat_data = "";
     my $seen_idat = 0;
@@ -276,6 +276,9 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
       return 0 unless crc32(substr($payload, $offset + 4, 4 + $chunk_length)) == unpack("N", substr($payload, $chunk_crc_offset, 4));
       if ($chunk_type eq "PLTE") {
         return 0 if $seen_idat;
+        return 0 if $color_type == 0 || $color_type == 4;
+        return 0 if $chunk_length == 0 || ($chunk_length % 3) != 0 || $chunk_length > 768;
+        return 0 if $color_type == 3 && ($chunk_length / 3) > (1 << $bit_depth);
         $seen_plte = 1;
       } elsif ($chunk_type eq "IDAT") {
         return 0 if $idat_sequence_closed;
