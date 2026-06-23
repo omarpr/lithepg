@@ -1055,9 +1055,6 @@ def png_dimensions_are_valid(payload, minimum_dimension):
         return False
     if zlib.crc32(payload[-8:-4]) & 0xFFFFFFFF != int.from_bytes(payload[-4:], byteorder="big"):
         return False
-    if not png_idat_stream_is_valid(payload):
-        return False
-
     width = int.from_bytes(payload[16:20], byteorder="big")
     height = int.from_bytes(payload[20:24], byteorder="big")
     bit_depth = payload[24]
@@ -1073,17 +1070,68 @@ def png_dimensions_are_valid(payload, minimum_dimension):
         6: {8, 16},
     }
 
-    return (
-        width >= minimum_dimension
-        and height >= minimum_dimension
-        and bit_depth in valid_bit_depths.get(color_type, set())
-        and compression_method == 0
-        and filter_method == 0
-        and interlace_method in {0, 1}
+    if bit_depth not in valid_bit_depths.get(color_type, set()):
+        return False
+    if compression_method != 0 or filter_method != 0 or interlace_method not in {0, 1}:
+        return False
+
+    expected_inflated_length = png_expected_inflated_length(
+        width,
+        height,
+        bit_depth,
+        color_type,
+        interlace_method,
     )
+    if expected_inflated_length is None:
+        return False
+    if not png_idat_stream_is_valid(payload, expected_inflated_length):
+        return False
+
+    return width >= minimum_dimension and height >= minimum_dimension
 
 
-def png_idat_stream_is_valid(payload):
+def ceil_div(numerator, denominator):
+    return (numerator + denominator - 1) // denominator
+
+
+def png_expected_inflated_length(width, height, bit_depth, color_type, interlace_method):
+    channels_by_color_type = {
+        0: 1,
+        2: 3,
+        3: 1,
+        4: 2,
+        6: 4,
+    }
+    channel_count = channels_by_color_type.get(color_type)
+    if channel_count is None:
+        return None
+
+    bits_per_pixel = channel_count * bit_depth
+    if interlace_method == 0:
+        row_bytes = ceil_div(width * bits_per_pixel, 8)
+        return height * (1 + row_bytes)
+
+    adam7_passes = (
+        (0, 0, 8, 8),
+        (4, 0, 8, 8),
+        (0, 4, 4, 8),
+        (2, 0, 4, 4),
+        (0, 2, 2, 4),
+        (1, 0, 2, 2),
+        (0, 1, 1, 2),
+    )
+    expected = 0
+    for start_x, start_y, step_x, step_y in adam7_passes:
+        if width <= start_x or height <= start_y:
+            continue
+        pass_width = ceil_div(width - start_x, step_x)
+        pass_height = ceil_div(height - start_y, step_y)
+        row_bytes = ceil_div(pass_width * bits_per_pixel, 8)
+        expected += pass_height * (1 + row_bytes)
+    return expected
+
+
+def png_idat_stream_is_valid(payload, expected_inflated_length):
     offset = 8
     idat_data = b""
 
@@ -1110,7 +1158,7 @@ def png_idat_stream_is_valid(payload):
         inflated = zlib.decompress(idat_data)
     except zlib.error:
         return False
-    return len(inflated) > 0
+    return len(inflated) == expected_inflated_length
 
 
 def has_high_resolution_encoded_image(element_type, payload):

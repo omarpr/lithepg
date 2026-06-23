@@ -21,6 +21,44 @@ assert_not_contains() {
   [[ "$haystack" != *"$needle"* ]] || fail "output leaked forbidden value: $needle"
 }
 
+write_valid_app_icon_fixture() {
+  local output_path="$1"
+
+  /usr/bin/python3 - "$output_path" <<'PY'
+import binascii
+import struct
+import sys
+import zlib
+
+output_path = sys.argv[1]
+width = 1024
+height = 1024
+
+
+def png_chunk(chunk_type, data):
+    return (
+        len(data).to_bytes(4, "big")
+        + chunk_type
+        + data
+        + (binascii.crc32(chunk_type + data) & 0xFFFFFFFF).to_bytes(4, "big")
+    )
+
+
+raw_scanlines = b"".join(b"\x00" + (b"\x00" * width * 4) for _ in range(height))
+png_payload = (
+    b"\x89PNG\r\n\x1a\n"
+    + png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+    + png_chunk(b"IDAT", zlib.compress(raw_scanlines, 9))
+    + png_chunk(b"IEND", b"")
+)
+icns_element = b"ic10" + (len(png_payload) + 8).to_bytes(4, "big") + png_payload
+icns = b"icns" + (len(icns_element) + 8).to_bytes(4, "big") + icns_element
+
+with open(output_path, "wb") as icon_file:
+    icon_file.write(icns)
+PY
+}
+
 make_minimal_app_bundle() {
   local app_bundle="$1"
   mkdir -p "$app_bundle/Contents/MacOS"
@@ -57,7 +95,7 @@ PLIST
 
   mkdir -p "$app_bundle/Contents/Resources"
   chmod 755 "$app_bundle/Contents/Resources"
-  printf '\x69\x63\x6e\x73\x00\x00\x00\x52\x69\x63\x31\x30\x00\x00\x00\x4a\x89\x50\x4e\x47\x0d\x0a\x1a\x0a\x00\x00\x00\x0d\x49\x48\x44\x52\x00\x00\x04\x00\x00\x00\x04\x00\x08\x06\x00\x00\x00\x7f\x1d\x2b\x83\x00\x00\x00\x09\x49\x44\x41\x54\x78\x9c\x63\x00\x00\x00\x01\x00\x01\x5e\xff\x7d\xf9\x00\x00\x00\x00\x49\x45\x4e\x44\xae\x42\x60\x82' >"$app_bundle/Contents/Resources/AppIcon.icns"
+  write_valid_app_icon_fixture "$app_bundle/Contents/Resources/AppIcon.icns"
   chmod 644 "$app_bundle/Contents/Resources/AppIcon.icns"
 }
 

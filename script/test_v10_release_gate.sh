@@ -756,7 +756,39 @@ write_app_icon_fixture() {
   local app_bundle_path="$1"
 
   mkdir -p "$app_bundle_path/Contents/Resources"
-  printf '\x69\x63\x6e\x73\x00\x00\x00\x52\x69\x63\x31\x30\x00\x00\x00\x4a\x89\x50\x4e\x47\x0d\x0a\x1a\x0a\x00\x00\x00\x0d\x49\x48\x44\x52\x00\x00\x04\x00\x00\x00\x04\x00\x08\x06\x00\x00\x00\x7f\x1d\x2b\x83\x00\x00\x00\x09\x49\x44\x41\x54\x78\x9c\x63\x00\x00\x00\x01\x00\x01\x5e\xff\x7d\xf9\x00\x00\x00\x00\x49\x45\x4e\x44\xae\x42\x60\x82' >"$app_bundle_path/Contents/Resources/AppIcon.icns"
+  /usr/bin/python3 - "$app_bundle_path/Contents/Resources/AppIcon.icns" <<'PY'
+import binascii
+import struct
+import sys
+import zlib
+
+output_path = sys.argv[1]
+width = 1024
+height = 1024
+
+
+def png_chunk(chunk_type, data):
+    return (
+        len(data).to_bytes(4, "big")
+        + chunk_type
+        + data
+        + (binascii.crc32(chunk_type + data) & 0xFFFFFFFF).to_bytes(4, "big")
+    )
+
+
+raw_scanlines = b"".join(b"\x00" + (b"\x00" * width * 4) for _ in range(height))
+png_payload = (
+    b"\x89PNG\r\n\x1a\n"
+    + png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+    + png_chunk(b"IDAT", zlib.compress(raw_scanlines, 9))
+    + png_chunk(b"IEND", b"")
+)
+icns_element = b"ic10" + (len(png_payload) + 8).to_bytes(4, "big") + png_payload
+icns = b"icns" + (len(icns_element) + 8).to_bytes(4, "big") + icns_element
+
+with open(output_path, "wb") as icon_file:
+    icon_file.write(icns)
+PY
   /bin/chmod 644 "$app_bundle_path/Contents/Resources/AppIcon.icns"
 }
 
@@ -1046,7 +1078,7 @@ write_valid_info_plist "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Con
 /bin/chmod 755 "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
 write_app_icon_fixture "$malformed_app_icon_zip_dir/fixture-root/LithePG.app"
 malformed_app_icon_marker="MALFORMED_APP_ICON_FIXTURE_SHOULD_NOT_LEAK"
-printf '\x69\x63\x6e\x73\x00\x00\x00\x4a\x69\x63\x31\x30\x00\x00\x00\x42\x89\x50\x4e\x47\x0d\x0a\x1a\x0a\x00\x00\x00\x0d\x49\x48\x44\x52\x00\x00\x04\x00\x00\x00\x04\x00\x08\x06\x00\x00\x00\x7f\x1d\x2b\x83\x00\x00\x00\x01\x49\x44\x41\x54\x78\x76\xe6\x84\xe6\x00\x00\x00\x00\x49\x45\x4e\x44\xae\x42\x60\x82' >"$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Resources/AppIcon.icns"
+printf '\x69\x63\x6e\x73\x00\x00\x00\x52\x69\x63\x31\x30\x00\x00\x00\x4a\x89\x50\x4e\x47\x0d\x0a\x1a\x0a\x00\x00\x00\x0d\x49\x48\x44\x52\x00\x00\x04\x00\x00\x00\x04\x00\x08\x06\x00\x00\x00\x7f\x1d\x2b\x83\x00\x00\x00\x09\x49\x44\x41\x54\x78\x9c\x63\x00\x00\x00\x01\x00\x01\x5e\xff\x7d\xf9\x00\x00\x00\x00\x49\x45\x4e\x44\xae\x42\x60\x82' >"$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Resources/AppIcon.icns"
 /bin/chmod 644 "$malformed_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Resources/AppIcon.icns"
 /usr/bin/codesign --force --sign - --options runtime "$malformed_app_icon_zip_dir/fixture-root/LithePG.app" >/dev/null 2>&1
 (
