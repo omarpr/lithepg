@@ -271,7 +271,9 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     my $idat_sequence_closed = 0;
     my $seen_ihdr = 0;
     my $seen_plte = 0;
+    my $seen_trns = 0;
     my $seen_iend = 0;
+    my $palette_entries = 0;
 
     while ($offset < length($payload)) {
       return 0 if $seen_iend;
@@ -296,6 +298,22 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
         return 0 if $chunk_length == 0 || ($chunk_length % 3) != 0 || $chunk_length > 768;
         return 0 if $color_type == 3 && ($chunk_length / 3) > (1 << $bit_depth);
         $seen_plte = 1;
+        $palette_entries = $chunk_length / 3;
+      } elsif ($chunk_type eq "tRNS") {
+        return 0 if $seen_idat;
+        return 0 if $seen_trns;
+        return 0 if $color_type == 4 || $color_type == 6;
+        if ($color_type == 0) {
+          return 0 unless $chunk_length == 2;
+        } elsif ($color_type == 2) {
+          return 0 unless $chunk_length == 6;
+        } elsif ($color_type == 3) {
+          return 0 unless $seen_plte;
+          return 0 if $chunk_length == 0 || $chunk_length > $palette_entries;
+        } else {
+          return 0;
+        }
+        $seen_trns = 1;
       } elsif ($chunk_type eq "IDAT") {
         return 0 if $idat_sequence_closed;
         $seen_idat = 1;
