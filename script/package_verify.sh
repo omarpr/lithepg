@@ -179,7 +179,7 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
   }
 
   sub png_dimensions_are_valid {
-    my ($payload, $minimum_dimension) = @_;
+    my ($payload, $expected_dimension) = @_;
     return 0 unless length($payload) >= 33;
     return 0 unless substr($payload, 0, 8) eq "\x89PNG\r\n\x1a\n";
     return 0 unless unpack("N", substr($payload, 8, 4)) == 13;
@@ -211,7 +211,7 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     my @scanline_payload_lengths = png_expected_scanline_payload_lengths($width, $height, $bit_depth, $color_type, $interlace_method);
     return 0 unless @scanline_payload_lengths;
     return 0 unless png_idat_stream_is_valid($payload, \@scanline_payload_lengths, $color_type, $bit_depth);
-    return $width >= $minimum_dimension && $height >= $minimum_dimension;
+    return $width == $expected_dimension && $height == $expected_dimension;
   }
 
   sub ceil_div {
@@ -325,8 +325,8 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
 
   sub has_high_resolution_encoded_image {
     my ($element_type, $payload) = @_;
-    my $minimum_dimension = $element_type eq "ic10" ? 1024 : 512;
-    return 1 if png_dimensions_are_valid($payload, $minimum_dimension);
+    my $expected_dimension = $element_type eq "ic10" ? 1024 : 512;
+    return 1 if png_dimensions_are_valid($payload, $expected_dimension);
     return 0;
   }
   my $has_image_payload = 0;

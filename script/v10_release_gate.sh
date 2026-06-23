@@ -1036,7 +1036,7 @@ image_element_types = {
     b"ic07", b"ic08", b"ic09", b"ic10", b"ic11", b"ic12", b"ic13", b"ic14",
 }
 high_resolution_image_types = {b"ic10", b"ic14"}
-def png_dimensions_are_valid(payload, minimum_dimension):
+def png_dimensions_are_valid(payload, expected_dimension):
     if len(payload) < 33:
         return False
     if not payload.startswith(b"\x89PNG\r\n\x1a\n"):
@@ -1087,7 +1087,7 @@ def png_dimensions_are_valid(payload, minimum_dimension):
     if not png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type, bit_depth):
         return False
 
-    return width >= minimum_dimension and height >= minimum_dimension
+    return width == expected_dimension and height == expected_dimension
 
 
 def ceil_div(numerator, denominator):
@@ -1205,8 +1205,8 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type, bit_
 
 
 def has_high_resolution_encoded_image(element_type, payload):
-    minimum_dimension = 1024 if element_type == b"ic10" else 512
-    return png_dimensions_are_valid(payload, minimum_dimension)
+    expected_dimension = 1024 if element_type == b"ic10" else 512
+    return png_dimensions_are_valid(payload, expected_dimension)
 
 has_image_payload = False
 has_high_resolution_image = False
