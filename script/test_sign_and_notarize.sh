@@ -57,7 +57,7 @@ PLIST
 
   mkdir -p "$app_bundle/Contents/Resources"
   chmod 755 "$app_bundle/Contents/Resources"
-  printf 'icnsfixture\n' >"$app_bundle/Contents/Resources/AppIcon.icns"
+  printf '\x69\x63\x6e\x73\x00\x00\x00\x0cfix\n' >"$app_bundle/Contents/Resources/AppIcon.icns"
   chmod 644 "$app_bundle/Contents/Resources/AppIcon.icns"
 }
 

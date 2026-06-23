@@ -60,7 +60,7 @@ PLIST
 
   mkdir -p "$app_bundle/Contents/Resources"
   chmod 755 "$app_bundle/Contents/Resources"
-  printf 'icnsfixture\n' >"$app_bundle/Contents/Resources/AppIcon.icns"
+  printf '\x69\x63\x6e\x73\x00\x00\x00\x0cfix\n' >"$app_bundle/Contents/Resources/AppIcon.icns"
   chmod 644 "$app_bundle/Contents/Resources/AppIcon.icns"
 }
 
@@ -344,6 +344,22 @@ assert_contains "$helper_output" "app icon format is invalid"
 assert_not_contains "$helper_output" "Package verified:"
 assert_not_contains "$helper_output" "$icon_format_sentinel"
 assert_not_contains "$helper_output" "$icon_format_bundle"
+
+icon_length_sentinel="ICON_LENGTH_SENTINEL_SHOULD_NOT_LEAK"
+icon_length_bundle="$fixture_root/icon-length-$icon_length_sentinel/LithePG.app"
+make_minimal_app_bundle "$icon_length_bundle"
+printf '\x69\x63\x6e\x73\x00\x00\x00\xff%s\n' "$icon_length_sentinel" >"$icon_length_bundle/Contents/Resources/AppIcon.icns"
+chmod 644 "$icon_length_bundle/Contents/Resources/AppIcon.icns"
+if run_helper_capture "$output_file" "$icon_length_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted an AppIcon.icns with mismatched header length"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "app icon format is invalid"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$icon_length_sentinel"
+assert_not_contains "$helper_output" "$icon_length_bundle"
 
 icon_name_sentinel="ICON_NAME_SENTINEL_SHOULD_NOT_LEAK"
 icon_name_bundle="$fixture_root/icon-name-$icon_name_sentinel/LithePG.app"
