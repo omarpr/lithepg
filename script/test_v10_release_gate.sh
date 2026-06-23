@@ -87,6 +87,7 @@ artifact_root_directory_mode_unsafe_output="$(mktemp)"
 artifact_info_plist_writable_mode_output="$(mktemp)"
 artifact_info_plist_mode_decoy_output="$(mktemp)"
 artifact_executable_format_invalid_output="$(mktemp)"
+artifact_executable_over_budget_output="$(mktemp)"
 artifact_duplicate_essential_entries_output="$(mktemp)"
 artifact_noncanonical_zip_path_output="$(mktemp)"
 artifact_casefold_zip_path_collision_output="$(mktemp)"
@@ -261,6 +262,8 @@ text_executable_bundle_zip_dir="$(mktemp -d)"
 text_executable_bundle_zip="$text_executable_bundle_zip_dir/LithePG.app.zip"
 text_executable_bundle_release_copy="$(mktemp)"
 text_executable_bundle_homebrew_cask="$(mktemp)"
+over_budget_executable_zip_dir="$(mktemp -d)"
+over_budget_executable_zip="$over_budget_executable_zip_dir/LithePG.app.zip"
 duplicate_essential_entries_zip_dir="$(mktemp -d)"
 duplicate_essential_entries_zip="$duplicate_essential_entries_zip_dir/LithePG.app.zip"
 duplicate_essential_entries_release_copy="$(mktemp)"
@@ -355,6 +358,7 @@ cleanup() {
     "$artifact_info_plist_writable_mode_output" \
     "$artifact_info_plist_mode_decoy_output" \
     "$artifact_executable_format_invalid_output" \
+    "$artifact_executable_over_budget_output" \
     "$artifact_duplicate_essential_entries_output" \
     "$artifact_noncanonical_zip_path_output" \
     "$artifact_casefold_zip_path_collision_output" \
@@ -511,6 +515,7 @@ cleanup() {
     "$text_executable_bundle_zip" \
     "$text_executable_bundle_release_copy" \
     "$text_executable_bundle_homebrew_cask" \
+    "$over_budget_executable_zip" \
     "$duplicate_essential_entries_zip" \
     "$duplicate_essential_entries_release_copy" \
     "$duplicate_essential_entries_homebrew_cask" \
@@ -556,7 +561,7 @@ cleanup() {
     "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$startup_hardening_root" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$unsafe_directory_mode_zip_dir" "$unsafe_root_directory_mode_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$missing_app_icon_zip_dir" "$text_executable_bundle_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$startup_hardening_root" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$unsafe_directory_mode_zip_dir" "$unsafe_root_directory_mode_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$missing_app_icon_zip_dir" "$text_executable_bundle_zip_dir" "$over_budget_executable_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
@@ -1121,6 +1126,41 @@ write_code_signature_resources "$text_executable_bundle_zip_dir/fixture-root/Lit
 )
 text_executable_bundle_zip_sha="$(/usr/bin/shasum -a 256 "$text_executable_bundle_zip" | /usr/bin/cut -d ' ' -f 1)"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$text_executable_bundle_zip_sha" >"$text_executable_bundle_release_copy"
+/usr/bin/python3 - "$release_zip_fixture" "$over_budget_executable_zip" "/usr/bin/true" <<'PY'
+import sys
+import zipfile
+
+source_zip, destination_zip, macho_path = sys.argv[1:4]
+hard_cap_bytes = 50 * 1024 * 1024
+executable_path = "LithePG.app/Contents/MacOS/LithePGApp"
+
+with zipfile.ZipFile(source_zip, "r") as source, zipfile.ZipFile(destination_zip, "w") as destination:
+    for source_entry in source.infolist():
+        destination_entry = zipfile.ZipInfo(source_entry.filename, source_entry.date_time)
+        destination_entry.comment = source_entry.comment
+        destination_entry.extra = source_entry.extra
+        destination_entry.internal_attr = source_entry.internal_attr
+        destination_entry.external_attr = source_entry.external_attr
+        destination_entry.create_system = source_entry.create_system
+        destination_entry.compress_type = zipfile.ZIP_DEFLATED
+
+        if source_entry.filename != executable_path:
+            destination.writestr(destination_entry, source.read(source_entry.filename))
+            continue
+
+        written = 0
+        with destination.open(destination_entry, "w") as output, open(macho_path, "rb") as macho:
+            while chunk := macho.read(1024 * 1024):
+                output.write(chunk)
+                written += len(chunk)
+            remaining = hard_cap_bytes + 1 - written
+            zero_chunk = b"\0" * (1024 * 1024)
+            while remaining > 0:
+                chunk = zero_chunk[: min(len(zero_chunk), remaining)]
+                output.write(chunk)
+                remaining -= len(chunk)
+PY
+over_budget_executable_zip_sha="$(/usr/bin/shasum -a 256 "$over_budget_executable_zip" | /usr/bin/cut -d ' ' -f 1)"
 duplicate_essential_marker="DUPLICATE_ESSENTIAL_ENTRY_FIXTURE_SHOULD_NOT_LEAK"
 /usr/bin/python3 - "$duplicate_essential_entries_zip" "/usr/bin/true" "$duplicate_essential_marker" <<'PY'
 import sys
@@ -2617,7 +2657,7 @@ printf 'Report vulnerabilities using the configured private security advisory fl
 printf 'Report vulnerabilities to [security contact pending].\n' >"$default_security_docs_repo/docs/SECURITY.md"
 
 helper_contents="$(<"$HELPER")"
-assert_occurrences "$helper_contents" '/usr/bin/python3 -I -' 4
+assert_occurrences "$helper_contents" '/usr/bin/python3 -I -' 5
 assert_not_contains "$helper_contents" '/usr/bin/python3 - "'
 
 # Executable startup must not route through PATH-selected bash before helper code runs.
@@ -3070,6 +3110,7 @@ assert_contains "$artifact_only_text" "Artifact-only mode: enabled"
 assert_contains "$artifact_only_text" "Release artifact filename: matches"
 assert_contains "$artifact_only_text" "Release artifact zip: present"
 assert_contains "$artifact_only_text" "Release artifact directory modes: safe"
+assert_contains "$artifact_only_text" "Release artifact executable size: under budget"
 assert_contains "$artifact_only_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_only_text" "Release artifact code signature runtime: present"
 assert_contains "$artifact_only_text" "Release artifact SHA-256: matches"
@@ -3837,6 +3878,38 @@ assert_contains "$artifact_executable_format_invalid_text" "v1.0 publication blo
 assert_not_contains "$artifact_executable_format_invalid_text" "$text_executable_marker"
 assert_not_contains "$artifact_executable_format_invalid_text" "$text_executable_bundle_zip_sha"
 assert_not_contains "$artifact_executable_format_invalid_text" "fast preflight is clear"
+
+if run_gate_capture "$artifact_executable_over_budget_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_ZIP_PATH="$over_budget_executable_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$over_budget_executable_zip_sha" \
+  /bin/bash -c 'exec "$1" --artifact-only' _; then
+  artifact_executable_over_budget_text="$(<"$artifact_executable_over_budget_output")"
+  assert_not_contains "$artifact_executable_over_budget_text" "$over_budget_executable_zip_sha"
+  fail "artifact-only gate unexpectedly passed with an over-budget release artifact executable"
+fi
+artifact_executable_over_budget_text="$(<"$artifact_executable_over_budget_output")"
+assert_contains "$artifact_executable_over_budget_text" "Artifact-only mode: enabled"
+assert_contains "$artifact_executable_over_budget_text" "Release artifact filename: matches"
+assert_contains "$artifact_executable_over_budget_text" "Release artifact zip: present"
+assert_contains "$artifact_executable_over_budget_text" "Release artifact app wrapper: present"
+assert_contains "$artifact_executable_over_budget_text" "Release artifact bundle contents: present"
+assert_contains "$artifact_executable_over_budget_text" "Release artifact bundle file types: regular"
+assert_contains "$artifact_executable_over_budget_text" "Release artifact entry paths: canonical"
+assert_contains "$artifact_executable_over_budget_text" "Release artifact essential entries: unique"
+assert_contains "$artifact_executable_over_budget_text" "Release artifact Info.plist metadata: matches"
+assert_contains "$artifact_executable_over_budget_text" "Release artifact app icon: present"
+assert_contains "$artifact_executable_over_budget_text" "Release artifact bundle executable: executable"
+assert_contains "$artifact_executable_over_budget_text" "Release artifact bundle executable mode: safe"
+assert_contains "$artifact_executable_over_budget_text" "Release artifact executable size: over budget"
+assert_contains "$artifact_executable_over_budget_text" "Release artifact SHA-256: matches"
+assert_contains "$artifact_executable_over_budget_text" "v1.0 artifact-only blocked"
+assert_not_contains "$artifact_executable_over_budget_text" "$over_budget_executable_zip_sha"
+assert_not_contains "$artifact_executable_over_budget_text" "$over_budget_executable_zip"
+assert_not_contains "$artifact_executable_over_budget_text" "Release artifact executable format: Mach-O"
+assert_not_contains "$artifact_executable_over_budget_text" "Release artifact code signature verification: valid"
+assert_not_contains "$artifact_executable_over_budget_text" "fast preflight is clear"
 
 if run_gate_capture "$artifact_duplicate_essential_entries_output" env -i \
   PATH="$fake_path" \

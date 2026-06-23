@@ -70,6 +70,7 @@ HOMEBREW_CASK_PATH="${LITHEPG_HOMEBREW_CASK_PATH:-packaging/homebrew/lithepg.rb}
 SECURITY_DOC_PATH="${LITHEPG_SECURITY_DOC_PATH:-}"
 RELEASE_ZIP_PATH="${LITHEPG_RELEASE_ZIP_PATH:-dist/LithePG.app.zip}"
 RELEASE_ZIP_SHA256="${LITHEPG_RELEASE_ZIP_SHA256:-}"
+HARD_CAP_BYTES=$((50 * 1024 * 1024))
 
 usage() {
   /bin/cat <<'USAGE'
@@ -911,6 +912,40 @@ release_zip_bundle_executable_mode_safety_status() {
   esac
 
   return 0
+}
+
+release_zip_app_executable_size_status() {
+  local zip_file="$1"
+
+  if [[ ! -x /usr/bin/python3 ]]; then
+    return 2
+  fi
+
+  /usr/bin/python3 -I - "$zip_file" "$HARD_CAP_BYTES" <<'PY'
+import sys
+import zipfile
+
+zip_path = sys.argv[1]
+hard_cap_bytes = int(sys.argv[2])
+executable_path = "LithePG.app/Contents/MacOS/LithePGApp"
+
+try:
+    with zipfile.ZipFile(zip_path) as archive:
+        matches = [entry for entry in archive.infolist() if entry.filename == executable_path]
+except (zipfile.BadZipFile, OSError, ValueError):
+    sys.exit(2)
+
+if len(matches) != 1:
+    sys.exit(2)
+
+executable_size = matches[0].file_size
+if executable_size <= 0:
+    sys.exit(2)
+if executable_size > hard_cap_bytes:
+    sys.exit(1)
+
+sys.exit(0)
+PY
 }
 
 release_zip_info_plist_mode_safety_status() {
@@ -1990,7 +2025,26 @@ if [[ "$release_zip_present" -eq 1 ]]; then
         mark_blocker
       fi
 
+      release_zip_executable_size_ready=0
       if [[ "$release_zip_executable_permission_ready" -eq 1 ]]; then
+        if release_zip_app_executable_size_status "$release_zip_file"; then
+          printf 'Release artifact executable size: under budget\n'
+          release_zip_executable_size_ready=1
+        else
+          release_zip_executable_size_status=$?
+          case "$release_zip_executable_size_status" in
+            1)
+              printf 'Release artifact executable size: over budget\n'
+              ;;
+            *)
+              printf 'Release artifact executable size: could not inspect\n'
+              ;;
+          esac
+          mark_blocker
+        fi
+      fi
+
+      if [[ "$release_zip_executable_permission_ready" -eq 1 && "$release_zip_executable_size_ready" -eq 1 ]]; then
         if release_zip_app_executable_format_status "$release_zip_file"; then
           printf 'Release artifact executable format: Mach-O\n'
         else
@@ -2008,23 +2062,25 @@ if [[ "$release_zip_present" -eq 1 ]]; then
       fi
 
       release_zip_code_signature_resources_ready=0
-      if release_zip_code_signature_resources_status "$release_zip_file"; then
-        printf 'Release artifact code signature resources: present\n'
-        release_zip_code_signature_resources_ready=1
-      else
-        release_zip_code_signature_resources_status=$?
-        case "$release_zip_code_signature_resources_status" in
-          1)
-            printf 'Release artifact code signature resources: missing\n'
-            ;;
-          3)
-            printf 'Release artifact code signature resources: invalid\n'
-            ;;
-          *)
-            printf 'Release artifact code signature resources: could not inspect\n'
-            ;;
-        esac
-        mark_blocker
+      if [[ "$release_zip_executable_size_ready" -eq 1 ]]; then
+        if release_zip_code_signature_resources_status "$release_zip_file"; then
+          printf 'Release artifact code signature resources: present\n'
+          release_zip_code_signature_resources_ready=1
+        else
+          release_zip_code_signature_resources_status=$?
+          case "$release_zip_code_signature_resources_status" in
+            1)
+              printf 'Release artifact code signature resources: missing\n'
+              ;;
+            3)
+              printf 'Release artifact code signature resources: invalid\n'
+              ;;
+            *)
+              printf 'Release artifact code signature resources: could not inspect\n'
+              ;;
+          esac
+          mark_blocker
+        fi
       fi
 
       if [[ "$release_zip_code_signature_resources_ready" -eq 1 ]]; then

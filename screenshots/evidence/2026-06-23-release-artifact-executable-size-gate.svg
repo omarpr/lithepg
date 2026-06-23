@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="760" viewBox="0 0 1180 760">
+  <rect width="1180" height="760" fill="#0b1020"/>
+  <rect x="32" y="32" width="1116" height="696" rx="18" fill="#111827" stroke="#38bdf8" stroke-width="2"/>
+  <text x="64" y="82" fill="#e5f3ff" font-family="Menlo, Consolas, monospace" font-size="28" font-weight="700">LithePG v1.0 Release Artifact Executable-Size Gate</text>
+  <text x="64" y="122" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="16">2026-06-23 07:42 EDT · evidence for commit slice</text>
+
+  <text x="64" y="174" fill="#fbbf24" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">RED</text>
+  <text x="124" y="174" fill="#f9fafb" font-family="Menlo, Consolas, monospace" font-size="17">./script/test_v10_release_gate.sh</text>
+  <text x="124" y="204" fill="#fecaca" font-family="Menlo, Consolas, monospace" font-size="15">failed as expected: expected output to contain: Release artifact executable size: over budget</text>
+
+  <text x="64" y="260" fill="#34d399" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">GREEN</text>
+  <text x="144" y="260" fill="#f9fafb" font-family="Menlo, Consolas, monospace" font-size="16">bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh</text>
+  <text x="144" y="292" fill="#bbf7d0" font-family="Menlo, Consolas, monospace" font-size="16">./script/test_v10_release_gate.sh → passed</text>
+  <text x="144" y="324" fill="#bbf7d0" font-family="Menlo, Consolas, monospace" font-size="16">git diff --check → clean</text>
+  <text x="144" y="356" fill="#bbf7d0" font-family="Menlo, Consolas, monospace" font-size="16">swift build + swift test → 127 tests across 20 suites passed</text>
+
+  <text x="64" y="424" fill="#38bdf8" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">LOCAL ARTIFACT PREFLIGHT</text>
+  <text x="96" y="460" fill="#e0f2fe" font-family="Menlo, Consolas, monospace" font-size="16">./script/package_verify.sh dist/LithePG.app → Package verified</text>
+  <text x="96" y="492" fill="#e0f2fe" font-family="Menlo, Consolas, monospace" font-size="16">v10_release_gate.sh --artifact-only → Release artifact executable size: under budget</text>
+  <text x="96" y="524" fill="#e0f2fe" font-family="Menlo, Consolas, monospace" font-size="16">v1.0 artifact-only preflight is clear</text>
+
+  <text x="64" y="592" fill="#f87171" font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">BLOCKED GATE</text>
+  <text x="96" y="628" fill="#fecaca" font-family="Menlo, Consolas, monospace" font-size="16">dogfood_check.sh could not run: Docker unavailable in cron environment</text>
+  <text x="96" y="660" fill="#fecaca" font-family="Menlo, Consolas, monospace" font-size="16">No signing, notarization, upload, GitHub Release, Homebrew publication, tag, cron, or Telegram action attempted.</text>
+</svg>

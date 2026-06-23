@@ -2172,3 +2172,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker` command missing / `docker is required for LithePG dogfood Postgres`).
 - Evidence artifact: `screenshots/evidence/2026-06-23-app-icon-png-ihdr-crc-gate.svg`.
 - No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.
+
+## 2026-06-23 07:42 EDT — v1.0 release artifact executable-size gate
+
+- Hardened `script/v10_release_gate.sh` so artifact-only/publication preflight checks the uncompressed `LithePG.app/Contents/MacOS/LithePGApp` entry size inside `LithePG.app.zip` against the existing 50 MiB hard cap before extracting the executable for format or codesign inspection.
+- Added strict-TDD regression coverage for a compressed release zip whose executable entry expands to 50 MiB + 1 byte; the gate now reports `Release artifact executable size: over budget` while redacting the artifact path and SHA-256.
+- RED verification passed as expected before the production fix: `./script/test_v10_release_gate.sh` failed with `expected output to contain: Release artifact executable size: over budget`.
+- GREEN verification passed: `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh`, `./script/test_v10_release_gate.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` (127 tests across 20 suites).
+- Local artifact verification passed: `./script/package_verify.sh dist/LithePG.app` and artifact-only preflight for `dist/LithePG.app.zip` with SHA-256 `78ae07f97a06e2973a0f36c40da739c1ead0ec9aca1f31f2c11cb00e35f76385`, including `Release artifact executable size: under budget` and `v1.0 artifact-only preflight is clear`.
+- Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker is required for LithePG dogfood Postgres`).
+- Evidence artifact: `screenshots/evidence/2026-06-23-release-artifact-executable-size-gate.svg`.
+- No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.
