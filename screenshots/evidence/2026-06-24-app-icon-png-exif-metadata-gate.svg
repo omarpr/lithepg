@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 app-icon PNG EXIF metadata gate evidence</title>
+  <desc id="desc">Visual evidence for the commit that rejects PNG eXIf metadata in packaged and release-artifact app icons.</desc>
+  <rect width="1280" height="760" fill="#0d1117"/>
+  <rect x="36" y="36" width="1208" height="688" rx="24" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+  <text x="72" y="96" fill="#58a6ff" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="30" font-weight="700">LithePG app-icon metadata hardening</text>
+  <text x="72" y="138" fill="#c9d1d9" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">2026-06-24 00:58 EDT · PNG eXIf chunks are now rejected by both release gates</text>
+
+  <rect x="72" y="176" width="1136" height="132" rx="14" fill="#0d1117" stroke="#238636" stroke-width="2"/>
+  <text x="104" y="220" fill="#3fb950" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700">RED → GREEN TDD receipt</text>
+  <text x="104" y="256" fill="#c9d1d9" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">RED: package verifier and artifact-only gate accepted PNG EXIF metadata fixtures.</text>
+  <text x="104" y="286" fill="#c9d1d9" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">GREEN: test_package_verify + test_v10_release_gate now reject eXIf metadata.</text>
+
+  <rect x="72" y="336" width="1136" height="186" rx="14" fill="#0d1117" stroke="#30363d" stroke-width="2"/>
+  <text x="104" y="380" fill="#f0f6fc" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700">Verification passed</text>
+  <text x="104" y="418" fill="#c9d1d9" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">✓ bash -n package/release-gate scripts</text>
+  <text x="104" y="448" fill="#c9d1d9" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">✓ ./script/test_package_verify.sh · ./script/test_v10_release_gate.sh</text>
+  <text x="104" y="478" fill="#c9d1d9" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">✓ swift build · swift test (127 Swift Testing tests across 20 suites)</text>
+  <text x="104" y="508" fill="#c9d1d9" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">✓ package/sign/zip/build helper shell suites</text>
+
+  <rect x="72" y="550" width="1136" height="124" rx="14" fill="#0d1117" stroke="#30363d" stroke-width="2"/>
+  <text x="104" y="592" fill="#f0f6fc" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700">Release artifact smoke</text>
+  <text x="104" y="628" fill="#c9d1d9" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">LITHEPG_MARKETING_VERSION=1.0 package verified: 11.96 MiB executable.</text>
+  <text x="104" y="658" fill="#c9d1d9" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">Artifact-only v1.0 preflight clear; SHA-256 1816f38b…aeabab32.</text>
+</svg>
