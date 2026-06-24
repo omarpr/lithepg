@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release gate empty CodeResources hardening evidence</title>
+  <desc id="desc">Visual receipt showing strict TDD red/green verification for rejecting zero-byte CodeResources entries in the v1.0 release artifact gate.</desc>
+  <rect width="1200" height="760" fill="#0f172a"/>
+  <rect x="42" y="36" width="1116" height="688" rx="24" fill="#111827" stroke="#38bdf8" stroke-width="2"/>
+  <text x="72" y="88" fill="#e5e7eb" font-family="SF Pro Display, Helvetica, Arial, sans-serif" font-size="34" font-weight="700">LithePG v1.0 release artifact gate</text>
+  <text x="72" y="126" fill="#93c5fd" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">2026-06-24 08:50 EDT · empty CodeResources hardening</text>
+
+  <rect x="72" y="164" width="1056" height="118" rx="16" fill="#1e293b" stroke="#334155"/>
+  <text x="104" y="204" fill="#fca5a5" font-family="SF Mono, Menlo, Consolas, monospace" font-size="20" font-weight="700">RED</text>
+  <text x="170" y="204" fill="#e5e7eb" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">./script/test_v10_release_gate.sh</text>
+  <text x="104" y="240" fill="#fecaca" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16">failed as expected: expected output to contain “Release artifact code signature resources: invalid”</text>
+
+  <rect x="72" y="306" width="1056" height="160" rx="16" fill="#052e16" stroke="#22c55e"/>
+  <text x="104" y="346" fill="#86efac" font-family="SF Mono, Menlo, Consolas, monospace" font-size="20" font-weight="700">GREEN</text>
+  <text x="190" y="346" fill="#dcfce7" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">release_zip_code_signature_resources_status</text>
+  <text x="104" y="382" fill="#bbf7d0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16">now rejects zero-byte or unparsable CodeResources sizes before codesign verification</text>
+  <text x="104" y="418" fill="#bbf7d0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16">test_v10_release_gate passed · no artifact path, digest, or CodeResources path leaked</text>
+
+  <rect x="72" y="490" width="1056" height="178" rx="16" fill="#020617" stroke="#475569"/>
+  <text x="104" y="530" fill="#38bdf8" font-family="SF Mono, Menlo, Consolas, monospace" font-size="20" font-weight="700">Verification</text>
+  <text x="104" y="566" fill="#e2e8f0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16">✓ release-helper shell suites: v10, package, sign/notarize, release zip, build/run</text>
+  <text x="104" y="596" fill="#e2e8f0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16">✓ package_verify dist/LithePG.app · artifact-only preflight clear with local ZIP SHA</text>
+  <text x="104" y="626" fill="#e2e8f0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16">✓ swift build · swift test: 127 tests across 20 suites</text>
+  <text x="104" y="656" fill="#fbbf24" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16">↷ dogfood_check skipped: Docker unavailable in this cron environment</text>
+
+  <text x="72" y="704" fill="#94a3b8" font-family="SF Mono, Menlo, Consolas, monospace" font-size="14">No signing identity, notarization, upload, Homebrew publication, GitHub Release, v1.0 tag, cron changes, or Telegram delivery attempted.</text>
+</svg>

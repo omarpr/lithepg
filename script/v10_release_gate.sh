@@ -1470,6 +1470,7 @@ release_zip_code_signature_resources_status() {
   local zip_listing=""
   local line=""
   local mode=""
+  local uncompressed_size=""
   local entry_rest=""
   local entry_name=""
   local has_code_resources=0
@@ -1485,13 +1486,16 @@ release_zip_code_signature_resources_status() {
 
   while IFS= read -r line || [[ -n "$line" ]]; do
     mode=""
+    uncompressed_size=""
     entry_rest=""
-    read -r mode _zip_version _zip_system _uncompressed_size _entry_type _compressed_size _method _date _time entry_rest <<<"$line" || true
+    read -r mode _zip_version _zip_system uncompressed_size _entry_type _compressed_size _method _date _time entry_rest <<<"$line" || true
     entry_name="${entry_rest%% -> *}"
 
     if [[ "$entry_name" == "LithePG.app/Contents/_CodeSignature/CodeResources" ]]; then
       has_code_resources=1
       if [[ "$mode" != -* ]]; then
+        invalid_code_resources=1
+      elif [[ ! "$uncompressed_size" =~ ^[0-9]+$ || "$uncompressed_size" -le 0 ]]; then
         invalid_code_resources=1
       elif [[ "$mode" == *[sStT]* || "${mode:3:1}${mode:6:1}${mode:9:1}" == *x* || "${mode:5:1}" == "w" || "${mode:8:1}" == "w" ]]; then
         invalid_code_resources=1
