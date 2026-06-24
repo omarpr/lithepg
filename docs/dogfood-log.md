@@ -2630,3 +2630,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker unavailable; skipping dogfood_check.sh`).
 - Evidence artifact: `screenshots/evidence/2026-06-24-v10-release-gate-code-resources-mode.svg`.
 - No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.
+
+## 2026-06-24 08:24 EDT — v1.0 release artifact CodeResources executable-mode hardening
+
+- Tightened `script/v10_release_gate.sh` so final `LithePG.app.zip` artifact preflight rejects `LithePG.app/Contents/_CodeSignature/CodeResources` when that signature-resource file carries any executable bit, in addition to the existing non-regular, special-bit, and group/other-writable mode rejection.
+- Updated the strict-TDD artifact fixture in `script/test_v10_release_gate.sh` to rewrite the signed fixture ZIP's `CodeResources` entry to mode `100755`, proving the artifact-only gate fails before the production check and passes after the executable-bit rejection is added.
+- RED verification passed as expected before the production fix: `bash -n script/test_v10_release_gate.sh && ./script/test_v10_release_gate.sh` failed with `artifact-only gate unexpectedly passed with unsafe release artifact code signature resources mode`.
+- GREEN verification passed: `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh && ./script/test_v10_release_gate.sh` reported `test_v10_release_gate passed`.
+- Wider local verification passed: release-helper shell suites (`test_package_verify`, `test_v10_release_gate`, `test_sign_and_notarize`, `test_create_release_zip`, `test_build_and_run`), `git diff --check`, `./script/package_verify.sh dist/LithePG.app`, artifact-only `./script/v10_release_gate.sh` with the current local `dist/LithePG.app.zip` SHA-256, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` (127 tests across 20 suites) all passed.
+- Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker unavailable; skipping dogfood_check.sh`).
+- Evidence artifact: `screenshots/evidence/2026-06-24-v10-release-gate-code-resources-exec-mode.svg`.
+- No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.

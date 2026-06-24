@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release-gate CodeResources executable-mode hardening receipt</title>
+  <desc id="desc">Evidence that the v1.0 release artifact preflight rejects executable CodeResources entries and that local verification passed.</desc>
+  <rect width="1280" height="720" fill="#0f172a"/>
+  <rect x="48" y="44" width="1184" height="632" rx="24" fill="#111827" stroke="#38bdf8" stroke-width="3"/>
+  <text x="86" y="110" fill="#e5f2ff" font-family="Menlo, Consolas, monospace" font-size="30" font-weight="700">LithePG v1.0 release artifact hardening</text>
+  <text x="86" y="154" fill="#93c5fd" font-family="Menlo, Consolas, monospace" font-size="21">2026-06-24 08:24 EDT · CodeResources executable mode gate</text>
+  <rect x="86" y="194" width="1108" height="118" rx="14" fill="#07111f" stroke="#1d4ed8"/>
+  <text x="116" y="236" fill="#fca5a5" font-family="Menlo, Consolas, monospace" font-size="22">RED</text>
+  <text x="190" y="236" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="20">test_v10_release_gate failed before production fix</text>
+  <text x="190" y="274" fill="#cbd5e1" font-family="Menlo, Consolas, monospace" font-size="18">artifact-only gate unexpectedly passed with unsafe release artifact code signature resources mode</text>
+  <rect x="86" y="336" width="1108" height="118" rx="14" fill="#07111f" stroke="#15803d"/>
+  <text x="116" y="378" fill="#86efac" font-family="Menlo, Consolas, monospace" font-size="22">GREEN</text>
+  <text x="214" y="378" fill="#e5e7eb" font-family="Menlo, Consolas, monospace" font-size="20">release_zip_code_signature_resources_status rejects x bits</text>
+  <text x="214" y="416" fill="#cbd5e1" font-family="Menlo, Consolas, monospace" font-size="18">bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh &amp;&amp; ./script/test_v10_release_gate.sh</text>
+  <rect x="86" y="478" width="1108" height="142" rx="14" fill="#07111f" stroke="#64748b"/>
+  <text x="116" y="520" fill="#fde68a" font-family="Menlo, Consolas, monospace" font-size="22">WIDER VERIFY</text>
+  <text x="116" y="558" fill="#cbd5e1" font-family="Menlo, Consolas, monospace" font-size="18">release helper suites · git diff --check · package_verify dist/LithePG.app · artifact-only v10 gate</text>
+  <text x="116" y="594" fill="#cbd5e1" font-family="Menlo, Consolas, monospace" font-size="18">swift build · swift test: 127 tests / 20 suites passed · Docker unavailable, dogfood_check skipped</text>
+  <text x="86" y="652" fill="#94a3b8" font-family="Menlo, Consolas, monospace" font-size="16">No secrets, signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, or Telegram delivery attempted.</text>
+</svg>

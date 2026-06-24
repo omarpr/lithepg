@@ -2227,7 +2227,7 @@ with zipfile.ZipFile(source_zip, "r") as source, zipfile.ZipFile(destination_zip
         destination_entry.create_system = source_entry.create_system
         destination_entry.compress_type = source_entry.compress_type
         if source_entry.filename == code_resources_path:
-            destination_entry.external_attr = (0o100666 & 0xFFFF) << 16
+            destination_entry.external_attr = (0o100755 & 0xFFFF) << 16
         destination.writestr(destination_entry, source.read(source_entry.filename))
 PY
 unsafe_code_resources_mode_zip_sha="$(/usr/bin/shasum -a 256 "$unsafe_code_resources_mode_zip" | /usr/bin/cut -d ' ' -f 1)"
