@@ -286,6 +286,7 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     my $seen_plte = 0;
     my $seen_trns = 0;
     my $seen_iend = 0;
+    my $seen_srgb = 0;
     my $palette_entries = 0;
 
     while ($offset < length($payload)) {
@@ -329,6 +330,14 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
           return 0;
         }
         $seen_trns = 1;
+      } elsif ($chunk_type eq "sRGB") {
+        return 0 if $seen_idat;
+        return 0 if $seen_plte;
+        return 0 if $seen_srgb;
+        return 0 unless $chunk_length == 1;
+        my $rendering_intent = unpack("C", substr($payload, $chunk_data_start, 1));
+        return 0 if $rendering_intent > 3;
+        $seen_srgb = 1;
       } elsif ($chunk_type eq "IDAT") {
         return 0 if $idat_sequence_closed;
         $seen_idat = 1;

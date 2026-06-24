@@ -1162,6 +1162,7 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type, bit_
     seen_plte = False
     seen_trns = False
     seen_iend = False
+    seen_srgb = False
     palette_entries = 0
 
     while offset < len(payload):
@@ -1225,6 +1226,14 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type, bit_
             else:
                 return False
             seen_trns = True
+        elif chunk_type == b"sRGB":
+            if seen_idat or seen_plte or seen_srgb:
+                return False
+            if chunk_length != 1:
+                return False
+            if payload[chunk_data_start] > 3:
+                return False
+            seen_srgb = True
         elif chunk_type == b"IDAT":
             if idat_sequence_closed:
                 return False

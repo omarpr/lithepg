@@ -2448,3 +2448,15 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker is required for LithePG dogfood Postgres`).
 - Evidence artifact: `screenshots/evidence/2026-06-23-app-icon-png-reserved-bit-gate.svg`.
 - No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.
+
+## 2026-06-23 21:10 EDT — v1.0 app-icon PNG sRGB hardening
+
+- Hardened `script/package_verify.sh` so PNG-backed `AppIcon.icns` payloads validate `sRGB` chunks instead of silently accepting malformed ancillary color-space metadata: `sRGB` must appear before `PLTE`/`IDAT`, appear at most once, be exactly one byte long, and use rendering intent `0...3`.
+- Hardened `script/v10_release_gate.sh` so artifact-only/publication preflight applies the same `sRGB` validation inside `LithePG.app.zip` while continuing to redact artifact paths, SHA-256 values, icon paths, and fixture sentinels.
+- Added strict-TDD regression coverage for a valid-dimension/zlib-valid PNG icon containing a two-byte `sRGB` chunk that previously satisfied both app-icon gates.
+- RED verification passed as expected before the production fix: `bash script/test_package_verify.sh` failed with `package verifier unexpectedly accepted an AppIcon.icns whose PNG payload has an invalid sRGB chunk`; `bash script/test_v10_release_gate.sh` failed with `artifact-only gate unexpectedly passed with invalid PNG sRGB chunk in release artifact app icon`.
+- GREEN verification passed: `bash -n script/package_verify.sh script/test_package_verify.sh script/v10_release_gate.sh script/test_v10_release_gate.sh`, `bash script/test_package_verify.sh`, `bash script/test_v10_release_gate.sh`, `bash script/test_sign_and_notarize.sh`, `bash script/test_create_release_zip.sh`, `bash script/test_build_and_run.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` (127 tests across 20 suites).
+- Local artifact verification passed: `./script/package_verify.sh dist/LithePG.app` and artifact-only preflight for the existing `dist/LithePG.app.zip` with its computed SHA-256 both passed, including `Release artifact app icon: present`, `Release artifact code signature verification: valid`, and `v1.0 artifact-only preflight is clear`.
+- Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker is required for LithePG dogfood Postgres`).
+- Evidence artifact: `screenshots/evidence/2026-06-23-app-icon-png-srgb-gate.svg`.
+- No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.
