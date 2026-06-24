@@ -1542,6 +1542,24 @@ assert_contains "$helper_output" "Package verified: LithePG.app"
 assert_contains "$helper_output" "Bundle ID: dev.omarpr.lithepg"
 assert_contains "$helper_output" "Version: 1.0 (100)"
 
+resources_symlink_sentinel="RESOURCES_SYMLINK_SENTINEL_SHOULD_NOT_LEAK"
+resources_symlink_bundle="$fixture_root/resources-symlink-$resources_symlink_sentinel/LithePG.app"
+resources_symlink_target="$fixture_root/resources-symlink-target-$resources_symlink_sentinel"
+make_minimal_app_bundle "$resources_symlink_bundle"
+mv "$resources_symlink_bundle/Contents/Resources" "$resources_symlink_target"
+ln -s "$resources_symlink_target" "$resources_symlink_bundle/Contents/Resources"
+if run_helper_capture "$output_file" "$resources_symlink_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted a symlinked Contents/Resources directory"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "Contents/Resources directory must be a non-symlink directory"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$resources_symlink_bundle"
+assert_not_contains "$helper_output" "$resources_symlink_target"
+assert_not_contains "$helper_output" "$resources_symlink_sentinel"
+
 icon_missing_sentinel="ICON_MISSING_SENTINEL_SHOULD_NOT_LEAK"
 icon_missing_bundle="$fixture_root/icon-missing-$icon_missing_sentinel/LithePG.app"
 make_minimal_app_bundle "$icon_missing_bundle"

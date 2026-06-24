@@ -2595,3 +2595,15 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Verification: Markdown reference/link sanity checks and focused no-secret scans passed; Swift tests were not rerun because this slice is docs/evidence-only and does not change production code or release scripts.
 - Evidence artifact: `screenshots/evidence/2026-06-24-release-hardening-docs-receipt.svg`.
 - No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.
+
+## 2026-06-24 07:06 EDT — v1.0 package verifier Resources directory hardening
+
+- Hardened `script/package_verify.sh` so `Contents/Resources` must be a real non-symlink directory with safe mode bits before the verifier reads `Contents/Resources/AppIcon.icns`; this closes the local-package parity gap where a symlinked resource directory was only rejected later by the generic bundle symlink scan.
+- Added strict-TDD regression coverage in `script/test_package_verify.sh` for a valid bundle whose `Contents/Resources` path is replaced by a symlink to an external directory containing an otherwise valid app icon.
+- RED verification passed as expected before the production fix: `./script/test_package_verify.sh` failed with `expected output to contain: Contents/Resources directory must be a non-symlink directory`.
+- GREEN verification passed: `bash -n script/package_verify.sh script/test_package_verify.sh && ./script/test_package_verify.sh` reported `test_package_verify passed`.
+- Wider local verification passed: release-helper shell suites (`test_package_verify`, `test_v10_release_gate`, `test_sign_and_notarize`, `test_create_release_zip`, `test_build_and_run`), `git diff --check`, `./script/package_verify.sh dist/LithePG.app`, artifact-only `./script/v10_release_gate.sh --artifact-only` with the current local `dist/LithePG.app.zip` SHA-256, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` (127 tests across 20 suites) all passed.
+- Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker_missing`).
+- Focused added-line static/no-secret scans reported no findings.
+- Evidence artifact: `screenshots/evidence/2026-06-24-package-verify-resources-dir-gate.svg`.
+- No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.

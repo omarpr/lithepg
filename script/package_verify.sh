@@ -103,6 +103,7 @@ fi
 
 CONTENTS_DIR="$APP_BUNDLE/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
+RESOURCES_DIR="$CONTENTS_DIR/Resources"
 APP_BINARY="$MACOS_DIR/$APP_NAME"
 INFO_PLIST="$CONTENTS_DIR/Info.plist"
 
@@ -133,7 +134,12 @@ info_plist_mode="$(/usr/bin/stat -f%p "$INFO_PLIST")"
 if (( (8#$info_plist_mode & 07022) != 0 )); then
   fail "Info.plist mode is unsafe"
 fi
-APP_ICON="$CONTENTS_DIR/Resources/AppIcon.icns"
+[[ -d "$RESOURCES_DIR" && ! -L "$RESOURCES_DIR" ]] || fail "Contents/Resources directory must be a non-symlink directory"
+resources_dir_mode="$(/usr/bin/stat -f%p "$RESOURCES_DIR")"
+if (( (8#$resources_dir_mode & 07022) != 0 )); then
+  fail "Contents/Resources directory mode is unsafe"
+fi
+APP_ICON="$RESOURCES_DIR/AppIcon.icns"
 [[ -f "$APP_ICON" && ! -L "$APP_ICON" ]] || fail "app icon must be a regular file"
 app_icon_mode="$(/usr/bin/stat -f%p "$APP_ICON")"
 if (( (8#$app_icon_mode & 07022) != 0 )); then
