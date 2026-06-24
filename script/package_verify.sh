@@ -294,6 +294,7 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
       my $chunk_length = unpack("N", substr($payload, $offset, 4));
       my $chunk_type = substr($payload, $offset + 4, 4);
       return 0 unless $chunk_type =~ /\A[A-Za-z]{4}\z/;
+      return 0 unless substr($chunk_type, 2, 1) =~ /[A-Z]/;
       my $chunk_data_start = $offset + 8;
       my $chunk_crc_offset = $chunk_data_start + $chunk_length;
       return 0 if $chunk_crc_offset + 4 > length($payload);

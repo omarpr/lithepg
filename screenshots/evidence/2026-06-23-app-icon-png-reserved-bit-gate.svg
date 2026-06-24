@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 app-icon PNG reserved-bit gate</title>
+  <desc id="desc">Visual evidence for the v1.0 release-helper slice that rejects PNG app-icon chunk types with a lowercase reserved byte.</desc>
+  <rect width="1200" height="760" fill="#0f172a"/>
+  <rect x="42" y="42" width="1116" height="676" rx="24" fill="#111827" stroke="#334155" stroke-width="2"/>
+
+  <text x="72" y="96" fill="#f8fafc" font-family="SF Pro Display, Helvetica, Arial, sans-serif" font-size="34" font-weight="700">v1.0 release gate hardening</text>
+  <text x="72" y="136" fill="#93c5fd" font-family="SF Pro Display, Helvetica, Arial, sans-serif" font-size="22">PNG app-icon reserved-bit validation</text>
+
+  <g transform="translate(72 180)">
+    <rect width="1056" height="118" rx="16" fill="#1e293b" stroke="#475569"/>
+    <text x="26" y="38" fill="#e2e8f0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">New fail-closed rule</text>
+    <text x="26" y="72" fill="#dbeafe" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">PNG chunk type bytes must be ASCII letters AND byte 3 must be uppercase.</text>
+    <text x="26" y="100" fill="#cbd5e1" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Malformed fixture: txet ancillary chunk with lowercase reserved byte, valid CRC + IDAT otherwise.</text>
+  </g>
+
+  <g transform="translate(72 332)">
+    <rect width="500" height="164" rx="16" fill="#052e16" stroke="#22c55e"/>
+    <text x="26" y="38" fill="#bbf7d0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">TDD RED observed</text>
+    <text x="26" y="72" fill="#ecfdf5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">test_package_verify: failed as expected</text>
+    <text x="26" y="102" fill="#ecfdf5" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">test_v10_release_gate: failed as expected</text>
+    <text x="26" y="132" fill="#86efac" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="15">Reason: lowercase reserved PNG chunk byte accepted before fix</text>
+  </g>
+
+  <g transform="translate(628 332)">
+    <rect width="500" height="164" rx="16" fill="#172554" stroke="#3b82f6"/>
+    <text x="26" y="38" fill="#bfdbfe" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">GREEN verification</text>
+    <text x="26" y="72" fill="#eff6ff" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">shell suites: passed</text>
+    <text x="26" y="102" fill="#eff6ff" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">swift build + swift test: passed</text>
+    <text x="26" y="132" fill="#93c5fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="15">127 Swift tests across 20 suites</text>
+  </g>
+
+  <g transform="translate(72 542)">
+    <rect width="1056" height="112" rx="16" fill="#1f2937" stroke="#64748b"/>
+    <text x="26" y="38" fill="#f8fafc" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17">Local artifact gate: package_verify passed; artifact-only preflight clear; app icon present; code signature valid.</text>
+    <text x="26" y="72" fill="#fde68a" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Dogfood gate attempted but blocked locally: Docker unavailable in cron environment.</text>
+    <text x="26" y="98" fill="#cbd5e1" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="15">No signing/notary/upload/Homebrew/GitHub Release/tag/cron/Telegram action attempted.</text>
+  </g>
+
+  <text x="72" y="690" fill="#94a3b8" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="15">Evidence path: screenshots/evidence/2026-06-23-app-icon-png-reserved-bit-gate.svg</text>
+</svg>
