@@ -793,6 +793,49 @@ with open(output_path, "wb") as icon_file:
 PY
 }
 
+write_invalid_iccp_png_chunk_app_icon_fixture() {
+  local output_path="$1"
+
+  /usr/bin/python3 - "$output_path" <<'PY'
+import binascii
+import struct
+import sys
+import zlib
+
+output_path = sys.argv[1]
+width = 1024
+height = 1024
+
+
+def png_chunk(chunk_type, data):
+    return (
+        len(data).to_bytes(4, "big")
+        + chunk_type
+        + data
+        + (binascii.crc32(chunk_type + data) & 0xFFFFFFFF).to_bytes(4, "big")
+    )
+
+
+# PNG iCCP chunks must contain a profile name, null separator, compression
+# method, and valid compressed profile data before PLTE/IDAT. This fixture keeps
+# dimensions, CRCs, IDAT, and IEND valid, but uses a short malformed iCCP payload
+# that a release icon gate must reject instead of ignoring.
+raw_scanlines = b"".join(b"\x00" + (b"\x00" * width * 4) for _ in range(height))
+png_payload = (
+    b"\x89PNG\r\n\x1a\n"
+    + png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+    + png_chunk(b"iCCP", b"\x00\x00")
+    + png_chunk(b"IDAT", zlib.compress(raw_scanlines, 9))
+    + png_chunk(b"IEND", b"")
+)
+icns_element = b"ic10" + (len(png_payload) + 8).to_bytes(4, "big") + png_payload
+icns = b"icns" + (len(icns_element) + 8).to_bytes(4, "big") + icns_element
+
+with open(output_path, "wb") as icon_file:
+    icon_file.write(icns)
+PY
+}
+
 write_duplicate_ihdr_png_chunk_app_icon_fixture() {
   local output_path="$1"
 
@@ -1697,6 +1740,22 @@ assert_contains "$helper_output" "app icon format is invalid"
 assert_not_contains "$helper_output" "Package verified:"
 assert_not_contains "$helper_output" "$icon_png_invalid_chrm_sentinel"
 assert_not_contains "$helper_output" "$icon_png_invalid_chrm_bundle"
+
+icon_png_invalid_iccp_sentinel="ICON_PNG_INVALID_ICCP_SENTINEL_SHOULD_NOT_LEAK"
+icon_png_invalid_iccp_bundle="$fixture_root/icon-png-invalid-iccp-$icon_png_invalid_iccp_sentinel/LithePG.app"
+make_minimal_app_bundle "$icon_png_invalid_iccp_bundle"
+write_invalid_iccp_png_chunk_app_icon_fixture "$icon_png_invalid_iccp_bundle/Contents/Resources/AppIcon.icns"
+chmod 644 "$icon_png_invalid_iccp_bundle/Contents/Resources/AppIcon.icns"
+if run_helper_capture "$output_file" "$icon_png_invalid_iccp_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted an AppIcon.icns whose PNG payload has an invalid iCCP chunk"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "app icon format is invalid"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$icon_png_invalid_iccp_sentinel"
+assert_not_contains "$helper_output" "$icon_png_invalid_iccp_bundle"
 
 icon_png_duplicate_ihdr_sentinel="ICON_PNG_DUPLICATE_IHDR_SENTINEL_SHOULD_NOT_LEAK"
 icon_png_duplicate_ihdr_bundle="$fixture_root/icon-png-duplicate-ihdr-$icon_png_duplicate_ihdr_sentinel/LithePG.app"

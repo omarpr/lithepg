@@ -289,6 +289,7 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     my $seen_srgb = 0;
     my $seen_gama = 0;
     my $seen_chrm = 0;
+    my $seen_iccp = 0;
     my $palette_entries = 0;
 
     while ($offset < length($payload)) {
@@ -336,6 +337,7 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
         return 0 if $seen_idat;
         return 0 if $seen_plte;
         return 0 if $seen_srgb;
+        return 0 if $seen_iccp;
         return 0 unless $chunk_length == 1;
         my $rendering_intent = unpack("C", substr($payload, $chunk_data_start, 1));
         return 0 if $rendering_intent > 3;
@@ -354,6 +356,28 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
         return 0 if $seen_chrm;
         return 0 unless $chunk_length == 32;
         $seen_chrm = 1;
+      } elsif ($chunk_type eq "iCCP") {
+        return 0 if $seen_idat;
+        return 0 if $seen_plte;
+        return 0 if $seen_iccp;
+        return 0 if $seen_srgb;
+        my $chunk_data = substr($payload, $chunk_data_start, $chunk_length);
+        my $separator_index = index($chunk_data, "\0");
+        return 0 if $separator_index < 1 || $separator_index > 79;
+        return 0 unless $chunk_length > $separator_index + 2;
+        my $profile_name = substr($chunk_data, 0, $separator_index);
+        return 0 if $profile_name =~ /[^\x20-\x7e]/;
+        my $compression_method = unpack("C", substr($chunk_data, $separator_index + 1, 1));
+        return 0 unless $compression_method == 0;
+        my $compressed_profile = substr($chunk_data, $separator_index + 2);
+        my $profile_inflater = inflateInit();
+        return 0 unless defined($profile_inflater);
+        my ($profile, $profile_status) = $profile_inflater->inflate($compressed_profile);
+        return 0 unless defined($profile);
+        return 0 unless $profile_status == Z_STREAM_END;
+        return 0 unless length($compressed_profile) == 0;
+        return 0 unless length($profile) > 0;
+        $seen_iccp = 1;
       } elsif ($chunk_type eq "IDAT") {
         return 0 if $idat_sequence_closed;
         $seen_idat = 1;

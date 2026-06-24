@@ -1165,6 +1165,7 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type, bit_
     seen_srgb = False
     seen_gama = False
     seen_chrm = False
+    seen_iccp = False
     palette_entries = 0
 
     while offset < len(payload):
@@ -1229,7 +1230,7 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type, bit_
                 return False
             seen_trns = True
         elif chunk_type == b"sRGB":
-            if seen_idat or seen_plte or seen_srgb:
+            if seen_idat or seen_plte or seen_srgb or seen_iccp:
                 return False
             if chunk_length != 1:
                 return False
@@ -1250,6 +1251,31 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type, bit_
             if chunk_length != 32:
                 return False
             seen_chrm = True
+        elif chunk_type == b"iCCP":
+            if seen_idat or seen_plte or seen_iccp or seen_srgb:
+                return False
+            chunk_data = payload[chunk_data_start:chunk_crc_offset]
+            separator_index = chunk_data.find(b"\0")
+            if separator_index < 1 or separator_index > 79:
+                return False
+            if chunk_length <= separator_index + 2:
+                return False
+            profile_name = chunk_data[:separator_index]
+            if any(byte < 0x20 or byte == 0x7F or 0x80 <= byte <= 0xA0 for byte in profile_name):
+                return False
+            if chunk_data[separator_index + 1] != 0:
+                return False
+            try:
+                decompressor = zlib.decompressobj()
+                profile = decompressor.decompress(chunk_data[separator_index + 2:])
+                profile += decompressor.flush()
+            except zlib.error:
+                return False
+            if not decompressor.eof or decompressor.unused_data or decompressor.unconsumed_tail:
+                return False
+            if not profile:
+                return False
+            seen_iccp = True
         elif chunk_type == b"IDAT":
             if idat_sequence_closed:
                 return False
