@@ -2586,3 +2586,12 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker` command missing).
 - Evidence artifact: `screenshots/evidence/2026-06-24-app-icon-png-unknown-ancillary-gate.svg`.
 - No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.
+
+## 2026-06-24 06:35 EDT — v1.0 release-hardening docs receipt
+
+- Refreshed public-facing release status docs after the focused app-icon/package hardening sequence so README and CHANGELOG no longer imply the older `1f3b8f1` full dogfood receipt is the only current v1.0 local evidence.
+- README now distinguishes the latest full dogfood/product-restore receipt from the later focused package/artifact integrity gates through `58419e7`.
+- CHANGELOG now summarizes the app-icon release preflight hardening: malformed ICNS tables, invalid PNG dimensions/chunks/zlib streams, duplicate payloads, metadata-bearing PNG chunks, unknown ancillary chunks, and unsafe bundle files are fail-closed before publication.
+- Verification: Markdown reference/link sanity checks and focused no-secret scans passed; Swift tests were not rerun because this slice is docs/evidence-only and does not change production code or release scripts.
+- Evidence artifact: `screenshots/evidence/2026-06-24-release-hardening-docs-receipt.svg`.
+- No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.

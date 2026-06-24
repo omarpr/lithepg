@@ -24,7 +24,8 @@ v0.5 is the current tagged milestone. v1.0 public launch work is in progress and
 
 Latest local verification receipts:
 
-- **v1.0 local gate:** latest app-icon/product-restore receipt on `main` at `1f3b8f1` passed the release-helper shell suites, full `swift test`, seeded `script/dogfood_check.sh`, package build, and `script/package_verify.sh dist/LithePG.app`; later focused v1.0 release-gate and cron file-protection checks also passed before any public release/tag publication.
+- **v1.0 local gate:** latest full app-icon/product-restore receipt on `main` at `1f3b8f1` passed the release-helper shell suites, full `swift test`, seeded `script/dogfood_check.sh`, package build, and `script/package_verify.sh dist/LithePG.app`; later focused v1.0 release-gate and cron file-protection checks also passed before any public release/tag publication.
+- **Release artifact integrity:** focused v1.0 package/artifact gates on `main` through `58419e7` passed after hardening the app-icon checks for malformed ICNS tables, invalid PNG dimensions/chunks/zlib streams, duplicate image payloads, Finder metadata, symlinks/hardlinks, executable modes, and metadata-bearing PNG chunks including text, timestamp, EXIF, physical-pixel, significant-bit, background, histogram, and unknown ancillary chunks.
 - **AI drafting:** deterministic local Ask flow drafts runnable SQL for simple single-table prompts and two-table joins using schema/foreign-key metadata; drafts are inserted for human review and never auto-run.
 - **Model posture:** the CoreML adapter scaffold is disabled by default, requires a user-provided external model artifact, and keeps prompts, schema context, query results, history, and credentials on-device.
 - **Binary budget:** 21.63 MiB raw release executable / 12.03 MiB strip-probe and packaged executable, under the 50 MiB hard cap and 30 MiB stretch goal.

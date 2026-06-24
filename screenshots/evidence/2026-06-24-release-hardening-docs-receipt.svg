@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 release hardening docs receipt</title>
+  <desc id="desc">Visual evidence that README and CHANGELOG now distinguish the latest full dogfood receipt from later app-icon package and artifact hardening gates.</desc>
+  <rect width="1280" height="720" fill="#0b1020"/>
+  <rect x="52" y="48" width="1176" height="624" rx="28" fill="#121a33" stroke="#4f7cff" stroke-width="3"/>
+  <text x="96" y="112" fill="#e7eeff" font-family="SF Pro Display, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="40" font-weight="700">LithePG v1.0 release-hardening docs receipt</text>
+  <text x="96" y="156" fill="#9fb4ff" font-family="SF Mono, Menlo, Consolas, monospace" font-size="20">2026-06-24 06:35 EDT • docs-only slice • no external publication</text>
+
+  <rect x="96" y="202" width="508" height="350" rx="18" fill="#0f172d" stroke="#2d3c70"/>
+  <text x="128" y="252" fill="#ffffff" font-family="SF Pro Display, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="28" font-weight="700">README status clarified</text>
+  <text x="128" y="300" fill="#c9d7ff" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">• Full dogfood/product restore: 1f3b8f1</text>
+  <text x="128" y="338" fill="#c9d7ff" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">• Focused package/artifact gates: 58419e7</text>
+  <text x="128" y="376" fill="#c9d7ff" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">• Docker unavailability called out via dogfood log</text>
+  <text x="128" y="430" fill="#7ee787" font-family="SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="22" font-weight="600">No overclaiming public v1.0 readiness.</text>
+
+  <rect x="676" y="202" width="508" height="350" rx="18" fill="#0f172d" stroke="#2d3c70"/>
+  <text x="708" y="252" fill="#ffffff" font-family="SF Pro Display, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="28" font-weight="700">CHANGELOG hardening summary</text>
+  <text x="708" y="300" fill="#c9d7ff" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">• ICNS duplicate/malformed tables</text>
+  <text x="708" y="338" fill="#c9d7ff" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">• PNG dimensions, chunks, zlib streams</text>
+  <text x="708" y="376" fill="#c9d7ff" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">• Metadata chunks and unknown ancillary chunks</text>
+  <text x="708" y="430" fill="#7ee787" font-family="SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="22" font-weight="600">Release preflights fail closed before publication.</text>
+
+  <rect x="96" y="592" width="1088" height="36" rx="18" fill="#1c2b54"/>
+  <rect x="96" y="592" width="1088" height="36" rx="18" fill="#2ea043" opacity="0.92"/>
+  <text x="640" y="617" text-anchor="middle" fill="#06120a" font-family="SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="800">Evidence artifact for docs(release): summarize v1.0 artifact hardening</text>
+</svg>
