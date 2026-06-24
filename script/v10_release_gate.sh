@@ -539,17 +539,48 @@ release_zip_bundle_file_types_status() {
     read -r mode _zip_version _zip_system _uncompressed_size _entry_type _compressed_size _method _date _time entry_rest <<<"$line" || true
     entry_name="${entry_rest%% -> *}"
 
-    if [[ "$entry_name" == "LithePG.app/Contents/Info.plist" ]]; then
-      has_info_plist=1
-      if [[ "$mode" != -* ]]; then
+    case "$entry_name" in
+      LithePG.app/)
+        if [[ "$mode" != d* ]]; then
+          invalid_bundle_file_type=1
+        fi
+        ;;
+      LithePG.app/Contents/)
+        if [[ "$mode" != d* ]]; then
+          invalid_bundle_file_type=1
+        fi
+        ;;
+      LithePG.app/Contents/MacOS/)
+        if [[ "$mode" != d* ]]; then
+          invalid_bundle_file_type=1
+        fi
+        ;;
+      LithePG.app/Contents/Resources/)
+        if [[ "$mode" != d* ]]; then
+          invalid_bundle_file_type=1
+        fi
+        ;;
+      LithePG.app/Contents/_CodeSignature/)
+        if [[ "$mode" != d* ]]; then
+          invalid_bundle_file_type=1
+        fi
+        ;;
+      LithePG.app|LithePG.app/Contents|LithePG.app/Contents/MacOS|LithePG.app/Contents/Resources|LithePG.app/Contents/_CodeSignature)
         invalid_bundle_file_type=1
-      fi
-    elif [[ "$entry_name" == "LithePG.app/Contents/MacOS/LithePGApp" ]]; then
-      has_app_executable=1
-      if [[ "$mode" != -* ]]; then
-        invalid_bundle_file_type=1
-      fi
-    fi
+        ;;
+      LithePG.app/Contents/Info.plist)
+        has_info_plist=1
+        if [[ "$mode" != -* ]]; then
+          invalid_bundle_file_type=1
+        fi
+        ;;
+      LithePG.app/Contents/MacOS/LithePGApp)
+        has_app_executable=1
+        if [[ "$mode" != -* ]]; then
+          invalid_bundle_file_type=1
+        fi
+        ;;
+    esac
   done <<<"$zip_listing"
 
   if [[ "$invalid_bundle_file_type" -eq 1 ]]; then

@@ -101,6 +101,7 @@ artifact_app_wrapper_missing_output="$(mktemp)"
 artifact_bundle_file_type_inspect_failure_output="$(mktemp)"
 artifact_bundle_contents_missing_output="$(mktemp)"
 artifact_bundle_file_type_invalid_output="$(mktemp)"
+artifact_bundle_directory_type_invalid_output="$(mktemp)"
 artifact_bundle_executable_permission_output="$(mktemp)"
 artifact_bundle_owner_execute_permission_output="$(mktemp)"
 artifact_bundle_special_mode_output="$(mktemp)"
@@ -263,6 +264,8 @@ symlink_bundle_zip_dir="$(mktemp -d)"
 symlink_bundle_zip="$symlink_bundle_zip_dir/LithePG.app.zip"
 symlink_bundle_release_copy="$(mktemp)"
 symlink_bundle_homebrew_cask="$(mktemp)"
+resources_regular_file_zip_dir="$(mktemp -d)"
+resources_regular_file_zip="$resources_regular_file_zip_dir/LithePG.app.zip"
 nonessential_symlink_zip_dir="$(mktemp -d)"
 nonessential_symlink_zip="$nonessential_symlink_zip_dir/LithePG.app.zip"
 nonessential_symlink_release_copy="$(mktemp)"
@@ -482,6 +485,7 @@ cleanup() {
     "$artifact_bundle_file_type_inspect_failure_output" \
     "$artifact_bundle_contents_missing_output" \
     "$artifact_bundle_file_type_invalid_output" \
+    "$artifact_bundle_directory_type_invalid_output" \
     "$artifact_bundle_executable_permission_output" \
     "$artifact_bundle_owner_execute_permission_output" \
     "$artifact_bundle_special_mode_output" \
@@ -638,6 +642,7 @@ cleanup() {
     "$symlink_bundle_zip" \
     "$symlink_bundle_release_copy" \
     "$symlink_bundle_homebrew_cask" \
+    "$resources_regular_file_zip" \
     "$nonessential_symlink_zip" \
     "$nonessential_symlink_release_copy" \
     "$nonessential_symlink_homebrew_cask" \
@@ -782,7 +787,7 @@ cleanup() {
     "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$startup_hardening_root" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$unsafe_directory_mode_zip_dir" "$unsafe_root_directory_mode_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$missing_app_icon_zip_dir" "$malformed_app_icon_zip_dir" "$bad_low_resolution_sibling_app_icon_zip_dir" "$duplicate_element_app_icon_zip_dir" "$duplicate_ihdr_app_icon_zip_dir" "$invalid_chunk_type_app_icon_zip_dir" "$reserved_bit_app_icon_zip_dir" "$unknown_critical_app_icon_zip_dir" "$unknown_ancillary_app_icon_zip_dir" "$invalid_srgb_app_icon_zip_dir" "$invalid_gama_app_icon_zip_dir" "$invalid_chrm_app_icon_zip_dir" "$invalid_iccp_app_icon_zip_dir" "$oversized_dimensions_app_icon_zip_dir" "$trns_alpha_app_icon_zip_dir" "$trailing_zlib_app_icon_zip_dir" "$text_metadata_app_icon_zip_dir" "$timestamp_metadata_app_icon_zip_dir" "$exif_metadata_app_icon_zip_dir" "$physical_pixel_metadata_app_icon_zip_dir" "$significant_bits_metadata_app_icon_zip_dir" "$background_metadata_app_icon_zip_dir" "$histogram_metadata_app_icon_zip_dir" "$oversized_file_app_icon_zip_dir" "$text_executable_bundle_zip_dir" "$over_budget_executable_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$startup_hardening_root" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$resources_regular_file_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$unsafe_directory_mode_zip_dir" "$unsafe_root_directory_mode_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$missing_app_icon_zip_dir" "$malformed_app_icon_zip_dir" "$bad_low_resolution_sibling_app_icon_zip_dir" "$duplicate_element_app_icon_zip_dir" "$duplicate_ihdr_app_icon_zip_dir" "$invalid_chunk_type_app_icon_zip_dir" "$reserved_bit_app_icon_zip_dir" "$unknown_critical_app_icon_zip_dir" "$unknown_ancillary_app_icon_zip_dir" "$invalid_srgb_app_icon_zip_dir" "$invalid_gama_app_icon_zip_dir" "$invalid_chrm_app_icon_zip_dir" "$invalid_iccp_app_icon_zip_dir" "$oversized_dimensions_app_icon_zip_dir" "$trns_alpha_app_icon_zip_dir" "$trailing_zlib_app_icon_zip_dir" "$text_metadata_app_icon_zip_dir" "$timestamp_metadata_app_icon_zip_dir" "$exif_metadata_app_icon_zip_dir" "$physical_pixel_metadata_app_icon_zip_dir" "$significant_bits_metadata_app_icon_zip_dir" "$background_metadata_app_icon_zip_dir" "$histogram_metadata_app_icon_zip_dir" "$oversized_file_app_icon_zip_dir" "$text_executable_bundle_zip_dir" "$over_budget_executable_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
@@ -2239,6 +2244,28 @@ write_code_signature_resources "$symlink_bundle_zip_dir/fixture-root/LithePG.app
 )
 symlink_bundle_zip_sha="$(/usr/bin/shasum -a 256 "$symlink_bundle_zip" | /usr/bin/cut -d ' ' -f 1)"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$symlink_bundle_zip_sha" >"$symlink_bundle_release_copy"
+resources_regular_file_marker="RESOURCES_REGULAR_FILE_FIXTURE_SHOULD_NOT_LEAK"
+/usr/bin/python3 - "$release_zip_fixture" "$resources_regular_file_zip" "$resources_regular_file_marker" <<'PY'
+import stat
+import sys
+import zipfile
+
+source_zip, destination_zip, marker = sys.argv[1:4]
+
+with zipfile.ZipFile(source_zip, "r") as source:
+    entries = [(entry, source.read(entry.filename)) for entry in source.infolist()]
+
+with zipfile.ZipFile(destination_zip, "w") as destination:
+    for entry, payload in entries:
+        if entry.filename == "LithePG.app/Contents/Resources/":
+            replacement = zipfile.ZipInfo("LithePG.app/Contents/Resources")
+            replacement.create_system = 3
+            replacement.external_attr = (stat.S_IFREG | 0o644) << 16
+            destination.writestr(replacement, (marker + "\n").encode("utf-8"))
+        else:
+            destination.writestr(entry, payload)
+PY
+resources_regular_file_zip_sha="$(/usr/bin/shasum -a 256 "$resources_regular_file_zip" | /usr/bin/cut -d ' ' -f 1)"
 mkdir -p "$nonessential_symlink_zip_dir/fixture-root/LithePG.app/Contents/MacOS" "$nonessential_symlink_zip_dir/fixture-root/LithePG.app/Contents/Resources"
 write_valid_info_plist "$nonessential_symlink_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 /bin/cp /usr/bin/true "$nonessential_symlink_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
@@ -5211,6 +5238,35 @@ assert_not_contains "$artifact_bundle_file_type_invalid_text" "Info.target"
 assert_not_contains "$artifact_bundle_file_type_invalid_text" "LithePGApp.target"
 assert_not_contains "$artifact_bundle_file_type_invalid_text" "$symlink_bundle_zip_sha"
 assert_not_contains "$artifact_bundle_file_type_invalid_text" "fast preflight is clear"
+
+if run_gate_capture "$artifact_bundle_directory_type_invalid_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$resources_regular_file_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$resources_regular_file_zip_sha" \
+  /bin/bash -c 'exec "$1" --artifact-only' _; then
+  artifact_bundle_directory_type_invalid_text="$(<"$artifact_bundle_directory_type_invalid_output")"
+  assert_not_contains "$artifact_bundle_directory_type_invalid_text" "$resources_regular_file_marker"
+  assert_not_contains "$artifact_bundle_directory_type_invalid_text" "$resources_regular_file_zip"
+  assert_not_contains "$artifact_bundle_directory_type_invalid_text" "$resources_regular_file_zip_sha"
+  fail "artifact-only gate unexpectedly passed with a regular file at the Contents/Resources directory path"
+fi
+artifact_bundle_directory_type_invalid_text="$(<"$artifact_bundle_directory_type_invalid_output")"
+assert_contains "$artifact_bundle_directory_type_invalid_text" "Artifact-only mode: enabled"
+assert_contains "$artifact_bundle_directory_type_invalid_text" "Release artifact filename: matches"
+assert_contains "$artifact_bundle_directory_type_invalid_text" "Release artifact zip: present"
+assert_contains "$artifact_bundle_directory_type_invalid_text" "Release artifact app wrapper: present"
+assert_contains "$artifact_bundle_directory_type_invalid_text" "Release artifact bundle contents: present"
+assert_contains "$artifact_bundle_directory_type_invalid_text" "Release artifact bundle file types: invalid"
+assert_contains "$artifact_bundle_directory_type_invalid_text" "Release artifact SHA-256: matches"
+assert_contains "$artifact_bundle_directory_type_invalid_text" "v1.0 artifact-only blocked"
+assert_not_contains "$artifact_bundle_directory_type_invalid_text" "$resources_regular_file_marker"
+assert_not_contains "$artifact_bundle_directory_type_invalid_text" "$resources_regular_file_zip"
+assert_not_contains "$artifact_bundle_directory_type_invalid_text" "$resources_regular_file_zip_sha"
+assert_not_contains "$artifact_bundle_directory_type_invalid_text" "fast preflight is clear"
 
 if run_gate_capture "$artifact_symlinks_present_output" env -i \
   PATH="$fake_path" \
