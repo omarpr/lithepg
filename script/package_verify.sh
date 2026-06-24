@@ -281,7 +281,6 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
     my $offset = 8;
     my $idat_data = "";
     my $seen_idat = 0;
-    my $idat_sequence_closed = 0;
     my $seen_ihdr = 0;
     my $seen_plte = 0;
     my $seen_trns = 0;
@@ -380,14 +379,13 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
         return 0 unless length($profile) > 0;
         $seen_iccp = 1;
       } elsif ($chunk_type eq "IDAT") {
-        return 0 if $idat_sequence_closed;
         $seen_idat = 1;
         $idat_data .= substr($payload, $chunk_data_start, $chunk_length);
       } elsif ($chunk_type eq "IEND") {
         return 0 unless $chunk_length == 0;
         $seen_iend = 1;
-      } elsif ($seen_idat) {
-        $idat_sequence_closed = 1;
+      } else {
+        return 0;
       }
       $offset = $chunk_crc_offset + 4;
     }
