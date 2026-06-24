@@ -1189,6 +1189,8 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type, bit_
             return False
         if chunk_type[:1].isupper() and chunk_type not in {b"IHDR", b"PLTE", b"IDAT", b"IEND"}:
             return False
+        if chunk_type in {b"tEXt", b"zTXt", b"iTXt"}:
+            return False
         if chunk_type == b"IHDR":
             if seen_ihdr:
                 return False
