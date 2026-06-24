@@ -144,6 +144,7 @@ artifact_app_icon_trailing_zlib_output="$(mktemp)"
 artifact_app_icon_text_metadata_output="$(mktemp)"
 artifact_app_icon_timestamp_metadata_output="$(mktemp)"
 artifact_app_icon_exif_metadata_output="$(mktemp)"
+artifact_app_icon_physical_pixel_metadata_output="$(mktemp)"
 artifact_app_icon_oversized_file_output="$(mktemp)"
 missing_artifact_sha_output="$(mktemp)"
 invalid_artifact_sha_output="$(mktemp)"
@@ -362,6 +363,10 @@ exif_metadata_app_icon_zip_dir="$(mktemp -d)"
 exif_metadata_app_icon_zip="$exif_metadata_app_icon_zip_dir/LithePG.app.zip"
 exif_metadata_app_icon_release_copy="$(mktemp)"
 exif_metadata_app_icon_homebrew_cask="$(mktemp)"
+physical_pixel_metadata_app_icon_zip_dir="$(mktemp -d)"
+physical_pixel_metadata_app_icon_zip="$physical_pixel_metadata_app_icon_zip_dir/LithePG.app.zip"
+physical_pixel_metadata_app_icon_release_copy="$(mktemp)"
+physical_pixel_metadata_app_icon_homebrew_cask="$(mktemp)"
 oversized_file_app_icon_zip_dir="$(mktemp -d)"
 oversized_file_app_icon_zip="$oversized_file_app_icon_zip_dir/LithePG.app.zip"
 oversized_file_app_icon_release_copy="$(mktemp)"
@@ -500,6 +505,7 @@ cleanup() {
     "$artifact_app_icon_text_metadata_output" \
     "$artifact_app_icon_timestamp_metadata_output" \
     "$artifact_app_icon_exif_metadata_output" \
+    "$artifact_app_icon_physical_pixel_metadata_output" \
     "$artifact_app_icon_oversized_file_output" \
     "$missing_artifact_sha_output" \
     "$invalid_artifact_sha_output" \
@@ -685,6 +691,9 @@ cleanup() {
     "$exif_metadata_app_icon_zip" \
     "$exif_metadata_app_icon_release_copy" \
     "$exif_metadata_app_icon_homebrew_cask" \
+    "$physical_pixel_metadata_app_icon_zip" \
+    "$physical_pixel_metadata_app_icon_release_copy" \
+    "$physical_pixel_metadata_app_icon_homebrew_cask" \
     "$oversized_file_app_icon_zip" \
     "$oversized_file_app_icon_release_copy" \
     "$oversized_file_app_icon_homebrew_cask" \
@@ -737,7 +746,7 @@ cleanup() {
     "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$startup_hardening_root" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$unsafe_directory_mode_zip_dir" "$unsafe_root_directory_mode_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$missing_app_icon_zip_dir" "$malformed_app_icon_zip_dir" "$bad_low_resolution_sibling_app_icon_zip_dir" "$duplicate_element_app_icon_zip_dir" "$duplicate_ihdr_app_icon_zip_dir" "$invalid_chunk_type_app_icon_zip_dir" "$reserved_bit_app_icon_zip_dir" "$unknown_critical_app_icon_zip_dir" "$invalid_srgb_app_icon_zip_dir" "$invalid_gama_app_icon_zip_dir" "$invalid_chrm_app_icon_zip_dir" "$invalid_iccp_app_icon_zip_dir" "$oversized_dimensions_app_icon_zip_dir" "$trns_alpha_app_icon_zip_dir" "$trailing_zlib_app_icon_zip_dir" "$text_metadata_app_icon_zip_dir" "$timestamp_metadata_app_icon_zip_dir" "$exif_metadata_app_icon_zip_dir" "$oversized_file_app_icon_zip_dir" "$text_executable_bundle_zip_dir" "$over_budget_executable_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$startup_hardening_root" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$unsafe_directory_mode_zip_dir" "$unsafe_root_directory_mode_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$missing_app_icon_zip_dir" "$malformed_app_icon_zip_dir" "$bad_low_resolution_sibling_app_icon_zip_dir" "$duplicate_element_app_icon_zip_dir" "$duplicate_ihdr_app_icon_zip_dir" "$invalid_chunk_type_app_icon_zip_dir" "$reserved_bit_app_icon_zip_dir" "$unknown_critical_app_icon_zip_dir" "$invalid_srgb_app_icon_zip_dir" "$invalid_gama_app_icon_zip_dir" "$invalid_chrm_app_icon_zip_dir" "$invalid_iccp_app_icon_zip_dir" "$oversized_dimensions_app_icon_zip_dir" "$trns_alpha_app_icon_zip_dir" "$trailing_zlib_app_icon_zip_dir" "$text_metadata_app_icon_zip_dir" "$timestamp_metadata_app_icon_zip_dir" "$exif_metadata_app_icon_zip_dir" "$physical_pixel_metadata_app_icon_zip_dir" "$oversized_file_app_icon_zip_dir" "$text_executable_bundle_zip_dir" "$over_budget_executable_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
@@ -1582,6 +1591,47 @@ png_payload = (
     b"\x89PNG\r\n\x1a\n"
     + png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
     + png_chunk(b"eXIf", b"EXIF_METADATA_APP_ICON_FIXTURE_SHOULD_NOT_LEAK")
+    + png_chunk(b"IDAT", zlib.compress(raw_scanlines, 9))
+    + png_chunk(b"IEND", b"")
+)
+icns_element = b"ic10" + (len(png_payload) + 8).to_bytes(4, "big") + png_payload
+icns = b"icns" + (len(icns_element) + 8).to_bytes(4, "big") + icns_element
+
+with open(output_path, "wb") as icon_file:
+    icon_file.write(icns)
+PY
+  /bin/chmod 644 "$app_bundle_path/Contents/Resources/AppIcon.icns"
+}
+
+write_physical_pixel_metadata_app_icon_fixture() {
+  local app_bundle_path="$1"
+
+  mkdir -p "$app_bundle_path/Contents/Resources"
+  /usr/bin/python3 - "$app_bundle_path/Contents/Resources/AppIcon.icns" <<'PY'
+import binascii
+import struct
+import sys
+import zlib
+
+output_path = sys.argv[1]
+width = 1024
+height = 1024
+
+
+def png_chunk(chunk_type, data):
+    return (
+        len(data).to_bytes(4, "big")
+        + chunk_type
+        + data
+        + (binascii.crc32(chunk_type + data) & 0xFFFFFFFF).to_bytes(4, "big")
+    )
+
+
+raw_scanlines = b"".join(b"\x00" + (b"\x00" * width * 4) for _ in range(height))
+png_payload = (
+    b"\x89PNG\r\n\x1a\n"
+    + png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+    + png_chunk(b"pHYs", struct.pack(">IIB", 2835, 2835, 1))
     + png_chunk(b"IDAT", zlib.compress(raw_scanlines, 9))
     + png_chunk(b"IEND", b"")
 )
@@ -2454,6 +2504,19 @@ exif_metadata_app_icon_marker="EXIF_METADATA_APP_ICON_FIXTURE_SHOULD_NOT_LEAK"
 )
 exif_metadata_app_icon_zip_sha="$(/usr/bin/shasum -a 256 "$exif_metadata_app_icon_zip" | /usr/bin/cut -d ' ' -f 1)"
 printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$exif_metadata_app_icon_zip_sha" >"$exif_metadata_app_icon_release_copy"
+mkdir -p "$physical_pixel_metadata_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
+write_valid_info_plist "$physical_pixel_metadata_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
+/bin/cp /usr/bin/true "$physical_pixel_metadata_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+/bin/chmod 755 "$physical_pixel_metadata_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
+write_physical_pixel_metadata_app_icon_fixture "$physical_pixel_metadata_app_icon_zip_dir/fixture-root/LithePG.app"
+physical_pixel_metadata_app_icon_marker="PHYSICAL_PIXEL_METADATA_APP_ICON_FIXTURE_SHOULD_NOT_LEAK"
+/usr/bin/codesign --force --sign - --options runtime "$physical_pixel_metadata_app_icon_zip_dir/fixture-root/LithePG.app" >/dev/null 2>&1
+(
+  cd "$physical_pixel_metadata_app_icon_zip_dir/fixture-root"
+  /usr/bin/zip -qr "$physical_pixel_metadata_app_icon_zip" LithePG.app
+)
+physical_pixel_metadata_app_icon_zip_sha="$(/usr/bin/shasum -a 256 "$physical_pixel_metadata_app_icon_zip" | /usr/bin/cut -d ' ' -f 1)"
+printf 'LithePG v1.0 release copy with approved SHA-256 %s.\n' "$physical_pixel_metadata_app_icon_zip_sha" >"$physical_pixel_metadata_app_icon_release_copy"
 mkdir -p "$oversized_file_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS"
 write_valid_info_plist "$oversized_file_app_icon_zip_dir/fixture-root/LithePG.app/Contents/Info.plist"
 /bin/cp /usr/bin/true "$oversized_file_app_icon_zip_dir/fixture-root/LithePG.app/Contents/MacOS/LithePGApp"
@@ -5801,6 +5864,38 @@ assert_not_contains "$artifact_app_icon_exif_metadata_text" "$exif_metadata_app_
 assert_not_contains "$artifact_app_icon_exif_metadata_text" "AppIcon.icns"
 assert_not_contains "$artifact_app_icon_exif_metadata_text" "External publication inputs"
 assert_not_contains "$artifact_app_icon_exif_metadata_text" "fast preflight is clear"
+
+if run_gate_capture "$artifact_app_icon_physical_pixel_metadata_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$physical_pixel_metadata_app_icon_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$physical_pixel_metadata_app_icon_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_free_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$physical_pixel_metadata_app_icon_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$physical_pixel_metadata_app_icon_zip_sha" \
+  /bin/bash -c 'exec "$1" --artifact-only' _; then
+  artifact_app_icon_physical_pixel_metadata_text="$(<"$artifact_app_icon_physical_pixel_metadata_output")"
+  assert_not_contains "$artifact_app_icon_physical_pixel_metadata_text" "$physical_pixel_metadata_app_icon_zip_sha"
+  assert_not_contains "$artifact_app_icon_physical_pixel_metadata_text" "$physical_pixel_metadata_app_icon_zip"
+  assert_not_contains "$artifact_app_icon_physical_pixel_metadata_text" "$physical_pixel_metadata_app_icon_marker"
+  assert_not_contains "$artifact_app_icon_physical_pixel_metadata_text" "AppIcon.icns"
+  fail "artifact-only gate unexpectedly passed with PNG physical pixel metadata in release artifact app icon"
+fi
+artifact_app_icon_physical_pixel_metadata_text="$(<"$artifact_app_icon_physical_pixel_metadata_output")"
+assert_contains "$artifact_app_icon_physical_pixel_metadata_text" "Artifact-only mode: enabled"
+assert_contains "$artifact_app_icon_physical_pixel_metadata_text" "Release artifact filename: matches"
+assert_contains "$artifact_app_icon_physical_pixel_metadata_text" "Release artifact zip: present"
+assert_contains "$artifact_app_icon_physical_pixel_metadata_text" "Release artifact Info.plist metadata: matches"
+assert_contains "$artifact_app_icon_physical_pixel_metadata_text" "Release artifact app icon: invalid"
+assert_contains "$artifact_app_icon_physical_pixel_metadata_text" "Release artifact code signature verification: valid"
+assert_contains "$artifact_app_icon_physical_pixel_metadata_text" "Release artifact SHA-256: matches"
+assert_contains "$artifact_app_icon_physical_pixel_metadata_text" "v1.0 artifact-only blocked"
+assert_not_contains "$artifact_app_icon_physical_pixel_metadata_text" "$physical_pixel_metadata_app_icon_zip_sha"
+assert_not_contains "$artifact_app_icon_physical_pixel_metadata_text" "$physical_pixel_metadata_app_icon_zip"
+assert_not_contains "$artifact_app_icon_physical_pixel_metadata_text" "$physical_pixel_metadata_app_icon_marker"
+assert_not_contains "$artifact_app_icon_physical_pixel_metadata_text" "AppIcon.icns"
+assert_not_contains "$artifact_app_icon_physical_pixel_metadata_text" "External publication inputs"
+assert_not_contains "$artifact_app_icon_physical_pixel_metadata_text" "fast preflight is clear"
 
 if run_gate_capture "$artifact_app_icon_oversized_file_output" env -i \
   PATH="$fake_path" \
