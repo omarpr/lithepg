@@ -2496,3 +2496,15 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker command missing`).
 - Evidence artifact: `screenshots/evidence/2026-06-23-app-icon-png-iccp-gate.svg`.
 - No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.
+
+## 2026-06-24 00:07 EDT — v1.0 package verifier PNG text-metadata parity
+
+- Mirrored the release-artifact app-icon text-metadata rejection into `script/package_verify.sh`, so local package verification now rejects PNG-backed `AppIcon.icns` payloads containing `tEXt`, `zTXt`, or `iTXt` chunks instead of allowing arbitrary metadata in the packaged app icon.
+- Added strict-TDD coverage in `script/test_package_verify.sh` for a valid-dimension/zlib-valid `ic10` PNG carrying a `tEXt` payload with a sentinel marker.
+- RED verification passed as expected before the production fix: `bash -n script/test_package_verify.sh && ./script/test_package_verify.sh` failed with `package verifier unexpectedly accepted an AppIcon.icns whose PNG payload has text metadata`.
+- GREEN verification passed: `bash -n script/package_verify.sh script/test_package_verify.sh script/v10_release_gate.sh script/test_v10_release_gate.sh`, `./script/test_package_verify.sh`, `./script/test_v10_release_gate.sh`, `bash script/test_sign_and_notarize.sh`, `bash script/test_create_release_zip.sh`, `bash script/test_build_and_run.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` (127 tests across 20 suites).
+- Local artifact verification passed: `./script/package_verify.sh dist/LithePG.app` and artifact-only preflight for the existing `dist/LithePG.app.zip` with its computed SHA-256 both passed, including `Release artifact app icon: present`, `Release artifact code signature verification: valid`, and `v1.0 artifact-only preflight is clear`.
+- Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker unavailable; skipping dogfood_check.sh`).
+- Codex standalone review was attempted once and remains blocked by stale OAuth (`refresh_token_reused` / `token_expired`), so no further Codex retries were attempted.
+- Evidence artifact: `screenshots/evidence/2026-06-24-package-verify-png-text-metadata-gate.svg`.
+- No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.
