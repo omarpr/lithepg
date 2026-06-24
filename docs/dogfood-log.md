@@ -2508,3 +2508,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Codex standalone review was attempted once and remains blocked by stale OAuth (`refresh_token_reused` / `token_expired`), so no further Codex retries were attempted.
 - Evidence artifact: `screenshots/evidence/2026-06-24-package-verify-png-text-metadata-gate.svg`.
 - No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.
+
+## 2026-06-24 00:32 EDT — v1.0 app-icon PNG timestamp-metadata hardening
+
+- Hardened `script/package_verify.sh` and `script/v10_release_gate.sh` so PNG-backed `AppIcon.icns` payloads reject `tIME` timestamp chunks, keeping release app icons deterministic and metadata-free alongside the existing text-metadata rejection.
+- Added strict-TDD regression coverage in `script/test_package_verify.sh` and `script/test_v10_release_gate.sh` for valid-dimension/zlib-valid `ic10` PNG icons carrying a `tIME` chunk before `IDAT`.
+- RED verification passed as expected before the production fix: `./script/test_package_verify.sh` failed with `package verifier unexpectedly accepted an AppIcon.icns whose PNG payload has timestamp metadata`, and `./script/test_v10_release_gate.sh` failed with `artifact-only gate unexpectedly passed with PNG timestamp metadata in release artifact app icon`.
+- GREEN verification passed: `bash -n script/package_verify.sh script/test_package_verify.sh script/v10_release_gate.sh script/test_v10_release_gate.sh`, `./script/test_package_verify.sh`, `./script/test_v10_release_gate.sh`, `bash script/test_sign_and_notarize.sh`, `bash script/test_create_release_zip.sh`, `bash script/test_build_and_run.sh`, `git diff --check`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` (127 tests across 20 suites).
+- Local artifact verification passed: `./script/package_verify.sh dist/LithePG.app` and artifact-only preflight for the existing `dist/LithePG.app.zip` with its computed SHA-256 both passed, including `Release artifact app icon: present`, `Release artifact code signature verification: valid`, and `v1.0 artifact-only preflight is clear`.
+- Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker` command missing).
+- Evidence artifact: `screenshots/evidence/2026-06-24-app-icon-png-time-metadata-gate.svg`.
+- No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.

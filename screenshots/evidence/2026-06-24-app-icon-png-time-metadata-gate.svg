@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 PNG timestamp metadata release-gate evidence</title>
+  <desc id="desc">Visual evidence for the TDD slice rejecting PNG tIME timestamp metadata in app icons.</desc>
+  <rect width="1200" height="760" fill="#0b1020"/>
+  <rect x="36" y="32" width="1128" height="696" rx="18" fill="#111827" stroke="#38bdf8" stroke-width="2"/>
+  <text x="64" y="78" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="26" fill="#e5f2ff">LithePG v1.0 release hardening — PNG tIME metadata gate</text>
+  <text x="64" y="116" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#93c5fd">Timestamp: 2026-06-24 00:32 EDT • Commit evidence artifact</text>
+
+  <g font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">
+    <text x="64" y="166" fill="#fca5a5">RED</text>
+    <text x="124" y="166" fill="#f8fafc">./script/test_package_verify.sh</text>
+    <text x="124" y="194" fill="#cbd5e1">failed as expected: package verifier unexpectedly accepted PNG timestamp metadata</text>
+    <text x="124" y="222" fill="#f8fafc">./script/test_v10_release_gate.sh</text>
+    <text x="124" y="250" fill="#cbd5e1">failed as expected: artifact-only gate unexpectedly passed with PNG timestamp metadata</text>
+
+    <text x="64" y="306" fill="#86efac">GREEN</text>
+    <text x="124" y="306" fill="#f8fafc">bash -n script/package_verify.sh script/test_package_verify.sh script/v10_release_gate.sh script/test_v10_release_gate.sh</text>
+    <text x="124" y="334" fill="#86efac">test_package_verify passed</text>
+    <text x="124" y="362" fill="#86efac">test_v10_release_gate passed</text>
+    <text x="124" y="390" fill="#86efac">test_sign_and_notarize passed • test_create_release_zip passed • test_build_and_run passed</text>
+
+    <text x="64" y="446" fill="#86efac">FULL GATE</text>
+    <text x="124" y="446" fill="#f8fafc">DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build</text>
+    <text x="124" y="474" fill="#86efac">Build complete</text>
+    <text x="124" y="502" fill="#f8fafc">DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test</text>
+    <text x="124" y="530" fill="#86efac">127 Swift Testing tests across 20 suites passed</text>
+    <text x="124" y="558" fill="#f8fafc">./script/package_verify.sh dist/LithePG.app</text>
+    <text x="124" y="586" fill="#86efac">Package verified: LithePG.app • Version 1.0 (100) • Minimum system 14.0</text>
+    <text x="124" y="614" fill="#f8fafc">LITHEPG_ARTIFACT_ONLY=1 ./script/v10_release_gate.sh</text>
+    <text x="124" y="642" fill="#86efac">v1.0 artifact-only preflight is clear</text>
+
+    <text x="64" y="696" fill="#fbbf24">Dogfood note: Docker unavailable in cron, so seeded dogfood_check.sh was not run this tick.</text>
+  </g>
+</svg>
