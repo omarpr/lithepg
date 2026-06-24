@@ -2619,3 +2619,14 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Focused added-line static/no-secret scans reported no findings.
 - Evidence artifact: `screenshots/evidence/2026-06-24-v10-release-gate-resources-file-type.svg`.
 - No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.
+
+## 2026-06-24 07:59 EDT — v1.0 release artifact CodeResources mode hardening
+
+- Hardened `script/v10_release_gate.sh` so final `LithePG.app.zip` artifact preflight rejects `LithePG.app/Contents/_CodeSignature/CodeResources` when the ZIP entry is group/other-writable or carries special mode bits, rather than only checking that it is a regular file.
+- Added strict-TDD artifact-only regression coverage in `script/test_v10_release_gate.sh` by rewriting the valid signed fixture ZIP's `CodeResources` entry metadata to mode `100666` while keeping its contents unchanged.
+- RED verification passed as expected before the production fix: `bash -n script/test_v10_release_gate.sh && ./script/test_v10_release_gate.sh` failed with `artifact-only gate unexpectedly passed with unsafe release artifact code signature resources mode`.
+- GREEN verification passed: `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh && ./script/test_v10_release_gate.sh` reported `test_v10_release_gate passed`.
+- Wider local verification passed: release-helper shell suites (`test_package_verify`, `test_v10_release_gate`, `test_sign_and_notarize`, `test_create_release_zip`, `test_build_and_run`), `git diff --check`, `./script/package_verify.sh dist/LithePG.app`, artifact-only `./script/v10_release_gate.sh` with the current local `dist/LithePG.app.zip` SHA-256, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` (127 tests across 20 suites) all passed.
+- Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker unavailable; skipping dogfood_check.sh`).
+- Evidence artifact: `screenshots/evidence/2026-06-24-v10-release-gate-code-resources-mode.svg`.
+- No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.

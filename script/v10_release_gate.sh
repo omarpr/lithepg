@@ -1493,6 +1493,8 @@ release_zip_code_signature_resources_status() {
       has_code_resources=1
       if [[ "$mode" != -* ]]; then
         invalid_code_resources=1
+      elif [[ "$mode" == *[sStT]* || "${mode:5:1}" == "w" || "${mode:8:1}" == "w" ]]; then
+        invalid_code_resources=1
       fi
     fi
   done <<<"$zip_listing"
