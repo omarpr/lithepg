@@ -456,6 +456,49 @@ with open(output_path, "wb") as icon_file:
 PY
 }
 
+write_truecolor_png_trns_before_plte_app_icon_fixture() {
+  local output_path="$1"
+
+  /usr/bin/python3 - "$output_path" <<'PY'
+import binascii
+import struct
+import sys
+import zlib
+
+output_path = sys.argv[1]
+width = 1024
+height = 1024
+
+
+def png_chunk(chunk_type, data):
+    return (
+        len(data).to_bytes(4, "big")
+        + chunk_type
+        + data
+        + (binascii.crc32(chunk_type + data) & 0xFFFFFFFF).to_bytes(4, "big")
+    )
+
+
+# PNG requires tRNS to follow PLTE when an optional PLTE chunk is present.
+# This truecolor payload keeps dimensions, CRCs, transparency length, and IDAT
+# valid, but places tRNS before PLTE so the verifier must fail closed.
+raw_scanlines = b"".join(b"\x00" + (b"\x00" * width * 3) for _ in range(height))
+png_payload = (
+    b"\x89PNG\r\n\x1a\n"
+    + png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
+    + png_chunk(b"tRNS", b"\x00\x00\x00\x00\x00\x00")
+    + png_chunk(b"PLTE", b"\x00\x00\x00")
+    + png_chunk(b"IDAT", zlib.compress(raw_scanlines, 9))
+    + png_chunk(b"IEND", b"")
+)
+icns_element = b"ic10" + (len(png_payload) + 8).to_bytes(4, "big") + png_payload
+icns = b"icns" + (len(icns_element) + 8).to_bytes(4, "big") + icns_element
+
+with open(output_path, "wb") as icon_file:
+    icon_file.write(icns)
+PY
+}
+
 write_post_iend_app_icon_fixture() {
   local output_path="$1"
 
@@ -1341,6 +1384,22 @@ assert_contains "$helper_output" "app icon format is invalid"
 assert_not_contains "$helper_output" "Package verified:"
 assert_not_contains "$helper_output" "$icon_png_trns_alpha_sentinel"
 assert_not_contains "$helper_output" "$icon_png_trns_alpha_bundle"
+
+icon_png_trns_plte_order_sentinel="ICON_PNG_TRNS_PLTE_ORDER_SENTINEL_SHOULD_NOT_LEAK"
+icon_png_trns_plte_order_bundle="$fixture_root/icon-png-trns-plte-order-$icon_png_trns_plte_order_sentinel/LithePG.app"
+make_minimal_app_bundle "$icon_png_trns_plte_order_bundle"
+write_truecolor_png_trns_before_plte_app_icon_fixture "$icon_png_trns_plte_order_bundle/Contents/Resources/AppIcon.icns"
+chmod 644 "$icon_png_trns_plte_order_bundle/Contents/Resources/AppIcon.icns"
+if run_helper_capture "$output_file" "$icon_png_trns_plte_order_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted an AppIcon.icns whose PNG payload places tRNS before PLTE"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "app icon format is invalid"
+assert_not_contains "$helper_output" "Package verified:"
+assert_not_contains "$helper_output" "$icon_png_trns_plte_order_sentinel"
+assert_not_contains "$helper_output" "$icon_png_trns_plte_order_bundle"
 
 icon_png_post_iend_sentinel="ICON_PNG_POST_IEND_SENTINEL_SHOULD_NOT_LEAK"
 icon_png_post_iend_bundle="$fixture_root/icon-png-post-iend-$icon_png_post_iend_sentinel/LithePG.app"

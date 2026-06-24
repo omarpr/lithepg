@@ -1192,6 +1192,8 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type, bit_
         elif chunk_type == b"PLTE":
             if seen_idat:
                 return False
+            if seen_trns:
+                return False
             if seen_plte:
                 return False
             if color_type in {0, 4}:
