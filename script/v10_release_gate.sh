@@ -1164,6 +1164,7 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type, bit_
     seen_iend = False
     seen_srgb = False
     seen_gama = False
+    seen_chrm = False
     palette_entries = 0
 
     while offset < len(payload):
@@ -1243,6 +1244,12 @@ def png_idat_stream_is_valid(payload, scanline_payload_lengths, color_type, bit_
             if int.from_bytes(payload[chunk_data_start:chunk_crc_offset], byteorder="big") == 0:
                 return False
             seen_gama = True
+        elif chunk_type == b"cHRM":
+            if seen_idat or seen_plte or seen_chrm:
+                return False
+            if chunk_length != 32:
+                return False
+            seen_chrm = True
         elif chunk_type == b"IDAT":
             if idat_sequence_closed:
                 return False

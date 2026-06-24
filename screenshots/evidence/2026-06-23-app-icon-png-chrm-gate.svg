@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG v1.0 app-icon PNG cHRM gate evidence</title>
+  <desc id="desc">Visual evidence for the strict-TDD cHRM app-icon release gate hardening.</desc>
+  <rect width="1280" height="720" fill="#0b1020"/>
+  <rect x="40" y="40" width="1200" height="640" rx="24" fill="#111827" stroke="#22d3ee" stroke-width="3"/>
+  <text x="80" y="105" fill="#f8fafc" font-family="SFMono-Regular, Menlo, monospace" font-size="30" font-weight="700">LithePG v1.0 release gate: PNG cHRM validation</text>
+  <text x="80" y="155" fill="#93c5fd" font-family="SFMono-Regular, Menlo, monospace" font-size="20">Slice: reject malformed cHRM chunks in AppIcon.icns PNG payloads</text>
+
+  <g font-family="SFMono-Regular, Menlo, monospace" font-size="18">
+    <text x="80" y="220" fill="#fca5a5">RED</text>
+    <text x="170" y="220" fill="#e5e7eb">script/test_package_verify.sh rejected missing fix:</text>
+    <text x="170" y="250" fill="#fca5a5">package verifier unexpectedly accepted invalid PNG cHRM chunk</text>
+
+    <text x="80" y="305" fill="#fca5a5">RED</text>
+    <text x="170" y="305" fill="#e5e7eb">script/test_v10_release_gate.sh rejected missing fix:</text>
+    <text x="170" y="335" fill="#fca5a5">artifact-only gate unexpectedly passed invalid PNG cHRM chunk</text>
+
+    <text x="80" y="400" fill="#86efac">GREEN</text>
+    <text x="170" y="400" fill="#e5e7eb">bash -n package/release scripts: pass</text>
+    <text x="170" y="430" fill="#e5e7eb">./script/test_package_verify.sh: passed</text>
+    <text x="170" y="460" fill="#e5e7eb">./script/test_v10_release_gate.sh: passed</text>
+    <text x="170" y="490" fill="#e5e7eb">test_sign_and_notarize/create_release_zip/build_and_run: passed</text>
+    <text x="170" y="520" fill="#e5e7eb">swift build + swift test: passed (127 Swift Testing tests)</text>
+    <text x="170" y="550" fill="#e5e7eb">dist/LithePG.app.zip artifact-only preflight: clear with SHA-256 match</text>
+
+    <text x="80" y="615" fill="#fbbf24">No external release, tag, notarization, Homebrew, cron, or Telegram action was performed.</text>
+  </g>
+</svg>
