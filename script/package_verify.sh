@@ -304,7 +304,7 @@ if ! /usr/bin/env -u PERL5OPT -u PERL5LIB -u PERLLIB /usr/bin/perl -e '
       return 0 if $chunk_crc_offset + 4 > length($payload);
       return 0 unless crc32(substr($payload, $offset + 4, 4 + $chunk_length)) == unpack("N", substr($payload, $chunk_crc_offset, 4));
       return 0 if $chunk_type =~ /\A[A-Z]/ && $chunk_type ne "IHDR" && $chunk_type ne "PLTE" && $chunk_type ne "IDAT" && $chunk_type ne "IEND";
-      return 0 if $chunk_type eq "tEXt" || $chunk_type eq "zTXt" || $chunk_type eq "iTXt" || $chunk_type eq "tIME" || $chunk_type eq "eXIf" || $chunk_type eq "pHYs" || $chunk_type eq "sBIT" || $chunk_type eq "bKGD";
+      return 0 if $chunk_type eq "tEXt" || $chunk_type eq "zTXt" || $chunk_type eq "iTXt" || $chunk_type eq "tIME" || $chunk_type eq "eXIf" || $chunk_type eq "pHYs" || $chunk_type eq "sBIT" || $chunk_type eq "bKGD" || $chunk_type eq "hIST";
       if ($chunk_type eq "IHDR") {
         return 0 if $seen_ihdr;
         return 0 unless $offset == 8;
