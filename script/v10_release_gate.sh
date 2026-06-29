@@ -72,6 +72,7 @@ RELEASE_ZIP_PATH="${LITHEPG_RELEASE_ZIP_PATH:-dist/LithePG.app.zip}"
 RELEASE_ZIP_SHA256="${LITHEPG_RELEASE_ZIP_SHA256:-}"
 HARD_CAP_BYTES=$((50 * 1024 * 1024))
 APP_ICON_MAX_BYTES=$((10 * 1024 * 1024))
+CODE_RESOURCES_MAX_BYTES=$((4 * 1024 * 1024))
 
 usage() {
   /bin/cat <<'USAGE'
@@ -1496,6 +1497,8 @@ release_zip_code_signature_resources_status() {
       if [[ "$mode" != -* ]]; then
         invalid_code_resources=1
       elif [[ ! "$uncompressed_size" =~ ^[0-9]+$ || "$uncompressed_size" -le 0 ]]; then
+        invalid_code_resources=1
+      elif [[ "$uncompressed_size" -gt "$CODE_RESOURCES_MAX_BYTES" ]]; then
         invalid_code_resources=1
       elif [[ "$mode" == *[sStT]* || "${mode:3:1}${mode:6:1}${mode:9:1}" == *x* || "${mode:5:1}" == "w" || "${mode:8:1}" == "w" ]]; then
         invalid_code_resources=1

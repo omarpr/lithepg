@@ -2652,3 +2652,15 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker command missing`).
 - Evidence artifact: `screenshots/evidence/2026-06-24-v10-release-gate-code-resources-empty.svg`.
 - No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.
+
+## 2026-06-29 — v1.0 release artifact oversized CodeResources hardening
+
+- Tightened `script/v10_release_gate.sh` so final `LithePG.app.zip` artifact preflight rejects `LithePG.app/Contents/_CodeSignature/CodeResources` when the ZIP entry's uncompressed size exceeds a 4 MiB sanity cap (`CODE_RESOURCES_MAX_BYTES`), closing the gap where the resources check enforced a lower bound (non-empty) and safe mode bits but no upper bound. A legitimate `CodeResources` plist is tiny (the current `dist/LithePG.app` signature resources file is 2446 bytes), so an absurdly large tampered entry previously passed the resources check.
+- Added strict-TDD artifact-only regression coverage in `script/test_v10_release_gate.sh` by rewriting the signed fixture ZIP's `CodeResources` entry to a >4 MiB payload while preserving the rest of the archive metadata.
+- RED verification passed as expected before the production fix: `bash -n script/test_v10_release_gate.sh && ./script/test_v10_release_gate.sh` failed with `expected output to contain: Release artifact code signature resources: invalid`.
+- GREEN verification passed: `bash -n script/v10_release_gate.sh script/test_v10_release_gate.sh && ./script/test_v10_release_gate.sh` reported `test_v10_release_gate passed`.
+- No-false-positive check passed: artifact-only `./script/v10_release_gate.sh --artifact-only` against the current local `dist/LithePG.app.zip` (2446-byte CodeResources) still reported `Release artifact code signature resources: present` and a clear artifact-only preflight.
+- Wider local verification passed: release-helper shell suites (`test_v10_release_gate`, `test_package_verify`, `test_sign_and_notarize`, `test_create_release_zip`, `test_build_and_run`), `git diff --check`, `./script/package_verify.sh dist/LithePG.app`, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build`, and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` (127 tests across 20 suites) all passed.
+- Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker_missing`).
+- Evidence artifact: `screenshots/evidence/2026-06-29-v10-release-gate-code-resources-oversized.svg`.
+- No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.

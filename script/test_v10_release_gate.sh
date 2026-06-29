@@ -120,6 +120,7 @@ artifact_malformed_zip_path_encoding_output="$(mktemp)"
 artifact_code_signature_resources_missing_output="$(mktemp)"
 artifact_code_signature_resources_unsafe_mode_output="$(mktemp)"
 artifact_code_signature_resources_empty_output="$(mktemp)"
+artifact_code_signature_resources_oversized_output="$(mktemp)"
 artifact_code_signature_verification_invalid_output="$(mktemp)"
 artifact_code_signature_identifier_mismatch_output="$(mktemp)"
 artifact_code_signature_runtime_missing_output="$(mktemp)"
@@ -430,6 +431,8 @@ unsafe_code_resources_mode_zip_dir="$(mktemp -d)"
 unsafe_code_resources_mode_zip="$unsafe_code_resources_mode_zip_dir/LithePG.app.zip"
 empty_code_resources_zip_dir="$(mktemp -d)"
 empty_code_resources_zip="$empty_code_resources_zip_dir/LithePG.app.zip"
+oversized_code_resources_zip_dir="$(mktemp -d)"
+oversized_code_resources_zip="$oversized_code_resources_zip_dir/LithePG.app.zip"
 invalid_code_signature_zip_dir="$(mktemp -d)"
 invalid_code_signature_zip="$invalid_code_signature_zip_dir/LithePG.app.zip"
 invalid_code_signature_release_copy="$(mktemp)"
@@ -510,6 +513,7 @@ cleanup() {
     "$artifact_code_signature_resources_missing_output" \
     "$artifact_code_signature_resources_unsafe_mode_output" \
     "$artifact_code_signature_resources_empty_output" \
+    "$artifact_code_signature_resources_oversized_output" \
     "$artifact_code_signature_verification_invalid_output" \
     "$artifact_code_signature_identifier_mismatch_output" \
     "$artifact_code_signature_runtime_missing_output" \
@@ -769,6 +773,7 @@ cleanup() {
     "$missing_code_resources_release_copy" \
     "$missing_code_resources_homebrew_cask" \
     "$empty_code_resources_zip" \
+    "$oversized_code_resources_zip" \
     "$invalid_code_signature_zip" \
     "$invalid_code_signature_release_copy" \
     "$invalid_code_signature_homebrew_cask" \
@@ -796,7 +801,7 @@ cleanup() {
     "$wrong_basename_zip" \
     "$grep_error_release_copy" \
     "$missing_release_copy"
-  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$startup_hardening_root" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$resources_regular_file_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$unsafe_directory_mode_zip_dir" "$unsafe_root_directory_mode_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$missing_app_icon_zip_dir" "$malformed_app_icon_zip_dir" "$bad_low_resolution_sibling_app_icon_zip_dir" "$duplicate_element_app_icon_zip_dir" "$duplicate_ihdr_app_icon_zip_dir" "$invalid_chunk_type_app_icon_zip_dir" "$reserved_bit_app_icon_zip_dir" "$unknown_critical_app_icon_zip_dir" "$unknown_ancillary_app_icon_zip_dir" "$invalid_srgb_app_icon_zip_dir" "$invalid_gama_app_icon_zip_dir" "$invalid_chrm_app_icon_zip_dir" "$invalid_iccp_app_icon_zip_dir" "$oversized_dimensions_app_icon_zip_dir" "$trns_alpha_app_icon_zip_dir" "$trailing_zlib_app_icon_zip_dir" "$text_metadata_app_icon_zip_dir" "$timestamp_metadata_app_icon_zip_dir" "$exif_metadata_app_icon_zip_dir" "$physical_pixel_metadata_app_icon_zip_dir" "$significant_bits_metadata_app_icon_zip_dir" "$background_metadata_app_icon_zip_dir" "$histogram_metadata_app_icon_zip_dir" "$oversized_file_app_icon_zip_dir" "$text_executable_bundle_zip_dir" "$over_budget_executable_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$unsafe_code_resources_mode_zip_dir" "$empty_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
+  rm -rf "$fake_git_dir" "$default_security_docs_repo" "$startup_hardening_root" "$root_resolution_shadow_fake_bin" "$root_resolution_shadow_marker_dir" "$release_zip_dir" "$symlink_artifact_zip_dir" "$missing_wrapper_zip_dir" "$cannot_inspect_zip_dir" "$incomplete_bundle_zip_dir" "$symlink_bundle_zip_dir" "$resources_regular_file_zip_dir" "$nonessential_symlink_zip_dir" "$non_executable_bundle_zip_dir" "$owner_execute_missing_bundle_zip_dir" "$special_mode_bundle_zip_dir" "$writable_mode_bundle_zip_dir" "$unsafe_directory_mode_zip_dir" "$unsafe_root_directory_mode_zip_dir" "$writable_info_plist_mode_zip_dir" "$writable_info_plist_mode_decoy_zip_dir" "$missing_app_icon_zip_dir" "$malformed_app_icon_zip_dir" "$bad_low_resolution_sibling_app_icon_zip_dir" "$duplicate_element_app_icon_zip_dir" "$duplicate_ihdr_app_icon_zip_dir" "$invalid_chunk_type_app_icon_zip_dir" "$reserved_bit_app_icon_zip_dir" "$unknown_critical_app_icon_zip_dir" "$unknown_ancillary_app_icon_zip_dir" "$invalid_srgb_app_icon_zip_dir" "$invalid_gama_app_icon_zip_dir" "$invalid_chrm_app_icon_zip_dir" "$invalid_iccp_app_icon_zip_dir" "$oversized_dimensions_app_icon_zip_dir" "$trns_alpha_app_icon_zip_dir" "$trailing_zlib_app_icon_zip_dir" "$text_metadata_app_icon_zip_dir" "$timestamp_metadata_app_icon_zip_dir" "$exif_metadata_app_icon_zip_dir" "$physical_pixel_metadata_app_icon_zip_dir" "$significant_bits_metadata_app_icon_zip_dir" "$background_metadata_app_icon_zip_dir" "$histogram_metadata_app_icon_zip_dir" "$oversized_file_app_icon_zip_dir" "$text_executable_bundle_zip_dir" "$over_budget_executable_zip_dir" "$duplicate_essential_entries_zip_dir" "$noncanonical_zip_path_dir" "$casefold_zip_path_collision_dir" "$unicode_zip_path_collision_dir" "$malformed_zip_path_encoding_dir" "$missing_code_resources_zip_dir" "$unsafe_code_resources_mode_zip_dir" "$empty_code_resources_zip_dir" "$oversized_code_resources_zip_dir" "$invalid_code_signature_zip_dir" "$mismatched_code_signature_identifier_zip_dir" "$missing_runtime_zip_dir" "$metadata_files_zip_dir" "$unexpected_top_level_zip_dir" "$invalid_metadata_zip_dir" "$legacy_metadata_zip_dir" "$malformed_metadata_zip_dir" "$wrong_basename_zip_dir"
 }
 trap cleanup EXIT
 
@@ -2256,6 +2261,27 @@ with zipfile.ZipFile(source_zip, "r") as source, zipfile.ZipFile(destination_zip
         destination.writestr(destination_entry, payload)
 PY
 empty_code_resources_zip_sha="$(/usr/bin/shasum -a 256 "$empty_code_resources_zip" | /usr/bin/cut -d ' ' -f 1)"
+/usr/bin/python3 - "$release_zip_fixture" "$oversized_code_resources_zip" <<'PY'
+import sys
+import zipfile
+
+source_zip, destination_zip = sys.argv[1:3]
+code_resources_path = "LithePG.app/Contents/_CodeSignature/CodeResources"
+oversized_payload = b"A" * ((4 * 1024 * 1024) + 1)
+
+with zipfile.ZipFile(source_zip, "r") as source, zipfile.ZipFile(destination_zip, "w") as destination:
+    for source_entry in source.infolist():
+        destination_entry = zipfile.ZipInfo(source_entry.filename, source_entry.date_time)
+        destination_entry.comment = source_entry.comment
+        destination_entry.extra = source_entry.extra
+        destination_entry.internal_attr = source_entry.internal_attr
+        destination_entry.external_attr = source_entry.external_attr
+        destination_entry.create_system = source_entry.create_system
+        destination_entry.compress_type = source_entry.compress_type
+        payload = oversized_payload if source_entry.filename == code_resources_path else source.read(source_entry.filename)
+        destination.writestr(destination_entry, payload)
+PY
+oversized_code_resources_zip_sha="$(/usr/bin/shasum -a 256 "$oversized_code_resources_zip" | /usr/bin/cut -d ' ' -f 1)"
 /bin/ln -s "$release_zip_fixture" "$symlink_artifact_zip"
 /bin/cp "$release_zip_fixture" "$wrong_basename_zip"
 mkdir -p "$missing_wrapper_zip_dir/fixture-root/NotLithePG.app/Contents/MacOS"
@@ -5005,6 +5031,31 @@ assert_not_contains "$artifact_code_signature_resources_empty_text" "$empty_code
 assert_not_contains "$artifact_code_signature_resources_empty_text" "CodeResources"
 assert_not_contains "$artifact_code_signature_resources_empty_text" "Release artifact code signature verification:"
 assert_not_contains "$artifact_code_signature_resources_empty_text" "External publication inputs"
+
+if run_gate_capture "$artifact_code_signature_resources_oversized_output" env -i \
+  PATH="$fake_path" \
+  FAKE_GIT_LS_REMOTE_MARKER="$fake_git_marker" \
+  LITHEPG_RELEASE_COPY_PATH="$placeholder_release_copy" \
+  LITHEPG_HOMEBREW_CASK_PATH="$placeholder_homebrew_cask" \
+  LITHEPG_SECURITY_DOC_PATH="$placeholder_security_doc" \
+  LITHEPG_RELEASE_ZIP_PATH="$oversized_code_resources_zip" \
+  LITHEPG_RELEASE_ZIP_SHA256="$oversized_code_resources_zip_sha" \
+  /bin/bash -c 'exec "$1" --artifact-only' _; then
+  artifact_code_signature_resources_oversized_text="$(<"$artifact_code_signature_resources_oversized_output")"
+  assert_not_contains "$artifact_code_signature_resources_oversized_text" "$oversized_code_resources_zip_sha"
+  assert_not_contains "$artifact_code_signature_resources_oversized_text" "$oversized_code_resources_zip"
+  fail "artifact-only gate unexpectedly passed with oversized release artifact code signature resources"
+fi
+artifact_code_signature_resources_oversized_text="$(<"$artifact_code_signature_resources_oversized_output")"
+assert_contains "$artifact_code_signature_resources_oversized_text" "Artifact-only mode: enabled"
+assert_contains "$artifact_code_signature_resources_oversized_text" "Release artifact zip: present"
+assert_contains "$artifact_code_signature_resources_oversized_text" "Release artifact code signature resources: invalid"
+assert_contains "$artifact_code_signature_resources_oversized_text" "v1.0 artifact-only blocked"
+assert_not_contains "$artifact_code_signature_resources_oversized_text" "$oversized_code_resources_zip_sha"
+assert_not_contains "$artifact_code_signature_resources_oversized_text" "$oversized_code_resources_zip"
+assert_not_contains "$artifact_code_signature_resources_oversized_text" "CodeResources"
+assert_not_contains "$artifact_code_signature_resources_oversized_text" "Release artifact code signature verification:"
+assert_not_contains "$artifact_code_signature_resources_oversized_text" "External publication inputs"
 
 if run_gate_capture "$artifact_directory_mode_unsafe_output" env -i \
   PATH="$fake_path" \
