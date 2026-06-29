@@ -2689,3 +2689,15 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Evidence artifact: `screenshots/evidence/2026-06-29-result-exporter-csv-json.svg`.
 - UI wiring of the export action (file save panel, format picker) is intentionally deferred to a follow-up slice so this commit stays a focused, fully tested serializer.
 - No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.
+
+## 2026-06-29 — v1.1 backlog: wire results-grid Export button to CSV/JSON
+
+- Follow-up to the `ResultExporter` serializer slice: the results grid's Export toolbar button was still disabled with the placeholder help text "Export results lands in a later polish pass". This slice wires it to the existing on-device `ResultExporter` so users can actually save query results as CSV or JSON.
+- Strict TDD: wrote 3 new `ResultsTablePresentation` tests first in `Tests/LithePGAppTests/ResultsTablePresentationTests.swift` covering (a) `canExport` is true only for `.rows` results that have columns and false for empty/command/column-less/nil, (b) `defaultExportFileName` carries the format extension (`lithepg-results.csv` / `.json`), and (c) `exportContent` reuses `ResultExporter.csv`/`.json` byte-for-byte.
+  - RED verification passed as expected before the helpers existed: `swift test --filter ResultsTablePresentationTests` failed to compile with `type 'ResultsTablePresentation' has no member 'canExport'`/`'exportContent'`.
+  - GREEN verification passed: `swift test --filter ResultsTablePresentationTests` reported all 10 tests in the suite passing (7 prior + 3 new).
+- Implementation in `Sources/LithePGApp/ResultsTable.swift`: added headless-testable static helpers (`canExport`, `defaultExportFileName`, `exportContent`) to `ResultsTablePresentation`, replaced the disabled Export button with a CSV/JSON `Menu` gated on `canExport`, and added a private `export(_:as:)` that opens an `NSSavePanel` (default name + allowed content type) and writes UTF-8 atomically to the chosen URL. Export only reformats already-fetched rows — no network, no credentials, no SQL execution, and nothing is auto-run.
+- Wider local verification passed: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build` clean and full `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` now reports 141 tests across 21 suites (was 138), with no regressions. Focused added-line secret/injection static scan reported no findings; an independent reviewer subagent was dispatched on the diff before commit.
+- Release-impact dogfood verification was not applicable: this is non-release-impacting UI wiring with no startup/binary/connection path change, and Docker is unavailable in this cron environment.
+- Evidence artifact: `screenshots/evidence/2026-06-29-result-export-ui-wiring.svg`.
+- No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.

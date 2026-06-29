@@ -130,4 +130,80 @@ struct ResultsTablePresentationTests {
         #expect(ResultsTablePresentation.copyText(for: rows) == "id\tnote\n1\thello world\n2\tNULL")
         #expect(ResultsTablePresentation.copyText(for: command) == "1 row affected · 4 ms")
     }
+
+    @Test("export is only enabled for row results that have columns")
+    func canExport() {
+        let rows = QueryResult(
+            columns: [.init(name: "id", typeName: "integer")],
+            rows: [.init(id: 0, cells: [.text("1")])],
+            rowCount: 1,
+            elapsed: .milliseconds(3),
+            status: .rows,
+            truncated: false
+        )
+        let empty = QueryResult(
+            columns: [],
+            rows: [],
+            rowCount: 0,
+            elapsed: .milliseconds(7),
+            status: .empty,
+            truncated: false
+        )
+        let command = QueryResult(
+            columns: [],
+            rows: [],
+            rowCount: 1,
+            elapsed: .milliseconds(4),
+            status: .command(tag: "DELETE", affected: 1),
+            truncated: false
+        )
+        let columnlessRows = QueryResult(
+            columns: [],
+            rows: [],
+            rowCount: 0,
+            elapsed: .milliseconds(1),
+            status: .rows,
+            truncated: false
+        )
+
+        #expect(ResultsTablePresentation.canExport(rows) == true)
+        #expect(ResultsTablePresentation.canExport(empty) == false)
+        #expect(ResultsTablePresentation.canExport(command) == false)
+        #expect(ResultsTablePresentation.canExport(columnlessRows) == false)
+        #expect(ResultsTablePresentation.canExport(nil) == false)
+    }
+
+    @Test("export default file names carry the format extension")
+    func exportFileNames() {
+        #expect(ResultsTablePresentation.defaultExportFileName(for: .csv) == "lithepg-results.csv")
+        #expect(ResultsTablePresentation.defaultExportFileName(for: .json) == "lithepg-results.json")
+    }
+
+    @Test("export content reuses the on-device ResultExporter serializers")
+    func exportContent() {
+        let rows = QueryResult(
+            columns: [
+                .init(name: "id", typeName: "integer"),
+                .init(name: "note", typeName: "text"),
+            ],
+            rows: [
+                .init(id: 0, cells: [.text("1"), .text("a,b")]),
+                .init(id: 1, cells: [.text("2"), .null]),
+            ],
+            rowCount: 2,
+            elapsed: .milliseconds(3),
+            status: .rows,
+            truncated: false
+        )
+
+        #expect(
+            ResultsTablePresentation.exportContent(for: rows, as: .csv)
+                == ResultExporter.csv(for: rows)
+        )
+        #expect(
+            ResultsTablePresentation.exportContent(for: rows, as: .json)
+                == ResultExporter.json(for: rows)
+        )
+        #expect(ResultsTablePresentation.exportContent(for: rows, as: .csv) == "id,note\r\n1,\"a,b\"\r\n2,")
+    }
 }

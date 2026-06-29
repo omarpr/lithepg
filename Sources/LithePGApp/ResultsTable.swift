@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 import LithePGCore
 
 struct ResultsTable: View {
@@ -192,11 +193,15 @@ struct ResultsTable: View {
             .help("Copy results")
             .disabled(result == nil)
 
-            Button {} label: {
+            Menu {
+                Button("CSV (.csv)") { export(result, as: .csv) }
+                Button("JSON (.json)") { export(result, as: .json) }
+            } label: {
                 Image(systemName: "arrow.down.to.line")
             }
-            .help("Export results lands in a later polish pass")
-            .disabled(true)
+            .menuIndicator(.hidden)
+            .help("Export results to CSV or JSON")
+            .disabled(!ResultsTablePresentation.canExport(result))
         }
         .buttonStyle(.borderless)
         .padding(.horizontal, 12)
@@ -316,6 +321,27 @@ struct ResultsTable: View {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(ResultsTablePresentation.copyText(for: result), forType: .string)
         copiedAtLeastOnce = true
+    }
+
+    private func export(_ result: QueryResult?, as format: ResultExporter.Format) {
+        guard let result, ResultsTablePresentation.canExport(result) else { return }
+        let content = ResultsTablePresentation.exportContent(for: result, as: format)
+
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = ResultsTablePresentation.defaultExportFileName(for: format)
+        panel.canCreateDirectories = true
+        panel.isExtensionHidden = false
+        panel.allowedContentTypes = [Self.contentType(for: format)]
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        try? content.data(using: .utf8)?.write(to: url, options: .atomic)
+    }
+
+    private static func contentType(for format: ResultExporter.Format) -> UTType {
+        switch format {
+        case .csv: .commaSeparatedText
+        case .json: .json
+        }
     }
 }
 
@@ -471,6 +497,20 @@ enum ResultsTablePresentation {
         case .null: "NULL"
         case .text(let value): value
         }
+    }
+
+    static func canExport(_ result: QueryResult?) -> Bool {
+        guard let result else { return false }
+        guard case .rows = result.status else { return false }
+        return !result.columns.isEmpty
+    }
+
+    static func defaultExportFileName(for format: ResultExporter.Format) -> String {
+        "lithepg-results.\(format.fileExtension)"
+    }
+
+    static func exportContent(for result: QueryResult, as format: ResultExporter.Format) -> String {
+        ResultExporter.export(result, as: format)
     }
 
     static func copyText(for result: QueryResult) -> String {
