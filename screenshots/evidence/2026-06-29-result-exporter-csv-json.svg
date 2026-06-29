@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG result export CSV and JSON serializer evidence</title>
+  <desc id="desc">Visual receipt showing strict TDD red/green verification for the new ResultExporter CSV and JSON serializers in LithePGCore.</desc>
+  <rect width="1200" height="760" fill="#0f172a"/>
+  <rect x="42" y="36" width="1116" height="688" rx="24" fill="#111827" stroke="#38bdf8" stroke-width="2"/>
+  <text x="72" y="88" fill="#e5e7eb" font-family="SF Pro Display, Helvetica, Arial, sans-serif" font-size="34" font-weight="700">LithePG result export (CSV + JSON)</text>
+  <text x="72" y="126" fill="#93c5fd" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">2026-06-29 · v1.1 backlog: export formats beyond CSV</text>
+
+  <rect x="72" y="164" width="1056" height="118" rx="16" fill="#1e293b" stroke="#334155"/>
+  <text x="104" y="204" fill="#fca5a5" font-family="SF Mono, Menlo, Consolas, monospace" font-size="20" font-weight="700">RED</text>
+  <text x="170" y="204" fill="#e5e7eb" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">swift test --filter ResultExporter</text>
+  <text x="104" y="240" fill="#fecaca" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16">failed to compile as expected: cannot find 'ResultExporter' in scope (11 tests written first)</text>
+
+  <rect x="72" y="306" width="1056" height="160" rx="16" fill="#052e16" stroke="#22c55e"/>
+  <text x="104" y="346" fill="#86efac" font-family="SF Mono, Menlo, Consolas, monospace" font-size="20" font-weight="700">GREEN</text>
+  <text x="190" y="346" fill="#dcfce7" font-family="SF Mono, Menlo, Consolas, monospace" font-size="18">ResultExporter.csv(for:) / .json(for:) / .export(_:as:)</text>
+  <text x="104" y="382" fill="#bbf7d0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16">RFC 4180 CSV (CRLF, quoted escaping, NULL→empty) and compact JSON (NULL→null, full string escaping)</text>
+  <text x="104" y="418" fill="#bbf7d0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16">ResultExporter suite: 11 tests passed · pure local reformat, no network/credentials/auto-run</text>
+
+  <rect x="72" y="490" width="1056" height="178" rx="16" fill="#020617" stroke="#475569"/>
+  <text x="104" y="530" fill="#38bdf8" font-family="SF Mono, Menlo, Consolas, monospace" font-size="20" font-weight="700">Verification</text>
+  <text x="104" y="566" fill="#e2e8f0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16">✓ swift test: 138 tests across 21 suites (was 127/20) — no regressions</text>
+  <text x="104" y="596" fill="#e2e8f0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16">✓ JSON output round-trips through JSONSerialization back to original strings</text>
+  <text x="104" y="626" fill="#e2e8f0" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16">✓ static added-line secret/injection scan: no findings · independent reviewer dispatched</text>
+  <text x="104" y="656" fill="#fbbf24" font-family="SF Mono, Menlo, Consolas, monospace" font-size="16">↷ dogfood_check not run: non-release-impacting core library addition; Docker unavailable</text>
+
+  <text x="72" y="704" fill="#94a3b8" font-family="SF Mono, Menlo, Consolas, monospace" font-size="14">No signing identity, notarization, upload, Homebrew publication, GitHub Release, v1.0 tag, cron changes, or Telegram delivery attempted.</text>
+</svg>
