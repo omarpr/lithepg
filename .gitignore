@@ -29,3 +29,12 @@ dist/
 *.ipa
 *.dSYM.zip
 *.dSYM
+
+# Node / JS tooling artifacts (not part of this Swift package; e.g. stray
+# agent-browser installs). Keep them out of the repo so `git add -A` never
+# sweeps tens of MB of foreign npm content into the LithePG history.
+node_modules/
+package.json
+package-lock.json
+pnpm-lock.yaml
+yarn.lock

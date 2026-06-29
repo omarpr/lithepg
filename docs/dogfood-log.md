@@ -2664,3 +2664,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Release-impact dogfood verification could not run on this tick because Docker is unavailable in the current cron environment (`docker_missing`).
 - Evidence artifact: `screenshots/evidence/2026-06-29-v10-release-gate-code-resources-oversized.svg`.
 - No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.
+
+## 2026-06-29 — Repo hygiene: ignore stray Node/JS tooling artifacts
+
+- Found 77 MiB of foreign, untracked Node content in the working tree (`node_modules/` plus a root `package.json`/`package-lock.json` for an unrelated `agent-browser` npm package). These are referenced nowhere in the Swift package sources, scripts, or release tooling, and `.gitignore` did not cover them — so the watchdog workflow's own `git add -A` commit step could have swept tens of MB of unrelated npm content into LithePG history.
+- Fix: extended `.gitignore` with a Node/JS tooling section (`node_modules/`, `package.json`, `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`) with a comment explaining why a Swift package ignores these.
+- RED (before): `git status --porcelain` listed `?? node_modules/`, `?? package.json`, `?? package-lock.json` as untracked and addable.
+- GREEN (after): `git check-ignore node_modules package.json package-lock.json` matches all three; `git status` shows only the intended `.gitignore` edit. The strays can no longer enter history.
+- Verification: ignore-only change; no Swift sources, scripts, or release gates touched, so `swift build`/`swift test` were not rerun (no build or runtime impact). `git check-ignore` and `git status` confirm the intended effect.
+- Evidence artifact: `screenshots/evidence/2026-06-29-gitignore-node-artifacts.svg`.
+- v1.0 remains correctly gated: all plan tasks implemented; only the GitHub Release draft and `v1.0` tag are open, both awaiting Omar's explicit approval and external signing credentials (`LITHEPG_CODESIGN_IDENTITY`/`LITHEPG_NOTARY_PROFILE`). No signing, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.
