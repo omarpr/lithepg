@@ -14,7 +14,7 @@ LithePG has an opinionated scope documented in `docs/superpowers/specs/` (roadma
 
 - Mac-native (macOS only).
 - PostgreSQL only.
-- Pure Swift, no `libpq`, no C dependencies.
+- Pure app code, no `libpq`, no app-authored C shims.
 - Local-first AI — on-device inference only.
 - Lean — binary-size and startup-time targets are load-bearing, not aspirational.
 

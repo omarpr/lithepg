@@ -24,7 +24,7 @@ These are load-bearing. A change that violates one will not be merged:
 
 - **Mac-native only.** SwiftUI for all UI; AppKit only where bridging is
   unavoidable (justify in a comment). No Electron, no cross-platform layers.
-- **Pure Swift.** No `libpq`, no C shims. PostgresNIO is the connection path.
+- **Pure app code.** No `libpq` and no app-authored C shims. PostgresNIO is the connection path; its accepted TLS dependency boundary is documented in `docs/TECH_STACK.md`.
 - **Local-first AI.** Inference runs on-device (CoreML/MLX). No user data —
   prompts, schemas, results, credentials, history — leaves the machine. No
   bundled model artifacts.

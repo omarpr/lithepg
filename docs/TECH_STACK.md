@@ -3,16 +3,18 @@
 ## 1. Core Philosophy
 - **Measured Lean:** Target app binary size < 50 MiB, with a 30 MiB stretch goal. AI models ship separately.
 - **Mac-First:** Native SwiftUI implementation, no Electron or heavy C-wrappers.
-- **Local-First AI:** Privacy-centric intelligence leveraging the Apple Neural Engine (ANE).
+- **Local-First AI:** Privacy-centric SQL drafting that defaults to deterministic on-device logic, with optional user-provided CoreML model artifacts.
 
 ## 2. Persistence Layer
-- **SwiftData:** The primary choice for local app state, query history, and saved connections.
-- **Rationale:** Native to macOS, leverages M-series hardware, and handles schema migrations automatically with zero configuration.
+- **Local JSON metadata:** Saved connections and opt-in query history are stored under Application Support with restrictive directory/file permissions and file-protection write options.
+- **Keychain:** Saved passwords and saved-connection integrity keys live in the macOS Keychain. JSON metadata stores references and HMAC tags, not passwords.
+- **UserDefaults:** Appearance preference uses standard app defaults.
+- **Rationale:** The current app keeps persistence simple, testable, and dependency-free while preserving credential separation. SwiftData remains a possible future migration only if it earns its complexity.
 
 ## 3. PostgreSQL Engine (The Driver)
-- **PostgresNIO / PostgresClientKit:** Pure Swift implementations.
-- **Constraint:** Strictly avoid `libpq` (the legacy C library) to ensure the binary remains lean and modern.
-- **Features:** High-performance async/await support, SSL/TLS by default, and type-safe query results.
+- **PostgresNIO:** The active connection path.
+- **Constraint:** Strictly avoid `libpq` and app-authored C shims to keep the binary lean and modern.
+- **Features:** Async/await-facing app APIs, explicit TLS modes from Postgres URLs/UI configuration, optional OpenSSH tunnel handoff, schema introspection, and typed query results for the UI.
 - **Vendored C boundary:** PostgresNIO's TLS path brings BoringSSL transitively through `swift-nio-ssl`; that is an accepted security/runtime dependency, not an app-authored C shim. The v0.2a editor deliberately uses native AppKit `NSTextView` after the Runestone spike failed on native macOS SPM, so v0.2a adds no tree-sitter or editor-side C dependency. Revisit the binary-size trade-off before introducing tree-sitter in v0.2b.
 
 ## 4. AI & Intelligence Layer
@@ -23,7 +25,7 @@
 - **Model artifacts:** Artifacts are never bundled in the app binary. `LocalModelRegistry` only locates user-provided artifacts under Application Support (or explicit test/config overrides) and reports unavailable/missing states; it does not download models.
 - **v0.5 adapter measurement (2026-05-25):** Baseline release `LithePGApp` before the adapter was 22,352,984 bytes / 21.317 MiB. After the CoreML scaffold it was 22,374,232 bytes / 21.338 MiB, a +21,248 byte / +0.020 MiB delta, with no bundled model and no new package dependency. `./script/v04_measure.sh` stayed under budget: raw binary 21.338 MiB, strip probe 11.959 MiB, shell readiness 121.11 ms, connected cold start 220.51 ms.
 - **Privacy receipts:** AI context construction is test-covered to include only the user request and schema metadata, with credentials/raw connection URLs redacted or omitted and result rows excluded. Drafted SQL is inserted for human review and is never run automatically.
-- **Schema Awareness:** Automatic "semantic mapping" of tables to allow natural language joins (e.g., "Join users to their latest invoices").
+- **Schema Awareness:** Local schema metadata and foreign-key indexing support deterministic natural-language drafts for simple single-table prompts and two-table joins.
 
 ## 5. Build System
 - **Swift Package Manager (SPM):** No `.xcodeproj` bloat.

@@ -3,7 +3,7 @@
 [![CI](https://github.com/omarpr/lithepg/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/omarpr/lithepg/actions/workflows/ci.yml?query=branch%3Amain)
 &nbsp;**Latest tagged release:** [`v0.5`](https://github.com/omarpr/lithepg/tree/v0.5) — AI-Ready
 
-LithePG is a lean, Mac-native PostgreSQL client with local-first AI. It is pure Swift, uses `postgres-nio` instead of `libpq`, and keeps the shipped app binary under the 50 MiB hard cap.
+LithePG is a lean, Mac-native PostgreSQL client with local-first AI. Its app code is Swift, it uses `postgres-nio` instead of `libpq`, and it keeps the shipped app binary under the 50 MiB hard cap.
 
 ![LithePG app window showing a seeded dogfood schema, query editor, and results grid](docs/assets/lithepg-app-snapshot.png)
 
@@ -13,7 +13,7 @@ LithePG is a lean, Mac-native PostgreSQL client with local-first AI. It is pure 
 
 - A native macOS app for connecting to PostgreSQL, writing SQL, and viewing results.
 - Saved connection metadata with passwords stored separately in the macOS Keychain.
-- Schema sidebar, tabbed query workspace, query history, pagination, and keyboard shortcuts.
+- Schema sidebar, tabbed query workspace, query history, pagination, result copy/export, and keyboard shortcuts.
 - Ask-in-English SQL drafting that inserts suggested SQL for review and never auto-runs it.
 - Light, dark, and system appearance choices, with dark as the default.
 - A small CLI smoke utility (`lithepg`) for plain TCP, TLS, and SSH-tunneled connection checks.
@@ -25,7 +25,8 @@ v0.5 is the current tagged milestone. v1.0 public launch work is in progress and
 Latest local verification receipts:
 
 - **v1.0 local gate:** latest full app-icon/product-restore receipt on `main` at `1f3b8f1` passed the release-helper shell suites, full `swift test`, seeded `script/dogfood_check.sh`, package build, and `script/package_verify.sh dist/LithePG.app`; later focused v1.0 release-gate and cron file-protection checks also passed before any public release/tag publication.
-- **Release artifact integrity:** focused v1.0 package/artifact gates on `main` through `58419e7` passed after hardening the app-icon checks for malformed ICNS tables, invalid PNG dimensions/chunks/zlib streams, duplicate image payloads, Finder metadata, symlinks/hardlinks, executable modes, and metadata-bearing PNG chunks including text, timestamp, EXIF, physical-pixel, significant-bit, background, histogram, and unknown ancillary chunks.
+- **Release artifact integrity:** focused v1.0 package/artifact gates on `main` through `24ab96c` passed after hardening the app-icon and CodeResources checks for malformed ICNS tables, invalid PNG dimensions/chunks/zlib streams, duplicate image payloads, Finder metadata, symlinks/hardlinks, executable modes, oversized artifacts, and metadata-bearing PNG chunks including text, timestamp, EXIF, physical-pixel, significant-bit, background, histogram, and unknown ancillary chunks.
+- **Current main app delta:** result export is now wired in the results grid on `main` through `3b3ad98`; users can save fetched row results as CSV or JSON, and focused exporter/UI tests passed before that commit.
 - **AI drafting:** deterministic local Ask flow drafts runnable SQL for simple single-table prompts and two-table joins using schema/foreign-key metadata; drafts are inserted for human review and never auto-run.
 - **Model posture:** the CoreML adapter scaffold is disabled by default, requires a user-provided external model artifact, and keeps prompts, schema context, query results, history, and credentials on-device.
 - **Binary budget:** 21.63 MiB raw release executable / 12.03 MiB strip-probe and packaged executable, under the 50 MiB hard cap and 30 MiB stretch goal.
@@ -139,8 +140,9 @@ Docs-only changes can skip Swift tests, but release-impacting changes should als
 
 ## Project layout
 
-- `Sources/LithePGCore/` — Postgres connector, saved-connection persistence models, AI drafting services, and shared core logic.
-- `Sources/LithePGApp/` — SwiftUI macOS app.
+- `Sources/LithePGCore/` — Postgres connector, schema introspection/indexing, AI drafting services, result export, and shared core logic.
+- `Sources/LithePGApp/` — SwiftUI macOS app UI, app state, local JSON persistence stores, Keychain credential store, and view models.
+- `Sources/LithePGAppMain/` — thin `LithePGApp` executable launcher used by packaging scripts.
 - `Sources/lithepg/` — CLI smoke utility.
 - `Tests/` — Swift Testing suites; Postgres/TLS/SSH/model-artifact integration tests are gated on env vars and auto-skip without them.
 - `script/` — dogfood, package, release, and measurement helpers.

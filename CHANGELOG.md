@@ -22,12 +22,14 @@ LithePG follows outcome-named milestones with semantic-version tags. v1.0 remain
 - A repository-local Homebrew cask template and README live under [`packaging/homebrew/`](packaging/homebrew/) for the planned `LithePG.app.zip` artifact; external tap publication remains approval-gated.
 - The packaged app now has a reproducible first app icon (`packaging/AppIcon.png` / `packaging/AppIcon.icns`), and the Swift package exposes a restored `LithePGApp` executable product for packaging scripts while keeping the app UI in a reusable library target.
 - Package and release-artifact preflights now fail closed on malformed or metadata-bearing app icons, including duplicate ICNS image elements, invalid PNG dimensions/chunks/zlib streams, text/timestamp/EXIF/pixel-density/significant-bit/background/histogram metadata, and unknown ancillary PNG chunks.
+- The results grid can export fetched row results as CSV or JSON through a local save panel. Export only serializes rows already returned to the app; it does not run SQL, contact the network, or include credentials.
 
 ### Verified
 
 - Local v1.0 release gates passed on `main` before any public tag/release publication: release-helper shell suites, `swift test`, `script/dogfood_check.sh`, `script/build_and_run.sh --package`, and `script/package_verify.sh dist/LithePG.app`.
 - The latest app-icon/product-restore receipt on `main` at `1f3b8f1` stayed within the lean/fast budgets: 823.61 ms shell readiness and 447.49 ms connected cold start measured while parallel release-helper tests were still running, 21.63 MiB raw release executable, 12.03 MiB strip-probe/package executable, and 0.078 ms median `SELECT 1` overhead. Earlier dogfood-query receipts remained far below the 5 ms target.
-- Focused package/artifact hardening receipts through `58419e7` kept the local v1.0 release preflights green with `script/test_package_verify.sh`, `script/test_v10_release_gate.sh`, helper shell suites, `swift build`, full `swift test`, and local package/artifact verification; Docker was unavailable in those later cron environments, so the earlier seeded dogfood receipt remains the latest full dogfood gate.
+- Focused package/artifact hardening receipts through `24ab96c` kept the local v1.0 release preflights green with `script/test_package_verify.sh`, `script/test_v10_release_gate.sh`, helper shell suites, `swift build`, full `swift test`, and local package/artifact verification; Docker was unavailable in those later cron environments, so the earlier seeded dogfood receipt remains the latest full dogfood gate.
+- Focused result-export receipts through `3b3ad98` added tested CSV/JSON serialization and UI wiring from the results grid.
 - Signing/notarization dry-run reached the expected external credential gate after package verification; real signing/notarization remains blocked by missing Apple Developer signing/notary environment credentials.
 
 ### Still blocked before release

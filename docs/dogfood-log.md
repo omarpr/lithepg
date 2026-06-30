@@ -2701,3 +2701,10 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - Release-impact dogfood verification was not applicable: this is non-release-impacting UI wiring with no startup/binary/connection path change, and Docker is unavailable in this cron environment.
 - Evidence artifact: `screenshots/evidence/2026-06-29-result-export-ui-wiring.svg`.
 - No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, cron changes, Telegram delivery, or external publication was attempted.
+
+## 2026-06-30 — Public docs consistency audit
+
+- Audited active public docs against current `main` implementation and recent receipts. Historical specs/plans remain intact as design/archive material.
+- Synced README, changelog, draft release copy, architecture, tech stack, security, governance/contribution, issue-template, and Claude-agent guidance with the current state: JSON + Keychain persistence, PostgresNIO-only driver wording with the accepted SwiftNIO/BoringSSL TLS boundary, CSV/JSON result export, current package/artifact hardening through `24ab96c`, and result-export UI wiring through `3b3ad98`.
+- Public v1.0 remains intentionally blocked by unresolved release-copy/Homebrew/security placeholders, missing approved public security contact, missing signing/notary inputs, manual-only GitHub Actions/account readiness, missing final release artifact/SHA, release-copy approval, and explicit publication approval.
+- No signing identity, notarization, upload, Homebrew publication, GitHub Release, tag, or external publication was attempted.

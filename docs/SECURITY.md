@@ -8,7 +8,7 @@ LithePG is a local macOS client that connects to user-owned PostgreSQL databases
 4. **User privacy** (no off-device analytics or LLM calls).
 
 ## Credential Storage
-- **All saved passwords live in the macOS Keychain.** Never in SwiftData, plist, or project-owned JSON files.
+- **All saved passwords live in the macOS Keychain.** Never in local JSON files, plist files, UserDefaults, logs, screenshots, or query history.
 - Keychain writes use `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` and the data-protection keychain flag when available. Reads retain a legacy fallback for pre-migration saved passwords.
 - Each saved connection references a Keychain item by identifier; the app persists connection metadata only.
 - Saved-connection metadata is HMAC-signed with a per-connection key stored in the credential store. LithePG refuses to load unsigned or tampered saved-connection metadata so a local file edit cannot silently redirect a saved password to another host.
@@ -39,7 +39,7 @@ LithePG is a local macOS client that connects to user-owned PostgreSQL databases
 
 ## Dependency Posture
 - Minimize third-party dependencies (app binary target <50 MiB; AI models ship separately).
-- No `libpq` or other C dependencies — reduces CVE exposure surface.
+- No `libpq` and no app-authored C shims. PostgresNIO's TLS path carries its documented SwiftNIO/BoringSSL dependency boundary.
 - Dependencies are pinned via `Package.resolved`; review updates before bumping.
 
 ## Reporting Vulnerabilities

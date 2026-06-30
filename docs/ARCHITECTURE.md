@@ -1,63 +1,66 @@
 # ARCHITECTURE.md
 
-High-level module boundaries and data flow for LithePG. Implementation details live in the code; this file explains *why* the boundaries exist.
+High-level module boundaries and data flow for LithePG. Implementation details live in the code; this file explains why the boundaries exist.
 
 ## Layers
 
 ```
 ┌─────────────────────────────────────────────┐
-│  UI Layer (SwiftUI)                         │
-│  - Views, view models, navigation           │
+│  App Layer (SwiftUI + AppState)             │
+│  - Views, navigation, query workflow        │
 └───────────────┬─────────────────────────────┘
                 │  (async/await, @Observable)
 ┌───────────────▼─────────────────────────────┐
-│  Services Layer                             │
-│  - ConnectionManager                        │
-│  - QueryRunner                              │
+│  Core Services                              │
+│  - PostgresConnector                        │
 │  - SchemaIntrospector                       │
-│  - AIService (NL2SQL, semantic mapping)     │
+│  - AIQueryService implementations           │
+│  - ResultExporter                           │
 └───────┬───────────────────┬─────────────────┘
         │                   │
 ┌───────▼──────┐   ┌────────▼─────────────────┐
 │  Driver      │   │  Persistence             │
-│  PostgresNIO │   │  SwiftData (app state)   │
-│  (pure Swift)│   │  Keychain (secrets)      │
+│  PostgresNIO │   │  Local JSON metadata     │
+│  (no libpq)  │   │  Keychain (secrets)      │
 └──────────────┘   └──────────────────────────┘
         │
 ┌───────▼──────────────────────────────────────┐
 │  Inference (local)                           │
-│  CoreML / MLX — quantized models on ANE/GPU  │
+│  Deterministic draft service; optional       │
+│  user-provided CoreML artifacts              │
 └──────────────────────────────────────────────┘
 ```
 
 ## Layer Responsibilities
 
-### UI Layer
-- SwiftUI views, `@Observable` view models, navigation state.
-- Never touches the driver or Keychain directly — always through Services.
-- No business logic beyond presentation.
+### App Layer
+- SwiftUI views plus `AppState` for connection, query, schema, saved-connection, query-history, appearance, and Ask-in-English workflow state.
+- UI code talks to the driver through `PostgresConnector` and to credentials through persistence protocols; views do not touch Keychain APIs directly.
+- Presentation helpers stay headless-testable where practical, for example results pagination/copy/export formatting.
 
-### Services Layer
-- The only layer that orchestrates driver + persistence + AI.
-- All public APIs are `async` and cancellation-aware.
-- Stateless where possible; stateful services are `actor`s.
+### Core Services
+- `PostgresConnector` owns the live Postgres connection lifecycle, query execution, TLS configuration, SSH tunnel handoff, and result materialization.
+- `SchemaIntrospector`, `SchemaIndex`, and `AIQueryService` implementations provide local schema awareness and deterministic/local SQL drafting.
+- `ResultExporter` serializes already-fetched results to CSV or JSON without network calls or SQL execution.
+- All public I/O APIs are `async`; shared mutable services are `actor`s where needed.
 
 ### Driver
-- `PostgresNIO` (or `PostgresClientKit`) — pure Swift, no `libpq`.
-- Exposes typed query results and streaming row cursors.
-- Owns connection pooling and TLS configuration.
+- `PostgresNIO` is the connection path. LithePG does not link `libpq` and does not carry app-authored C shims.
+- Exposes typed `QueryResult` values to the app and caps materialized rows at the UI safety limit.
+- Owns TLS configuration and the effective host/port after optional SSH tunnel resolution.
 
 ### Persistence
-- **SwiftData** for saved connections (without secrets), query history, workspace state.
-- **Keychain** for all credentials. See `SECURITY.md`.
+- Saved connection metadata and opt-in query history are local JSON files under Application Support, written with restrictive POSIX permissions and file-protection options.
+- Passwords and saved-connection integrity keys live in the macOS Keychain. See `SECURITY.md`.
+- Appearance preference is stored in `UserDefaults`.
 
 ### Inference
-- Local models only. See `TECH_STACK.md` §4.
-- Used for NL2SQL and schema semantic mapping.
-- Schema embeddings cached locally (vector shim or SQLite).
+- Default SQL drafting is deterministic and local. See `TECH_STACK.md` section 4.
+- A CoreML adapter scaffold exists for user-provided local model artifacts, disabled by default.
+- Schema awareness uses local metadata/indexing; vector storage remains a future optimization.
 
 ## Key Invariants
-- **No credentials in SwiftData.** Ever.
+- **No credentials in JSON, UserDefaults, screenshots, logs, or query history.** Ever.
 - **No network calls from the AI layer.** Inference is local-only.
 - **UI never imports `PostgresNIO` directly.** Services mediate.
 - **Services never import SwiftUI.** Keeps them testable and reusable.
@@ -65,9 +68,9 @@ High-level module boundaries and data flow for LithePG. Implementation details l
 ## Concurrency Model
 - `async/await` end-to-end.
 - Long-running queries run on the driver's event loop; results bridge to the main actor for UI updates.
-- Cancellation propagates from UI (task cancellation) through the service layer to the driver.
+- Cancellation propagates from UI task cancellation through the service layer to the driver.
 
 ## Testing Strategy
-- **Unit tests:** Services layer with a mocked driver protocol.
-- **Integration tests:** Real PostgreSQL in Docker; hit a real database per `feedback_testing.md` principles if/when we adopt that rule.
-- **UI tests:** Minimal; focus on view model behavior via unit tests instead.
+- **Unit tests:** Core models/services, app-state workflow, persistence stores, presentation helpers, exporter behavior, and redaction.
+- **Integration tests:** Real PostgreSQL/TLS/SSH/model-artifact paths are env-gated and auto-skip when prerequisites are absent.
+- **UI tests:** Minimal smoke coverage; most behavior is covered through view model and presentation-helper tests.

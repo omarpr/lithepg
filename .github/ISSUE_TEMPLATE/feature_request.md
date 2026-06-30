@@ -8,7 +8,7 @@ assignees: ""
 
 <!--
 LithePG is maintainer-led and intentionally narrow: Mac-native, PostgreSQL-only,
-pure Swift, local-first AI, lean, and secure by default. Please read
+Swift app code with no libpq, local-first AI, lean, and secure by default. Please read
 `CONTRIBUTING.md` and `GOVERNANCE.md` before proposing non-trivial work.
 
 Use redacted, seeded, or synthetic examples only. Do NOT paste passwords, tokens,
