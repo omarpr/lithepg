@@ -1,5 +1,10 @@
 # LithePG Security Audit — First Pass
 
+> Historical audit receipt from 2026-05-05. This document is preserved as an
+> evidence artifact for the reviewed commit below and is not the current
+> security posture. For current policy and implementation status, see
+> [`../SECURITY.md`](../SECURITY.md) and [`../docs/SECURITY.md`](../docs/SECURITY.md).
+
 **Date:** 2026-05-05
 **Auditor:** Security Engineer agent (Claude Code)
 **Commit:** `ab4b49f0f98e31182ce83efb86023a809d3247d3`
