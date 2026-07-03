@@ -150,6 +150,62 @@ public struct QueryPlan: Sendable, Equatable {
         return best
     }
 
+    /// A single flattened row for rendering the plan as an indented list.
+    ///
+    /// Derived solely from plan node fields, so no connection string or password
+    /// can appear in it. `id` is a stable pre-order index suitable for use as a
+    /// SwiftUI `Identifiable` key; `depth` drives indentation; `costPercent` is
+    /// the node's `Total Cost` as a percentage of the root's total cost (nil when
+    /// the root carries no cost); `isCostliest` flags the single most expensive
+    /// node (matching `costliestNode`).
+    public struct DisplayRow: Sendable, Equatable, Identifiable {
+        public let id: Int
+        public let depth: Int
+        public let node: Node
+        public let costPercent: Double?
+        public let isCostliest: Bool
+    }
+
+    /// The plan tree flattened into pre-order display rows.
+    public var displayRows: [DisplayRow] {
+        let costliest = costliestNode
+        let rootTotal = root.totalCost
+        var rows: [DisplayRow] = []
+        var nextID = 0
+        var costliestClaimed = false
+
+        func visit(_ node: Node, depth: Int) {
+            let percent: Double?
+            if let rootTotal, rootTotal > 0, let total = node.totalCost {
+                percent = total / rootTotal * 100
+            } else {
+                percent = nil
+            }
+            // Flag exactly one row as costliest: the first node (pre-order) whose
+            // identity matches `costliestNode`.
+            let isCostliest = !costliestClaimed && node == costliest
+            if isCostliest {
+                costliestClaimed = true
+            }
+            rows.append(
+                DisplayRow(
+                    id: nextID,
+                    depth: depth,
+                    node: node,
+                    costPercent: percent,
+                    isCostliest: isCostliest
+                )
+            )
+            nextID += 1
+            for child in node.children {
+                visit(child, depth: depth + 1)
+            }
+        }
+
+        visit(root, depth: 0)
+        return rows
+    }
+
     private static func appendOutline(_ node: Node, depth: Int, into lines: inout [String]) {
         let indent = String(repeating: "  ", count: depth)
         let arrow = depth == 0 ? "" : "-> "

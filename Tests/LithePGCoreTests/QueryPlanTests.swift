@@ -152,6 +152,76 @@ struct QueryPlanTests {
         #expect(costliest.totalCost == 45.20)
     }
 
+    // MARK: - Display rows (headless precursor to a plan-tree view)
+
+    @Test("flattens a plain plan into a single display row")
+    func displayRowsPlain() throws {
+        let plan = try QueryPlan.parse(explainJSON: Self.plainSeqScanJSON)
+
+        let rows = plan.displayRows
+        #expect(rows.count == 1)
+        let only = try #require(rows.first)
+        #expect(only.id == 0)
+        #expect(only.depth == 0)
+        #expect(only.node.nodeType == "Seq Scan")
+        // The single node carries the whole cost, so it is 100% and costliest.
+        #expect(only.costPercent == 100.0)
+        #expect(only.isCostliest == true)
+    }
+
+    @Test("flattens a nested plan into pre-order rows with depth and cost share")
+    func displayRowsNested() throws {
+        let plan = try QueryPlan.parse(explainJSON: Self.nestedAnalyzeJSON)
+
+        let rows = plan.displayRows
+        #expect(rows.count == 4)
+
+        // Stable pre-order ids and matching node order.
+        #expect(rows.map(\.id) == [0, 1, 2, 3])
+        #expect(rows.map(\.depth) == [0, 1, 1, 2])
+        #expect(rows.map(\.node.nodeType) == ["Hash Join", "Seq Scan", "Hash", "Seq Scan"])
+
+        // Cost share is each node's total cost relative to the root total cost.
+        let hashJoin = rows[0]
+        #expect(hashJoin.costPercent == 100.0)
+        let orders = rows[1]
+        let ordersPercent = try #require(orders.costPercent)
+        #expect(abs(ordersPercent - (30.00 / 45.20 * 100)) < 0.001)
+
+        // Exactly one row is flagged as the costliest, and it is the root Hash Join.
+        #expect(rows.filter(\.isCostliest).count == 1)
+        #expect(hashJoin.isCostliest == true)
+    }
+
+    @Test("display rows omit cost share when the root has no total cost")
+    func displayRowsWithoutCost() throws {
+        let noCostJSON = """
+        [
+          {
+            "Plan": {
+              "Node Type": "Result"
+            }
+          }
+        ]
+        """
+        let plan = try QueryPlan.parse(explainJSON: noCostJSON)
+
+        let rows = plan.displayRows
+        #expect(rows.count == 1)
+        #expect(rows[0].costPercent == nil)
+        // Costliest falls back to the root when no node carries a cost.
+        #expect(rows[0].isCostliest == true)
+    }
+
+    @Test("display rows never expose connection secrets")
+    func displayRowsExcludeSecrets() throws {
+        let plan = try QueryPlan.parse(explainJSON: Self.nestedAnalyzeJSON)
+        for row in plan.displayRows {
+            #expect(!row.node.nodeType.contains("@"))
+            #expect(!row.node.nodeType.lowercased().contains("password"))
+        }
+    }
+
     @Test("throws invalidJSON for malformed input")
     func throwsOnMalformedJSON() {
         #expect(throws: QueryPlan.ParseError.invalidJSON) {
