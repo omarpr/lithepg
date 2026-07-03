@@ -31,9 +31,19 @@ struct ConnectSheet: View {
   @State private var sshTarget: String = ProcessInfo.processInfo.environment["POSTGRES_SSH"] ?? ""
   @State private var saveConnection = false
   @State private var connectionName = ""
+  @State private var lastAutoConnectionName: String?
   @State private var environment: ConnectionEnvironment = .development
   @State private var showingCAImporter = false
   @State private var pendingDelete: SavedConnectionMetadata?
+
+  private var neonProfile: NeonConnectionProfile? {
+    guard inputMode == .url else { return nil }
+    return NeonConnectionProfile.detect(url: effectiveURL)
+  }
+
+  private var neonHint: ConnectSheetPresentation.ProviderHint? {
+    ConnectSheetPresentation.neonHint(for: neonProfile)
+  }
 
   private var cleartextWarning: String? {
     guard !tls, !useSSH else { return nil }
@@ -128,14 +138,30 @@ struct ConnectSheet: View {
         .labelsHidden()
 
         if inputMode == .url {
-          TextField("postgres://user:password@host:5432/database", text: $url)
+          TextField("postgres://user:***@host:5432/database", text: $url)
             .accessibilityIdentifier("postgres-url-field")
             .onChange(of: url) { _, newValue in
               if newValue != Self.redactedURLForDisplay(sensitivePrefilledURL) {
                 sensitivePrefilledURL = nil
               }
               tls = Self.defaultTLSPreference(for: effectiveURL)
+              applyNeonConnectionNameSuggestion()
             }
+          if let neonHint {
+            Label {
+              VStack(alignment: .leading, spacing: 2) {
+                Text(neonHint.title)
+                  .font(.caption.bold())
+                Text(neonHint.detail)
+                  .font(.caption)
+                  .foregroundStyle(.secondary)
+              }
+            } icon: {
+              Image(systemName: "sparkle.magnifyingglass")
+            }
+            .foregroundStyle(.green)
+            .accessibilityIdentifier("neon-connection-hint")
+          }
         } else {
           TextField("Host", text: $fieldHost)
             .accessibilityIdentifier("field-host")
@@ -181,6 +207,9 @@ struct ConnectSheet: View {
 
       Section {
         Toggle("Save this connection", isOn: $saveConnection)
+          .onChange(of: saveConnection) { _, enabled in
+            if enabled { applyNeonConnectionNameSuggestion() }
+          }
         if saveConnection {
           TextField("Connection name", text: $connectionName)
           Picker("Environment", selection: $environment) {
@@ -275,6 +304,19 @@ struct ConnectSheet: View {
       return sensitivePrefilledURL
     }
     return url
+  }
+
+  private func applyNeonConnectionNameSuggestion() {
+    let nextSuggestion = neonProfile?.suggestedName
+    let nextName = ConnectSheetPresentation.connectionName(
+      current: connectionName,
+      previousSuggestion: lastAutoConnectionName,
+      nextSuggestion: saveConnection ? nextSuggestion : nil
+    )
+    if nextName != connectionName {
+      connectionName = nextName
+    }
+    lastAutoConnectionName = nextName == nextSuggestion ? nextSuggestion : nil
   }
 
   private func connectAndMaybeSave() async {
@@ -382,5 +424,34 @@ struct ConnectSheet: View {
       UTType(filenameExtension: "crt"),
       .item,
     ].compactMap { $0 }
+  }
+}
+
+enum ConnectSheetPresentation {
+  struct ProviderHint: Equatable {
+    let title: String
+    let detail: String
+  }
+
+  static func neonHint(for profile: NeonConnectionProfile?) -> ProviderHint? {
+    guard let profile else { return nil }
+    let path = profile.isPooled ? "Pooled" : "Direct"
+    return ProviderHint(
+      title: "Neon connection detected",
+      detail: "Database \(profile.database) · User \(profile.username) · \(path)"
+    )
+  }
+
+  static func connectionName(
+    current: String,
+    previousSuggestion: String?,
+    nextSuggestion: String?
+  ) -> String {
+    guard let nextSuggestion else { return current }
+    let trimmed = current.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.isEmpty || current == previousSuggestion {
+      return nextSuggestion
+    }
+    return current
   }
 }
