@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="512" font-family="-apple-system, SF Pro Text, Helvetica, Arial, sans-serif">
+  <rect width="760" height="512" fill="#1e1e2e"/>
+  <rect x="0" y="0" width="760" height="46" fill="#181825"/>
+  <circle cx="22" cy="23" r="6" fill="#f38ba8"/>
+  <circle cx="42" cy="23" r="6" fill="#f9e2af"/>
+  <circle cx="62" cy="23" r="6" fill="#a6e3a1"/>
+  <text x="96" y="28" fill="#cdd6f4" font-size="14" font-weight="600">LithePG — PlanTreePresentation (headless plan-tree view model)</text>
+
+  <text x="24" y="78" fill="#89b4fa" font-size="13" font-weight="700">v1.1 backlog · EXPLAIN visualization slice 5</text>
+  <text x="24" y="98" fill="#a6adc8" font-size="12">App-UI presentation seam that formats QueryPlan.DisplayRow into display strings —</text>
+  <text x="24" y="115" fill="#a6adc8" font-size="12">node label, cost detail, cost share %, ANALYZE timing, indent, a11y label, summary.</text>
+
+  <!-- rendered row preview -->
+  <rect x="24" y="135" width="712" height="158" rx="8" fill="#11111b" stroke="#313244"/>
+  <text x="40" y="160" fill="#f5c2e7" font-size="12" font-family="SF Mono, Menlo, monospace">nodeLabel                        costDetail                 share  timing</text>
+  <text x="40" y="184" fill="#cdd6f4" font-size="12" font-family="SF Mono, Menlo, monospace">Hash Join                        cost=1.50..45.20 rows≈200  100%   2.456 ms ★</text>
+  <text x="40" y="206" fill="#cdd6f4" font-size="12" font-family="SF Mono, Menlo, monospace">  Seq Scan on orders             cost=0.00..30.00 rows≈500   66%   1.000 ms</text>
+  <text x="40" y="228" fill="#cdd6f4" font-size="12" font-family="SF Mono, Menlo, monospace">  Hash                           cost=10.00..10.00 rows≈200  22%   —</text>
+  <text x="40" y="250" fill="#cdd6f4" font-size="12" font-family="SF Mono, Menlo, monospace">    Seq Scan on customers        cost=0.00..10.00 rows≈200   22%   —</text>
+  <text x="40" y="274" fill="#6c7086" font-size="11" font-family="SF Mono, Menlo, monospace">indent = 16pt × depth · summary: "4 nodes · Execution 3.210 ms"</text>
+
+  <!-- test results -->
+  <rect x="24" y="308" width="712" height="140" rx="8" fill="#11111b" stroke="#313244"/>
+  <text x="40" y="332" fill="#a6e3a1" font-size="12" font-family="SF Mono, Menlo, monospace">✔ PlanTree presentation suite: 8 tests passed</text>
+  <text x="40" y="354" fill="#cdd6f4" font-size="11" font-family="SF Mono, Menlo, monospace">  ✔ node label / cost detail / cost share / timing / indentation</text>
+  <text x="40" y="374" fill="#cdd6f4" font-size="11" font-family="SF Mono, Menlo, monospace">  ✔ accessibility label describes node, cost share, costliest flag</text>
+  <text x="40" y="394" fill="#cdd6f4" font-size="11" font-family="SF Mono, Menlo, monospace">  ✔ plan summary reports node count and execution time</text>
+  <text x="40" y="414" fill="#cdd6f4" font-size="11" font-family="SF Mono, Menlo, monospace">  ✔ presentation output never exposes connection secrets</text>
+  <text x="40" y="436" fill="#a6e3a1" font-size="12" font-family="SF Mono, Menlo, monospace">✔ Full suite: 180 tests in 25 suites passed · build clean</text>
+
+  <text x="24" y="476" fill="#6c7086" font-size="11">RED: compile fails "cannot find PlanTreePresentation" → GREEN: 180 pass → static scan clean</text>
+  <text x="24" y="496" fill="#6c7086" font-size="11">2026-07-02 · Boris watchdog · SwiftUI plan-tree view deferred to a follow-up slice</text>
+</svg>
