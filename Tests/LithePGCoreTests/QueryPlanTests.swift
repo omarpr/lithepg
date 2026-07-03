@@ -177,4 +177,79 @@ struct QueryPlanTests {
         #expect(!plan.outline.contains("@"))
         #expect(!plan.outline.lowercased().contains("password"))
     }
+
+    // MARK: - EXPLAIN statement construction
+
+    @Test("wraps SQL in EXPLAIN (FORMAT JSON) and strips a trailing semicolon")
+    func buildsExplainStatement() {
+        #expect(
+            QueryPlan.explainStatement(for: "SELECT * FROM users")
+                == "EXPLAIN (FORMAT JSON) SELECT * FROM users"
+        )
+        // Trailing semicolon and surrounding whitespace are trimmed so the
+        // wrapped statement stays a single valid EXPLAIN command.
+        #expect(
+            QueryPlan.explainStatement(for: "  SELECT 1;  ")
+                == "EXPLAIN (FORMAT JSON) SELECT 1"
+        )
+    }
+
+    @Test("adds ANALYZE and BUFFERS when analyze is requested")
+    func buildsAnalyzeExplainStatement() {
+        #expect(
+            QueryPlan.explainStatement(for: "SELECT * FROM orders", analyze: true)
+                == "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) SELECT * FROM orders"
+        )
+    }
+
+    // MARK: - Parsing an EXPLAIN QueryResult
+
+    private func explainResult(json: String) -> QueryResult {
+        QueryResult(
+            columns: [.init(name: "QUERY PLAN", typeName: "json")],
+            rows: [.init(id: 0, cells: [.text(json)])],
+            rowCount: 1,
+            elapsed: .milliseconds(1),
+            status: .rows,
+            truncated: false
+        )
+    }
+
+    @Test("parses a plan out of the single-cell EXPLAIN QueryResult")
+    func parsesFromQueryResult() throws {
+        let result = explainResult(json: Self.plainSeqScanJSON)
+        let plan = try QueryPlan.parse(explainResult: result)
+
+        #expect(plan.root.nodeType == "Seq Scan")
+        #expect(plan.root.relationName == "users")
+        #expect(plan.root.totalCost == 21.00)
+    }
+
+    @Test("throws emptyResult when the EXPLAIN result has no plan cell")
+    func throwsOnEmptyExplainResult() {
+        let empty = QueryResult(
+            columns: [],
+            rows: [],
+            rowCount: 0,
+            elapsed: .milliseconds(1),
+            status: .empty,
+            truncated: false
+        )
+        #expect(throws: QueryPlan.ParseError.emptyResult) {
+            try QueryPlan.parse(explainResult: empty)
+        }
+
+        // A rows result whose first cell is NULL also has no plan text.
+        let nullCell = QueryResult(
+            columns: [.init(name: "QUERY PLAN", typeName: "json")],
+            rows: [.init(id: 0, cells: [.null])],
+            rowCount: 1,
+            elapsed: .milliseconds(1),
+            status: .rows,
+            truncated: false
+        )
+        #expect(throws: QueryPlan.ParseError.emptyResult) {
+            try QueryPlan.parse(explainResult: nullCell)
+        }
+    }
 }

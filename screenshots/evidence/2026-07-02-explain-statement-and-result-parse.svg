@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="560" font-family="SF Mono, Menlo, monospace">
+  <rect width="860" height="560" fill="#1e1e2e"/>
+  <rect x="0" y="0" width="860" height="40" fill="#181825"/>
+  <circle cx="24" cy="20" r="6" fill="#f38ba8"/>
+  <circle cx="44" cy="20" r="6" fill="#f9e2af"/>
+  <circle cx="64" cy="20" r="6" fill="#a6e3a1"/>
+  <text x="120" y="25" fill="#cdd6f4" font-size="14">LithePG — v1.1 backlog: EXPLAIN statement + QueryResult parse</text>
+
+  <text x="20" y="70" fill="#89b4fa" font-size="14">QueryPlan — new pure, on-device helpers (bridges query → parser)</text>
+
+  <text x="20" y="102" fill="#a6adc8" font-size="13">// Build the EXPLAIN wrapper from the user's own SQL (no network / creds)</text>
+  <text x="20" y="124" fill="#f5c2e7" font-size="13">QueryPlan.explainStatement(for: "SELECT 1;")</text>
+  <text x="40" y="146" fill="#a6e3a1" font-size="13">→ "EXPLAIN (FORMAT JSON) SELECT 1"</text>
+  <text x="20" y="172" fill="#f5c2e7" font-size="13">QueryPlan.explainStatement(for: "SELECT * FROM orders", analyze: true)</text>
+  <text x="40" y="194" fill="#a6e3a1" font-size="13">→ "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) SELECT * FROM orders"</text>
+
+  <text x="20" y="228" fill="#a6adc8" font-size="13">// Extract the plan JSON straight out of the QueryResult's first cell</text>
+  <text x="20" y="250" fill="#f5c2e7" font-size="13">let plan = try QueryPlan.parse(explainResult: result)</text>
+  <text x="40" y="272" fill="#a6e3a1" font-size="13">→ plan.root.nodeType == "Seq Scan", .totalCost == 21.00</text>
+  <text x="20" y="298" fill="#f5c2e7" font-size="13">empty / NULL-cell result → throws ParseError.emptyResult</text>
+
+  <rect x="20" y="322" width="820" height="200" fill="#11111b" rx="6"/>
+  <text x="36" y="348" fill="#94e2d5" font-size="13">$ swift test --filter QueryPlan</text>
+  <text x="36" y="372" fill="#a6e3a1" font-size="12.5">✔ wraps SQL in EXPLAIN (FORMAT JSON) and strips a trailing semicolon</text>
+  <text x="36" y="392" fill="#a6e3a1" font-size="12.5">✔ adds ANALYZE and BUFFERS when analyze is requested</text>
+  <text x="36" y="412" fill="#a6e3a1" font-size="12.5">✔ parses a plan out of the single-cell EXPLAIN QueryResult</text>
+  <text x="36" y="432" fill="#a6e3a1" font-size="12.5">✔ throws emptyResult when the EXPLAIN result has no plan cell</text>
+  <text x="36" y="452" fill="#a6e3a1" font-size="12.5">✔ Suite "QueryPlan" passed — 12 tests in 1 suite (was 8)</text>
+  <text x="36" y="480" fill="#94e2d5" font-size="13">$ swift test  (full suite)</text>
+  <text x="36" y="502" fill="#a6e3a1" font-size="12.5">✔ Test run with 168 tests in 24 suites passed — no regressions</text>
+
+  <text x="20" y="548" fill="#6c7086" font-size="11">Pure serializer/bridge slice · UI "Run EXPLAIN" affordance deferred to follow-up · no network, no credentials, no SQL auto-run</text>
+</svg>

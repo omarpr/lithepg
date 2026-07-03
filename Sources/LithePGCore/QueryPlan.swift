@@ -28,6 +28,7 @@ public struct QueryPlan: Sendable, Equatable {
     public enum ParseError: Error, Equatable {
         case invalidJSON
         case missingPlan
+        case emptyResult
     }
 
     public let root: Node
@@ -72,6 +73,39 @@ public struct QueryPlan: Sendable, Equatable {
             planningTime: first["Planning Time"] as? Double,
             executionTime: first["Execution Time"] as? Double
         )
+    }
+
+    /// Build an `EXPLAIN (FORMAT JSON)` statement that wraps the user's SQL.
+    ///
+    /// This is a pure string transform: it trims surrounding whitespace and a
+    /// single trailing semicolon so the wrapped statement stays one valid
+    /// `EXPLAIN` command. When `analyze` is true it adds `ANALYZE, BUFFERS`,
+    /// which actually executes the query — callers gate that on explicit intent.
+    /// No connection URL or credential is ever part of the produced statement.
+    public static func explainStatement(for sql: String, analyze: Bool = false) -> String {
+        var trimmed = sql.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.hasSuffix(";") {
+            trimmed.removeLast()
+            trimmed = trimmed.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        let options = analyze ? "ANALYZE, BUFFERS, FORMAT JSON" : "FORMAT JSON"
+        return "EXPLAIN (\(options)) \(trimmed)"
+    }
+
+    /// Parse a plan out of the `QueryResult` returned by running an
+    /// `EXPLAIN (FORMAT JSON)` statement.
+    ///
+    /// Postgres returns the plan as JSON text in the first cell of the first
+    /// row (column `QUERY PLAN`). This reads only that already-fetched cell —
+    /// no network, no credentials, no SQL execution.
+    public static func parse(explainResult result: QueryResult) throws -> QueryPlan {
+        guard
+            let firstRow = result.rows.first,
+            case .text(let json)? = firstRow.cells.first
+        else {
+            throw ParseError.emptyResult
+        }
+        return try parse(explainJSON: json)
     }
 
     private static func parseNode(_ object: [String: Any]) -> Node {
