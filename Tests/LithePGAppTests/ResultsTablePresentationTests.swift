@@ -177,6 +177,7 @@ struct ResultsTablePresentationTests {
     func exportFileNames() {
         #expect(ResultsTablePresentation.defaultExportFileName(for: .csv) == "lithepg-results.csv")
         #expect(ResultsTablePresentation.defaultExportFileName(for: .json) == "lithepg-results.json")
+        #expect(ResultsTablePresentation.defaultExportFileName(for: .markdown) == "lithepg-results.md")
     }
 
     @Test("export content reuses the on-device ResultExporter serializers")
@@ -204,6 +205,14 @@ struct ResultsTablePresentationTests {
             ResultsTablePresentation.exportContent(for: rows, as: .json)
                 == ResultExporter.json(for: rows)
         )
+        #expect(
+            ResultsTablePresentation.exportContent(for: rows, as: .markdown)
+                == ResultExporter.markdown(for: rows)
+        )
         #expect(ResultsTablePresentation.exportContent(for: rows, as: .csv) == "id,note\r\n1,\"a,b\"\r\n2,")
+        #expect(
+            ResultsTablePresentation.exportContent(for: rows, as: .markdown)
+                == "| id | note |\n| --- | --- |\n| 1 | a,b |\n| 2 |  |"
+        )
     }
 }

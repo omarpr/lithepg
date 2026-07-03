@@ -196,11 +196,12 @@ struct ResultsTable: View {
             Menu {
                 Button("CSV (.csv)") { export(result, as: .csv) }
                 Button("JSON (.json)") { export(result, as: .json) }
+                Button("Markdown (.md)") { export(result, as: .markdown) }
             } label: {
                 Image(systemName: "arrow.down.to.line")
             }
             .menuIndicator(.hidden)
-            .help("Export results to CSV or JSON")
+            .help("Export results to CSV, JSON, or Markdown")
             .disabled(!ResultsTablePresentation.canExport(result))
         }
         .buttonStyle(.borderless)
@@ -341,6 +342,7 @@ struct ResultsTable: View {
         switch format {
         case .csv: .commaSeparatedText
         case .json: .json
+        case .markdown: UTType(filenameExtension: format.fileExtension) ?? .plainText
         }
     }
 }

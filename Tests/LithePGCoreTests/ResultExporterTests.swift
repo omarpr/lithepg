@@ -139,13 +139,82 @@ struct ResultExporterTests {
         #expect(ResultExporter.json(for: result) == "[]")
     }
 
+    // MARK: - Markdown (GitHub-flavored table)
+
+    @Test("Markdown emits a GFM table: header, delimiter, then one row per record")
+    func markdownBasic() {
+        let result = rowsResult(
+            columns: [.init(name: "id", typeName: "int4"), .init(name: "name", typeName: "text")],
+            rows: [
+                [.text("1"), .text("Ada")],
+                [.text("2"), .text("Grace")],
+            ]
+        )
+        let md = ResultExporter.markdown(for: result)
+        #expect(md == "| id | name |\n| --- | --- |\n| 1 | Ada |\n| 2 | Grace |")
+    }
+
+    @Test("Markdown escapes pipe characters and converts newlines to <br>")
+    func markdownEscaping() {
+        let result = rowsResult(
+            columns: [.init(name: "a | b", typeName: "text")],
+            rows: [
+                [.text("x|y")],
+                [.text("line1\nline2")],
+                [.text("crlf\r\nhere")],
+            ]
+        )
+        let md = ResultExporter.markdown(for: result)
+        #expect(md == "| a \\| b |\n| --- |\n| x\\|y |\n| line1<br>line2 |\n| crlf<br>here |")
+    }
+
+    @Test("Markdown renders NULL and empty cells as blank table cells")
+    func markdownNull() {
+        let result = rowsResult(
+            columns: [.init(name: "a", typeName: "text"), .init(name: "b", typeName: "text")],
+            rows: [
+                [.null, .text("x")],
+                [.text(""), .null],
+            ]
+        )
+        let md = ResultExporter.markdown(for: result)
+        #expect(md == "| a | b |\n| --- | --- |\n|  | x |\n|  |  |")
+    }
+
+    @Test("Markdown for a result with columns but no rows is just header plus delimiter")
+    func markdownNoRows() {
+        let result = QueryResult(
+            columns: [.init(name: "id", typeName: "int4")],
+            rows: [],
+            rowCount: 0,
+            elapsed: .milliseconds(0),
+            status: .rows,
+            truncated: false
+        )
+        #expect(ResultExporter.markdown(for: result) == "| id |\n| --- |")
+    }
+
+    @Test("Markdown for a command/empty result with no columns is an empty string")
+    func markdownNoColumns() {
+        let result = QueryResult(
+            columns: [],
+            rows: [],
+            rowCount: 0,
+            elapsed: .milliseconds(0),
+            status: .command(tag: "INSERT", affected: 3),
+            truncated: false
+        )
+        #expect(ResultExporter.markdown(for: result) == "")
+    }
+
     // MARK: - Format metadata
 
     @Test("export formats expose stable file extensions and UTI-friendly identifiers")
     func formatMetadata() {
         #expect(ResultExporter.Format.csv.fileExtension == "csv")
         #expect(ResultExporter.Format.json.fileExtension == "json")
-        #expect(ResultExporter.Format.allCases.count == 2)
+        #expect(ResultExporter.Format.markdown.fileExtension == "md")
+        #expect(ResultExporter.Format.allCases.count == 3)
     }
 
     @Test("export(_:as:) dispatches to the matching serializer")
@@ -156,5 +225,6 @@ struct ResultExporterTests {
         )
         #expect(ResultExporter.export(result, as: .csv) == ResultExporter.csv(for: result))
         #expect(ResultExporter.export(result, as: .json) == ResultExporter.json(for: result))
+        #expect(ResultExporter.export(result, as: .markdown) == ResultExporter.markdown(for: result))
     }
 }
