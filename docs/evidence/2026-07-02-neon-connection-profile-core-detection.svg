@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="500" viewBox="0 0 980 500" role="img" aria-labelledby="title desc">
+  <title id="title">LithePG Neon connection profile core detection evidence</title>
+  <desc id="desc">Visual evidence for the Neon connection polish Task 1: a pure LithePGCore helper that detects pasted Neon Postgres URLs, preserves verified TLS, and never echoes passwords.</desc>
+  <rect width="980" height="500" fill="#0b1020"/>
+  <rect x="32" y="30" width="916" height="440" rx="18" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <text x="64" y="78" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="26" font-weight="700">LithePG Neon connection polish — Task 1</text>
+  <text x="64" y="116" fill="#93c5fd" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">2026-07-02 — NeonConnectionProfile core detection (TDD)</text>
+
+  <g font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="18">
+    <text x="72" y="166" fill="#fca5a5">RED</text>
+    <text x="150" y="166" fill="#e5e7eb">5 Neon detection tests failed: 'cannot find NeonConnectionProfile in scope'</text>
+    <text x="72" y="216" fill="#86efac">GREEN</text>
+    <text x="150" y="216" fill="#e5e7eb">Pure LithePGCore helper detects compute/pooled hosts, preserves .verifyFull</text>
+    <text x="72" y="266" fill="#c4b5fd">PRIVACY</text>
+    <text x="150" y="266" fill="#e5e7eb">Mirror dump + suggestedName exclude password values (receipt test)</text>
+    <text x="72" y="316" fill="#fcd34d">VERIFY</text>
+    <text x="150" y="316" fill="#e5e7eb">swift test — NeonConnectionProfile + ConnectionConfig: 17 tests passed</text>
+  </g>
+
+  <rect x="64" y="354" width="852" height="74" rx="10" fill="#020617" stroke="#1f2937"/>
+  <text x="88" y="386" fill="#a7f3d0" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="16">Test run result:</text>
+  <text x="88" y="414" fill="#e5e7eb" font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="15">Test run with 5 tests in 1 suite passed — pooled/direct/non-Neon/malformed covered</text>
+</svg>

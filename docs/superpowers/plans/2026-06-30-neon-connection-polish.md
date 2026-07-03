@@ -24,7 +24,7 @@
 - Create: `Sources/LithePGCore/NeonConnectionProfile.swift`
 - Create: `Tests/LithePGCoreTests/NeonConnectionProfileTests.swift`
 
-- [ ] **Step 1: Write failing core tests**
+- [x] **Step 1: Write failing core tests**
 
 Create `Tests/LithePGCoreTests/NeonConnectionProfileTests.swift`:
 
@@ -99,7 +99,7 @@ struct NeonConnectionProfileTests {
 }
 ```
 
-- [ ] **Step 2: Run focused test and verify RED**
+- [x] **Step 2: Run focused test and verify RED**
 
 Run:
 
@@ -109,7 +109,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter Neo
 
 Expected: compile failure because `NeonConnectionProfile` does not exist.
 
-- [ ] **Step 3: Implement minimal core helper**
+- [x] **Step 3: Implement minimal core helper**
 
 Create `Sources/LithePGCore/NeonConnectionProfile.swift`:
 
@@ -159,7 +159,7 @@ public struct NeonConnectionProfile: Sendable, Equatable, CustomStringConvertibl
 }
 ```
 
-- [ ] **Step 4: Run focused test and verify GREEN**
+- [x] **Step 4: Run focused test and verify GREEN**
 
 Run:
 
@@ -169,7 +169,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter Neo
 
 Expected: all `NeonConnectionProfile` tests pass.
 
-- [ ] **Step 5: Commit core helper**
+- [x] **Step 5: Commit core helper**
 
 Run:
 
