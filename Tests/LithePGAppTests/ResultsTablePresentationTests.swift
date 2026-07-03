@@ -215,4 +215,40 @@ struct ResultsTablePresentationTests {
                 == "| id | note |\n| --- | --- |\n| 1 | a,b |\n| 2 |  |"
         )
     }
+
+    @Test("clipboard content reuses the on-device ResultExporter serializers byte-for-byte")
+    func clipboardContent() {
+        let rows = QueryResult(
+            columns: [
+                .init(name: "id", typeName: "integer"),
+                .init(name: "note", typeName: "text"),
+            ],
+            rows: [
+                .init(id: 0, cells: [.text("1"), .text("a,b")]),
+                .init(id: 1, cells: [.text("2"), .null]),
+            ],
+            rowCount: 2,
+            elapsed: .milliseconds(3),
+            status: .rows,
+            truncated: false
+        )
+
+        #expect(
+            ResultsTablePresentation.clipboardContent(for: rows, as: .csv)
+                == ResultExporter.csv(for: rows)
+        )
+        #expect(
+            ResultsTablePresentation.clipboardContent(for: rows, as: .json)
+                == ResultExporter.json(for: rows)
+        )
+        #expect(
+            ResultsTablePresentation.clipboardContent(for: rows, as: .markdown)
+                == ResultExporter.markdown(for: rows)
+        )
+        // Clipboard copy-as and file export produce identical bytes for the same format.
+        #expect(
+            ResultsTablePresentation.clipboardContent(for: rows, as: .markdown)
+                == ResultsTablePresentation.exportContent(for: rows, as: .markdown)
+        )
+    }
 }

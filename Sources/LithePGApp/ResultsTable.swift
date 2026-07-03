@@ -185,12 +185,20 @@ struct ResultsTable: View {
             .help("Filter results")
             .disabled(true)
 
-            Button {
-                copy(result)
+            Menu {
+                Button("Copy (TSV)") { copy(result) }
+                Divider()
+                Button("Copy as CSV") { copyAs(result, format: .csv) }
+                Button("Copy as JSON") { copyAs(result, format: .json) }
+                Button("Copy as Markdown") { copyAs(result, format: .markdown) }
+                    .disabled(!ResultsTablePresentation.canExport(result))
             } label: {
                 Image(systemName: copiedAtLeastOnce ? "checkmark" : "doc.on.doc")
+            } primaryAction: {
+                copy(result)
             }
-            .help("Copy results")
+            .menuIndicator(.hidden)
+            .help("Copy results — click to copy TSV, or pick CSV/JSON/Markdown")
             .disabled(result == nil)
 
             Menu {
@@ -321,6 +329,16 @@ struct ResultsTable: View {
         guard let result else { return }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(ResultsTablePresentation.copyText(for: result), forType: .string)
+        copiedAtLeastOnce = true
+    }
+
+    private func copyAs(_ result: QueryResult?, format: ResultExporter.Format) {
+        guard let result, ResultsTablePresentation.canExport(result) else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(
+            ResultsTablePresentation.clipboardContent(for: result, as: format),
+            forType: .string
+        )
         copiedAtLeastOnce = true
     }
 
@@ -512,6 +530,10 @@ enum ResultsTablePresentation {
     }
 
     static func exportContent(for result: QueryResult, as format: ResultExporter.Format) -> String {
+        ResultExporter.export(result, as: format)
+    }
+
+    static func clipboardContent(for result: QueryResult, as format: ResultExporter.Format) -> String {
         ResultExporter.export(result, as: format)
     }
 
