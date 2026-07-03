@@ -184,7 +184,7 @@ git commit -s -m "feat(core): detect Neon connection strings"
 - Modify: `Sources/LithePGApp/ConnectSheet.swift`
 - Create: `Tests/LithePGAppTests/ConnectSheetPresentationTests.swift`
 
-- [ ] **Step 1: Write failing presentation tests**
+- [x] **Step 1: Write failing presentation tests**
 
 Create `Tests/LithePGAppTests/ConnectSheetPresentationTests.swift`:
 
@@ -260,7 +260,7 @@ struct ConnectSheetPresentationTests {
 }
 ```
 
-- [ ] **Step 2: Run focused test and verify RED**
+- [x] **Step 2: Run focused test and verify RED**
 
 Run:
 
@@ -270,7 +270,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter Con
 
 Expected: compile failure because `ConnectSheetPresentation` does not exist.
 
-- [ ] **Step 3: Add presentation helper and wire UI**
+- [x] **Step 3: Add presentation helper and wire UI**
 
 Modify `Sources/LithePGApp/ConnectSheet.swift`:
 
@@ -378,7 +378,7 @@ enum ConnectSheetPresentation {
 }
 ```
 
-- [ ] **Step 4: Run focused test and verify GREEN**
+- [x] **Step 4: Run focused test and verify GREEN**
 
 Run:
 
@@ -388,7 +388,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter Con
 
 Expected: all `ConnectSheetPresentation` tests pass.
 
-- [ ] **Step 5: Run broader app/core tests**
+- [x] **Step 5: Run broader app/core tests**
 
 Run:
 
@@ -398,7 +398,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --filter "Ne
 
 Expected: focused related suites pass; env-gated live tests may skip as designed.
 
-- [ ] **Step 6: Commit UI wiring**
+- [x] **Step 6: Commit UI wiring**
 
 Run:
 
@@ -413,7 +413,7 @@ git commit -s -m "feat(app): polish Neon connection paste flow"
 - Verify all changed files.
 - No docs update expected unless implementation differs from the spec.
 
-- [ ] **Step 1: Run formatting whitespace check**
+- [x] **Step 1: Run formatting whitespace check**
 
 Run:
 
@@ -423,7 +423,7 @@ git diff --check
 
 Expected: no output and exit code 0.
 
-- [ ] **Step 2: Run full Swift test suite**
+- [x] **Step 2: Run full Swift test suite**
 
 Run:
 
@@ -433,7 +433,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 
 Expected: full suite passes; live/Postgres/UI/model-artifact tests skip when env vars are absent.
 
-- [ ] **Step 3: Check git history and status**
+- [x] **Step 3: Check git history and status**
 
 Run:
 
