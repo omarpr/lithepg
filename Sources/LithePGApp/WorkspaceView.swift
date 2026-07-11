@@ -17,6 +17,7 @@ struct WorkspaceView: View {
   @State private var showingQueryHistory = false
   @State private var showingAskQuery = false
   @State private var showingSchemaGraph = false
+  @State private var showingPlanTree = false
 
   var body: some View {
     HSplitView {
@@ -105,6 +106,33 @@ struct WorkspaceView: View {
           AskQueryView(state: state)
         }
 
+        Menu {
+          Button("Explain (plan only)") {
+            Task {
+              await state.runExplain(analyze: false)
+              showingPlanTree = state.lastQueryPlan != nil
+            }
+          }
+          .keyboardShortcut("e", modifiers: [.command])
+          Button("Explain Analyze (runs the query)") {
+            Task {
+              await state.runExplain(analyze: true)
+              showingPlanTree = state.lastQueryPlan != nil
+            }
+          }
+          .keyboardShortcut("e", modifiers: [.command, .shift])
+        } label: {
+          Label("Explain", systemImage: "list.bullet.indent")
+        }
+        .disabled(!state.canRunQuery || state.isExplaining)
+        .accessibilityIdentifier("explain-menu")
+        .help("Show the query plan; Explain Analyze executes the query for real timings")
+        .sheet(isPresented: $showingPlanTree, onDismiss: { state.clearQueryPlan() }) {
+          if let plan = state.lastQueryPlan {
+            PlanTreeView(plan: plan, isAnalyze: state.lastQueryPlanIsAnalyze)
+          }
+        }
+
         Button {
           showingSchemaGraph = true
         } label: {
@@ -186,13 +214,13 @@ struct WorkspaceView: View {
         Text("LithePG")
           .font(.headline)
         Text(statusText)
-          .font(.caption)
+          .font(.callout)
           .foregroundStyle(.secondary)
           .accessibilityIdentifier("connection-status")
       }
       Spacer()
       Text(state.activeConnectionEnvironment?.displayName ?? Self.versionBadgeLabel())
-        .font(.caption.bold())
+        .font(.callout.bold())
         .foregroundStyle(environmentColor)
         .padding(.horizontal, 10)
         .padding(.vertical, 5)
@@ -207,7 +235,7 @@ struct WorkspaceView: View {
         HStack(spacing: 8) {
           Image(systemName: "exclamationmark.triangle.fill")
           Text("Production connection. Double-check destructive SQL before running.")
-            .font(.caption.bold())
+            .font(.callout.bold())
           Spacer()
         }
         .foregroundStyle(.red)
