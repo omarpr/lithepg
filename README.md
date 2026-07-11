@@ -13,7 +13,9 @@ LithePG is a lean, Mac-native PostgreSQL client with local-first AI. Pure Swift 
 
 - A native macOS app for connecting to Postgres, writing SQL and viewing results.
 - Saved connections with passwords in the macOS Keychain, never on disk.
-- Schema sidebar, query tabs, history, result copy and CSV/JSON/Markdown export.
+- Schema sidebar, query tabs, history, result copy and export as CSV, TSV, JSON, Markdown or SQL inserts.
+- One-click table preview: the sidebar's select action inserts and runs `SELECT * ... LIMIT 100`.
+- EXPLAIN and EXPLAIN ANALYZE (`⌘E` / `⇧⌘E`) with an indented plan tree that flags the costliest node.
 - A schema graph (`⇧⌘G`): tables as nodes, foreign keys as edges, columns and types in an inspector.
 - Ask in English drafting that inserts SQL for review and never auto-runs it.
 - Pasted connection strings just work, including Neon URLs, quoted strings and `psql` command copies.
@@ -22,7 +24,7 @@ LithePG is a lean, Mac-native PostgreSQL client with local-first AI. Pure Swift 
 
 ## Status
 
-v0.5 is the current tag. The v1.0 code is complete and verified: 194 tests across 28 suites, CI green on push, connectivity proven live against local Docker Postgres and real Neon endpoints (direct and pooled), full git history scanned for secrets, binary at ~22 MiB against a 50 MiB cap. What remains for a public v1.0 is distribution, not code: Apple signing and notarization credentials, a final security contact, a Homebrew tap and release approval. Receipts live in [`docs/dogfood-log.md`](docs/dogfood-log.md) and [`CHANGELOG.md`](CHANGELOG.md).
+v0.5 is the current tag. The v1.0 code is complete and verified: 224 tests across 34 suites, CI green on push, connectivity proven live against local Docker Postgres and real Neon endpoints (direct and pooled), full git history scanned for secrets, binary at ~22 MiB against a 50 MiB cap. What remains for a public v1.0 is distribution, not code: Apple signing and notarization credentials, a final security contact, a Homebrew tap and release approval. Receipts live in [`docs/dogfood-log.md`](docs/dogfood-log.md) and [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Install
 
@@ -76,6 +78,8 @@ Plain TCP, TLS verify-full with an optional pinned CA, or an SSH tunnel through 
 - `⌘T` / `⌘W` open / close a query tab
 - `⇧⌘[` / `⇧⌘]` previous / next query tab
 - `⇧⌘K` Ask in English
+- `⌘E` / `⇧⌘E` Explain / Explain Analyze
+- `⇧⌘G` schema graph
 
 ## Developer commands
 

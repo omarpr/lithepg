@@ -10,7 +10,10 @@ LithePG follows outcome-named milestones with semantic-version tags. v1.0 remain
 
 - Public collaboration entry points: `CONTRIBUTING.md`, `GOVERNANCE.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, issue and PR templates with DCO sign-off guidance.
 - Light, dark and system appearance preferences, with dark as the default.
-- Results grid export and copy as CSV, JSON and GitHub-flavored Markdown. Only rows already fetched are serialized; nothing runs SQL or touches the network.
+- Results grid export and copy as CSV, TSV, JSON, GitHub-flavored Markdown and SQL INSERT statements. Only rows already fetched are serialized; nothing runs SQL or touches the network.
+- EXPLAIN and EXPLAIN ANALYZE from the toolbar (`⌘E` / `⇧⌘E`) rendering the parsed plan as an indented tree with cost shares, ANALYZE timings and the costliest node flagged. Explain Analyze is labeled as executing the query.
+- The sidebar's select action now inserts and runs the `SELECT ... LIMIT 100` in one click when connected.
+- Readability pass: results grid, sidebar rows, status text and badges moved from 10pt caption sizes to 11 to 12pt.
 - EXPLAIN plan parsing (`QueryPlan`) and headless plan-tree presentation seams, ready for a v1.1 plan view.
 - Schema graph (`⇧⌘G`): an in-app force-directed graph of tables and foreign keys with pan, zoom, drag, selection highlighting and a column inspector with PK/FK badges. Read-only, derived from already-loaded schema metadata; graphs past 300 tables use a static grid layout.
 - Neon connection support: pasted Neon URLs are detected and surface endpoint, database, role and pooled or direct mode, with a suggested connection name. Verified live against real Neon endpoints (Postgres 17, direct and pooled, current host shape) by CLI smoke and the gated live app suite.
@@ -28,7 +31,7 @@ LithePG follows outcome-named milestones with semantic-version tags. v1.0 remain
 
 ### Verified
 
-- 194 tests across 28 suites pass locally and in CI; live suites verified against seeded Docker Postgres and real Neon endpoints.
+- 224 tests across 34 suites pass locally and in CI; live suites verified against seeded Docker Postgres and real Neon endpoints.
 - Full git history (412 commits) scanned for secrets with gitleaks plus manual pattern sweeps: clean, no rewrite needed before open-sourcing.
 - Binary and speed budgets hold: ~21.7 MiB release executable (50 MiB cap, 30 MiB stretch), sub-500 ms connected startup, sub-5 ms query overhead. Receipts in `docs/dogfood-log.md`.
 
