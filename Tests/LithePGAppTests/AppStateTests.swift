@@ -558,7 +558,7 @@ struct AppStateTests {
     #expect(s.schema != nil)
     #expect(s.activeSavedConnection?.id == metadata.id)
     #expect(s.activeConnectionEnvironment == .production)
-    #expect(s.windowTitle == "LithePG — Production smoke")
+    #expect(s.windowTitle == "LithePG · Production smoke")
 
     s.queryHistoryEnabled = true
     s.editorText = "SELECT 9 AS saved_connection_smoke"
@@ -608,7 +608,7 @@ struct AppStateTests {
     #expect(s.canRunQuery == false)
 
     s.markConnected(label: "alice@db:5432/shop")
-    #expect(s.windowTitle == "LithePG — alice@db:5432/shop")
+    #expect(s.windowTitle == "LithePG · alice@db:5432/shop")
     #expect(s.connectionLabel == "alice@db:5432/shop")
     #expect(s.isConnected == true)
     #expect(s.canRunQuery == true)

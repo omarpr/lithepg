@@ -179,7 +179,7 @@ struct WorkspaceView: View {
       if state.activeConnectionEnvironment?.isProduction == true {
         HStack(spacing: 8) {
           Image(systemName: "exclamationmark.triangle.fill")
-          Text("Production connection — double-check destructive SQL before running.")
+          Text("Production connection. Double-check destructive SQL before running.")
             .font(.caption.bold())
           Spacer()
         }

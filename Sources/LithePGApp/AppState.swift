@@ -74,9 +74,9 @@ public final class AppState {
 
   public var windowTitle: String {
     if let activeSavedConnection {
-      return "LithePG — \(activeSavedConnection.name)"
+      return "LithePG · \(activeSavedConnection.name)"
     }
-    return connectionLabel.map { "LithePG — \($0)" } ?? "LithePG"
+    return connectionLabel.map { "LithePG · \($0)" } ?? "LithePG"
   }
 
   @ObservationIgnored private var connector: PostgresConnector?

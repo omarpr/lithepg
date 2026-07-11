@@ -198,7 +198,7 @@ struct ResultsTable: View {
                 copy(result)
             }
             .menuIndicator(.hidden)
-            .help("Copy results — click to copy TSV, or pick CSV/JSON/Markdown")
+            .help("Copy results. Click to copy TSV or pick CSV, JSON or Markdown")
             .disabled(result == nil)
 
             Menu {
@@ -209,7 +209,7 @@ struct ResultsTable: View {
                 Image(systemName: "arrow.down.to.line")
             }
             .menuIndicator(.hidden)
-            .help("Export results to CSV, JSON, or Markdown")
+            .help("Export results to CSV, JSON or Markdown")
             .disabled(!ResultsTablePresentation.canExport(result))
         }
         .buttonStyle(.borderless)

@@ -15,7 +15,7 @@ struct QueryHistoryView: View {
         .disabled(state.queryHistory.isEmpty)
       }
 
-      Text("History stores SQL, connection metadata, timing, and status — never result rows.")
+      Text("History stores SQL, connection metadata, timing and status, never result rows.")
         .font(.caption)
         .foregroundStyle(.secondary)
 
@@ -25,7 +25,7 @@ struct QueryHistoryView: View {
         ContentUnavailableView(
           "No query history yet",
           systemImage: "clock.arrow.circlepath",
-          description: Text("Enable history, run a query, and recent SQL will appear here.")
+          description: Text("Enable history and run a query. Recent SQL will appear here.")
         )
         .frame(minHeight: 180)
       } else {
