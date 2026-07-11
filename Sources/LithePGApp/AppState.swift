@@ -441,6 +441,15 @@ public final class AppState {
     editorText = Self.selectSQL(for: relation)
   }
 
+  /// Sidebar click-through: insert the SELECT and run it immediately when
+  /// connected. Disconnected sessions just get the inserted SQL so nothing
+  /// errors while browsing a stale schema.
+  public func insertAndRunSelect(for relation: DatabaseSchema.Relation) async {
+    insertSelect(for: relation)
+    guard isConnected, !isRunning else { return }
+    await runCurrentQuery()
+  }
+
   public static func selectSQL(for relation: DatabaseSchema.Relation) -> String {
     "SELECT * FROM \(quotedIdentifier(relation.schema)).\(quotedIdentifier(relation.name)) LIMIT 100;"
   }
@@ -495,6 +504,43 @@ public final class AppState {
         )
       }
     }
+  }
+
+  /// The most recent parsed query plan, shown by the plan-tree sheet.
+  public private(set) var lastQueryPlan: QueryPlan?
+  /// Whether `lastQueryPlan` came from EXPLAIN ANALYZE (the query really ran).
+  public private(set) var lastQueryPlanIsAnalyze = false
+  public private(set) var isExplaining = false
+
+  /// Runs EXPLAIN (FORMAT JSON) on the editor's SQL and parses the plan.
+  /// With `analyze` the statement is EXPLAIN (ANALYZE, BUFFERS, ...) which
+  /// actually executes the query; callers surface that in the UI copy.
+  public func runExplain(analyze: Bool) async {
+    let sql = editorText.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !sql.isEmpty else {
+      setError("Enter a SQL query first.")
+      return
+    }
+    guard let connector else {
+      setError("Not connected")
+      return
+    }
+    isExplaining = true
+    defer { isExplaining = false }
+    do {
+      let statement = QueryPlan.explainStatement(for: sql, analyze: analyze)
+      let result = try await connector.execute(statement)
+      lastQueryPlan = try QueryPlan.parse(explainResult: result)
+      lastQueryPlanIsAnalyze = analyze
+      clearError()
+    } catch {
+      lastQueryPlan = nil
+      setError(ErrorRedaction.redactCredentials(in: error))
+    }
+  }
+
+  public func clearQueryPlan() {
+    lastQueryPlan = nil
   }
 
   public func markConnecting() {

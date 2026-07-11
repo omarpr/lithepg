@@ -123,15 +123,15 @@ struct SchemaSidebar: View {
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(.secondary)
                 Button {
-                    state.insertSelect(for: relation)
+                    Task { await state.insertAndRunSelect(for: relation) }
                 } label: {
                     Image(systemName: "text.insert")
                 }
                 .buttonStyle(.borderless)
-                .help("Insert SELECT for \(relation.schema).\(relation.name)")
+                .help("Insert and run SELECT for \(relation.schema).\(relation.name)")
                 .accessibilityIdentifier("insert-select-\(relation.id)")
             }
-            .font(.caption)
+            .font(.callout)
         }
         .padding(.leading, 14)
     }
@@ -149,7 +149,7 @@ struct SchemaSidebar: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
         }
-        .font(.caption2)
+        .font(.subheadline)
         .padding(.leading, 28)
         .help(columnHelp(for: column))
     }

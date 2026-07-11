@@ -701,3 +701,52 @@ struct AppStateTests {
     }
   }
 }
+
+@Suite("AppState insert-and-run")
+@MainActor
+struct AppStateInsertAndRunTests {
+  @Test("insert and run without a connection only inserts the SQL")
+  func insertAndRunWhileDisconnected() async {
+    let s = AppState()
+    let relation = DatabaseSchema.Relation(
+      schema: "public", name: "customers", kind: .table, columns: [])
+
+    await s.insertAndRunSelect(for: relation)
+
+    #expect(s.editorText == "SELECT * FROM \"public\".\"customers\" LIMIT 100;")
+    #expect(s.isRunning == false)
+    #expect(s.lastError == nil)
+    #expect(s.lastResult == nil)
+  }
+}
+
+@Suite("AppState explain")
+@MainActor
+struct AppStateExplainTests {
+  @Test("explain without a connection reports an error and no plan")
+  func explainWhileDisconnected() async {
+    let s = AppState()
+    s.editorText = "SELECT 1"
+    await s.runExplain(analyze: false)
+    #expect(s.lastError == "Not connected")
+    #expect(s.lastQueryPlan == nil)
+    #expect(s.isExplaining == false)
+  }
+
+  @Test("explain with an empty editor asks for SQL first")
+  func explainWithEmptyEditor() async {
+    let s = AppState()
+    s.markConnected(label: "test@localhost:5432/db")
+    s.editorText = "   "
+    await s.runExplain(analyze: false)
+    #expect(s.lastError == "Enter a SQL query first.")
+    #expect(s.lastQueryPlan == nil)
+  }
+
+  @Test("clearing the plan removes it")
+  func clearQueryPlan() {
+    let s = AppState()
+    s.clearQueryPlan()
+    #expect(s.lastQueryPlan == nil)
+  }
+}
