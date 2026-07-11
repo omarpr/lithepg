@@ -2,6 +2,17 @@ import LithePGCore
 import SwiftUI
 
 struct WorkspaceView: View {
+  /// Badge fallback when no connection environment is active: the bundle's
+  /// marketing version for packaged builds, "dev" for bare-executable runs.
+  static func versionBadgeLabel(
+    marketingVersion: String? =
+      Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
+  ) -> String {
+    guard let marketingVersion, !marketingVersion.isEmpty else { return "dev" }
+    return "v\(marketingVersion)"
+  }
+
+
   @Bindable var state: AppState
   @State private var showingQueryHistory = false
   @State private var showingAskQuery = false
@@ -164,7 +175,7 @@ struct WorkspaceView: View {
           .accessibilityIdentifier("connection-status")
       }
       Spacer()
-      Text(state.activeConnectionEnvironment?.displayName ?? "v0.3 dogfood")
+      Text(state.activeConnectionEnvironment?.displayName ?? Self.versionBadgeLabel())
         .font(.caption.bold())
         .foregroundStyle(environmentColor)
         .padding(.horizontal, 10)
