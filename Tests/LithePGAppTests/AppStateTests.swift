@@ -750,3 +750,32 @@ struct AppStateExplainTests {
     #expect(s.lastQueryPlan == nil)
   }
 }
+
+@Suite("AppState tab rename")
+@MainActor
+struct AppStateTabRenameTests {
+  @Test("renames a tab and trims whitespace")
+  func renamesAndTrims() {
+    let s = AppState()
+    let id = s.selectedQueryTabID!
+    s.renameQueryTab(id: id, to: "  revenue report  ")
+    #expect(s.queryTabs[0].title == "revenue report")
+  }
+
+  @Test("blank names keep the current title")
+  func blankNamesKeepTitle() {
+    let s = AppState()
+    let id = s.selectedQueryTabID!
+    let before = s.queryTabs[0].title
+    s.renameQueryTab(id: id, to: "   ")
+    #expect(s.queryTabs[0].title == before)
+  }
+
+  @Test("renaming an unknown tab does nothing")
+  func unknownTabIsIgnored() {
+    let s = AppState()
+    let before = s.queryTabs.map(\.title)
+    s.renameQueryTab(id: UUID(), to: "ghost")
+    #expect(s.queryTabs.map(\.title) == before)
+  }
+}

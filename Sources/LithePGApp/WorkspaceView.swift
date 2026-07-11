@@ -18,6 +18,8 @@ struct WorkspaceView: View {
   @State private var showingAskQuery = false
   @State private var showingSchemaGraph = false
   @State private var showingPlanTree = false
+  @State private var renamingTabID: QueryTab.ID?
+  @State private var renameDraft = ""
 
   var body: some View {
     HSplitView {
@@ -185,6 +187,28 @@ struct WorkspaceView: View {
                 ? Color.accentColor.opacity(0.22) : Color.secondary.opacity(0.12), in: Capsule())
         }
         .buttonStyle(.plain)
+        .simultaneousGesture(
+          TapGesture(count: 2).onEnded { beginRenamingTab(tab) }
+        )
+        .contextMenu {
+          Button("Rename Tab…") { beginRenamingTab(tab) }
+        }
+        .popover(
+          isPresented: Binding(
+            get: { renamingTabID == tab.id },
+            set: { if !$0 { renamingTabID = nil } }
+          )
+        ) {
+          HStack(spacing: 8) {
+            TextField("Tab name", text: $renameDraft)
+              .frame(width: 180)
+              .accessibilityIdentifier("rename-tab-field")
+              .onSubmit { commitTabRename(tab) }
+            Button("Rename") { commitTabRename(tab) }
+              .keyboardShortcut(.defaultAction)
+          }
+          .padding(10)
+        }
         .accessibilityIdentifier(
           tab.id == state.selectedQueryTabID ? "selected-query-tab" : "query-tab")
       }
@@ -203,6 +227,16 @@ struct WorkspaceView: View {
     }
     .padding(.horizontal, 12)
     .padding(.vertical, 8)
+  }
+
+  private func beginRenamingTab(_ tab: QueryTab) {
+    renameDraft = tab.title
+    renamingTabID = tab.id
+  }
+
+  private func commitTabRename(_ tab: QueryTab) {
+    state.renameQueryTab(id: tab.id, to: renameDraft)
+    renamingTabID = nil
   }
 
   private var header: some View {

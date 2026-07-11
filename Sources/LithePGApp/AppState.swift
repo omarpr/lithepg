@@ -412,6 +412,15 @@ public final class AppState {
     clearError()
   }
 
+  /// Renames a query tab. Blank names fall back to the tab's current title so
+  /// a tab can never end up unlabeled.
+  public func renameQueryTab(id: QueryTab.ID, to newTitle: String) {
+    guard let index = queryTabs.firstIndex(where: { $0.id == id }) else { return }
+    let trimmed = newTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return }
+    queryTabs[index].title = trimmed
+  }
+
   public func selectQueryTab(id: QueryTab.ID) {
     guard queryTabs.contains(where: { $0.id == id }) else { return }
     selectedQueryTabID = id
