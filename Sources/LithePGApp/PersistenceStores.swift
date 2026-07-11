@@ -188,26 +188,38 @@ public actor KeychainCredentialStore: CredentialStore {
     // scope credentials to the app identity instead of the broad user login keychain.
     SecItemDelete(baseQuery(reference: reference, dataProtection: true) as CFDictionary)
     SecItemDelete(baseQuery(reference: reference, dataProtection: false) as CFDictionary)
-    var query = baseQuery(reference: reference, dataProtection: true)
-    query[kSecValueData as String] = data
-    query[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-    let status = SecItemAdd(query as CFDictionary, nil)
+    var status = addSecret(data, reference: reference, dataProtection: true)
+    if status == errSecMissingEntitlement {
+      // Entitlement-less processes (unsigned dev builds, plain `swift test` runners)
+      // cannot use the data-protection keychain at all (-34018). Falling back to the
+      // legacy login keychain keeps credentials out of plaintext instead of making
+      // every save fail; signed builds still take the hardened path above.
+      status = addSecret(data, reference: reference, dataProtection: false)
+    }
     guard status == errSecSuccess else { throw KeychainError(status: status) }
   }
 
   public func loadSecret(for reference: String) async throws -> String? {
     if let secret = try loadSecret(for: reference, dataProtection: true) { return secret }
     // Backward-compatible read path for secrets saved before the data-protection keychain
-    // migration. The next save writes to the hardened path.
+    // migration and for entitlement-less builds that write to the legacy keychain.
     return try loadSecret(for: reference, dataProtection: false)
   }
 
   public func deleteSecret(for reference: String) async throws {
     let first = SecItemDelete(baseQuery(reference: reference, dataProtection: true) as CFDictionary)
     let second = SecItemDelete(baseQuery(reference: reference, dataProtection: false) as CFDictionary)
-    for status in [first, second] where status != errSecSuccess && status != errSecItemNotFound {
+    for status in [first, second]
+    where status != errSecSuccess && status != errSecItemNotFound && status != errSecMissingEntitlement {
       throw KeychainError(status: status)
     }
+  }
+
+  private func addSecret(_ data: Data, reference: String, dataProtection: Bool) -> OSStatus {
+    var query = baseQuery(reference: reference, dataProtection: dataProtection)
+    query[kSecValueData as String] = data
+    query[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+    return SecItemAdd(query as CFDictionary, nil)
   }
 
   private func loadSecret(for reference: String, dataProtection: Bool) throws -> String? {
@@ -217,6 +229,9 @@ public actor KeychainCredentialStore: CredentialStore {
     var result: CFTypeRef?
     let status = SecItemCopyMatching(query as CFDictionary, &result)
     if status == errSecItemNotFound { return nil }
+    // An entitlement-less process cannot query the data-protection keychain (-34018);
+    // report "not found here" so the caller falls through to the legacy keychain.
+    if status == errSecMissingEntitlement && dataProtection { return nil }
     guard status == errSecSuccess else { throw KeychainError(status: status) }
     guard let data = result as? Data else { return nil }
     return String(data: data, encoding: .utf8)

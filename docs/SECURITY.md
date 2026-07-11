@@ -10,6 +10,7 @@ LithePG is a local macOS client that connects to user-owned PostgreSQL databases
 ## Credential Storage
 - **All saved passwords live in the macOS Keychain.** Never in local JSON files, plist files, UserDefaults, logs, screenshots, or query history.
 - Keychain writes use `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` and the data-protection keychain flag when available. Reads retain a legacy fallback for pre-migration saved passwords.
+- Entitlement-less builds (unsigned dev builds and plain `swift test` runners) cannot use the data-protection keychain at all (`errSecMissingEntitlement`, -34018). Saves in those builds fall back to the legacy login keychain with the same accessibility attribute rather than failing, and reads/deletes treat the data-protection keychain as absent. Signed/notarized builds keep the hardened data-protection path. Covered by the `LITHEPG_KEYCHAIN_TESTS=1` gated suite.
 - Each saved connection references a Keychain item by identifier; the app persists connection metadata only.
 - Saved-connection metadata is HMAC-signed with a per-connection key stored in the credential store. LithePG refuses to load unsigned or tampered saved-connection metadata so a local file edit cannot silently redirect a saved password to another host.
 - Client certificates and SSH keys are referenced by path or by the user's system SSH/Keychain configuration; they are not copied into LithePG-owned storage.
