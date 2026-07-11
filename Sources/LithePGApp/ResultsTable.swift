@@ -32,6 +32,13 @@ struct ResultsTable: View {
         }
         // Cmd-C copies the selected cell; falls back to the menu copy actions.
         .copyable(selectedCellCopyItems)
+        // One sheet for the whole grid. A popover per cell created presentation
+        // machinery for every visible cell and made clicking noticeably slow.
+        .sheet(item: $editingCell) { address in
+            if let result {
+                cellEditor(address, in: result)
+            }
+        }
     }
 
     @ViewBuilder
@@ -273,7 +280,7 @@ struct ResultsTable: View {
     private func headerCell(_ column: QueryResult.Column, columnIndex: Int, width: CGFloat) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
             Text(ResultsTablePresentation.headerName(for: column))
-                .font(.callout.weight(.semibold))
+                .font(.body.weight(.semibold))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
                 .accessibilityIdentifier("result-header-\(columnIndex)")
@@ -303,7 +310,7 @@ struct ResultsTable: View {
     ) -> some View {
         let isSelected = selectedCell == address
         return Text(value)
-            .font(.callout.monospaced())
+            .font(.body.monospaced())
             .foregroundStyle(isNull ? .tertiary : .primary)
             .lineLimit(1)
             .truncationMode(.tail)
@@ -317,11 +324,18 @@ struct ResultsTable: View {
                     .frame(height: 1)
             }
             .contentShape(Rectangle())
-            .onTapGesture(count: 2) {
-                selectedCell = address
-                beginEditing(address, in: result)
-            }
-            .onTapGesture { selectedCell = address }
+            // The single tap runs simultaneously with the double-tap recognizer,
+            // so selection is instant instead of waiting out the double-click
+            // interval; the double tap then also opens the editor.
+            .gesture(
+                TapGesture(count: 2).onEnded {
+                    selectedCell = address
+                    beginEditing(address, in: result)
+                }
+            )
+            .simultaneousGesture(
+                TapGesture().onEnded { selectedCell = address }
+            )
             .contextMenu {
                 Button("Copy cell") { copyCell(address, in: result) }
                 Button("Copy row") { copyRow(address.row, in: result) }
@@ -329,15 +343,6 @@ struct ResultsTable: View {
                     selectedCell = address
                     beginEditing(address, in: result)
                 }
-            }
-            .popover(
-                isPresented: Binding(
-                    get: { editingCell == address },
-                    set: { if !$0 { editingCell = nil } }
-                ),
-                arrowEdge: .bottom
-            ) {
-                cellEditor(address, in: result)
             }
             .accessibilityAddTraits(.isButton)
             .accessibilityLabel(isNull ? "NULL" : value)
@@ -498,8 +503,8 @@ enum ResultsTablePresentation {
     static let indexColumnWidth: CGFloat = 44
     static let minimumColumnWidth: CGFloat = 126
     static let tablePadding: CGFloat = 10
-    static let headerRowHeight: CGFloat = 29
-    static let bodyRowHeight: CGFloat = 27
+    static let headerRowHeight: CGFloat = 32
+    static let bodyRowHeight: CGFloat = 30
 
     static func columnWidths(availableWidth: CGFloat, columnCount: Int) -> [CGFloat] {
         guard columnCount > 0 else { return [] }
@@ -641,9 +646,11 @@ enum ResultsTablePresentation {
     }
 
     /// Identifies one cell on the current page by absolute row and column index.
-    struct CellAddress: Equatable, Hashable {
+    struct CellAddress: Equatable, Hashable, Identifiable {
         let row: Int
         let column: Int
+
+        var id: String { "\(row):\(column)" }
     }
 
     /// The raw text of a cell for copying: NULL copies as an empty string.

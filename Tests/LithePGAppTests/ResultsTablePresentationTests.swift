@@ -97,8 +97,15 @@ struct ResultsTablePresentationTests {
     @Test("filler rows keep sparse result sets visually full height")
     func fillerRowsFillSparseViewport() {
         let viewport: CGFloat = 320
-        #expect(ResultsTablePresentation.fillerRowCount(viewportHeight: viewport, visibleRowCount: 0) == 11)
-        #expect(ResultsTablePresentation.fillerRowCount(viewportHeight: viewport, visibleRowCount: 2) == 9)
+        // Derive from the layout constants so size polish does not break the test.
+        func expected(_ visible: Int) -> Int {
+            let occupied = (ResultsTablePresentation.tablePadding * 2)
+                + ResultsTablePresentation.headerRowHeight
+                + (CGFloat(visible) * ResultsTablePresentation.bodyRowHeight)
+            return max(0, Int(ceil((viewport - occupied) / ResultsTablePresentation.bodyRowHeight)))
+        }
+        #expect(ResultsTablePresentation.fillerRowCount(viewportHeight: viewport, visibleRowCount: 0) == expected(0))
+        #expect(ResultsTablePresentation.fillerRowCount(viewportHeight: viewport, visibleRowCount: 2) == expected(2))
         #expect(ResultsTablePresentation.fillerRowCount(viewportHeight: viewport, visibleRowCount: 100) == 0)
     }
 
