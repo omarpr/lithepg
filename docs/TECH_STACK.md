@@ -15,6 +15,7 @@
 - **PostgresNIO:** The active connection path.
 - **Constraint:** Strictly avoid `libpq` and app-authored C shims to keep the binary lean and modern.
 - **Features:** Async/await-facing app APIs, explicit TLS modes from Postgres URLs/UI configuration, optional OpenSSH tunnel handoff, schema introspection, and typed query results for the UI.
+- **Neon compatibility (verified 2026-07-11):** The connector and CLI smoke utility passed live checks against a real Neon project (Postgres 17) over verified TLS, on both direct and pooled (`-pooler`) endpoints using the current `ep-*.c-N.<region>.aws.neon.tech` host shape with `channel_binding=require` present in the URL. The gated live app-layer suite (`POSTGRES_TEST_URL` + `swift test --filter 'live|Live'`) passed 6/6 against Neon: connect, query render, schema introspection, saved-connection flow, reconnect, and query history.
 - **Vendored C boundary:** PostgresNIO's TLS path brings BoringSSL transitively through `swift-nio-ssl`; that is an accepted security/runtime dependency, not an app-authored C shim. The v0.2a editor deliberately uses native AppKit `NSTextView` after the Runestone spike failed on native macOS SPM, so v0.2a adds no tree-sitter or editor-side C dependency. Revisit the binary-size trade-off before introducing tree-sitter in v0.2b.
 
 ## 4. AI & Intelligence Layer

@@ -52,6 +52,35 @@ struct NeonConnectionProfileTests {
     #expect(NeonConnectionProfile.detect(url: "mysql://u:***@ep-test.neon.tech/main") == nil)
   }
 
+  @Test("detects modern Neon hosts with a proxy cell segment and channel_binding param")
+  func detectsModernNeonHostShape() throws {
+    // Shape emitted by neonctl today, verified against a live Neon project:
+    // an extra `c-N` proxy-cell label and a channel_binding query parameter.
+    let profile = try #require(
+      NeonConnectionProfile.detect(
+        url: "postgresql://owner:***@ep-odd-paper-a1fxw3hg.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+      )
+    )
+
+    #expect(profile.host == "ep-odd-paper-a1fxw3hg.c-4.us-east-1.aws.neon.tech")
+    #expect(profile.endpointID == "ep-odd-paper-a1fxw3hg")
+    #expect(profile.isPooled == false)
+    #expect(profile.tlsMode == .verifyFull)
+  }
+
+  @Test("detects modern pooled Neon hosts with a proxy cell segment")
+  func detectsModernPooledNeonHostShape() throws {
+    let profile = try #require(
+      NeonConnectionProfile.detect(
+        url: "postgresql://owner:***@ep-odd-paper-a1fxw3hg-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+      )
+    )
+
+    #expect(profile.endpointID == "ep-odd-paper-a1fxw3hg")
+    #expect(profile.isPooled == true)
+    #expect(profile.tlsMode == .verifyFull)
+  }
+
   @Test("profile output excludes password values")
   func profileOutputExcludesPasswords() throws {
     let password = "super-secret"

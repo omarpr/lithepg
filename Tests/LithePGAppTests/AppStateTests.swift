@@ -524,7 +524,10 @@ struct AppStateTests {
 
     let entry = try #require(s.queryHistory.first)
     #expect(entry.sql == "SELECT 7 AS history_smoke")
-    #expect(entry.connectionLabel.contains("localhost"))
+    // The label must reflect whatever host POSTGRES_TEST_URL points at (localhost
+    // for the dogfood fixture, a remote hostname for live Neon runs).
+    let expectedHost = try ConnectionConfig(url: appStateLivePostgresURL!).host
+    #expect(entry.connectionLabel.contains(expectedHost))
     #expect(entry.succeeded == true)
     #expect(entry.summary == "1 row")
     #expect(entry.elapsedMilliseconds >= 0)

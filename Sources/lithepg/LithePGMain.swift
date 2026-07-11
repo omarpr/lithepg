@@ -43,6 +43,11 @@ struct LithePGMain {
         } catch {
             try? await connector.shutdown()
             FileHandle.standardError.write(Data("error: \(ErrorRedaction.redactCredentials(in: error))\n".utf8))
+            if ProcessInfo.processInfo.environment["LITHEPG_DEBUG_ERROR"] == "1" {
+                FileHandle.standardError.write(
+                    Data("debug: \(ErrorRedaction.redactCredentials(in: String(reflecting: error)))\n".utf8)
+                )
+            }
             exit(1)
         }
     }
