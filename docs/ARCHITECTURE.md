@@ -34,14 +34,14 @@ High-level module boundaries and data flow for LithePG. Implementation details l
 ## Layer Responsibilities
 
 ### App Layer
-- SwiftUI views plus `AppState` for connection, query, schema, saved-connection, query-history, appearance, and Ask-in-English workflow state.
+- SwiftUI views plus `AppState` for connection, query, schema, saved-connection, query-history, appearance and Ask-in-English workflow state.
 - UI code talks to the driver through `PostgresConnector` and to credentials through persistence protocols; views do not touch Keychain APIs directly.
 - Presentation helpers stay headless-testable where practical, for example results pagination/copy/export formatting.
 
 ### Core Services
-- `PostgresConnector` owns the live Postgres connection lifecycle, query execution, TLS configuration, SSH tunnel handoff, and result materialization.
-- `SchemaIntrospector`, `SchemaIndex`, and `AIQueryService` implementations provide local schema awareness and deterministic/local SQL drafting.
-- `ResultExporter` serializes already-fetched results to CSV or JSON without network calls or SQL execution.
+- `PostgresConnector` owns the live Postgres connection lifecycle, query execution, TLS configuration, SSH tunnel handoff and result materialization.
+- `SchemaIntrospector`, `SchemaIndex` and `AIQueryService` implementations provide local schema awareness and deterministic/local SQL drafting.
+- `ResultExporter` serializes already-fetched results to CSV, JSON or Markdown without network calls or SQL execution.
 - All public I/O APIs are `async`; shared mutable services are `actor`s where needed.
 
 ### Driver
@@ -60,7 +60,7 @@ High-level module boundaries and data flow for LithePG. Implementation details l
 - Schema awareness uses local metadata/indexing; vector storage remains a future optimization.
 
 ## Key Invariants
-- **No credentials in JSON, UserDefaults, screenshots, logs, or query history.** Ever.
+- **No credentials in JSON, UserDefaults, screenshots, logs or query history.** Ever.
 - **No network calls from the AI layer.** Inference is local-only.
 - **UI never imports `PostgresNIO` directly.** Services mediate.
 - **Services never import SwiftUI.** Keeps them testable and reusable.
@@ -71,6 +71,6 @@ High-level module boundaries and data flow for LithePG. Implementation details l
 - Cancellation propagates from UI task cancellation through the service layer to the driver.
 
 ## Testing Strategy
-- **Unit tests:** Core models/services, app-state workflow, persistence stores, presentation helpers, exporter behavior, and redaction.
+- **Unit tests:** Core models/services, app-state workflow, persistence stores, presentation helpers, exporter behavior and redaction.
 - **Integration tests:** Real PostgreSQL/TLS/SSH/model-artifact paths are env-gated and auto-skip when prerequisites are absent.
 - **UI tests:** Minimal smoke coverage; most behavior is covered through view model and presentation-helper tests.

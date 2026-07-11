@@ -8,37 +8,35 @@ LithePG follows outcome-named milestones with semantic-version tags. v1.0 remain
 
 ### Added
 
-- Public-launch planning opened from the roadmap's v1.0 exit criteria: notarized macOS distribution, GitHub/Homebrew release path, public docs, governance templates, security reporting, and light/dark appearance support.
-- Public collaboration entry points were added: [`CONTRIBUTING.md`](CONTRIBUTING.md), [`GOVERNANCE.md`](GOVERNANCE.md), [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md), DCO sign-off guidance, issue templates, and a PR template with local-test and no-secrets reminders.
-- Root [`SECURITY.md`](SECURITY.md) now points to [`docs/SECURITY.md`](docs/SECURITY.md) for the current reporting-policy placeholder, private-reporting expectations, and sanitized/no-secrets disclosure guidance.
-- The app supports light, dark, and system appearance preferences, with dark as the default.
-- [`README.md`](README.md) was refreshed for public readers with GitHub Release install guidance, source build/test/package quickstart commands, a seeded screenshot, and plain-language local-first AI/model-artifact notes.
-- Local package verification now checks the generated `dist/LithePG.app` bundle structure, executable permissions, bundle metadata, minimum macOS version, the 50 MiB executable hard cap, and optional `LITHEPG_EXPECTED_MARKETING_VERSION` / `LITHEPG_EXPECTED_BUILD_VERSION` assertions.
-- A credential-gated signing/notarization wrapper is available for dry-run validation and future real distribution signing.
-- [`docs/RELEASING.md`](docs/RELEASING.md) documents the local package gate, required signing/notary inputs, dry-run flow, release artifact SHA workflow, and final v1.0 tag gate.
-- [`script/v10_release_gate.sh`](script/v10_release_gate.sh) provides a fast v1.0 publication preflight for local branch/status/tag readiness, release-copy placeholder/checklist/SHA consistency checks, release artifact structure/icon/signature/SHA validation, Homebrew cask shape and Ruby syntax checks, and required external publication inputs without printing secret/contact/tap or digest values.
-- Review-only release copy lives in [`docs/releases/v1.0-draft.md`](docs/releases/v1.0-draft.md) with unresolved `REPLACE_WITH_*` placeholders that must be resolved before publication.
-- [`script/create_release_zip.sh`](script/create_release_zip.sh) creates `LithePG.app.zip` from an existing verified `LithePG.app` using `ditto --keepParent`, refuses unsafe overwrites and outputs inside the app bundle, and prints the SHA-256 digest plus byte size without uploading, tagging, signing, notarizing, or contacting the network.
-- A repository-local Homebrew cask template and README live under [`packaging/homebrew/`](packaging/homebrew/) for the planned `LithePG.app.zip` artifact; external tap publication remains approval-gated.
-- The packaged app now has a reproducible first app icon (`packaging/AppIcon.png` / `packaging/AppIcon.icns`), and the Swift package exposes a restored `LithePGApp` executable product for packaging scripts while keeping the app UI in a reusable library target.
-- Package and release-artifact preflights now fail closed on malformed or metadata-bearing app icons, including duplicate ICNS image elements, invalid PNG dimensions/chunks/zlib streams, text/timestamp/EXIF/pixel-density/significant-bit/background/histogram metadata, and unknown ancillary PNG chunks.
-- The results grid can export fetched row results as CSV or JSON through a local save panel. Export only serializes rows already returned to the app; it does not run SQL, contact the network, or include credentials.
+- Public collaboration entry points: `CONTRIBUTING.md`, `GOVERNANCE.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, issue and PR templates with DCO sign-off guidance.
+- Light, dark and system appearance preferences, with dark as the default.
+- Results grid export and copy as CSV, JSON and GitHub-flavored Markdown. Only rows already fetched are serialized; nothing runs SQL or touches the network.
+- EXPLAIN plan parsing (`QueryPlan`) and headless plan-tree presentation seams, ready for a v1.1 plan view.
+- Neon connection support: pasted Neon URLs are detected and surface endpoint, database, role and pooled or direct mode, with a suggested connection name. Verified live against real Neon endpoints (Postgres 17, direct and pooled, current host shape) by CLI smoke and the gated live app suite.
+- Pasted connection strings are sanitized before parsing, so quoted strings, `psql '<url>'` commands, `DATABASE_URL=` lines and trailing newlines all work.
+- Bare-executable runs (`swift run`, Xcode package schemes) now activate the app so windows accept keyboard input.
+- Keychain resilience: entitlement-less builds fall back to the legacy login keychain instead of failing to save credentials; a gated suite (`LITHEPG_KEYCHAIN_TESTS=1`) covers real-keychain round trips.
+- Release tooling: local package verification, artifact and icon hardening, `script/v10_release_gate.sh` preflight, `script/create_release_zip.sh`, a credential-gated signing/notarization wrapper and a Homebrew cask template under `packaging/homebrew/`.
+- `CORE_TECHNOLOGIES.md` documents every core technology choice and why.
+
+### Changed
+
+- swift-nio updated to 2.101.2 for published advisories (GHSA-rj37-6j9x-74q6, GHSA-r3rc-9hpw-54v9, GHSA-cq87-8r7h-962v).
+- User-facing copy reworked to read naturally (no em-dashes, no Oxford commas).
+- CI runs on every push and PR again: build and tests on macOS, security scans (osv-scanner, gitleaks, semgrep) on Linux with pinned, checksum-verified scanner binaries.
 
 ### Verified
 
-- Local v1.0 release gates passed on `main` before any public tag/release publication: release-helper shell suites, `swift test`, `script/dogfood_check.sh`, `script/build_and_run.sh --package`, and `script/package_verify.sh dist/LithePG.app`.
-- The latest app-icon/product-restore receipt on `main` at `1f3b8f1` stayed within the lean/fast budgets: 823.61 ms shell readiness and 447.49 ms connected cold start measured while parallel release-helper tests were still running, 21.63 MiB raw release executable, 12.03 MiB strip-probe/package executable, and 0.078 ms median `SELECT 1` overhead. Earlier dogfood-query receipts remained far below the 5 ms target.
-- Focused package/artifact hardening receipts through `24ab96c` kept the local v1.0 release preflights green with `script/test_package_verify.sh`, `script/test_v10_release_gate.sh`, helper shell suites, `swift build`, full `swift test`, and local package/artifact verification; Docker was unavailable in those later cron environments, so the earlier seeded dogfood receipt remains the latest full dogfood gate.
-- Focused result-export receipts through `3b3ad98` added tested CSV/JSON serialization and UI wiring from the results grid.
-- Signing/notarization dry-run reached the expected external credential gate after package verification; real signing/notarization remains blocked by missing Apple Developer signing/notary environment credentials.
+- 194 tests across 28 suites pass locally and in CI; live suites verified against seeded Docker Postgres and real Neon endpoints.
+- Full git history (412 commits) scanned for secrets with gitleaks plus manual pattern sweeps: clean, no rewrite needed before open-sourcing.
+- Binary and speed budgets hold: ~21.7 MiB release executable (50 MiB cap, 30 MiB stretch), sub-500 ms connected startup, sub-5 ms query overhead. Receipts in `docs/dogfood-log.md`.
 
 ### Still blocked before release
 
-- Real codesigning and notarization require Omar-controlled Apple Developer signing identity and notarytool keychain profile on the release machine.
-- Security reporting needs an approved public contact before the current placeholder policy can be published as final.
-- Homebrew publication needs an approved tap target.
-- GitHub Release artifact creation, release-copy approval, unresolved draft placeholders, and the `v1.0` tag remain gated on Omar's explicit public publication approval.
-- GitHub Actions still requires Omar-side account/settings: the latest manual `workflow_dispatch` failed before any job steps or logs were produced, so local release receipts remain the fallback gate until Actions can actually run.
+- Apple Developer signing identity and notarytool profile on the release machine.
+- An approved public security-reporting contact to replace the placeholder policy.
+- An approved Homebrew tap target.
+- Release-copy approval, resolved draft placeholders and the `v1.0` tag, all gated on explicit publication approval.
 
 ## [v0.5] — 2026-05-28 — AI-Ready
 

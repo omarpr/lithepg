@@ -47,10 +47,10 @@ an online or offline event.
 
 ## Enforcement Responsibilities
 
-LithePG is maintainer-led. The project lead is responsible for clarifying and
-enforcing standards of acceptable behavior and will take appropriate and fair
-corrective action in response to any behavior that the project lead deems
-inappropriate, threatening, offensive, or harmful.
+The project lead is responsible for clarifying and enforcing standards of
+acceptable behavior and will take appropriate and fair corrective action in
+response to any behavior that the project lead deems inappropriate, threatening,
+offensive, or harmful.
 
 Maintainers have the right and responsibility to remove, edit, or reject comments,
 commits, code, wiki edits, issues, and other contributions that are not aligned
@@ -60,11 +60,10 @@ when appropriate.
 ## Reporting and Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the project lead. If the report is sensitive or includes private
-security details, use private GitHub vulnerability reporting/advisory channels if
-enabled for the repository rather than opening a public issue. Do not include
-passwords, tokens, full connection URLs, private schemas, or real query-result
-dumps in public reports.
+reported to the project lead. For sensitive reports, use the repository's private
+GitHub advisory channel if enabled rather than a public issue, and keep
+passwords, tokens, connection URLs, private schemas or real query-result dumps
+out of public reports.
 
 All complaints will be reviewed and investigated promptly and fairly. The project
 lead is obligated to respect the privacy and security of the reporter and any

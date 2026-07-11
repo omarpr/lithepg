@@ -1,64 +1,37 @@
 # LithePG
 
 [![CI](https://github.com/omarpr/lithepg/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/omarpr/lithepg/actions/workflows/ci.yml?query=branch%3Amain)
-&nbsp;**Latest tagged release:** [`v0.5`](https://github.com/omarpr/lithepg/tree/v0.5) — AI-Ready
+&nbsp;**Latest tagged release:** [`v0.5`](https://github.com/omarpr/lithepg/tree/v0.5)
 
-LithePG is a lean, Mac-native PostgreSQL client with local-first AI. Its app code is Swift, it uses `postgres-nio` instead of `libpq`, and it keeps the shipped app binary under the 50 MiB hard cap.
+LithePG is a lean, Mac-native PostgreSQL client with local-first AI. Pure Swift on `postgres-nio` (no `libpq`), a ~22 MiB binary and nothing ever leaves your machine.
 
 ![LithePG app window showing a seeded dogfood schema, query editor, and results grid](docs/assets/lithepg-app-snapshot.png)
 
-*Screenshot uses the seeded dogfood database only; it does not show real private schemas, credentials, or query results.*
+*Screenshot shows the seeded demo database, not real data.*
 
 ## What you get
 
-- A native macOS app for connecting to PostgreSQL, writing SQL, and viewing results.
-- Saved connection metadata with passwords stored separately in the macOS Keychain.
-- Schema sidebar, tabbed query workspace, query history, pagination, result copy/export, and keyboard shortcuts.
-- Ask-in-English SQL drafting that inserts suggested SQL for review and never auto-runs it.
-- Light, dark, and system appearance choices, with dark as the default.
-- A small CLI smoke utility (`lithepg`) for plain TCP, TLS, and SSH-tunneled connection checks.
+- A native macOS app for connecting to Postgres, writing SQL and viewing results.
+- Saved connections with passwords in the macOS Keychain, never on disk.
+- Schema sidebar, query tabs, history, result copy and CSV/JSON/Markdown export.
+- Ask in English drafting that inserts SQL for review and never auto-runs it.
+- Pasted connection strings just work, including Neon URLs, quoted strings and `psql` command copies.
+- Light, dark and system appearance.
+- A CLI smoke utility (`lithepg`) for plain TCP, TLS and SSH-tunneled checks.
 
 ## Status
 
-v0.5 is the current tagged milestone. v1.0 public launch work is in progress and remains unreleased until signed/notarized distribution, Homebrew metadata, final release receipts, and Omar-approved external publication gates are complete.
-
-Latest local verification receipts:
-
-- **v1.0 local gate:** latest full app-icon/product-restore receipt on `main` at `1f3b8f1` passed the release-helper shell suites, full `swift test`, seeded `script/dogfood_check.sh`, package build, and `script/package_verify.sh dist/LithePG.app`; later focused v1.0 release-gate and cron file-protection checks also passed before any public release/tag publication.
-- **Release artifact integrity:** focused v1.0 package/artifact gates on `main` through `24ab96c` passed after hardening the app-icon and CodeResources checks for malformed ICNS tables, invalid PNG dimensions/chunks/zlib streams, duplicate image payloads, Finder metadata, symlinks/hardlinks, executable modes, oversized artifacts, and metadata-bearing PNG chunks including text, timestamp, EXIF, physical-pixel, significant-bit, background, histogram, and unknown ancillary chunks.
-- **Current main app delta:** result export is now wired in the results grid on `main` through `3b3ad98`; users can save fetched row results as CSV or JSON, and focused exporter/UI tests passed before that commit.
-- **AI drafting:** deterministic local Ask flow drafts runnable SQL for simple single-table prompts and two-table joins using schema/foreign-key metadata; drafts are inserted for human review and never auto-run.
-- **Model posture:** the CoreML adapter scaffold is disabled by default, requires a user-provided external model artifact, and keeps prompts, schema context, query results, history, and credentials on-device.
-- **Binary budget:** 21.63 MiB raw release executable / 12.03 MiB strip-probe and packaged executable, under the 50 MiB hard cap and 30 MiB stretch goal.
-- **Startup:** 823.61 ms shell readiness; 447.49 ms connected startup through seeded dogfood Postgres in the latest icon/product-restore receipt. These timings were captured while parallel release-helper tests were still running, so they are elevated but still within the 500 ms connected-startup gate.
-- **Query overhead:** 0.078 ms median overhead versus `psql` for `SELECT 1` in the latest icon/product-restore receipt; prior dogfood-query overhead receipts remained far below the 5 ms target.
-- **Stability:** v0.4 seven-day zero-crash dogfood window satisfied; v0.5 and v1.0 local dogfood/test/measurement gates passed.
-- **Release blockers:** public v1.0 still needs Omar-controlled codesigning/notarization credentials, an approved security-reporting contact, Homebrew tap target, GitHub Actions account/settings fix, release-copy approval, and explicit publication approval.
-
-Evidence and policies: [`CHANGELOG.md`](CHANGELOG.md), [`docs/RELEASING.md`](docs/RELEASING.md), [`SECURITY.md`](SECURITY.md), and [`docs/dogfood-log.md`](docs/dogfood-log.md).
+v0.5 is the current tag. The v1.0 code is complete and verified: 194 tests across 28 suites, CI green on push, connectivity proven live against local Docker Postgres and real Neon endpoints (direct and pooled), full git history scanned for secrets, binary at ~22 MiB against a 50 MiB cap. What remains for a public v1.0 is distribution, not code: Apple signing and notarization credentials, a final security contact, a Homebrew tap and release approval. Receipts live in [`docs/dogfood-log.md`](docs/dogfood-log.md) and [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Install
 
 ### GitHub Release zip
 
-The v1.0 public distribution path is a signed and notarized `LithePG.app.zip` attached to a GitHub Release:
-
-1. Open the [GitHub Releases page](https://github.com/omarpr/lithepg/releases).
-2. Download `LithePG.app.zip` for the release you want.
-3. If the release notes include checksums, verify the downloaded zip before opening it.
-4. Unzip it, move `LithePG.app` to `/Applications`, and open it from Finder.
-
-If a v1.0 signed/notarized release zip is not present yet, build from source instead. Unsigned local bundles from `dist/` are development artifacts, not official public releases. Maintainer release steps live in [`docs/RELEASING.md`](docs/RELEASING.md).
+When a signed release exists: download `LithePG.app.zip` from [Releases](https://github.com/omarpr/lithepg/releases), verify the checksum if provided, unzip and move `LithePG.app` to `/Applications`. Until then, build from source.
 
 ### Homebrew cask (planned)
 
-A Homebrew cask is planned for v1.0 after the release artifact URL, SHA-256, and tap target are approved. The intended user command will be:
-
-```sh
-brew install --cask lithepg
-```
-
-Until that cask exists, use the GitHub Release zip when available or the source build below.
+`brew install --cask lithepg` will work once the v1.0 artifact and tap are approved.
 
 ### Build from source
 
@@ -67,48 +40,25 @@ Requirements: macOS 14+ and an Xcode/Swift 6.2 toolchain.
 ```sh
 git clone https://github.com/omarpr/lithepg.git
 cd lithepg
-swift build
-swift test
+swift build && swift test
 ./script/build_and_run.sh --package
-./script/package_verify.sh dist/LithePG.app
 open dist/LithePG.app
 ```
 
-The package step produces `dist/LithePG.app`, strips the copied release executable, applies local/ad-hoc signing when public signing credentials are not configured, and runs the bundle verifier.
-
-## Quickstart for the seeded demo
-
-Start the local Docker Postgres with synthetic sample data, then launch the app directly into it. The Docker demo database uses the synthetic local password `postgres`; replace it with your own password for any non-demo database.
+## Try it with the seeded demo
 
 ```sh
-./script/dogfood_postgres.sh
-LITHEPG_STARTUP_URL="postgres://postgres:***@localhost:55432/postgres?sslmode=disable" \
-LITHEPG_STARTUP_QUERY="SELECT * FROM lithepg_demo.customer_revenue ORDER BY revenue_cents DESC;" \
-.build/arm64-apple-macosx/debug/LithePGApp
-```
-
-Or use the helper, which seeds Docker, builds `LithePGApp`, injects the startup URL/query, and launches the app:
-
-```sh
+./script/dogfood_postgres.sh              # Docker Postgres with sample data
 POSTGRES_TEST_URL="postgres://postgres:***@localhost:55432/postgres?sslmode=disable" ./script/run_dogfood_app.sh
 ```
 
-The startup environment variables are intentionally opt-in for dogfood and smoke runs. Normal app launches show the connection sheet.
+The demo database uses the synthetic local password `postgres`. Normal app launches show the connect sheet; the startup env vars exist for demo and smoke runs only.
 
 ## Local-first AI in plain language
 
-LithePG's Ask-in-English feature is designed to help draft SQL without sending your database context to a cloud service:
-
-- The app builds context from your request and local schema metadata.
-- Generated SQL is inserted into the editor so you can inspect or edit it first.
-- Generated SQL is never run automatically.
-- There is no telemetry, no cloud AI call path, and no model download path in the app.
-- The default Ask implementation is deterministic and local. A CoreML adapter exists for future/local experiments, but it is off by default and only activates when you explicitly provide `LITHEPG_ENABLE_LOCAL_MODEL=1` and `LITHEPG_LOCAL_MODEL_PATH` for your own model artifact.
-- Model artifacts are not bundled with LithePG and do not count toward the app binary budget.
+Ask in English (`⇧⌘K`) drafts SQL from your request plus local schema metadata. The draft lands in the editor for you to inspect; it never runs automatically. There is no telemetry, no cloud call path and no model download. The default engine is deterministic and local. An optional CoreML adapter activates only when you set `LITHEPG_ENABLE_LOCAL_MODEL=1` and point `LITHEPG_LOCAL_MODEL_PATH` at your own model artifact.
 
 ## CLI smoke utility
-
-The original v0.1 CLI remains useful for connection checks:
 
 ```sh
 .build/debug/lithepg --url postgres://user:***@host:5432/db
@@ -116,39 +66,39 @@ The original v0.1 CLI remains useful for connection checks:
 .build/debug/lithepg --url postgres://user:@127.0.0.1:5432/db --ssh user@bastion.example.com:22
 ```
 
-The CLI supports plain TCP, TLS verify-full with a pinned CA, and an SSH tunnel through `/usr/bin/ssh -L`. `--tls` and `--ssh` together are still rejected; tunneled TLS needs later SNI work.
+Plain TCP, TLS verify-full with an optional pinned CA, or an SSH tunnel through `/usr/bin/ssh -L`. `--tls` with `--ssh` is rejected (tunneled TLS needs later SNI work). Set `LITHEPG_DEBUG_ERROR=1` to print the redacted underlying error on failures.
 
 ## App shortcuts
 
-- `⌘↩` — run the active query tab.
-- `⌘.` — cancel the running query.
-- `⌘T` — open a new query tab.
-- `⌘W` — close the active query tab, keeping at least one tab open.
-- `⇧⌘[` / `⇧⌘]` — move to the previous / next query tab.
-- `⇧⌘K` — open Ask in English for local SQL drafting.
+- `⌘↩` run the active query tab
+- `⌘.` cancel the running query
+- `⌘T` / `⌘W` open / close a query tab
+- `⇧⌘[` / `⇧⌘]` previous / next query tab
+- `⇧⌘K` Ask in English
 
 ## Developer commands
 
 ```sh
 swift build
-swift test
+swift test                                # add LITHEPG_KEYCHAIN_TESTS=1 for the real-keychain suite
 ./script/build_and_run.sh --package
 ./script/package_verify.sh dist/LithePG.app
 ```
 
-Docs-only changes can skip Swift tests, but release-impacting changes should also run the package verifier and, when Docker is available, `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/dogfood_check.sh`.
+Live Postgres, TLS, SSH and Neon integration tests are gated on env vars (`POSTGRES_TEST_URL` and friends) and auto-skip without them. Release-impacting changes should also run `./script/dogfood_check.sh` when Docker is available.
+
+Running from Xcode: open the package folder (`xed .`), pick the `LithePGApp` scheme and hit run. See [`CORE_TECHNOLOGIES.md`](CORE_TECHNOLOGIES.md) for what the app is built on and why.
 
 ## Project layout
 
-- `Sources/LithePGCore/` — Postgres connector, schema introspection/indexing, AI drafting services, result export, and shared core logic.
-- `Sources/LithePGApp/` — SwiftUI macOS app UI, app state, local JSON persistence stores, Keychain credential store, and view models.
-- `Sources/LithePGAppMain/` — thin `LithePGApp` executable launcher used by packaging scripts.
+- `Sources/LithePGCore/` — connector, schema introspection, AI drafting, export, shared logic.
+- `Sources/LithePGApp/` — SwiftUI app, app state, persistence, Keychain store.
+- `Sources/LithePGAppMain/` — thin executable launcher for packaging.
 - `Sources/lithepg/` — CLI smoke utility.
-- `Tests/` — Swift Testing suites; Postgres/TLS/SSH/model-artifact integration tests are gated on env vars and auto-skip without them.
-- `script/` — dogfood, package, release, and measurement helpers.
-- `docs/` — tech stack, roadmap, release docs, dogfood receipts, specs, plans, and screenshots.
-- `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `GOVERNANCE.md`, `SECURITY.md` — public collaboration and policy entry points.
+- `Tests/` — Swift Testing suites; integration tests env-gated.
+- `script/` — dogfood, package, release and measurement helpers.
+- `docs/` — architecture, tech stack, security, releasing, receipts.
 
 ## CI
 
-`.github/workflows/ci.yml` currently exists as a manual workflow because account billing/spending-limit settings previously blocked push/PR-triggered Actions. The latest manual dispatch also failed before any job steps or logs were produced, so local verification receipts remain the release gate until the external GitHub Actions account setting is cleared.
+Every push and PR runs `.github/workflows/ci.yml`: build and full test suite on macOS plus dependency, secret and static-analysis scans (osv-scanner, gitleaks, semgrep) on Linux. Actions are pinned by commit SHA and scanner binaries are checksum-verified.

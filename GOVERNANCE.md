@@ -1,52 +1,71 @@
 # Governance
 
-LithePG is **maintainer-led**. This document defines how decisions get made and what contributors can expect.
+LithePG is **maintainer-led**. This document covers how decisions get made and
+what contributors can expect.
 
-## Project Lead
+## Project lead
 
-- **Omar Gerardo Soto-Fortuño** — project lead and maintainer.
-- The project lead has final say on scope, roadmap, vision, release timing, and acceptance of contributions.
-- Disagreements on direction are resolved by the project lead. There is no community vote on scope or features.
+- **Omar Gerardo Soto-Fortuño**, project lead and maintainer.
+- The project lead has final say on scope, roadmap, vision, release timing and
+  acceptance of contributions.
+- Direction disagreements are settled by the project lead. There is no community
+  vote on scope or features.
 
-## Scope & Vision
+## Scope and vision
 
-LithePG has an opinionated scope documented in `docs/superpowers/specs/` (roadmap) and `docs/TECH_STACK.md`. Core commitments:
+LithePG's opinionated scope lives in `docs/superpowers/specs/` (roadmap) and
+`docs/TECH_STACK.md`. Core commitments:
 
 - Mac-native (macOS only).
 - PostgreSQL only.
-- Pure app code, no `libpq`, no app-authored C shims.
-- Local-first AI — on-device inference only.
-- Lean — binary-size and startup-time targets are load-bearing, not aspirational.
+- Pure app code: no `libpq`, no app-authored C shims.
+- Local-first AI: on-device inference only.
+- Lean: binary-size and startup-time targets are load-bearing, not aspirational.
 
-The non-goals listed in the roadmap are non-negotiable. Pull requests that push LithePG toward cross-platform support, non-Postgres databases, cloud AI, team/collab features, or a plugin API will not be accepted.
+The roadmap non-goals are non-negotiable. Pull requests that push LithePG toward
+cross-platform support, non-Postgres databases, cloud AI, team features or a
+plugin API will not be accepted.
 
-## Contribution Model
+## Contribution model
 
-- **Bugs:** issues and PRs welcome at any time.
-- **Roadmap work:** pick up items already on the roadmap. Coordinate in the issue first to avoid duplicate effort.
-- **New features / non-trivial changes:** open a discussion or issue **before writing code**. PRs that skip this step may be closed without review.
-- **Out-of-scope proposals:** will be closed with a link to the roadmap non-goals. Not personal — just scope discipline.
+- **Bugs:** issues and PRs welcome any time.
+- **Roadmap work:** pick up items already on the roadmap. Coordinate in the issue
+  first to avoid duplicate effort.
+- **New features or non-trivial changes:** open a discussion or issue **before
+  writing code**. PRs that skip this may be closed without review.
+- **Out-of-scope proposals:** closed with a link to the roadmap non-goals.
+  Nothing personal, just scope discipline.
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the concrete workflow, coding conventions, local verification commands, no-secrets guidance, and PR expectations.
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the concrete workflow, coding
+conventions, local verification commands, no-secrets guidance and PR
+expectations.
 
-## Sign-Off (DCO)
+## Sign-off (DCO)
 
-All commits must be signed off under the [Developer Certificate of Origin](https://developercertificate.org/):
+Every commit must be signed off under the
+[Developer Certificate of Origin](https://developercertificate.org/):
 
 ```sh
 git commit -s -m "your message"
 ```
 
-The sign-off is a lightweight statement that you have the right to contribute the code under this project's license (MIT). LithePG does not require a separate Contributor License Agreement. See [`CONTRIBUTING.md`](CONTRIBUTING.md#commit-sign-off-dco) for the contributor-facing DCO workflow.
+The sign-off states that you have the right to contribute the code under the
+project's license (MIT). There is no separate Contributor License Agreement. See
+[`CONTRIBUTING.md`](CONTRIBUTING.md#commit-sign-off-dco) for the workflow.
 
-## Code of Conduct
+## Code of conduct
 
-Contributors and maintainers are expected to follow the project's [Code of Conduct](CODE_OF_CONDUCT.md). Enforcement is handled by the project lead through the maintainer-led process described there.
+Contributors and maintainers follow the project's
+[Code of Conduct](CODE_OF_CONDUCT.md). The project lead handles enforcement
+through the maintainer-led process described there.
 
 ## Succession
 
-If the project lead becomes unavailable long-term, maintainership may be transferred to a trusted contributor named in a future update to this document. Until then, LithePG has a single point of decision — that is intentional.
+If the project lead becomes unavailable long-term, maintainership may pass to a
+trusted contributor named in a future update to this document. Until then LithePG
+has a single, intentional point of decision.
 
-## Changes to This Document
+## Changes to this document
 
-Changes to governance require a pull request and are at the discretion of the project lead.
+Governance changes require a pull request and are at the project lead's
+discretion.
