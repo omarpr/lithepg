@@ -191,6 +191,7 @@ struct ResultsTable: View {
                 Button("Copy as CSV") { copyAs(result, format: .csv) }
                 Button("Copy as JSON") { copyAs(result, format: .json) }
                 Button("Copy as Markdown") { copyAs(result, format: .markdown) }
+                Button("Copy as SQL inserts") { copyAs(result, format: .sqlInsert) }
                     .disabled(!ResultsTablePresentation.canExport(result))
             } label: {
                 Image(systemName: copiedAtLeastOnce ? "checkmark" : "doc.on.doc")
@@ -203,13 +204,15 @@ struct ResultsTable: View {
 
             Menu {
                 Button("CSV (.csv)") { export(result, as: .csv) }
+                Button("TSV (.tsv)") { export(result, as: .tsv) }
                 Button("JSON (.json)") { export(result, as: .json) }
                 Button("Markdown (.md)") { export(result, as: .markdown) }
+                Button("SQL inserts (.sql)") { export(result, as: .sqlInsert) }
             } label: {
                 Image(systemName: "arrow.down.to.line")
             }
             .menuIndicator(.hidden)
-            .help("Export results to CSV, JSON or Markdown")
+            .help("Export results to CSV, TSV, JSON, Markdown or SQL inserts")
             .disabled(!ResultsTablePresentation.canExport(result))
         }
         .buttonStyle(.borderless)
@@ -257,13 +260,13 @@ struct ResultsTable: View {
     private func headerCell(_ column: QueryResult.Column, columnIndex: Int, width: CGFloat) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
             Text(ResultsTablePresentation.headerName(for: column))
-                .font(.caption.weight(.semibold))
+                .font(.callout.weight(.semibold))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
                 .accessibilityIdentifier("result-header-\(columnIndex)")
                 .accessibilityLabel(ResultsTablePresentation.headerAccessibilityLabel(for: column))
             Text(ResultsTablePresentation.headerType(for: column))
-                .font(.caption2)
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
         }
@@ -280,7 +283,7 @@ struct ResultsTable: View {
 
     private func dataCell(_ value: String, isNull: Bool, width: CGFloat) -> some View {
         Text(value)
-            .font(.caption.monospaced())
+            .font(.callout.monospaced())
             .foregroundStyle(isNull ? .tertiary : .primary)
             .lineLimit(1)
             .truncationMode(.tail)
@@ -359,8 +362,9 @@ struct ResultsTable: View {
     private static func contentType(for format: ResultExporter.Format) -> UTType {
         switch format {
         case .csv: .commaSeparatedText
+        case .tsv: .tabSeparatedText
         case .json: .json
-        case .markdown: UTType(filenameExtension: format.fileExtension) ?? .plainText
+        case .markdown, .sqlInsert: UTType(filenameExtension: format.fileExtension) ?? .plainText
         }
     }
 }

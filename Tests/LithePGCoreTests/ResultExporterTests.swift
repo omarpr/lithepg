@@ -212,9 +212,11 @@ struct ResultExporterTests {
     @Test("export formats expose stable file extensions and UTI-friendly identifiers")
     func formatMetadata() {
         #expect(ResultExporter.Format.csv.fileExtension == "csv")
+        #expect(ResultExporter.Format.tsv.fileExtension == "tsv")
         #expect(ResultExporter.Format.json.fileExtension == "json")
         #expect(ResultExporter.Format.markdown.fileExtension == "md")
-        #expect(ResultExporter.Format.allCases.count == 3)
+        #expect(ResultExporter.Format.sqlInsert.fileExtension == "sql")
+        #expect(ResultExporter.Format.allCases.count == 5)
     }
 
     @Test("export(_:as:) dispatches to the matching serializer")
@@ -224,7 +226,63 @@ struct ResultExporterTests {
             rows: [[.text("1")]]
         )
         #expect(ResultExporter.export(result, as: .csv) == ResultExporter.csv(for: result))
+        #expect(ResultExporter.export(result, as: .tsv) == ResultExporter.tsv(for: result))
         #expect(ResultExporter.export(result, as: .json) == ResultExporter.json(for: result))
         #expect(ResultExporter.export(result, as: .markdown) == ResultExporter.markdown(for: result))
+        #expect(ResultExporter.export(result, as: .sqlInsert) == ResultExporter.sqlInsert(for: result))
+    }
+
+    // MARK: - TSV
+
+    @Test("TSV emits a header and rows with tabs and flattened control characters")
+    func tsvBasics() {
+        let result = rowsResult(
+            columns: [.init(name: "id", typeName: "int4"), .init(name: "note", typeName: "text")],
+            rows: [
+                [.text("1"), .text("line one\nline two")],
+                [.text("2"), .null],
+            ]
+        )
+        #expect(ResultExporter.tsv(for: result) == "id\tnote\n1\tline one line two\n2\t")
+    }
+
+    @Test("TSV with no columns yields an empty string")
+    func tsvEmpty() {
+        let result = rowsResult(columns: [], rows: [])
+        #expect(ResultExporter.tsv(for: result) == "")
+    }
+
+    // MARK: - SQL INSERT statements
+
+    @Test("SQL export emits one INSERT per row with quoting and NULLs")
+    func sqlInsertBasics() {
+        let result = rowsResult(
+            columns: [.init(name: "id", typeName: "int4"), .init(name: "name", typeName: "text")],
+            rows: [
+                [.text("1"), .text("O'Brien")],
+                [.text("2"), .null],
+            ]
+        )
+        #expect(ResultExporter.sqlInsert(for: result) == """
+        INSERT INTO "results" ("id", "name") VALUES ('1', 'O''Brien');
+        INSERT INTO "results" ("id", "name") VALUES ('2', NULL);
+        """)
+    }
+
+    @Test("SQL export doubles embedded quotes in column identifiers")
+    func sqlInsertQuotesIdentifiers() {
+        let result = rowsResult(
+            columns: [.init(name: "odd\"name", typeName: "text")],
+            rows: [[.text("v")]]
+        )
+        #expect(ResultExporter.sqlInsert(for: result) == """
+        INSERT INTO "results" ("odd""name") VALUES ('v');
+        """)
+    }
+
+    @Test("SQL export with no columns yields an empty string")
+    func sqlInsertEmpty() {
+        let result = rowsResult(columns: [], rows: [])
+        #expect(ResultExporter.sqlInsert(for: result) == "")
     }
 }

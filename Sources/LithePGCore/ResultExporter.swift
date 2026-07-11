@@ -10,15 +10,19 @@ public enum ResultExporter {
     /// Supported export formats.
     public enum Format: CaseIterable, Sendable {
         case csv
+        case tsv
         case json
         case markdown
+        case sqlInsert
 
         /// Lowercase file extension (no dot) used when writing export files.
         public var fileExtension: String {
             switch self {
             case .csv: "csv"
+            case .tsv: "tsv"
             case .json: "json"
             case .markdown: "md"
+            case .sqlInsert: "sql"
             }
         }
     }
@@ -27,9 +31,68 @@ public enum ResultExporter {
     public static func export(_ result: QueryResult, as format: Format) -> String {
         switch format {
         case .csv: csv(for: result)
+        case .tsv: tsv(for: result)
         case .json: json(for: result)
         case .markdown: markdown(for: result)
+        case .sqlInsert: sqlInsert(for: result)
         }
+    }
+
+    // MARK: - TSV
+
+    /// Tab-separated values: header row of column names, one line per row.
+    /// TSV has no quoting convention, so tabs, CRs and LFs inside a value
+    /// become single spaces, matching the results grid copy behavior.
+    /// NULL cells render as empty fields. A result with no columns yields "".
+    public static func tsv(for result: QueryResult) -> String {
+        guard !result.columns.isEmpty else { return "" }
+        var lines: [String] = []
+        lines.append(result.columns.map { escapeTSVField($0.name) }.joined(separator: "\t"))
+        for row in result.rows {
+            lines.append(row.cells.map { escapeTSVField(csvValue($0)) }.joined(separator: "\t"))
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private static func escapeTSVField(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "\t", with: " ")
+            .replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "\r", with: " ")
+    }
+
+    // MARK: - SQL INSERT statements
+
+    /// One `INSERT INTO "results" (...) VALUES (...);` statement per row.
+    /// The placeholder table name is `results` because a query result does not
+    /// know its source table; users rename it after pasting. Identifiers are
+    /// double-quoted with embedded quotes doubled; values are single-quoted
+    /// with embedded quotes doubled; NULL cells emit SQL NULL. A result with
+    /// no columns yields "".
+    public static func sqlInsert(for result: QueryResult) -> String {
+        guard !result.columns.isEmpty else { return "" }
+        let columnList = result.columns
+            .map { quoteSQLIdentifier($0.name) }
+            .joined(separator: ", ")
+        let statements = result.rows.map { row -> String in
+            let values = (0..<result.columns.count).map { index -> String in
+                guard index < row.cells.count else { return "NULL" }
+                switch row.cells[index] {
+                case .null: return "NULL"
+                case .text(let value): return quoteSQLLiteral(value)
+                }
+            }
+            return "INSERT INTO \"results\" (\(columnList)) VALUES (\(values.joined(separator: ", ")));"
+        }
+        return statements.joined(separator: "\n")
+    }
+
+    private static func quoteSQLIdentifier(_ name: String) -> String {
+        "\"" + name.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+    }
+
+    private static func quoteSQLLiteral(_ value: String) -> String {
+        "'" + value.replacingOccurrences(of: "'", with: "''") + "'"
     }
 
     // MARK: - CSV (RFC 4180)
