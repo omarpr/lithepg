@@ -15,6 +15,7 @@ LithePG is a lean, Mac-native PostgreSQL client with local-first AI. Pure Swift 
 - Saved connections with passwords in the macOS Keychain, never on disk.
 - Schema sidebar, query tabs, history, result copy and export as CSV, TSV, JSON, Markdown or SQL inserts.
 - One-click table preview: the sidebar's select action inserts and runs `SELECT * ... LIMIT 100`.
+- Clickable cells: select and `⌘C`, right-click to copy cell or row, double-click to view and edit a value locally.
 - EXPLAIN and EXPLAIN ANALYZE (`⌘E` / `⇧⌘E`) with an indented plan tree that flags the costliest node.
 - A schema graph (`⇧⌘G`): tables as nodes, foreign keys as edges, columns and types in an inspector.
 - Ask in English drafting that inserts SQL for review and never auto-runs it.

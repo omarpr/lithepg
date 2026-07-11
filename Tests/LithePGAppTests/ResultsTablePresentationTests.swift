@@ -252,3 +252,45 @@ struct ResultsTablePresentationTests {
         )
     }
 }
+
+@Suite("ResultsTablePresentation cell selection")
+struct ResultsTableCellSelectionTests {
+  private var result: QueryResult {
+    QueryResult(
+      columns: [.init(name: "id", typeName: "int4"), .init(name: "note", typeName: "text")],
+      rows: [
+        .init(id: 0, cells: [.text("1"), .text("hello\tworld")]),
+        .init(id: 1, cells: [.text("2"), .null]),
+      ],
+      rowCount: 2,
+      elapsed: .milliseconds(1),
+      status: .rows,
+      truncated: false
+    )
+  }
+
+  @Test("cell text returns raw values and empty string for NULL")
+  func cellText() {
+    #expect(
+      ResultsTablePresentation.cellText(for: result, at: .init(row: 0, column: 1)) == "hello\tworld")
+    #expect(ResultsTablePresentation.cellText(for: result, at: .init(row: 1, column: 1)) == "")
+    #expect(ResultsTablePresentation.cellText(for: result, at: .init(row: 5, column: 0)) == nil)
+    #expect(ResultsTablePresentation.cellText(for: result, at: .init(row: 0, column: 9)) == nil)
+  }
+
+  @Test("cell NULL state is reported per address")
+  func cellNullState() {
+    #expect(ResultsTablePresentation.cellIsNull(for: result, at: .init(row: 1, column: 1)) == true)
+    #expect(ResultsTablePresentation.cellIsNull(for: result, at: .init(row: 0, column: 0)) == false)
+    #expect(ResultsTablePresentation.cellIsNull(for: result, at: .init(row: 9, column: 0)) == nil)
+  }
+
+  @Test("row text copies tab-separated values with flattened tabs")
+  func rowText() {
+    #expect(ResultsTablePresentation.rowText(for: result, rowIndex: 0) == "1\thello world")
+    // NULL renders as the literal NULL in row copies, matching the grid's
+    // existing whole-result TSV copy semantics.
+    #expect(ResultsTablePresentation.rowText(for: result, rowIndex: 1) == "2\tNULL")
+    #expect(ResultsTablePresentation.rowText(for: result, rowIndex: 7) == nil)
+  }
+}

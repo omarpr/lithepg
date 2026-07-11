@@ -7,6 +7,9 @@ struct ResultsTable: View {
     let result: QueryResult?
     @State private var copiedAtLeastOnce = false
     @State private var page = 1
+    @State private var selectedCell: ResultsTablePresentation.CellAddress?
+    @State private var editingCell: ResultsTablePresentation.CellAddress?
+    @State private var editedCellText = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -24,7 +27,11 @@ struct ResultsTable: View {
         .onChange(of: result) { _, _ in
             page = 1
             copiedAtLeastOnce = false
+            selectedCell = nil
+            editingCell = nil
         }
+        // Cmd-C copies the selected cell; falls back to the menu copy actions.
+        .copyable(selectedCellCopyItems)
     }
 
     @ViewBuilder
@@ -74,8 +81,14 @@ struct ResultsTable: View {
                                     indexCell(String(rowIndex + 1), isHeader: false)
                                         .accessibilityIdentifier("result-row-index-\(rowIndex)")
                                     ForEach(Array(row.cells.enumerated()), id: \.offset) { columnIndex, cellValue in
-                                        dataCell(ResultsTablePresentation.render(cellValue), isNull: cellValue == .null, width: columnWidths[columnIndex])
-                                            .accessibilityIdentifier("result-cell-\(rowIndex)-\(columnIndex)")
+                                        dataCell(
+                                            ResultsTablePresentation.render(cellValue),
+                                            isNull: cellValue == .null,
+                                            width: columnWidths[columnIndex],
+                                            address: .init(row: rowIndex, column: columnIndex),
+                                            in: result
+                                        )
+                                        .accessibilityIdentifier("result-cell-\(rowIndex)-\(columnIndex)")
                                     }
                                 }
                                 .frame(width: tableBodyWidth, alignment: .leading)
@@ -281,8 +294,15 @@ struct ResultsTable: View {
         }
     }
 
-    private func dataCell(_ value: String, isNull: Bool, width: CGFloat) -> some View {
-        Text(value)
+    private func dataCell(
+        _ value: String,
+        isNull: Bool,
+        width: CGFloat,
+        address: ResultsTablePresentation.CellAddress,
+        in result: QueryResult
+    ) -> some View {
+        let isSelected = selectedCell == address
+        return Text(value)
             .font(.callout.monospaced())
             .foregroundStyle(isNull ? .tertiary : .primary)
             .lineLimit(1)
@@ -290,11 +310,115 @@ struct ResultsTable: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
             .frame(width: width, height: ResultsTablePresentation.bodyRowHeight, alignment: .leading)
+            .background(isSelected ? Color.accentColor.opacity(0.18) : Color.clear)
             .overlay(alignment: .bottom) {
                 Rectangle()
                     .fill(Color.secondary.opacity(0.2))
                     .frame(height: 1)
             }
+            .contentShape(Rectangle())
+            .onTapGesture(count: 2) {
+                selectedCell = address
+                beginEditing(address, in: result)
+            }
+            .onTapGesture { selectedCell = address }
+            .contextMenu {
+                Button("Copy cell") { copyCell(address, in: result) }
+                Button("Copy row") { copyRow(address.row, in: result) }
+                Button("View and edit…") {
+                    selectedCell = address
+                    beginEditing(address, in: result)
+                }
+            }
+            .popover(
+                isPresented: Binding(
+                    get: { editingCell == address },
+                    set: { if !$0 { editingCell = nil } }
+                ),
+                arrowEdge: .bottom
+            ) {
+                cellEditor(address, in: result)
+            }
+            .accessibilityAddTraits(.isButton)
+            .accessibilityLabel(isNull ? "NULL" : value)
+            .accessibilityHint("Click to select, double-click to view and edit")
+    }
+
+    /// Editable detail for one cell. Edits stay local to this popover: a query
+    /// result cannot safely be written back to the database (its source table
+    /// and key are unknown), so the affordance is copy-what-you-changed.
+    private func cellEditor(
+        _ address: ResultsTablePresentation.CellAddress,
+        in result: QueryResult
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(ResultsTablePresentation.headerName(for: result.columns[address.column]))
+                    .font(.headline)
+                if ResultsTablePresentation.cellIsNull(for: result, at: address) == true {
+                    Text("NULL")
+                        .font(.caption.bold())
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.secondary.opacity(0.15), in: Capsule())
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Text("Row \(address.row + 1)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            TextEditor(text: $editedCellText)
+                .font(.callout.monospaced())
+                .frame(width: 340, height: 120)
+                .accessibilityIdentifier("cell-editor")
+            HStack {
+                Text("Edits are local. Copy the value to use it.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button("Reset") {
+                    editedCellText = ResultsTablePresentation.cellText(for: result, at: address) ?? ""
+                }
+                Button("Copy") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(editedCellText, forType: .string)
+                    copiedAtLeastOnce = true
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(12)
+    }
+
+    private var selectedCellCopyItems: [String] {
+        guard let result, let selectedCell,
+            let text = ResultsTablePresentation.cellText(for: result, at: selectedCell)
+        else { return [] }
+        return [text]
+    }
+
+    private func beginEditing(
+        _ address: ResultsTablePresentation.CellAddress, in result: QueryResult
+    ) {
+        editedCellText = ResultsTablePresentation.cellText(for: result, at: address) ?? ""
+        editingCell = address
+    }
+
+    private func copyCell(
+        _ address: ResultsTablePresentation.CellAddress, in result: QueryResult
+    ) {
+        guard let text = ResultsTablePresentation.cellText(for: result, at: address) else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        copiedAtLeastOnce = true
+    }
+
+    private func copyRow(_ rowIndex: Int, in result: QueryResult) {
+        guard let text = ResultsTablePresentation.rowText(for: result, rowIndex: rowIndex) else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        copiedAtLeastOnce = true
     }
 
     private func indexCell(_ value: String, isHeader: Bool) -> some View {
@@ -514,6 +638,40 @@ enum ResultsTablePresentation {
         } else {
             "Command completed · \(elapsed(result.elapsed))"
         }
+    }
+
+    /// Identifies one cell on the current page by absolute row and column index.
+    struct CellAddress: Equatable, Hashable {
+        let row: Int
+        let column: Int
+    }
+
+    /// The raw text of a cell for copying: NULL copies as an empty string.
+    /// Returns nil when the address is out of bounds.
+    static func cellText(for result: QueryResult, at address: CellAddress) -> String? {
+        guard result.rows.indices.contains(address.row) else { return nil }
+        let cells = result.rows[address.row].cells
+        guard cells.indices.contains(address.column) else { return nil }
+        switch cells[address.column] {
+        case .null: return ""
+        case .text(let value): return value
+        }
+    }
+
+    /// Whether the addressed cell is SQL NULL. Nil when out of bounds.
+    static func cellIsNull(for result: QueryResult, at address: CellAddress) -> Bool? {
+        guard result.rows.indices.contains(address.row) else { return nil }
+        let cells = result.rows[address.row].cells
+        guard cells.indices.contains(address.column) else { return nil }
+        return cells[address.column] == .null
+    }
+
+    /// One row as tab-separated text, matching the grid copy conventions.
+    static func rowText(for result: QueryResult, rowIndex: Int) -> String? {
+        guard result.rows.indices.contains(rowIndex) else { return nil }
+        return result.rows[rowIndex].cells
+            .map { escapeCopyField(render($0)) }
+            .joined(separator: "\t")
     }
 
     static func render(_ cell: QueryResult.Cell) -> String {

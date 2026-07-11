@@ -13,6 +13,8 @@ LithePG follows outcome-named milestones with semantic-version tags. v1.0 remain
 - Results grid export and copy as CSV, TSV, JSON, GitHub-flavored Markdown and SQL INSERT statements. Only rows already fetched are serialized; nothing runs SQL or touches the network.
 - EXPLAIN and EXPLAIN ANALYZE from the toolbar (`⌘E` / `⇧⌘E`) rendering the parsed plan as an indented tree with cost shares, ANALYZE timings and the costliest node flagged. Explain Analyze is labeled as executing the query.
 - The sidebar's select action now inserts and runs the `SELECT ... LIMIT 100` in one click when connected.
+- Result cells are clickable: click selects and `⌘C` copies, right-click copies the cell or row, double-click opens an editable detail popover for long or NULL values. Edits stay local because a query result cannot safely be written back without knowing its source table and key.
+- Timestamps, dates, UUIDs and numeric values render readably in the grid instead of a raw byte-count placeholder.
 - Readability pass: results grid, sidebar rows, status text and badges moved from 10pt caption sizes to 11 to 12pt.
 - EXPLAIN plan parsing (`QueryPlan`) and headless plan-tree presentation seams, ready for a v1.1 plan view.
 - Schema graph (`⇧⌘G`): an in-app force-directed graph of tables and foreign keys with pan, zoom, drag, selection highlighting and a column inspector with PK/FK badges. Read-only, derived from already-loaded schema metadata; graphs past 300 tables use a static grid layout.
