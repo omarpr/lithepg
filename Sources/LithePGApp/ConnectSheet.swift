@@ -35,6 +35,7 @@ struct ConnectSheet: View {
   @State private var environment: ConnectionEnvironment = .development
   @State private var showingCAImporter = false
   @State private var pendingDelete: SavedConnectionMetadata?
+  @FocusState private var urlFieldFocused: Bool
 
   private var neonProfile: NeonConnectionProfile? {
     guard inputMode == .url else { return nil }
@@ -138,7 +139,13 @@ struct ConnectSheet: View {
         .labelsHidden()
 
         if inputMode == .url {
-          TextField("postgres://user:***@host:5432/database", text: $url)
+          TextField(
+            "",
+            text: $url,
+            // The example vanishes on click (focus), not just on first keystroke.
+            prompt: urlFieldFocused ? nil : Text("postgres://user:***@host:5432/database")
+          )
+            .focused($urlFieldFocused)
             .accessibilityIdentifier("postgres-url-field")
             .onChange(of: url) { _, newValue in
               if newValue != Self.redactedURLForDisplay(sensitivePrefilledURL) {
