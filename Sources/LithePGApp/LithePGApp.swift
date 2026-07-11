@@ -1,7 +1,25 @@
 import AppKit
 import SwiftUI
 
+/// AppKit bridge (unavoidable): a bare SPM executable (`swift run`, Xcode
+/// package schemes) is not a bundled .app, so macOS never activates it. The
+/// window renders but cannot become key, which silently breaks all typing and
+/// pasting. Bundled builds are activated by LaunchServices and skip this path.
+final class UnbundledActivationDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        guard Self.needsManualActivation(bundleURL: Bundle.main.bundleURL) else { return }
+        NSApplication.shared.setActivationPolicy(.regular)
+        NSApplication.shared.activate()
+    }
+
+    static func needsManualActivation(bundleURL: URL) -> Bool {
+        bundleURL.pathExtension != "app"
+    }
+}
+
 public struct LithePGApp: App {
+    @NSApplicationDelegateAdaptor(UnbundledActivationDelegate.self)
+    private var activationDelegate
     @State private var state = AppState()
 
     public init() {}
