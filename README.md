@@ -93,7 +93,9 @@ swift test                                # add LITHEPG_KEYCHAIN_TESTS=1 for the
 
 Live Postgres, TLS, SSH and Neon integration tests are gated on env vars (`POSTGRES_TEST_URL` and friends) and auto-skip without them. Release-impacting changes should also run `./script/dogfood_check.sh` when Docker is available.
 
-Running from Xcode: open the package folder (`xed .`), pick the `LithePGApp` scheme and hit run. See [`CORE_TECHNOLOGIES.md`](CORE_TECHNOLOGIES.md) for what the app is built on and why.
+Running from Xcode: open the package folder (`xed .`), pick the `LithePGApp` scheme and hit run.
+
+Tired of Keychain prompts on every rebuild? Run `./script/dev_signing_setup.sh` once. It creates a persistent local signing identity so one "Always Allow" per saved password sticks across rebuilds. See [`CORE_TECHNOLOGIES.md`](CORE_TECHNOLOGIES.md) for what the app is built on and why.
 
 ## Project layout
 

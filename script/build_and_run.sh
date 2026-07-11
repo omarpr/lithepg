@@ -214,6 +214,12 @@ PLIST
 
 sign_release_bundle() {
   local identity="${LITHEPG_CODESIGN_IDENTITY:--}"
+  # Prefer the persistent local dev identity (script/dev_signing_setup.sh) over
+  # ad-hoc signing so Keychain "Always Allow" choices survive rebuilds.
+  if [[ "$identity" == "-" ]] \
+    && /usr/bin/security find-identity -v -p codesigning 2>/dev/null | grep -q "LithePG Local Dev"; then
+    identity="LithePG Local Dev"
+  fi
   local -a sign_args=(
     --force
     --options runtime

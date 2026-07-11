@@ -15,6 +15,9 @@ LithePG follows outcome-named milestones with semantic-version tags. v1.0 remain
 - The sidebar's select action now inserts and runs the `SELECT ... LIMIT 100` in one click when connected.
 - Result cells are clickable: click selects and `⌘C` copies, right-click copies the cell or row, double-click opens an editable detail popover for long or NULL values. Edits stay local because a query result cannot safely be written back without knowing its source table and key.
 - Timestamps, dates, UUIDs and numeric values render readably in the grid instead of a raw byte-count placeholder.
+- Query tabs can be renamed: double-click a tab or use its context menu.
+- Cell clicking is instant: the per-cell editor popover became a single sheet and single-click selection no longer waits out the double-click interval. Grid fonts moved up to 13pt SF Mono with roomier rows.
+- `script/dev_signing_setup.sh` creates a persistent local code-signing identity so Keychain "Always Allow" choices survive rebuilds; the packager picks it up automatically.
 - Readability pass: results grid, sidebar rows, status text and badges moved from 10pt caption sizes to 11 to 12pt.
 - EXPLAIN plan parsing (`QueryPlan`) and headless plan-tree presentation seams, ready for a v1.1 plan view.
 - Schema graph (`⇧⌘G`): an in-app force-directed graph of tables and foreign keys with pan, zoom, drag, selection highlighting and a column inspector with PK/FK badges. Read-only, derived from already-loaded schema metadata; graphs past 300 tables use a static grid layout.
