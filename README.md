@@ -14,6 +14,7 @@ LithePG is a lean, Mac-native PostgreSQL client with local-first AI. Pure Swift 
 - A native macOS app for connecting to Postgres, writing SQL and viewing results.
 - Saved connections with passwords in the macOS Keychain, never on disk.
 - Schema sidebar, query tabs, history, result copy and CSV/JSON/Markdown export.
+- A schema graph (`⇧⌘G`): tables as nodes, foreign keys as edges, columns and types in an inspector.
 - Ask in English drafting that inserts SQL for review and never auto-runs it.
 - Pasted connection strings just work, including Neon URLs, quoted strings and `psql` command copies.
 - Light, dark and system appearance.

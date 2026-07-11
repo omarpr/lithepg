@@ -16,6 +16,7 @@ struct WorkspaceView: View {
   @Bindable var state: AppState
   @State private var showingQueryHistory = false
   @State private var showingAskQuery = false
+  @State private var showingSchemaGraph = false
 
   var body: some View {
     HSplitView {
@@ -102,6 +103,21 @@ struct WorkspaceView: View {
         .accessibilityIdentifier("ask-query-button")
         .popover(isPresented: $showingAskQuery) {
           AskQueryView(state: state)
+        }
+
+        Button {
+          showingSchemaGraph = true
+        } label: {
+          Label("Graph", systemImage: "point.3.connected.trianglepath.dotted")
+        }
+        .keyboardShortcut("g", modifiers: [.command, .shift])
+        .disabled(state.schema == nil)
+        .accessibilityIdentifier("schema-graph-button")
+        .help("Show the schema as a graph of tables and foreign keys")
+        .sheet(isPresented: $showingSchemaGraph) {
+          if let schema = state.schema {
+            SchemaGraphView(schema: schema)
+          }
         }
 
         Button {

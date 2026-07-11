@@ -12,6 +12,7 @@ LithePG follows outcome-named milestones with semantic-version tags. v1.0 remain
 - Light, dark and system appearance preferences, with dark as the default.
 - Results grid export and copy as CSV, JSON and GitHub-flavored Markdown. Only rows already fetched are serialized; nothing runs SQL or touches the network.
 - EXPLAIN plan parsing (`QueryPlan`) and headless plan-tree presentation seams, ready for a v1.1 plan view.
+- Schema graph (`⇧⌘G`): an in-app force-directed graph of tables and foreign keys with pan, zoom, drag, selection highlighting and a column inspector with PK/FK badges. Read-only, derived from already-loaded schema metadata; graphs past 300 tables use a static grid layout.
 - Neon connection support: pasted Neon URLs are detected and surface endpoint, database, role and pooled or direct mode, with a suggested connection name. Verified live against real Neon endpoints (Postgres 17, direct and pooled, current host shape) by CLI smoke and the gated live app suite.
 - Pasted connection strings are sanitized before parsing, so quoted strings, `psql '<url>'` commands, `DATABASE_URL=` lines and trailing newlines all work.
 - Bare-executable runs (`swift run`, Xcode package schemes) now activate the app so windows accept keyboard input.
