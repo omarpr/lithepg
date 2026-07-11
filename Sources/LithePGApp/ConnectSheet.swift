@@ -303,7 +303,9 @@ struct ConnectSheet: View {
     if let sensitivePrefilledURL, url == Self.redactedURLForDisplay(sensitivePrefilledURL) {
       return sensitivePrefilledURL
     }
-    return url
+    // Pasted strings arrive wrapped in quotes, psql commands, env assignments
+    // or trailing newlines; sanitize before parsing so console copies just work.
+    return ConnectionStringSanitizer.sanitize(url)
   }
 
   private func applyNeonConnectionNameSuggestion() {
