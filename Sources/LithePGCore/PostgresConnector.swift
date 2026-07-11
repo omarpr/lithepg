@@ -159,6 +159,17 @@ public actor PostgresConnector {
         }
     }
 
+    /// Postgres-style display for timestamps: `2026-07-11 14:03:22.123Z`.
+    /// `ISO8601FormatStyle` is Sendable, unlike `DateFormatter`, so it can be
+    /// shared safely across the actor's callers.
+    private static let timestampStyle = Date.ISO8601FormatStyle(
+        dateSeparator: .dash,
+        dateTimeSeparator: .space,
+        timeSeparator: .colon,
+        includingFractionalSeconds: true
+    )
+    private static let dateOnlyStyle = Date.ISO8601FormatStyle().year().month().day()
+
     static func renderCell(_ cell: PostgresCell) -> QueryResult.Cell {
         guard cell.bytes != nil else { return .null }
 
@@ -178,6 +189,26 @@ public actor PostgresConnector {
             if let value = try? cell.decode(Float.self) { return .text(String(value)) }
         case .float8:
             if let value = try? cell.decode(Double.self) { return .text(String(value)) }
+        case .timestamptz:
+            if let value = try? cell.decode(Date.self) {
+                return .text(value.formatted(Self.timestampStyle))
+            }
+        case .timestamp:
+            // Naive timestamps carry no zone; drop the misleading Z suffix.
+            if let value = try? cell.decode(Date.self) {
+                let text = value.formatted(Self.timestampStyle)
+                return .text(text.hasSuffix("Z") ? String(text.dropLast()) : text)
+            }
+        case .date:
+            if let value = try? cell.decode(Date.self) {
+                return .text(value.formatted(Self.dateOnlyStyle))
+            }
+        case .uuid:
+            if let value = try? cell.decode(UUID.self) {
+                return .text(value.uuidString.lowercased())
+            }
+        case .numeric:
+            if let value = try? cell.decode(Decimal.self) { return .text("\(value)") }
         default:
             if let value = try? cell.decode(String.self) { return .text(value) }
         }
