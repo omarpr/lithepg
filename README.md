@@ -25,7 +25,7 @@ LithePG is a lean, Mac-native PostgreSQL client with local-first AI. Pure Swift 
 
 ## Status
 
-v0.5 is the current tag. The v1.0 code is complete and verified: 236 tests across 37 suites pass locally, connectivity is proven live against local Docker Postgres and real Neon endpoints (direct and pooled), the full git history has been scanned for secrets, and the release executable remains under the 50 MiB cap. What remains for a public v1.0 is distribution, not app code: Apple Developer ID signing and notarization, a final security contact, a Homebrew target and release approval. Receipts live in [`docs/dogfood-log.md`](docs/dogfood-log.md) and [`CHANGELOG.md`](CHANGELOG.md).
+v0.5 is the current tag. The v1.0 code is complete and verified: 238 tests across 37 suites pass locally, connectivity is proven live against local Docker Postgres and real Neon endpoints (direct and pooled), the full git history has been scanned for secrets, and the release executable remains under the 50 MiB cap. What remains for a public v1.0 is distribution, not app code: Apple Developer ID signing and notarization, a final security contact, a Homebrew target and release approval. Receipts live in [`docs/dogfood-log.md`](docs/dogfood-log.md) and [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Install
 
@@ -48,6 +48,16 @@ swift build && swift test
 ./script/build_and_run.sh --package
 open dist/LithePG.app
 ```
+
+Or rebuild, verify, install to `/Applications`, and launch in one step:
+
+```sh
+./script/rebuild_and_install.sh
+```
+
+The installer validates any existing `LithePG.app` before replacing it and uses
+`sudo` only when `/Applications` is not writable. Pass `--no-open` to install
+without launching.
 
 ## Try it with the seeded demo
 
@@ -88,6 +98,7 @@ Plain TCP, TLS verify-full with an optional pinned CA, or an SSH tunnel through 
 swift build
 swift test                                # add LITHEPG_KEYCHAIN_TESTS=1 for the real-keychain suite
 ./script/build_and_run.sh --package
+./script/rebuild_and_install.sh --no-open
 ./script/package_verify.sh dist/LithePG.app
 ```
 
