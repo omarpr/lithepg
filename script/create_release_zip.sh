@@ -253,7 +253,7 @@ trap cleanup_temp_dir EXIT
 temp_dir="$(/usr/bin/mktemp -d "${output_parent%/}/.release-zip.XXXXXX" 2>/dev/null)" || fail "could not create temporary output directory"
 temp_zip="$temp_dir/LithePG.app.zip"
 
-/usr/bin/ditto -c -k --keepParent "$APP_BUNDLE_ABS" "$temp_zip"
+/usr/bin/ditto -c -k --keepParent --norsrc --noextattr --noqtn --noacl "$APP_BUNDLE_ABS" "$temp_zip"
 
 if ! sha_line="$(/usr/bin/shasum -a 256 "$temp_zip" 2>/dev/null)"; then
   fail "could not compute SHA-256 for output zip"

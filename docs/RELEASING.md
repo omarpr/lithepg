@@ -53,6 +53,8 @@ An unsigned/ad-hoc-signed local bundle is only a development artifact. Do not pu
 
 `script/sign_and_notarize.sh` is the credential-gated wrapper for public macOS distribution. It expects a package produced by `script/build_and_run.sh --package` and reads configuration from environment variables only:
 
+An Apple Developer Program membership is not required for local source builds or the ad-hoc development package, but the public release remains blocked without the Developer ID Application certificate and notarization access used by this section. Do not publish the local ad-hoc package as a substitute. When enrollment is available, start with Apple's [membership comparison](https://developer.apple.com/support/compare-memberships/), [Developer ID certificate](https://developer.apple.com/help/account/certificates/create-developer-id-certificates) and [macOS notarization](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution) guidance, then return to the prepared commands below.
+
 | Variable | Purpose |
 | --- | --- |
 | `LITHEPG_CODESIGN_IDENTITY` | Apple Developer Application signing identity for `codesign`. |
@@ -98,7 +100,7 @@ Use `LithePG.app.zip` as the public zip name for the release attachment. If the 
 ./script/create_release_zip.sh dist/LithePG.app dist/LithePG.app.zip
 ```
 
-The helper re-runs `script/package_verify.sh`, uses `ditto --keepParent` so the `.app` wrapper is preserved, rejects output paths inside the `.app` bundle, refuses to overwrite an existing zip unless `LITHEPG_RELEASE_ZIP_OVERWRITE=1` (or `true`/`yes`/`approved`) is set, and prints the local SHA-256 plus byte size for review. It does not upload, tag, sign, notarize, push, or contact the network.
+The helper re-runs `script/package_verify.sh`, uses `ditto --keepParent` so the `.app` wrapper is preserved, and omits resource forks, extended attributes, quarantine data and ACLs so AppleDouble `._*` entries cannot invalidate the sealed app when a standard ZIP extractor is used. It rejects output paths inside the `.app` bundle, refuses to overwrite an existing zip unless `LITHEPG_RELEASE_ZIP_OVERWRITE=1` (or `true`/`yes`/`approved`) is set, and prints the local SHA-256 plus byte size for review. It does not upload, tag, sign, notarize, push, or contact the network.
 
 Before upload, compute and approve the SHA-256 from the local final `LithePG.app.zip` that will be attached to the GitHub Release:
 
@@ -108,7 +110,7 @@ shasum -a 256 dist/LithePG.app.zip
 
 Use that approved local digest for `LITHEPG_RELEASE_ZIP_SHA256`, the final GitHub Release copy, and the repository-local draft cask template at `packaging/homebrew/lithepg.rb`:
 
-1. Replace `version "REPLACE_WITH_VERSION"` with the release version, for example `version "1.0"` unless Omar chooses a different public version.
+1. Confirm the prepared `version "1.0"` matches the release version and tag; update it only if Omar chooses a different public version.
 2. Replace `sha256 "REPLACE_WITH_SHA256"` with the approved local `shasum -a 256` digest.
 3. Confirm the `url` still matches the GitHub Release artifact path.
 4. Confirm the cask token and public metadata keep `cask "lithepg" do`, `name "LithePG"`, `desc "Lean PostgreSQL client with local-first AI"`, and `homepage "https://github.com/omarpr/lithepg"`.

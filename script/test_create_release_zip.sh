@@ -65,6 +65,18 @@ assert_zip_contains_app_wrapper() {
   [[ -f "$extract_dir/LithePG.app/Contents/MacOS/LithePGApp" ]] || fail "zip did not preserve LithePG.app wrapper"
 }
 
+assert_zip_has_no_appledouble_metadata() {
+  local zip_path="$1"
+  local entry
+  while IFS= read -r entry || [[ -n "$entry" ]]; do
+    case "$entry" in
+      __MACOSX/*|*/._*)
+        fail "zip preserved AppleDouble metadata: $entry"
+        ;;
+    esac
+  done < <(/usr/bin/zipinfo -1 "$zip_path")
+}
+
 make_fixture() {
   local fixture="$1"
   mkdir -p "$fixture/script" "$fixture/dist"
@@ -160,7 +172,7 @@ helper_contents="$(<"$HELPER")"
 assert_contains "$helper_contents" "/usr/bin/ditto -c -k --keepParent"
 assert_contains "$helper_contents" "/usr/bin/shasum -a 256"
 assert_contains "$helper_contents" 'mktemp -d "${output_parent%/}/.release-zip.XXXXXX"'
-assert_contains "$helper_contents" '/usr/bin/ditto -c -k --keepParent "$APP_BUNDLE_ABS" "$temp_zip"'
+assert_contains "$helper_contents" '/usr/bin/ditto -c -k --keepParent --norsrc --noextattr --noqtn --noacl "$APP_BUNDLE_ABS" "$temp_zip"'
 assert_contains "$helper_contents" 'rename($ARGV[0], $ARGV[1])'
 assert_contains "$helper_contents" 'exec { $bash } $bash, "-p", @ARGV;'
 assert_not_contains "$helper_contents" '/usr/bin/ditto -c -k --keepParent "$APP_BUNDLE" "$OUTPUT_ZIP"'
@@ -1192,6 +1204,8 @@ assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
 # Success creates parent directories, preserves the .app wrapper, prints SHA-256, and does not leak secret-ish env values.
 success_fixture="$fixture_root/success"
 make_fixture "$success_fixture"
+/usr/bin/xattr -w dev.omarpr.lithepg.release-test "metadata must not enter the public zip" "$success_fixture/dist/LithePG.app/Contents/MacOS/LithePGApp"
+[[ "$(/usr/bin/xattr -p dev.omarpr.lithepg.release-test "$success_fixture/dist/LithePG.app/Contents/MacOS/LithePGApp")" == "metadata must not enter the public zip" ]] || fail "success fixture did not retain its test extended attribute"
 verify_log="$success_fixture/verify.log"
 success_gate_log="$success_fixture/artifact-gate.log"
 if ! FAKE_VERIFY_LOG="$verify_log" \
@@ -1212,6 +1226,7 @@ assert_not_contains "$success_text" "$sensitive_notary"
 assert_not_contains "$success_text" "$sensitive_release_marker"
 [[ -f "$success_fixture/artifacts/public/LithePG.app.zip" ]] || fail "success zip was not created in nested output directory"
 assert_zip_contains_app_wrapper "$success_fixture/artifacts/public/LithePG.app.zip" "$success_fixture/extracted-success"
+assert_zip_has_no_appledouble_metadata "$success_fixture/artifacts/public/LithePG.app.zip"
 assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
 success_gate_text="$(<"$success_gate_log")"
 assert_contains "$success_gate_text" "args=--artifact-only"
