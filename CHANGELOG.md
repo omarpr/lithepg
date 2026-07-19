@@ -36,7 +36,7 @@ LithePG follows outcome-named milestones with semantic-version tags. v1.0 remain
 
 ### Verified
 
-- 224 tests across 34 suites pass locally and in CI; live suites verified against seeded Docker Postgres and real Neon endpoints.
+- 236 tests across 37 suites pass locally; live suites were separately verified against seeded Docker Postgres and real Neon endpoints.
 - Full git history (412 commits) scanned for secrets with gitleaks plus manual pattern sweeps: clean, no rewrite needed before open-sourcing.
 - Binary and speed budgets hold: ~21.7 MiB release executable (50 MiB cap, 30 MiB stretch), sub-500 ms connected startup, sub-5 ms query overhead. Receipts in `docs/dogfood-log.md`.
 

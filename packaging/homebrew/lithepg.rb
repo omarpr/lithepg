@@ -5,7 +5,7 @@
 # final signed/notarized GitHub Release artifact before running tap checks.
 
 cask "lithepg" do
-  version "REPLACE_WITH_VERSION"
+  version "1.0"
   sha256 "REPLACE_WITH_SHA256"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",

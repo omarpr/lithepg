@@ -2810,3 +2810,13 @@ client. The log starts empty at v0.1 and becomes active from v0.3 (Dogfood-Ready
 - **User-facing copy pass:** window title, history caption, results-grid help strings, production warning and history empty state were reworded to drop em-dashes and Oxford commas; affected test expectations updated.
 - New root `CORE_TECHNOLOGIES.md` documents every core technology choice and why; `docs/TECH_STACK.md` §3 gained the dated Neon compatibility receipt.
 - Local gate: full `swift test` now reports **185 tests in 26 suites** passing (was 180/25) including the keychain suite, plus the 6/6 live Neon run above; `swift build -c release` clean at 21.69 MiB `LithePGApp`, within the 50 MiB cap. No tag, release, signing or publication was attempted.
+
+## 2026-07-19 — Non-Apple v1.0 release prep and public-ZIP metadata fix
+
+- Re-ran the full local Swift gate: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test` passed **236 tests across 37 suites**. Live database, keychain and model-artifact cases remained opt-in and skipped when their environment was absent.
+- The seeded Docker dogfood gate was not rerun because the local Docker/OrbStack daemon was unavailable; `docker ps` could not connect to its socket. The last recorded seeded dogfood and live Neon receipts remain unchanged.
+- Built a fresh local candidate with `LITHEPG_MARKETING_VERSION=1.0`; package verification passed with bundle version `1.0 (419)`, macOS 14.0 minimum and a 12.24 MiB packaged executable.
+- Confirmed the package has an ad-hoc Hardened Runtime signature suitable for local verification, not a Developer ID signature or notarization receipt. Public v1.0 remains blocked until Apple Developer Program credentials are available.
+- Found a real final-artifact bug while exercising `script/create_release_zip.sh`: default `ditto` ZIP behavior preserved extended attributes as AppleDouble `._*` entries. Standard `unzip` restored those entries inside the sealed app, causing the release gate's strict code-signature check to fail even though the source app verified cleanly.
+- Fixed the helper to omit resource forks, extended attributes, quarantine data and ACLs from the public ZIP. Added a regression fixture carrying an extended attribute and asserted the resulting archive contains no `__MACOSX/` or `._*` entries. `bash script/test_create_release_zip.sh` passed, and the real helper then created and artifact-validated a local candidate ZIP successfully.
+- Refreshed the README, changelog, draft release copy, Homebrew version and roadmap progress note to match the features and test count now on `main`. Final SHA-256, notarization receipt, security destination, tap status, approvals, tag and publication intentionally remain unresolved.

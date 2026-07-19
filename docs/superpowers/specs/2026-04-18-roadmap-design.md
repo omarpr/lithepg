@@ -100,10 +100,12 @@ Minimal, even ugly, UI — but the full risky stack works end-to-end.
 
 ## 7. Deferred to v1.1+
 
-- Read-only ERD / schema visualization.
-- Light DBA helpers: `EXPLAIN (ANALYZE, BUFFERS)` visualization, index suggestions, table/column stats viewer. Read-only, no mutation UI.
+**Progress note (2026-07-19):** The read-only schema graph, EXPLAIN/EXPLAIN ANALYZE plan tree and JSON/TSV/Markdown/SQL export formats have since shipped on `main` while v1.0 distribution remains externally gated. The original backlog below is retained as the approved roadmap record; remaining slices are narrowed in parentheses.
+
+- Read-only ERD / schema visualization. *(Implemented as the schema graph.)*
+- Light DBA helpers: `EXPLAIN (ANALYZE, BUFFERS)` visualization, index suggestions, table/column stats viewer. Read-only, no mutation UI. *(EXPLAIN visualization implemented; index suggestions and statistics remain.)*
 - Advanced AI: multi-table joins beyond 2, query optimization suggestions, natural-language schema search across large schemas.
-- Export formats beyond CSV (JSON, Parquet, Excel).
+- Export formats beyond CSV (JSON, Parquet, Excel). *(JSON plus TSV, Markdown and SQL implemented; Parquet and Excel remain.)*
 - Full theming / appearance customization (beyond light/dark).
 - Sparkle auto-updater.
 

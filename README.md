@@ -25,7 +25,7 @@ LithePG is a lean, Mac-native PostgreSQL client with local-first AI. Pure Swift 
 
 ## Status
 
-v0.5 is the current tag. The v1.0 code is complete and verified: 224 tests across 34 suites, CI green on push, connectivity proven live against local Docker Postgres and real Neon endpoints (direct and pooled), full git history scanned for secrets, binary at ~22 MiB against a 50 MiB cap. What remains for a public v1.0 is distribution, not code: Apple signing and notarization credentials, a final security contact, a Homebrew tap and release approval. Receipts live in [`docs/dogfood-log.md`](docs/dogfood-log.md) and [`CHANGELOG.md`](CHANGELOG.md).
+v0.5 is the current tag. The v1.0 code is complete and verified: 236 tests across 37 suites pass locally, connectivity is proven live against local Docker Postgres and real Neon endpoints (direct and pooled), the full git history has been scanned for secrets, and the release executable remains under the 50 MiB cap. What remains for a public v1.0 is distribution, not app code: Apple Developer ID signing and notarization, a final security contact, a Homebrew target and release approval. Receipts live in [`docs/dogfood-log.md`](docs/dogfood-log.md) and [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Install
 
