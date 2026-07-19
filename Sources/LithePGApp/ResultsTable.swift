@@ -8,15 +8,16 @@ struct ResultsTable: View {
     @State private var copiedAtLeastOnce = false
     @State private var page = 1
     @State private var selectedCell: ResultsTablePresentation.CellAddress?
-    @State private var editingCell: ResultsTablePresentation.CellAddress?
-    @State private var editedCellText = ""
+    @State private var editingSession: ResultsTablePresentation.CellEditorSession?
+    @State private var localCellEdits: [ResultsTablePresentation.CellAddress: String] = [:]
 
     var body: some View {
+        let renderedResult = renderedResult
         VStack(spacing: 0) {
-            actionBar(for: result)
+            actionBar(for: renderedResult)
             Divider()
             Group {
-                if let result {
+                if let result = renderedResult {
                     content(for: result, page: normalizedPage(for: result))
                 } else {
                     noResultState
@@ -28,17 +29,41 @@ struct ResultsTable: View {
             page = 1
             copiedAtLeastOnce = false
             selectedCell = nil
-            editingCell = nil
+            editingSession = nil
+            localCellEdits.removeAll()
         }
         // Cmd-C copies the selected cell; falls back to the menu copy actions.
         .copyable(selectedCellCopyItems)
         // One sheet for the whole grid. A popover per cell created presentation
         // machinery for every visible cell and made clicking noticeably slow.
-        .sheet(item: $editingCell) { address in
-            if let result {
-                cellEditor(address, in: result)
-            }
+        .sheet(item: $editingSession) { session in
+            ResultCellEditorSheet(
+                session: session,
+                onCancel: { editingSession = nil },
+                onSave: { value in
+                    localCellEdits[session.address] = value
+                    editingSession = nil
+                },
+                onCopy: { value in
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(value, forType: .string)
+                    copiedAtLeastOnce = true
+                }
+            )
         }
+    }
+
+    private var renderedResult: QueryResult? {
+        guard var renderedResult = result else { return nil }
+        for (address, value) in localCellEdits {
+            guard let updated = ResultsTablePresentation.replacingCell(
+                in: renderedResult,
+                at: address,
+                with: value
+            ) else { continue }
+            renderedResult = updated
+        }
+        return renderedResult
     }
 
     @ViewBuilder
@@ -349,55 +374,8 @@ struct ResultsTable: View {
             .accessibilityHint("Click to select, double-click to view and edit")
     }
 
-    /// Editable detail for one cell. Edits stay local to this popover: a query
-    /// result cannot safely be written back to the database (its source table
-    /// and key are unknown), so the affordance is copy-what-you-changed.
-    private func cellEditor(
-        _ address: ResultsTablePresentation.CellAddress,
-        in result: QueryResult
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(ResultsTablePresentation.headerName(for: result.columns[address.column]))
-                    .font(.headline)
-                if ResultsTablePresentation.cellIsNull(for: result, at: address) == true {
-                    Text("NULL")
-                        .font(.caption.bold())
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.secondary.opacity(0.15), in: Capsule())
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                Text("Row \(address.row + 1)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            TextEditor(text: $editedCellText)
-                .font(.callout.monospaced())
-                .frame(width: 340, height: 120)
-                .accessibilityIdentifier("cell-editor")
-            HStack {
-                Text("Edits are local. Copy the value to use it.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button("Reset") {
-                    editedCellText = ResultsTablePresentation.cellText(for: result, at: address) ?? ""
-                }
-                Button("Copy") {
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(editedCellText, forType: .string)
-                    copiedAtLeastOnce = true
-                }
-                .keyboardShortcut(.defaultAction)
-            }
-        }
-        .padding(12)
-    }
-
     private var selectedCellCopyItems: [String] {
-        guard let result, let selectedCell,
+        guard let result = renderedResult, let selectedCell,
             let text = ResultsTablePresentation.cellText(for: result, at: selectedCell)
         else { return [] }
         return [text]
@@ -406,8 +384,7 @@ struct ResultsTable: View {
     private func beginEditing(
         _ address: ResultsTablePresentation.CellAddress, in result: QueryResult
     ) {
-        editedCellText = ResultsTablePresentation.cellText(for: result, at: address) ?? ""
-        editingCell = address
+        editingSession = ResultsTablePresentation.cellEditorSession(for: result, at: address)
     }
 
     private func copyCell(
@@ -495,6 +472,90 @@ struct ResultsTable: View {
         case .json: .json
         case .markdown, .sqlInsert: UTType(filenameExtension: format.fileExtension) ?? .plainText
         }
+    }
+}
+
+/// A self-contained editor session ensures the value is available on the first
+/// rendered frame. Save updates the displayed result through the parent callback;
+/// it deliberately never constructs or executes database mutation SQL.
+private struct ResultCellEditorSheet: View {
+    let session: ResultsTablePresentation.CellEditorSession
+    let onCancel: () -> Void
+    let onSave: (String) -> Void
+    let onCopy: (String) -> Void
+
+    @State private var text: String
+    @FocusState private var editorFocused: Bool
+
+    init(
+        session: ResultsTablePresentation.CellEditorSession,
+        onCancel: @escaping () -> Void,
+        onSave: @escaping (String) -> Void,
+        onCopy: @escaping (String) -> Void
+    ) {
+        self.session = session
+        self.onCancel = onCancel
+        self.onSave = onSave
+        self.onCopy = onCopy
+        _text = State(initialValue: session.initialText)
+    }
+
+    private var hasChanges: Bool { text != session.initialText }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Text(session.columnName)
+                    .font(.headline)
+                if session.wasNull {
+                    Text("NULL")
+                        .font(.caption.bold())
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.secondary.opacity(0.15), in: Capsule())
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Text("Row \(session.rowNumber)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Button(action: onCancel) {
+                    Image(systemName: "xmark")
+                }
+                .buttonStyle(.plain)
+                .help("Close without saving")
+                .accessibilityLabel("Close cell editor")
+                .accessibilityIdentifier("close-cell-editor")
+            }
+
+            TextEditor(text: $text)
+                .font(.callout.monospaced())
+                .frame(height: 140)
+                .focused($editorFocused)
+                .accessibilityIdentifier("cell-editor")
+
+            Text("Save updates this displayed result only. It never runs SQL or writes to PostgreSQL.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Divider()
+
+            HStack {
+                Button("Reset") { text = session.initialText }
+                    .disabled(!hasChanges)
+                Button("Copy") { onCopy(text) }
+                Spacer()
+                Button("Cancel", action: onCancel)
+                    .keyboardShortcut(.cancelAction)
+                Button("Save") { onSave(text) }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(!hasChanges)
+                    .accessibilityIdentifier("save-cell-edit")
+            }
+        }
+        .padding(16)
+        .frame(width: 440)
+        .onAppear { editorFocused = true }
     }
 }
 
@@ -651,6 +712,60 @@ enum ResultsTablePresentation {
         let column: Int
 
         var id: String { "\(row):\(column)" }
+    }
+
+    struct CellEditorSession: Equatable, Identifiable {
+        let address: CellAddress
+        let columnName: String
+        let rowNumber: Int
+        let initialText: String
+        let wasNull: Bool
+
+        var id: CellAddress { address }
+    }
+
+    static func cellEditorSession(
+        for result: QueryResult,
+        at address: CellAddress
+    ) -> CellEditorSession? {
+        guard result.columns.indices.contains(address.column),
+            let initialText = cellText(for: result, at: address),
+            let wasNull = cellIsNull(for: result, at: address)
+        else { return nil }
+
+        return CellEditorSession(
+            address: address,
+            columnName: result.columns[address.column].name,
+            rowNumber: address.row + 1,
+            initialText: initialText,
+            wasNull: wasNull
+        )
+    }
+
+    /// Returns a new result with one local text edit applied. QueryResult is a
+    /// value type, so the source result remains unchanged and no SQL is issued.
+    static func replacingCell(
+        in result: QueryResult,
+        at address: CellAddress,
+        with text: String
+    ) -> QueryResult? {
+        guard result.rows.indices.contains(address.row) else { return nil }
+        var rows = result.rows
+        let sourceRow = rows[address.row]
+        guard sourceRow.cells.indices.contains(address.column) else { return nil }
+
+        var cells = sourceRow.cells
+        cells[address.column] = .text(text)
+        rows[address.row] = .init(id: sourceRow.id, cells: cells)
+
+        return QueryResult(
+            columns: result.columns,
+            rows: rows,
+            rowCount: result.rowCount,
+            elapsed: result.elapsed,
+            status: result.status,
+            truncated: result.truncated
+        )
     }
 
     /// The raw text of a cell for copying: NULL copies as an empty string.

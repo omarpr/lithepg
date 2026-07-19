@@ -300,4 +300,60 @@ struct ResultsTableCellSelectionTests {
     #expect(ResultsTablePresentation.rowText(for: result, rowIndex: 1) == "2\tNULL")
     #expect(ResultsTablePresentation.rowText(for: result, rowIndex: 7) == nil)
   }
+
+  @Test("cell editor session opens with the addressed value and metadata")
+  func cellEditorSession() throws {
+    let textSession = try #require(
+      ResultsTablePresentation.cellEditorSession(
+        for: result,
+        at: .init(row: 0, column: 1)
+      )
+    )
+    #expect(textSession.initialText == "hello\tworld")
+    #expect(textSession.columnName == "note")
+    #expect(textSession.rowNumber == 1)
+    #expect(textSession.wasNull == false)
+
+    let nullSession = try #require(
+      ResultsTablePresentation.cellEditorSession(
+        for: result,
+        at: .init(row: 1, column: 1)
+      )
+    )
+    #expect(nullSession.initialText == "")
+    #expect(nullSession.wasNull == true)
+    #expect(
+      ResultsTablePresentation.cellEditorSession(
+        for: result,
+        at: .init(row: 7, column: 0)
+      ) == nil
+    )
+  }
+
+  @Test("saving a cell edit returns a locally updated result without mutating the source")
+  func applyCellEdit() throws {
+    let address = ResultsTablePresentation.CellAddress(row: 0, column: 1)
+    let edited = try #require(
+      ResultsTablePresentation.replacingCell(
+        in: result,
+        at: address,
+        with: "saved locally"
+      )
+    )
+
+    #expect(ResultsTablePresentation.cellText(for: edited, at: address) == "saved locally")
+    #expect(ResultsTablePresentation.cellText(for: result, at: address) == "hello\tworld")
+    #expect(edited.columns == result.columns)
+    #expect(edited.rowCount == result.rowCount)
+    #expect(edited.elapsed == result.elapsed)
+    #expect(edited.status == result.status)
+    #expect(edited.truncated == result.truncated)
+    #expect(
+      ResultsTablePresentation.replacingCell(
+        in: result,
+        at: .init(row: 8, column: 0),
+        with: "nope"
+      ) == nil
+    )
+  }
 }
