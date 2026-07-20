@@ -10,7 +10,7 @@ set -euo pipefail
 # Apple password, app-specific password, private key, or GitHub token here.
 # Existing environment variables override these defaults.
 # ---------------------------------------------------------------------------
-export LITHEPG_CODESIGN_IDENTITY="${LITHEPG_CODESIGN_IDENTITY:-Developer ID Application: Omar Gerardo SF (LithePG)}"
+export LITHEPG_CODESIGN_IDENTITY="${LITHEPG_CODESIGN_IDENTITY:-Apple Development: omarpr@gmail.com (86XK7HVEUY)}"
 export LITHEPG_NOTARY_PROFILE="${LITHEPG_NOTARY_PROFILE:-lithepg-notary}"
 export LITHEPG_SECURITY_CONTACT="${LITHEPG_SECURITY_CONTACT:-https://github.com/omarpr/lithepg/security/advisories/new}"
 export LITHEPG_HOMEBREW_TAP="${LITHEPG_HOMEBREW_TAP:-omarpr/tap}"
