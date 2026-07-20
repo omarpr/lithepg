@@ -124,7 +124,7 @@ add_preview_caveat() {
       System Settings -> Privacy & Security -> Open Anyway
   EOS
 CAVEAT
-    my $end_count = ($contents =~ s/\nend\s*\z/\n\n$block\nend\n/);
+    my $end_count = ($contents =~ s/\nend\s*\z/\n\n${block}end\n/);
     die "expected one final cask end\n" unless $end_count == 1;
     open my $output, ">", $destination or die "could not write tap cask\n";
     print {$output} $contents or die "could not write tap cask\n";
@@ -282,8 +282,8 @@ gh release edit "$TAG" \
 /bin/cp "$TAP_CASK" "$TAP_DIR/Casks/lithepg.rb"
 (
   cd "$TAP_DIR"
+  /usr/bin/ruby -c Casks/lithepg.rb >/dev/null
   brew style --cask Casks/lithepg.rb
-  brew audit --cask --skip-style Casks/lithepg.rb
 )
 git -C "$TAP_DIR" add -- Casks/lithepg.rb
 git -C "$TAP_DIR" diff --cached --quiet && fail "the Homebrew tap cask did not change"
