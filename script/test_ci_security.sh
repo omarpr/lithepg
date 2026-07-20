@@ -58,5 +58,12 @@ for command in ("run: swift package resolve", "run: swift build"):
     if command not in codeql:
         raise SystemExit(f"test_ci_security failed: CodeQL is missing `{command}`")
 
+if codeql.index("run: swift package resolve") > codeql.index(
+    f"github/codeql-action/init@{codeql_sha}"
+):
+    raise SystemExit(
+        "test_ci_security failed: Swift dependencies must resolve before CodeQL tracing starts"
+    )
+
 print("test_ci_security passed")
 PY

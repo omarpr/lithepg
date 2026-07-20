@@ -38,15 +38,17 @@ jobs:
       - name: Swift version
         run: swift --version
 
+      # Resolve before enabling CodeQL tracing. SwiftPM evaluates dependency
+      # manifests during resolution, which can stall under Swift extraction.
+      - name: Resolve dependencies
+        run: swift package resolve
+
       - name: Initialize CodeQL
         # github/codeql-action v4
         uses: github/codeql-action/init@7188fc363630916deb702c7fdcf4e481b751f97a
         with:
           languages: swift
           queries: security-extended
-
-      - name: Resolve dependencies
-        run: swift package resolve
 
       - name: Build
         # CodeQL autobuild cannot reliably infer this multi-product SwiftPM
