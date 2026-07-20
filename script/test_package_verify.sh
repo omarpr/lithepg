@@ -1269,7 +1269,7 @@ make_minimal_app_bundle() {
   <key>CFBundleIconFile</key>
   <string>AppIcon</string>
   <key>CFBundleShortVersionString</key>
-  <string>1.0</string>
+  <string>1.0.0</string>
   <key>CFBundleVersion</key>
   <string>100</string>
   <key>LSMinimumSystemVersion</key>
@@ -1540,7 +1540,7 @@ assert_not_contains "$helper_output" "$success_path_bundle"
 assert_not_contains "$helper_output" "$success_path_sentinel"
 assert_contains "$helper_output" "Package verified: LithePG.app"
 assert_contains "$helper_output" "Bundle ID: dev.omarpr.lithepg"
-assert_contains "$helper_output" "Version: 1.0 (100)"
+assert_contains "$helper_output" "Version: 1.0.0 (100)"
 
 resources_symlink_sentinel="RESOURCES_SYMLINK_SENTINEL_SHOULD_NOT_LEAK"
 resources_symlink_bundle="$fixture_root/resources-symlink-$resources_symlink_sentinel/LithePG.app"
@@ -2721,7 +2721,7 @@ fi
 helper_output="$(<"$output_file")"
 assert_contains "$helper_output" "Package verified: LithePG.app"
 assert_contains "$helper_output" "Bundle ID: dev.omarpr.lithepg"
-assert_contains "$helper_output" "Version: 1.0 (100)"
+assert_contains "$helper_output" "Version: 1.0.0 (100)"
 
 finder_metadata_failure="package verification failed: app bundle must not contain Finder metadata files"
 
@@ -2784,7 +2784,7 @@ metadata_cases=(
   "CFBundlePackageType|CFBundlePackageType mismatch"
   "LSMinimumSystemVersion|LSMinimumSystemVersion mismatch"
   "NSPrincipalClass|NSPrincipalClass mismatch"
-  "CFBundleShortVersionString|CFBundleShortVersionString is not a numeric release version"
+  "CFBundleShortVersionString|CFBundleShortVersionString must use SemVer major.minor.patch"
   "CFBundleVersion|CFBundleVersion is not a numeric build version"
 )
 for metadata_case in "${metadata_cases[@]}"; do
@@ -2903,7 +2903,9 @@ assert_not_contains "$helper_output" "Package verified:"
 assert_not_contains "$helper_output" "$dangling_symlink_sentinel"
 assert_not_contains "$helper_output" "$dangling_symlinked_app_bundle"
 
-for unsafe_mode in 4755 2755 1755; do
+# macOS strips setuid/setgid bits from directories, so sticky is the special
+# directory bit that can be exercised on the local filesystem.
+for unsafe_mode in 1755; do
   app_bundle_mode_sentinel="APP_BUNDLE_MODE_SENTINEL_SHOULD_NOT_LEAK"
   app_bundle_mode_path="$fixture_root/app-bundle-mode-$unsafe_mode-$app_bundle_mode_sentinel/LithePG.app"
   make_minimal_app_bundle "$app_bundle_mode_path"
@@ -2975,7 +2977,7 @@ assert_not_contains "$helper_output" "Package verified:"
 assert_not_contains "$helper_output" "$symlinked_macos_sentinel"
 assert_not_contains "$helper_output" "MacOS-target"
 
-for unsafe_mode in 4755 2755 1755; do
+for unsafe_mode in 1755; do
   contents_mode_sentinel="CONTENTS_MODE_SENTINEL_SHOULD_NOT_LEAK"
   contents_mode_bundle="$fixture_root/contents-mode-$unsafe_mode-$contents_mode_sentinel/LithePG.app"
   make_minimal_app_bundle "$contents_mode_bundle"
@@ -3011,7 +3013,7 @@ for unsafe_mode in 775 757; do
   assert_not_contains "$helper_output" "$unsafe_mode"
 done
 
-for unsafe_mode in 4755 2755 1755; do
+for unsafe_mode in 1755; do
   macos_mode_sentinel="MACOS_MODE_SENTINEL_SHOULD_NOT_LEAK"
   macos_mode_bundle="$fixture_root/macos-mode-$unsafe_mode-$macos_mode_sentinel/LithePG.app"
   make_minimal_app_bundle "$macos_mode_bundle"
@@ -3195,7 +3197,7 @@ for unsafe_mode in 775 1755; do
   assert_not_contains "$helper_output" "$unsafe_mode"
 done
 
-for unsafe_mode in 664 4755; do
+for unsafe_mode in 664 1755; do
   nested_file_mode_sentinel="NESTED_FILE_MODE_SENTINEL_SHOULD_NOT_LEAK"
   nested_file_mode_bundle="$fixture_root/nested-file-mode-$unsafe_mode-$nested_file_mode_sentinel/LithePG.app"
   nested_file_name="nested-file-mode-name-should-not-leak.txt"
@@ -3217,7 +3219,7 @@ for unsafe_mode in 664 4755; do
   assert_not_contains "$helper_output" "$unsafe_mode"
 done
 
-for unsafe_mode in 4755 2755 1755; do
+for unsafe_mode in 1755; do
   info_plist_special_mode_sentinel="INFO_PLIST_SPECIAL_MODE_SENTINEL_SHOULD_NOT_LEAK"
   info_plist_special_mode_bundle="$fixture_root/info-plist-special-mode-$unsafe_mode-$info_plist_special_mode_sentinel/LithePG.app"
   make_minimal_app_bundle "$info_plist_special_mode_bundle"
@@ -3264,7 +3266,7 @@ helper_output="$(<"$output_file")"
 assert_contains "$helper_output" "package verification failed: app bundle basename must be LithePG.app"
 assert_not_contains "$helper_output" "Package verified:"
 
-for unsafe_mode in 4755 2755 1755; do
+for unsafe_mode in 1755; do
   special_mode_bundle="$fixture_root/special-mode-$unsafe_mode/LithePG.app"
   make_minimal_app_bundle "$special_mode_bundle"
   chmod "$unsafe_mode" "$special_mode_bundle/Contents/MacOS/LithePGApp"

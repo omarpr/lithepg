@@ -59,4 +59,4 @@ The binary has a 50 MiB hard cap with a 30 MiB stretch goal, currently about 21.
 ## Testing
 
 ### Swift Testing with gated live suites
-Unit tests cover every file in `LithePGCore` and the headless presentation seams of the app layer, 194 tests across 28 suites. Live integration tests are gated behind `POSTGRES_TEST_URL` and run against a seeded local Postgres in Docker or against a real Neon database. Keychain round trips are gated behind `LITHEPG_KEYCHAIN_TESTS`. Secret hygiene is enforced with history wide scanning before any public release.
+Unit tests cover `LithePGCore` and the headless presentation seams of the app layer, with 252 tests across 40 suites in the current local gate. Live integration tests are gated behind `POSTGRES_TEST_URL` and run against a seeded local Postgres in Docker or against a real Neon database. Keychain round trips are gated behind `LITHEPG_KEYCHAIN_TESTS`. Secret hygiene is enforced with history-wide scanning before any public release.

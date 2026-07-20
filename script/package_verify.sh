@@ -530,7 +530,7 @@ build_version="$(plist_value CFBundleVersion)"
 [[ "$package_type" == "APPL" ]] || fail "CFBundlePackageType mismatch"
 [[ "$minimum_system" == "$EXPECTED_MIN_SYSTEM_VERSION" ]] || fail "LSMinimumSystemVersion mismatch"
 [[ "$principal_class" == "NSApplication" ]] || fail "NSPrincipalClass mismatch"
-[[ "$marketing_version" =~ ^[0-9]+(\.[0-9]+){1,2}$ ]] || fail "CFBundleShortVersionString is not a numeric release version"
+[[ "$marketing_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "CFBundleShortVersionString must use SemVer major.minor.patch"
 [[ "$build_version" =~ ^[0-9]+$ ]] || fail "CFBundleVersion is not a numeric build version"
 
 if [[ -n "${LITHEPG_EXPECTED_MARKETING_VERSION:-}" ]]; then

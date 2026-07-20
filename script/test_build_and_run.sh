@@ -41,7 +41,7 @@ run_package_capture() {
       FAKE_SWIFT_BIN_DIR="$fake_swift_bin_dir" \
       FAKE_SWIFT_MARKER="$fake_swift_marker" \
       LITHEPG_CODESIGN_IDENTITY="-" \
-      LITHEPG_MARKETING_VERSION="1.0" \
+      LITHEPG_MARKETING_VERSION="1.0.0" \
       LITHEPG_BUILD_VERSION="100" \
       /bin/bash "$HELPER" --package
   ) >"$output_file" 2>&1
@@ -183,7 +183,7 @@ set +e
     FAKE_SWIFT_BIN_DIR="$root_shadow_swift_bin_dir" \
     FAKE_SWIFT_MARKER="$root_shadow_swift_marker" \
     LITHEPG_BUILD_AND_RUN_PKILL="$root_shadow_safe_pkill" \
-    LITHEPG_MARKETING_VERSION="1.0" \
+    LITHEPG_MARKETING_VERSION="1.0.0" \
     LITHEPG_BUILD_VERSION="100" \
     ROOT_SHADOW_MARKER_DIR="$root_shadow_marker_dir" \
     ROOT_SHADOW_FAKE_PWD="$fixture_root/root-shadow-wrong-root" \
@@ -377,7 +377,7 @@ set +e
     FAKE_SWIFT_BIN_DIR="$startup_perl_swift_bin_dir" \
     FAKE_SWIFT_MARKER="$startup_perl_swift_marker" \
     LITHEPG_BUILD_AND_RUN_PKILL="$startup_perl_safe_pkill" \
-    LITHEPG_MARKETING_VERSION="1.0" \
+    LITHEPG_MARKETING_VERSION="1.0.0" \
     LITHEPG_BUILD_VERSION="100" \
     BUILD_AND_RUN_PERL_STARTUP_MARKER="$startup_perl_marker" \
     BUILD_AND_RUN_PERL_STARTUP_SHADOW_SENTINEL="$startup_perl_sentinel" \
@@ -441,7 +441,7 @@ set +e
     FAKE_SWIFT_BIN_DIR="$icon_missing_swift_bin_dir" \
     FAKE_SWIFT_MARKER="$icon_missing_swift_marker" \
     LITHEPG_BUILD_AND_RUN_PKILL="$icon_missing_safe_pkill" \
-    LITHEPG_MARKETING_VERSION="1.0" \
+    LITHEPG_MARKETING_VERSION="1.0.0" \
     LITHEPG_BUILD_VERSION="100" \
     "$icon_missing_helper" --print-bundle-path
 ) >"$output_file" 2>&1
@@ -508,7 +508,7 @@ set +e
     FAKE_SWIFT_BIN_DIR="$print_bundle_swift_bin_dir" \
     FAKE_SWIFT_MARKER="$print_bundle_swift_marker" \
     LITHEPG_BUILD_AND_RUN_PKILL="$print_bundle_safe_pkill" \
-    LITHEPG_MARKETING_VERSION="1.0" \
+    LITHEPG_MARKETING_VERSION="1.0.0" \
     LITHEPG_BUILD_VERSION="100" \
     /bin/bash "$HELPER" --print-bundle-path
 ) >"$output_file" 2>&1
@@ -637,7 +637,7 @@ set +e
     LITHEPG_BUILD_AND_RUN_SLEEP="$verify_safe_sleep" \
     LITHEPG_BUILD_AND_RUN_PGREP="$verify_safe_pgrep" \
     LITHEPG_BUILD_AND_RUN_OPEN="$verify_safe_open" \
-    LITHEPG_MARKETING_VERSION="1.0" \
+    LITHEPG_MARKETING_VERSION="1.0.0" \
     LITHEPG_BUILD_VERSION="100" \
     /bin/bash "$HELPER" --verify
 ) >"$output_file" 2>&1

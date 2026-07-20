@@ -1,7 +1,9 @@
 # LithePG
 
 [![CI](https://github.com/omarpr/lithepg/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/omarpr/lithepg/actions/workflows/ci.yml?query=branch%3Amain)
-&nbsp;**Latest tagged release:** [`v0.5`](https://github.com/omarpr/lithepg/tree/v0.5)
+&nbsp;**Release:** [`v1.0.0`](https://github.com/omarpr/lithepg/tree/v1.0.0)
+
+Website: [www.lithepg.app](https://www.lithepg.app)
 
 LithePG is a lean, Mac-native PostgreSQL client with local-first AI. It is pure Swift on `postgres-nio` (no `libpq`), ships as a ~22 MiB binary and never sends prompts or database contents to an AI service.
 
@@ -27,7 +29,7 @@ LithePG is a lean, Mac-native PostgreSQL client with local-first AI. It is pure 
 
 ## Status
 
-v0.5 is the current tag. The v1.0 code is complete and verified: 248 tests across 39 suites pass locally, connectivity is proven live against local Docker Postgres and real Neon endpoints (direct and pooled), the full git history has been scanned for secrets, and the release executable remains under the 50 MiB cap. What remains for a public v1.0 is distribution, not app code: Apple Developer ID signing and notarization, a final security contact, a Homebrew target and release approval. Receipts live in [`docs/dogfood-log.md`](docs/dogfood-log.md) and [`CHANGELOG.md`](CHANGELOG.md).
+The `v1.0.0` source release is complete. The local suite passes with 252 tests across 40 suites, connectivity is proven live against local Docker Postgres and real Neon endpoints (direct and pooled), the full git history has been scanned for secrets, and the release executable remains under the 50 MiB cap. Public binary distribution remains separate: Apple Developer ID signing and notarization, a final security contact, a Homebrew target and publication approval are still required. Receipts live in [`docs/dogfood-log.md`](docs/dogfood-log.md) and [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Install
 
@@ -37,7 +39,7 @@ When a signed release exists: download `LithePG.app.zip` from [Releases](https:/
 
 ### Homebrew cask (planned)
 
-`brew install --cask lithepg` will work once the v1.0 artifact and tap are approved.
+`brew install --cask lithepg` will work once the v1.0.0 signed artifact and tap are approved.
 
 ### Build from source
 

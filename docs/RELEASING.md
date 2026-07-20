@@ -2,6 +2,17 @@
 
 LithePG release artifacts are local-first macOS app bundles. Signing and notarization require Omar-controlled Apple Developer credentials; those credentials must stay in the local keychain or environment and must never be committed.
 
+## Version policy
+
+Stable releases use Semantic Versioning as `MAJOR.MINOR.PATCH`:
+
+- Git tags add the conventional `v` prefix, for example `v1.0.0`.
+- `CFBundleShortVersionString` contains only the numeric SemVer, for example `1.0.0`.
+- `CFBundleVersion` remains a monotonically increasing numeric build identifier and defaults to the Git commit count.
+- Increase `MAJOR` for incompatible changes, `MINOR` for backward-compatible features and `PATCH` for backward-compatible fixes.
+
+Release scripts reject two-component or otherwise malformed stable versions.
+
 ## Local unsigned package verification
 
 Build and verify the stripped app bundle:
@@ -11,18 +22,18 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./script/build_and_run.
 ./script/package_verify.sh dist/LithePG.app
 ```
 
-For the final v1.0 candidate, do not rely on the current latest git tag to fill
+For the final v1.0.0 candidate, do not rely on the current latest git tag to fill
 `CFBundleShortVersionString`: the package builder derives that field from the
 latest tag unless `LITHEPG_MARKETING_VERSION` is set. Build the candidate with
 the intended marketing version, then verify the app bundle metadata with the
 expected-version gate before any signing or notarization step:
 
 ```sh
-LITHEPG_MARKETING_VERSION=1.0 \
+LITHEPG_MARKETING_VERSION=1.0.0 \
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
 ./script/build_and_run.sh --package
 
-LITHEPG_EXPECTED_MARKETING_VERSION=1.0 \
+LITHEPG_EXPECTED_MARKETING_VERSION=1.0.0 \
 ./script/package_verify.sh dist/LithePG.app
 ```
 
@@ -30,12 +41,12 @@ If Omar chooses an explicit release build number for the candidate, set and
 verify that number the same way:
 
 ```sh
-LITHEPG_MARKETING_VERSION=1.0 \
+LITHEPG_MARKETING_VERSION=1.0.0 \
 LITHEPG_BUILD_VERSION=<build-number> \
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
 ./script/build_and_run.sh --package
 
-LITHEPG_EXPECTED_MARKETING_VERSION=1.0 \
+LITHEPG_EXPECTED_MARKETING_VERSION=1.0.0 \
 LITHEPG_EXPECTED_BUILD_VERSION=<build-number> \
 ./script/package_verify.sh dist/LithePG.app
 ```
@@ -47,7 +58,7 @@ The verifier checks:
 - If `LITHEPG_EXPECTED_MARKETING_VERSION` or `LITHEPG_EXPECTED_BUILD_VERSION` is set, the corresponding bundle metadata exactly matches the expected value.
 - The packaged executable stays below the 50 MiB hard cap.
 
-An unsigned/ad-hoc-signed local bundle is only a development artifact. Do not publish it as a public v1.0 release.
+An unsigned/ad-hoc-signed local bundle is only a development artifact. Do not publish it as a public v1.0.0 release.
 
 ## Signed + notarized release path
 
@@ -110,10 +121,10 @@ shasum -a 256 dist/LithePG.app.zip
 
 Use that approved local digest for `LITHEPG_RELEASE_ZIP_SHA256`, the final GitHub Release copy, and the repository-local draft cask template at `packaging/homebrew/lithepg.rb`:
 
-1. Confirm the prepared `version "1.0"` matches the release version and tag; update it only if Omar chooses a different public version.
+1. Confirm the prepared `version "1.0.0"` matches the release version and tag.
 2. Replace `sha256 "REPLACE_WITH_SHA256"` with the approved local `shasum -a 256` digest.
 3. Confirm the `url` still matches the GitHub Release artifact path.
-4. Confirm the cask token and public metadata keep `cask "lithepg" do`, `name "LithePG"`, `desc "Lean PostgreSQL client with local-first AI"`, and `homepage "https://github.com/omarpr/lithepg"`.
+4. Confirm the cask token and public metadata keep `cask "lithepg" do`, `name "LithePG"`, `desc "Lean PostgreSQL client with local-first AI"`, and `homepage "https://www.lithepg.app"`.
 5. Confirm the cask supports the same public macOS floor as the app bundle with `depends_on macos: ">= :sonoma"`.
 6. Confirm the valid uninstall quit gate remains `uninstall quit: "dev.omarpr.lithepg"`.
 7. Confirm the cask installs `app "LithePG.app"`.
@@ -126,7 +137,7 @@ Stop before pushing to or creating any external Homebrew tap. Omar must explicit
 After the final `LithePG.app.zip` is uploaded, hash a fresh download from GitHub as a separate final confirmation that the public URL serves the approved bytes:
 
 ```sh
-VERSION=1.0
+VERSION=1.0.0
 curl -L -o /tmp/LithePG.app.zip \
   "https://github.com/omarpr/lithepg/releases/download/v${VERSION}/LithePG.app.zip"
 shasum -a 256 /tmp/LithePG.app.zip
@@ -134,7 +145,7 @@ shasum -a 256 /tmp/LithePG.app.zip
 
 If the fresh-download hash differs from the approved local digest already used by `LITHEPG_RELEASE_ZIP_SHA256` and the cask, stop and resolve the uploaded artifact before publishing the tap update.
 
-## Fast v1.0 publication preflight
+## Fast v1.0.0 publication preflight
 
 Before attempting the external publication steps, run the fast release blocker summary:
 
@@ -142,9 +153,9 @@ Before attempting the external publication steps, run the fast release blocker s
 ./script/v10_release_gate.sh
 ```
 
-The helper defaults to version `1.0`; pass `--version <version>` for a different public version. It is fast on purpose and checks, without printing secrets or digests:
+The helper defaults to version `1.0.0`; `--version` accepts an explicit SemVer `major.minor.patch` value. It is fast on purpose and checks, without printing secrets or digests:
 
-- Git state: clean working tree, `v0.5` tag present locally, `v<version>` tag absent. Remote tag checks are opt-in via `--check-remote` or `LITHEPG_CHECK_REMOTE_TAGS=1`; network failures report as unknown without blocking, but a confirmed missing `origin` `v0.5` blocks.
+- Git state: clean working tree, `v0.5` tag present locally and an existing `v<version>` tag pointing at `HEAD` (or no release tag yet). Remote tag checks are opt-in via `--check-remote` or `LITHEPG_CHECK_REMOTE_TAGS=1`; network failures report as unknown without blocking, but a confirmed missing `origin` `v0.5` blocks.
 - Release copy: no unresolved `REPLACE_WITH_*` placeholders and the approved SHA-256 present as an exact digest token.
 - The public zip artifact: exact `LithePG.app.zip` basename, regular file, correct top-level bundle structure with no stray entries, valid ICNS icon, `CodeResources` present, strict `codesign --verify` pass, signature identifier `dev.omarpr.lithepg`, Hardened Runtime flag and a SHA-256 match against the approved digest.
 - The Homebrew cask: token, version, URL, verified URL, metadata, uninstall quit gate, app stanza, macOS floor, zap paths, Ruby syntax and `sha256` all match the release.
@@ -174,11 +185,11 @@ The helper also checks these external inputs without printing their values:
 | `LITHEPG_RELEASE_COPY_APPROVED` | Boolean-style approval (`true`, `yes`, `1`, or `approved`). |
 | `LITHEPG_PUBLICATION_APPROVED` | Boolean-style explicit publication approval (`true`, `yes`, `1`, or `approved`). |
 
-Missing or false inputs make the helper exit non-zero with a `v1.0 publication blocked` summary. A passing fast preflight only means the quick local/tag facts and external approvals are present; still run the full local gate commands below before tagging or publishing.
+Missing or false inputs make the helper exit non-zero with a `v1.0.0 publication blocked` summary. A passing fast preflight only means the quick local/tag facts and external approvals are present; still run the full local gate commands below before tagging or publishing.
 
-## v1.0 gate
+## v1.0.0 binary-publication gate
 
-Do not tag `v1.0` or publish a GitHub Release until all non-external gates pass and Omar approves the public release copy:
+The source tag and binary release are separate. Do not publish a GitHub Release or binary artifact until all non-external gates pass and Omar approves the public release copy:
 
 - `script/v10_release_gate.sh` reports the fast preflight is clear.
 - Full `swift test`.

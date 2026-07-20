@@ -862,7 +862,7 @@ case "${1:-}" in
     if [[ "${FAKE_GIT_REMOTE_V05_MISSING:-}" == "1" && "$tag_ref" == "refs/tags/v0.5" ]]; then
       exit 2
     fi
-    if [[ "${FAKE_GIT_REMOTE_V10_ABSENT:-}" == "1" && "$tag_ref" == "refs/tags/v1.0" ]]; then
+    if [[ "${FAKE_GIT_REMOTE_V10_ABSENT:-}" == "1" && "$tag_ref" == "refs/tags/v1.0.0" ]]; then
       exit 2
     fi
     exit 99
@@ -946,7 +946,7 @@ write_valid_info_plist() {
   <key>CFBundleIconFile</key>
   <string>AppIcon</string>
   <key>CFBundleShortVersionString</key>
-  <string>1.0</string>
+  <string>1.0.0</string>
   <key>CFBundleVersion</key>
   <string>100</string>
   <key>LSMinimumSystemVersion</key>
@@ -975,7 +975,7 @@ write_legacy_info_plist_missing_core_metadata() {
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>1.0</string>
+  <string>1.0.0</string>
   <key>CFBundleVersion</key>
   <string>not-a-number</string>
   <key>LSMinimumSystemVersion</key>
@@ -2386,7 +2386,7 @@ cat >"$invalid_metadata_zip_dir/fixture-root/LithePG.app/Contents/Info.plist" <<
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>1.0</string>
+  <string>1.0.0</string>
   <key>CFBundleVersion</key>
   <string>100</string>
   <key>LSMinimumSystemVersion</key>
@@ -3019,7 +3019,7 @@ valid_info_plist = b'''<?xml version="1.0" encoding="UTF-8"?>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>1.0</string>
+  <string>1.0.0</string>
   <key>CFBundleVersion</key>
   <string>100</string>
   <key>LSMinimumSystemVersion</key>
@@ -3067,7 +3067,7 @@ valid_info_plist = b'''<?xml version="1.0" encoding="UTF-8"?>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>1.0</string>
+  <string>1.0.0</string>
   <key>CFBundleVersion</key>
   <string>100</string>
   <key>LSMinimumSystemVersion</key>
@@ -3115,7 +3115,7 @@ valid_info_plist = b'''<?xml version="1.0" encoding="UTF-8"?>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>1.0</string>
+  <string>1.0.0</string>
   <key>CFBundleVersion</key>
   <string>100</string>
   <key>LSMinimumSystemVersion</key>
@@ -3163,7 +3163,7 @@ valid_info_plist = b'''<?xml version="1.0" encoding="UTF-8"?>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>1.0</string>
+  <string>1.0.0</string>
   <key>CFBundleVersion</key>
   <string>100</string>
   <key>LSMinimumSystemVersion</key>
@@ -3207,7 +3207,7 @@ valid_info_plist = b'''<?xml version="1.0" encoding="UTF-8"?>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>1.0</string>
+  <string>1.0.0</string>
   <key>CFBundleVersion</key>
   <string>100</string>
   <key>LSMinimumSystemVersion</key>
@@ -3282,7 +3282,7 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3297,14 +3297,14 @@ end
 CASK
 cat >"$placeholder_free_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3319,14 +3319,14 @@ end
 CASK
 cat >"$missing_wrapper_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$missing_wrapper_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3341,14 +3341,14 @@ end
 CASK
 cat >"$cannot_inspect_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$cannot_inspect_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3363,14 +3363,14 @@ end
 CASK
 cat >"$incomplete_bundle_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$incomplete_bundle_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3385,14 +3385,14 @@ end
 CASK
 cat >"$symlink_bundle_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$symlink_bundle_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3407,14 +3407,14 @@ end
 CASK
 cat >"$nonessential_symlink_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$nonessential_symlink_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3429,14 +3429,14 @@ end
 CASK
 cat >"$unexpected_top_level_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$unexpected_top_level_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3451,14 +3451,14 @@ end
 CASK
 cat >"$non_executable_bundle_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$non_executable_bundle_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3473,14 +3473,14 @@ end
 CASK
 cat >"$owner_execute_missing_bundle_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$owner_execute_missing_bundle_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3495,14 +3495,14 @@ end
 CASK
 cat >"$special_mode_bundle_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$special_mode_bundle_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3517,14 +3517,14 @@ end
 CASK
 cat >"$writable_mode_bundle_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$writable_mode_bundle_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3539,14 +3539,14 @@ end
 CASK
 cat >"$writable_info_plist_mode_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$writable_info_plist_mode_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3561,14 +3561,14 @@ end
 CASK
 cat >"$writable_info_plist_mode_decoy_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$writable_info_plist_mode_decoy_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3583,14 +3583,14 @@ end
 CASK
 cat >"$missing_code_resources_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$missing_code_resources_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3605,14 +3605,14 @@ end
 CASK
 cat >"$invalid_code_signature_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$invalid_code_signature_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3627,14 +3627,14 @@ end
 CASK
 cat >"$mismatched_code_signature_identifier_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$mismatched_code_signature_identifier_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3649,14 +3649,14 @@ end
 CASK
 cat >"$missing_runtime_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$missing_runtime_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3671,14 +3671,14 @@ end
 CASK
 cat >"$metadata_files_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$metadata_files_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3693,14 +3693,14 @@ end
 CASK
 cat >"$text_executable_bundle_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$text_executable_bundle_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3715,14 +3715,14 @@ end
 CASK
 cat >"$duplicate_essential_entries_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$duplicate_essential_entries_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3737,14 +3737,14 @@ end
 CASK
 cat >"$noncanonical_zip_path_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$noncanonical_zip_path_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3759,14 +3759,14 @@ end
 CASK
 cat >"$casefold_zip_path_collision_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$casefold_zip_path_collision_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3781,14 +3781,14 @@ end
 CASK
 cat >"$unicode_zip_path_collision_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$unicode_zip_path_collision_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3803,14 +3803,14 @@ end
 CASK
 cat >"$malformed_zip_path_encoding_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$malformed_zip_path_encoding_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3825,14 +3825,14 @@ end
 CASK
 cat >"$invalid_metadata_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$invalid_metadata_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3847,14 +3847,14 @@ end
 CASK
 cat >"$legacy_metadata_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$legacy_metadata_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3869,14 +3869,14 @@ end
 CASK
 cat >"$malformed_metadata_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$malformed_metadata_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3892,14 +3892,14 @@ CASK
 wrong_homebrew_cask_token="not-lithepg"
 cat >"$token_mismatch_homebrew_cask" <<CASK
 cask "$wrong_homebrew_cask_token" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3914,14 +3914,14 @@ end
 CASK
 cat >"$missing_token_homebrew_cask" <<CASK
 # cask token intentionally omitted
-version "1.0"
+version "1.0.0"
 sha256 "$release_zip_sha"
 
 url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
     verified: "github.com/omarpr/lithepg/"
 name "LithePG"
 desc "Lean PostgreSQL client with local-first AI"
-homepage "https://github.com/omarpr/lithepg"
+homepage "https://www.lithepg.app"
 uninstall quit: "dev.omarpr.lithepg"
 
 depends_on macos: ">= :sonoma"
@@ -3936,14 +3936,14 @@ CASK
 wrong_homebrew_cask_name="NotLithePG"
 cat >"$name_mismatch_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "$wrong_homebrew_cask_name"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3958,13 +3958,13 @@ end
 CASK
 cat >"$missing_name_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -3980,14 +3980,14 @@ CASK
 wrong_homebrew_cask_desc="Not a PostgreSQL client"
 cat >"$desc_mismatch_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "$wrong_homebrew_cask_desc"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -4002,13 +4002,13 @@ end
 CASK
 cat >"$missing_desc_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -4023,14 +4023,14 @@ end
 CASK
 cat >"$mismatched_homebrew_cask" <<'CASK'
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -4043,17 +4043,17 @@ cask "lithepg" do
   ]
 end
 CASK
-wrong_homebrew_cask_url="https://example.invalid/not-lithepg/releases/download/v1.0/NotLithePG.app.zip"
+wrong_homebrew_cask_url="https://example.invalid/not-lithepg/releases/download/v1.0.0/NotLithePG.app.zip"
 cat >"$url_mismatch_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "$wrong_homebrew_cask_url",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -4069,14 +4069,14 @@ CASK
 wrong_homebrew_cask_verified="github.com/example/not-lithepg/"
 cat >"$verified_mismatch_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "$wrong_homebrew_cask_verified"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -4091,13 +4091,13 @@ end
 CASK
 cat >"$missing_verified_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -4113,7 +4113,7 @@ CASK
 wrong_homebrew_cask_homepage="https://example.invalid/not-lithepg"
 cat >"$homepage_mismatch_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
@@ -4135,7 +4135,7 @@ end
 CASK
 cat >"$missing_homepage_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
@@ -4157,14 +4157,14 @@ CASK
 wrong_homebrew_cask_bundle_id="not.dev.omarpr.lithepg"
 cat >"$bundle_id_mismatch_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "$wrong_homebrew_cask_bundle_id"
 
   depends_on macos: ">= :sonoma"
@@ -4179,14 +4179,14 @@ end
 CASK
 cat >"$missing_bundle_id_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
 
   depends_on macos: ">= :sonoma"
 
@@ -4207,7 +4207,7 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -4224,11 +4224,11 @@ cat >"$missing_version_homebrew_cask" <<CASK
 cask "lithepg" do
   sha256 "$release_zip_sha"
 
-  url "https://github.com/omarpr/lithepg/releases/download/v1.0/LithePG.app.zip",
+  url "https://github.com/omarpr/lithepg/releases/download/v1.0.0/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -4243,13 +4243,13 @@ end
 CASK
 cat >"$missing_sha_homebrew_cask" <<'CASK'
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -4265,14 +4265,14 @@ CASK
 wrong_homebrew_cask_app="NotLithePG.app"
 cat >"$app_mismatch_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -4287,14 +4287,14 @@ end
 CASK
 cat >"$missing_app_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -4307,14 +4307,14 @@ end
 CASK
 cat >"$macos_mismatch_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :ventura"
@@ -4329,14 +4329,14 @@ end
 CASK
 cat >"$missing_macos_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   app "LithePG.app"
@@ -4349,14 +4349,14 @@ end
 CASK
 cat >"$zap_mismatch_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -4371,14 +4371,14 @@ end
 CASK
 cat >"$missing_zap_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -4388,14 +4388,14 @@ end
 CASK
 cat >"$commented_zap_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -4410,14 +4410,14 @@ end
 CASK
 cat >"$inline_commented_zap_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -4432,14 +4432,14 @@ end
 CASK
 cat >"$unterminated_zap_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -4453,14 +4453,14 @@ end
 CASK
 cat >"$syntax_error_homebrew_cask" <<CASK
 cask "lithepg" do
-  version "1.0"
+  version "1.0.0"
   sha256 "$release_zip_sha"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://github.com/omarpr/lithepg"
+  homepage "https://www.lithepg.app"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :sonoma"
@@ -4580,7 +4580,7 @@ startup_env_shadow_text="$(<"$startup_env_shadow_output")"
 if [[ "$startup_env_shadow_status" -eq 0 ]]; then
   fail "v10 release gate unexpectedly passed with required inputs missing under dirty startup env"
 fi
-assert_contains "$startup_env_shadow_text" "v1.0 publication blocked"
+assert_contains "$startup_env_shadow_text" "v1.0.0 publication blocked"
 assert_contains "$startup_env_shadow_text" "LITHEPG_CODESIGN_IDENTITY: missing"
 assert_not_contains "$startup_env_shadow_text" "$startup_env_shadow_sentinel"
 assert_not_contains "$startup_env_shadow_text" "BASH_ENV set function invoked"
@@ -4678,7 +4678,7 @@ if [[ "$ruby_startup_env_shadow_status" -ne 0 ]]; then
   fail "v10 release gate did not sanitize Ruby startup env before Homebrew cask Ruby syntax check"
 fi
 assert_contains "$ruby_startup_env_shadow_text" "Homebrew cask Ruby syntax: valid"
-assert_contains "$ruby_startup_env_shadow_text" "v1.0 fast preflight is clear"
+assert_contains "$ruby_startup_env_shadow_text" "v1.0.0 fast preflight is clear"
 assert_not_contains "$ruby_startup_env_shadow_text" "$ruby_startup_env_shadow_sentinel"
 assert_not_contains "$ruby_startup_env_shadow_text" "Ruby startup invoked"
 [[ ! -e "$ruby_startup_env_shadow_marker" ]] || fail "v10 release gate honored Ruby startup environment before cask syntax check: $(<"$ruby_startup_env_shadow_marker")"
@@ -4770,7 +4770,7 @@ if run_gate_capture "$path_shadowed_grep_output" env -i \
 fi
 path_shadowed_grep_text="$(<"$path_shadowed_grep_output")"
 assert_not_contains "$path_shadowed_grep_text" "V10_RELEASE_GATE_PATH_SHADOW_GREP_SHOULD_NOT_RUN"
-assert_contains "$path_shadowed_grep_text" "v1.0 publication blocked"
+assert_contains "$path_shadowed_grep_text" "v1.0.0 publication blocked"
 assert_contains "$path_shadowed_grep_text" "Release copy placeholders: none found"
 assert_contains "$path_shadowed_grep_text" "LITHEPG_PUBLICATION_APPROVED: not approved"
 
@@ -4791,7 +4791,7 @@ if run_specific_gate_capture "$path_shadowed_dirname_output" "$default_security_
 fi
 path_shadowed_dirname_text="$(<"$path_shadowed_dirname_output")"
 assert_not_contains "$path_shadowed_dirname_text" "V10_RELEASE_GATE_PATH_SHADOW_DIRNAME_SHOULD_NOT_RUN"
-assert_contains "$path_shadowed_dirname_text" "v1.0 publication blocked"
+assert_contains "$path_shadowed_dirname_text" "v1.0.0 publication blocked"
 assert_contains "$path_shadowed_dirname_text" "LITHEPG_CODESIGN_IDENTITY: missing"
 
 set +e
@@ -4844,7 +4844,7 @@ assert_not_contains "$root_resolution_shadow_text" "V10_RELEASE_GATE_ROOT_RESOLU
 for tool in dirname realpath command builtin cd pwd unset; do
   [[ ! -e "$root_resolution_shadow_marker_dir/$tool" ]] || fail "release gate root resolution invoked shadowed $tool"
 done
-assert_contains "$root_resolution_shadow_text" "v1.0 publication blocked"
+assert_contains "$root_resolution_shadow_text" "v1.0.0 publication blocked"
 assert_contains "$root_resolution_shadow_text" "LITHEPG_CODESIGN_IDENTITY: missing"
 
 if run_gate_capture "$path_shadowed_rm_output" env -i \
@@ -4865,7 +4865,7 @@ if run_gate_capture "$path_shadowed_rm_output" env -i \
 fi
 path_shadowed_rm_text="$(<"$path_shadowed_rm_output")"
 assert_not_contains "$path_shadowed_rm_text" "V10_RELEASE_GATE_PATH_SHADOW_RM_SHOULD_NOT_RUN"
-assert_contains "$path_shadowed_rm_text" "v1.0 publication blocked"
+assert_contains "$path_shadowed_rm_text" "v1.0.0 publication blocked"
 assert_contains "$path_shadowed_rm_text" "Release artifact zip: present"
 assert_contains "$path_shadowed_rm_text" "Release artifact Info.plist metadata: matches"
 assert_contains "$path_shadowed_rm_text" "LITHEPG_PUBLICATION_APPROVED: not approved"
@@ -4874,7 +4874,7 @@ if run_specific_gate_capture "$missing_output" "$default_security_docs_helper" e
   fail "gate unexpectedly passed with all required external inputs missing"
 fi
 missing_text="$(<"$missing_output")"
-assert_contains "$missing_text" "v1.0 publication blocked"
+assert_contains "$missing_text" "v1.0.0 publication blocked"
 assert_contains "$missing_text" "LITHEPG_CODESIGN_IDENTITY: missing"
 assert_contains "$missing_text" "LITHEPG_NOTARY_PROFILE: missing"
 assert_contains "$missing_text" "LITHEPG_SECURITY_CONTACT: missing"
@@ -4908,7 +4908,7 @@ if run_gate_capture "$redaction_output" env -i \
   fail "gate unexpectedly passed with release/publication approvals false"
 fi
 redaction_text="$(<"$redaction_output")"
-assert_contains "$redaction_text" "v1.0 publication blocked"
+assert_contains "$redaction_text" "v1.0.0 publication blocked"
 assert_contains "$redaction_text" "LITHEPG_CODESIGN_IDENTITY: configured"
 assert_contains "$redaction_text" "LITHEPG_NOTARY_PROFILE: configured"
 assert_contains "$redaction_text" "LITHEPG_SECURITY_CONTACT: configured"
@@ -4944,7 +4944,7 @@ assert_contains "$artifact_only_text" "Release artifact executable size: under b
 assert_contains "$artifact_only_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_only_text" "Release artifact code signature runtime: present"
 assert_contains "$artifact_only_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_only_text" "v1.0 artifact-only preflight is clear"
+assert_contains "$artifact_only_text" "v1.0.0 artifact-only preflight is clear"
 assert_contains "$artifact_only_text" "Artifact-only mode is not a publication gate"
 assert_not_contains "$artifact_only_text" "Release copy placeholders:"
 assert_not_contains "$artifact_only_text" "Homebrew cask placeholders:"
@@ -4973,7 +4973,7 @@ fi
 artifact_only_env_text="$(<"$artifact_only_env_output")"
 assert_contains "$artifact_only_env_text" "Artifact-only mode: enabled"
 assert_contains "$artifact_only_env_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_only_env_text" "v1.0 artifact-only preflight is clear"
+assert_contains "$artifact_only_env_text" "v1.0.0 artifact-only preflight is clear"
 assert_not_contains "$artifact_only_env_text" "Local git/tag readiness"
 assert_not_contains "$artifact_only_env_text" "Remote origin"
 assert_not_contains "$artifact_only_env_text" "External publication inputs"
@@ -4999,7 +4999,7 @@ artifact_code_signature_resources_unsafe_mode_text="$(<"$artifact_code_signature
 assert_contains "$artifact_code_signature_resources_unsafe_mode_text" "Artifact-only mode: enabled"
 assert_contains "$artifact_code_signature_resources_unsafe_mode_text" "Release artifact zip: present"
 assert_contains "$artifact_code_signature_resources_unsafe_mode_text" "Release artifact code signature resources: invalid"
-assert_contains "$artifact_code_signature_resources_unsafe_mode_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_code_signature_resources_unsafe_mode_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_code_signature_resources_unsafe_mode_text" "$unsafe_code_resources_mode_zip_sha"
 assert_not_contains "$artifact_code_signature_resources_unsafe_mode_text" "$unsafe_code_resources_mode_zip"
 assert_not_contains "$artifact_code_signature_resources_unsafe_mode_text" "rw-rw-rw-"
@@ -5025,7 +5025,7 @@ artifact_code_signature_resources_empty_text="$(<"$artifact_code_signature_resou
 assert_contains "$artifact_code_signature_resources_empty_text" "Artifact-only mode: enabled"
 assert_contains "$artifact_code_signature_resources_empty_text" "Release artifact zip: present"
 assert_contains "$artifact_code_signature_resources_empty_text" "Release artifact code signature resources: invalid"
-assert_contains "$artifact_code_signature_resources_empty_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_code_signature_resources_empty_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_code_signature_resources_empty_text" "$empty_code_resources_zip_sha"
 assert_not_contains "$artifact_code_signature_resources_empty_text" "$empty_code_resources_zip"
 assert_not_contains "$artifact_code_signature_resources_empty_text" "CodeResources"
@@ -5050,7 +5050,7 @@ artifact_code_signature_resources_oversized_text="$(<"$artifact_code_signature_r
 assert_contains "$artifact_code_signature_resources_oversized_text" "Artifact-only mode: enabled"
 assert_contains "$artifact_code_signature_resources_oversized_text" "Release artifact zip: present"
 assert_contains "$artifact_code_signature_resources_oversized_text" "Release artifact code signature resources: invalid"
-assert_contains "$artifact_code_signature_resources_oversized_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_code_signature_resources_oversized_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_code_signature_resources_oversized_text" "$oversized_code_resources_zip_sha"
 assert_not_contains "$artifact_code_signature_resources_oversized_text" "$oversized_code_resources_zip"
 assert_not_contains "$artifact_code_signature_resources_oversized_text" "CodeResources"
@@ -5077,7 +5077,7 @@ artifact_directory_mode_unsafe_text="$(<"$artifact_directory_mode_unsafe_output"
 assert_contains "$artifact_directory_mode_unsafe_text" "Artifact-only mode: enabled"
 assert_contains "$artifact_directory_mode_unsafe_text" "Release artifact zip: present"
 assert_contains "$artifact_directory_mode_unsafe_text" "Release artifact directory modes: unsafe"
-assert_contains "$artifact_directory_mode_unsafe_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_directory_mode_unsafe_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_directory_mode_unsafe_text" "$unsafe_directory_mode_zip_sha"
 assert_not_contains "$artifact_directory_mode_unsafe_text" "$unsafe_directory_mode_zip"
 assert_not_contains "$artifact_directory_mode_unsafe_text" "drwxrwxrwx"
@@ -5104,7 +5104,7 @@ artifact_root_directory_mode_unsafe_text="$(<"$artifact_root_directory_mode_unsa
 assert_contains "$artifact_root_directory_mode_unsafe_text" "Artifact-only mode: enabled"
 assert_contains "$artifact_root_directory_mode_unsafe_text" "Release artifact zip: present"
 assert_contains "$artifact_root_directory_mode_unsafe_text" "Release artifact directory modes: unsafe"
-assert_contains "$artifact_root_directory_mode_unsafe_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_root_directory_mode_unsafe_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_root_directory_mode_unsafe_text" "$unsafe_root_directory_mode_zip_sha"
 assert_not_contains "$artifact_root_directory_mode_unsafe_text" "$unsafe_root_directory_mode_zip"
 assert_not_contains "$artifact_root_directory_mode_unsafe_text" "drwxrwxrwx"
@@ -5124,7 +5124,7 @@ fi
 artifact_only_missing_sha_text="$(<"$artifact_only_missing_sha_output")"
 assert_contains "$artifact_only_missing_sha_text" "Artifact-only mode: enabled"
 assert_contains "$artifact_only_missing_sha_text" "Release artifact SHA-256: missing"
-assert_contains "$artifact_only_missing_sha_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_only_missing_sha_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_only_missing_sha_text" "Release copy placeholders:"
 assert_not_contains "$artifact_only_missing_sha_text" "Homebrew cask placeholders:"
 assert_not_contains "$artifact_only_missing_sha_text" "External publication inputs"
@@ -5143,7 +5143,7 @@ fi
 artifact_only_mismatched_sha_text="$(<"$artifact_only_mismatched_sha_output")"
 assert_contains "$artifact_only_mismatched_sha_text" "Artifact-only mode: enabled"
 assert_contains "$artifact_only_mismatched_sha_text" "Release artifact SHA-256: mismatch"
-assert_contains "$artifact_only_mismatched_sha_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_only_mismatched_sha_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_only_mismatched_sha_text" "$release_zip_sha"
 assert_not_contains "$artifact_only_mismatched_sha_text" "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 assert_not_contains "$artifact_only_mismatched_sha_text" "External publication inputs"
@@ -5167,7 +5167,7 @@ if run_gate_capture "$missing_artifact_output" env -i \
 fi
 missing_artifact_text="$(<"$missing_artifact_output")"
 assert_contains "$missing_artifact_text" "Release artifact zip: missing at $missing_artifact_zip"
-assert_contains "$missing_artifact_text" "v1.0 publication blocked"
+assert_contains "$missing_artifact_text" "v1.0.0 publication blocked"
 assert_not_contains "$missing_artifact_text" "fast preflight is clear"
 
 if run_gate_capture "$symlink_artifact_output" env -i \
@@ -5194,7 +5194,7 @@ fi
 symlink_artifact_text="$(<"$symlink_artifact_output")"
 assert_contains "$symlink_artifact_text" "Release artifact filename: matches"
 assert_contains "$symlink_artifact_text" "Release artifact zip: symlink"
-assert_contains "$symlink_artifact_text" "v1.0 publication blocked"
+assert_contains "$symlink_artifact_text" "v1.0.0 publication blocked"
 assert_not_contains "$symlink_artifact_text" "Release artifact zip: present"
 assert_not_contains "$symlink_artifact_text" "Release artifact app wrapper:"
 assert_not_contains "$symlink_artifact_text" "Release artifact SHA-256:"
@@ -5226,7 +5226,7 @@ if run_gate_capture "$artifact_trailing_slash_output" env -i \
 fi
 artifact_trailing_slash_text="$(<"$artifact_trailing_slash_output")"
 assert_contains "$artifact_trailing_slash_text" "Release artifact filename: trailing slash"
-assert_contains "$artifact_trailing_slash_text" "v1.0 publication blocked"
+assert_contains "$artifact_trailing_slash_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_trailing_slash_text" "Release artifact zip: present"
 assert_not_contains "$artifact_trailing_slash_text" "Release artifact app wrapper:"
 assert_not_contains "$artifact_trailing_slash_text" "Release artifact SHA-256:"
@@ -5259,7 +5259,7 @@ artifact_filename_mismatch_text="$(<"$artifact_filename_mismatch_output")"
 assert_contains "$artifact_filename_mismatch_text" "Release artifact filename: mismatch"
 assert_contains "$artifact_filename_mismatch_text" "Release artifact zip: present"
 assert_contains "$artifact_filename_mismatch_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_filename_mismatch_text" "v1.0 publication blocked"
+assert_contains "$artifact_filename_mismatch_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_filename_mismatch_text" "$wrong_basename_zip"
 assert_not_contains "$artifact_filename_mismatch_text" "$release_zip_sha"
 assert_not_contains "$artifact_filename_mismatch_text" "fast preflight is clear"
@@ -5289,7 +5289,7 @@ assert_contains "$artifact_app_wrapper_missing_text" "Release artifact filename:
 assert_contains "$artifact_app_wrapper_missing_text" "Release artifact zip: present"
 assert_contains "$artifact_app_wrapper_missing_text" "Release artifact app wrapper: missing"
 assert_contains "$artifact_app_wrapper_missing_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_wrapper_missing_text" "v1.0 publication blocked"
+assert_contains "$artifact_app_wrapper_missing_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_app_wrapper_missing_text" "NotLithePG.app"
 assert_not_contains "$artifact_app_wrapper_missing_text" "$missing_wrapper_zip_sha"
 assert_not_contains "$artifact_app_wrapper_missing_text" "fast preflight is clear"
@@ -5323,7 +5323,7 @@ assert_occurrences "$artifact_bundle_file_type_inspect_failure_text" "Release ar
 assert_contains "$artifact_bundle_file_type_inspect_failure_text" "Release artifact app wrapper: could not inspect"
 assert_contains "$artifact_bundle_file_type_inspect_failure_text" "Release artifact bundle file types: could not inspect"
 assert_contains "$artifact_bundle_file_type_inspect_failure_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_bundle_file_type_inspect_failure_text" "v1.0 publication blocked"
+assert_contains "$artifact_bundle_file_type_inspect_failure_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_bundle_file_type_inspect_failure_text" "$cannot_inspect_archive_marker"
 assert_not_contains "$artifact_bundle_file_type_inspect_failure_text" "$cannot_inspect_zip_sha"
 assert_not_contains "$artifact_bundle_file_type_inspect_failure_text" "fast preflight is clear"
@@ -5354,7 +5354,7 @@ assert_contains "$artifact_bundle_contents_missing_text" "Release artifact zip: 
 assert_contains "$artifact_bundle_contents_missing_text" "Release artifact app wrapper: present"
 assert_contains "$artifact_bundle_contents_missing_text" "Release artifact bundle contents: missing"
 assert_contains "$artifact_bundle_contents_missing_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_bundle_contents_missing_text" "v1.0 publication blocked"
+assert_contains "$artifact_bundle_contents_missing_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_bundle_contents_missing_text" "placeholder.txt"
 assert_not_contains "$artifact_bundle_contents_missing_text" "$incomplete_bundle_zip_sha"
 assert_not_contains "$artifact_bundle_contents_missing_text" "fast preflight is clear"
@@ -5387,7 +5387,7 @@ assert_contains "$artifact_bundle_file_type_invalid_text" "Release artifact app 
 assert_contains "$artifact_bundle_file_type_invalid_text" "Release artifact bundle contents: present"
 assert_contains "$artifact_bundle_file_type_invalid_text" "Release artifact bundle file types: invalid"
 assert_contains "$artifact_bundle_file_type_invalid_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_bundle_file_type_invalid_text" "v1.0 publication blocked"
+assert_contains "$artifact_bundle_file_type_invalid_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_bundle_file_type_invalid_text" "Info.target"
 assert_not_contains "$artifact_bundle_file_type_invalid_text" "LithePGApp.target"
 assert_not_contains "$artifact_bundle_file_type_invalid_text" "$symlink_bundle_zip_sha"
@@ -5416,7 +5416,7 @@ assert_contains "$artifact_bundle_directory_type_invalid_text" "Release artifact
 assert_contains "$artifact_bundle_directory_type_invalid_text" "Release artifact bundle contents: present"
 assert_contains "$artifact_bundle_directory_type_invalid_text" "Release artifact bundle file types: invalid"
 assert_contains "$artifact_bundle_directory_type_invalid_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_bundle_directory_type_invalid_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_bundle_directory_type_invalid_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_bundle_directory_type_invalid_text" "$resources_regular_file_marker"
 assert_not_contains "$artifact_bundle_directory_type_invalid_text" "$resources_regular_file_zip"
 assert_not_contains "$artifact_bundle_directory_type_invalid_text" "$resources_regular_file_zip_sha"
@@ -5463,7 +5463,7 @@ assert_contains "$artifact_symlinks_present_text" "Release artifact code signatu
 assert_contains "$artifact_symlinks_present_text" "Release artifact code signature runtime: present"
 assert_contains "$artifact_symlinks_present_text" "Release artifact top-level entries: clean"
 assert_contains "$artifact_symlinks_present_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_symlinks_present_text" "v1.0 publication blocked"
+assert_contains "$artifact_symlinks_present_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_symlinks_present_text" "symlinked-resource"
 assert_not_contains "$artifact_symlinks_present_text" "safe-target.txt"
 assert_not_contains "$artifact_symlinks_present_text" "$nonessential_symlink_marker"
@@ -5499,7 +5499,7 @@ assert_contains "$artifact_bundle_executable_permission_text" "Release artifact 
 assert_contains "$artifact_bundle_executable_permission_text" "Release artifact bundle file types: regular"
 assert_contains "$artifact_bundle_executable_permission_text" "Release artifact bundle executable: not executable"
 assert_contains "$artifact_bundle_executable_permission_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_bundle_executable_permission_text" "v1.0 publication blocked"
+assert_contains "$artifact_bundle_executable_permission_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_bundle_executable_permission_text" "non-executable release app executable fixture"
 assert_not_contains "$artifact_bundle_executable_permission_text" "$non_executable_bundle_zip_sha"
 assert_not_contains "$artifact_bundle_executable_permission_text" "fast preflight is clear"
@@ -5532,7 +5532,7 @@ assert_contains "$artifact_bundle_owner_execute_permission_text" "Release artifa
 assert_contains "$artifact_bundle_owner_execute_permission_text" "Release artifact bundle file types: regular"
 assert_contains "$artifact_bundle_owner_execute_permission_text" "Release artifact bundle executable: not executable"
 assert_contains "$artifact_bundle_owner_execute_permission_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_bundle_owner_execute_permission_text" "v1.0 publication blocked"
+assert_contains "$artifact_bundle_owner_execute_permission_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_bundle_owner_execute_permission_text" "owner-execute-missing app executable fixture"
 assert_not_contains "$artifact_bundle_owner_execute_permission_text" "$owner_execute_missing_bundle_zip_sha"
 assert_not_contains "$artifact_bundle_owner_execute_permission_text" "fast preflight is clear"
@@ -5575,7 +5575,7 @@ assert_contains "$artifact_bundle_special_mode_text" "Release artifact code sign
 assert_contains "$artifact_bundle_special_mode_text" "Release artifact code signature runtime: present"
 assert_contains "$artifact_bundle_special_mode_text" "Release artifact top-level entries: clean"
 assert_contains "$artifact_bundle_special_mode_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_bundle_special_mode_text" "v1.0 publication blocked"
+assert_contains "$artifact_bundle_special_mode_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_bundle_special_mode_text" "$special_mode_bundle_zip_sha"
 assert_not_contains "$artifact_bundle_special_mode_text" "$special_mode_bundle_zip"
 assert_not_contains "$artifact_bundle_special_mode_text" "LithePG.app/Contents/MacOS/LithePGApp"
@@ -5621,7 +5621,7 @@ assert_contains "$artifact_bundle_writable_mode_text" "Release artifact code sig
 assert_contains "$artifact_bundle_writable_mode_text" "Release artifact code signature runtime: present"
 assert_contains "$artifact_bundle_writable_mode_text" "Release artifact top-level entries: clean"
 assert_contains "$artifact_bundle_writable_mode_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_bundle_writable_mode_text" "v1.0 publication blocked"
+assert_contains "$artifact_bundle_writable_mode_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_bundle_writable_mode_text" "$writable_mode_bundle_zip_sha"
 assert_not_contains "$artifact_bundle_writable_mode_text" "$writable_mode_bundle_zip"
 assert_not_contains "$artifact_bundle_writable_mode_text" "LithePG.app/Contents/MacOS/LithePGApp"
@@ -5669,7 +5669,7 @@ assert_contains "$artifact_info_plist_writable_mode_text" "Release artifact code
 assert_contains "$artifact_info_plist_writable_mode_text" "Release artifact code signature runtime: present"
 assert_contains "$artifact_info_plist_writable_mode_text" "Release artifact top-level entries: clean"
 assert_contains "$artifact_info_plist_writable_mode_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_info_plist_writable_mode_text" "v1.0 publication blocked"
+assert_contains "$artifact_info_plist_writable_mode_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_info_plist_writable_mode_text" "$writable_info_plist_mode_zip_sha"
 assert_not_contains "$artifact_info_plist_writable_mode_text" "$writable_info_plist_mode_zip"
 assert_not_contains "$artifact_info_plist_writable_mode_text" "LithePG.app/Contents/Info.plist"
@@ -5710,7 +5710,7 @@ assert_contains "$artifact_info_plist_mode_decoy_text" "Release artifact essenti
 assert_contains "$artifact_info_plist_mode_decoy_text" "Release artifact Info.plist metadata: matches"
 assert_contains "$artifact_info_plist_mode_decoy_text" "Release artifact Info.plist mode: unsafe"
 assert_contains "$artifact_info_plist_mode_decoy_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_info_plist_mode_decoy_text" "v1.0 publication blocked"
+assert_contains "$artifact_info_plist_mode_decoy_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_info_plist_mode_decoy_text" "$writable_info_plist_mode_decoy_zip_sha"
 assert_not_contains "$artifact_info_plist_mode_decoy_text" "$writable_info_plist_mode_decoy_zip"
 assert_not_contains "$artifact_info_plist_mode_decoy_text" "LithePG.app/Contents/Info.plist"
@@ -5740,7 +5740,7 @@ assert_contains "$artifact_app_icon_missing_text" "Release artifact Info.plist m
 assert_contains "$artifact_app_icon_missing_text" "Release artifact app icon: missing"
 assert_contains "$artifact_app_icon_missing_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_missing_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_missing_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_missing_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_missing_text" "$missing_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_missing_text" "$missing_app_icon_zip"
 assert_not_contains "$artifact_app_icon_missing_text" "AppIcon.icns"
@@ -5771,7 +5771,7 @@ assert_contains "$artifact_app_icon_malformed_text" "Release artifact Info.plist
 assert_contains "$artifact_app_icon_malformed_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_malformed_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_malformed_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_malformed_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_malformed_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_malformed_text" "$malformed_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_malformed_text" "$malformed_app_icon_zip"
 assert_not_contains "$artifact_app_icon_malformed_text" "$malformed_app_icon_marker"
@@ -5803,7 +5803,7 @@ assert_contains "$artifact_app_icon_bad_low_resolution_sibling_text" "Release ar
 assert_contains "$artifact_app_icon_bad_low_resolution_sibling_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_bad_low_resolution_sibling_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_bad_low_resolution_sibling_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_bad_low_resolution_sibling_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_bad_low_resolution_sibling_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_bad_low_resolution_sibling_text" "$bad_low_resolution_sibling_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_bad_low_resolution_sibling_text" "$bad_low_resolution_sibling_app_icon_zip"
 assert_not_contains "$artifact_app_icon_bad_low_resolution_sibling_text" "$bad_low_resolution_sibling_app_icon_marker"
@@ -5835,7 +5835,7 @@ assert_contains "$artifact_app_icon_duplicate_element_text" "Release artifact In
 assert_contains "$artifact_app_icon_duplicate_element_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_duplicate_element_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_duplicate_element_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_duplicate_element_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_duplicate_element_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_duplicate_element_text" "$duplicate_element_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_duplicate_element_text" "$duplicate_element_app_icon_zip"
 assert_not_contains "$artifact_app_icon_duplicate_element_text" "$duplicate_element_app_icon_marker"
@@ -5867,7 +5867,7 @@ assert_contains "$artifact_app_icon_duplicate_ihdr_text" "Release artifact Info.
 assert_contains "$artifact_app_icon_duplicate_ihdr_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_duplicate_ihdr_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_duplicate_ihdr_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_duplicate_ihdr_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_duplicate_ihdr_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_duplicate_ihdr_text" "$duplicate_ihdr_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_duplicate_ihdr_text" "$duplicate_ihdr_app_icon_zip"
 assert_not_contains "$artifact_app_icon_duplicate_ihdr_text" "$duplicate_ihdr_app_icon_marker"
@@ -5899,7 +5899,7 @@ assert_contains "$artifact_app_icon_invalid_chunk_type_text" "Release artifact I
 assert_contains "$artifact_app_icon_invalid_chunk_type_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_invalid_chunk_type_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_invalid_chunk_type_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_invalid_chunk_type_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_invalid_chunk_type_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_invalid_chunk_type_text" "$invalid_chunk_type_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_invalid_chunk_type_text" "$invalid_chunk_type_app_icon_zip"
 assert_not_contains "$artifact_app_icon_invalid_chunk_type_text" "$invalid_chunk_type_app_icon_marker"
@@ -5931,7 +5931,7 @@ assert_contains "$artifact_app_icon_reserved_bit_text" "Release artifact Info.pl
 assert_contains "$artifact_app_icon_reserved_bit_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_reserved_bit_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_reserved_bit_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_reserved_bit_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_reserved_bit_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_reserved_bit_text" "$reserved_bit_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_reserved_bit_text" "$reserved_bit_app_icon_zip"
 assert_not_contains "$artifact_app_icon_reserved_bit_text" "$reserved_bit_app_icon_marker"
@@ -5963,7 +5963,7 @@ assert_contains "$artifact_app_icon_unknown_critical_text" "Release artifact Inf
 assert_contains "$artifact_app_icon_unknown_critical_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_unknown_critical_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_unknown_critical_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_unknown_critical_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_unknown_critical_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_unknown_critical_text" "$unknown_critical_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_unknown_critical_text" "$unknown_critical_app_icon_zip"
 assert_not_contains "$artifact_app_icon_unknown_critical_text" "$unknown_critical_app_icon_marker"
@@ -5995,7 +5995,7 @@ assert_contains "$artifact_app_icon_unknown_ancillary_text" "Release artifact In
 assert_contains "$artifact_app_icon_unknown_ancillary_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_unknown_ancillary_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_unknown_ancillary_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_unknown_ancillary_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_unknown_ancillary_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_unknown_ancillary_text" "$unknown_ancillary_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_unknown_ancillary_text" "$unknown_ancillary_app_icon_zip"
 assert_not_contains "$artifact_app_icon_unknown_ancillary_text" "$unknown_ancillary_app_icon_marker"
@@ -6027,7 +6027,7 @@ assert_contains "$artifact_app_icon_invalid_srgb_text" "Release artifact Info.pl
 assert_contains "$artifact_app_icon_invalid_srgb_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_invalid_srgb_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_invalid_srgb_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_invalid_srgb_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_invalid_srgb_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_invalid_srgb_text" "$invalid_srgb_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_invalid_srgb_text" "$invalid_srgb_app_icon_zip"
 assert_not_contains "$artifact_app_icon_invalid_srgb_text" "$invalid_srgb_app_icon_marker"
@@ -6059,7 +6059,7 @@ assert_contains "$artifact_app_icon_invalid_gama_text" "Release artifact Info.pl
 assert_contains "$artifact_app_icon_invalid_gama_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_invalid_gama_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_invalid_gama_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_invalid_gama_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_invalid_gama_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_invalid_gama_text" "$invalid_gama_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_invalid_gama_text" "$invalid_gama_app_icon_zip"
 assert_not_contains "$artifact_app_icon_invalid_gama_text" "$invalid_gama_app_icon_marker"
@@ -6091,7 +6091,7 @@ assert_contains "$artifact_app_icon_invalid_chrm_text" "Release artifact Info.pl
 assert_contains "$artifact_app_icon_invalid_chrm_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_invalid_chrm_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_invalid_chrm_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_invalid_chrm_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_invalid_chrm_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_invalid_chrm_text" "$invalid_chrm_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_invalid_chrm_text" "$invalid_chrm_app_icon_zip"
 assert_not_contains "$artifact_app_icon_invalid_chrm_text" "$invalid_chrm_app_icon_marker"
@@ -6123,7 +6123,7 @@ assert_contains "$artifact_app_icon_invalid_iccp_text" "Release artifact Info.pl
 assert_contains "$artifact_app_icon_invalid_iccp_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_invalid_iccp_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_invalid_iccp_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_invalid_iccp_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_invalid_iccp_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_invalid_iccp_text" "$invalid_iccp_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_invalid_iccp_text" "$invalid_iccp_app_icon_zip"
 assert_not_contains "$artifact_app_icon_invalid_iccp_text" "$invalid_iccp_app_icon_marker"
@@ -6155,7 +6155,7 @@ assert_contains "$artifact_app_icon_oversized_dimensions_text" "Release artifact
 assert_contains "$artifact_app_icon_oversized_dimensions_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_oversized_dimensions_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_oversized_dimensions_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_oversized_dimensions_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_oversized_dimensions_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_oversized_dimensions_text" "$oversized_dimensions_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_oversized_dimensions_text" "$oversized_dimensions_app_icon_zip"
 assert_not_contains "$artifact_app_icon_oversized_dimensions_text" "$oversized_dimensions_app_icon_marker"
@@ -6187,7 +6187,7 @@ assert_contains "$artifact_app_icon_trns_alpha_text" "Release artifact Info.plis
 assert_contains "$artifact_app_icon_trns_alpha_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_trns_alpha_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_trns_alpha_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_trns_alpha_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_trns_alpha_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_trns_alpha_text" "$trns_alpha_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_trns_alpha_text" "$trns_alpha_app_icon_zip"
 assert_not_contains "$artifact_app_icon_trns_alpha_text" "$trns_alpha_app_icon_marker"
@@ -6219,7 +6219,7 @@ assert_contains "$artifact_app_icon_trns_plte_order_text" "Release artifact Info
 assert_contains "$artifact_app_icon_trns_plte_order_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_trns_plte_order_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_trns_plte_order_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_trns_plte_order_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_trns_plte_order_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_trns_plte_order_text" "$trns_plte_order_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_trns_plte_order_text" "$trns_plte_order_app_icon_zip"
 assert_not_contains "$artifact_app_icon_trns_plte_order_text" "$trns_plte_order_app_icon_marker"
@@ -6252,7 +6252,7 @@ assert_contains "$artifact_app_icon_trailing_zlib_text" "Release artifact Info.p
 assert_contains "$artifact_app_icon_trailing_zlib_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_trailing_zlib_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_trailing_zlib_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_trailing_zlib_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_trailing_zlib_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_trailing_zlib_text" "$trailing_zlib_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_trailing_zlib_text" "$trailing_zlib_app_icon_zip"
 assert_not_contains "$artifact_app_icon_trailing_zlib_text" "$trailing_zlib_app_icon_marker"
@@ -6286,7 +6286,7 @@ assert_contains "$artifact_app_icon_text_metadata_text" "Release artifact Info.p
 assert_contains "$artifact_app_icon_text_metadata_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_text_metadata_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_text_metadata_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_text_metadata_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_text_metadata_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_text_metadata_text" "$text_metadata_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_text_metadata_text" "$text_metadata_app_icon_zip"
 assert_not_contains "$artifact_app_icon_text_metadata_text" "$text_metadata_app_icon_marker"
@@ -6319,7 +6319,7 @@ assert_contains "$artifact_app_icon_timestamp_metadata_text" "Release artifact I
 assert_contains "$artifact_app_icon_timestamp_metadata_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_timestamp_metadata_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_timestamp_metadata_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_timestamp_metadata_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_timestamp_metadata_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_timestamp_metadata_text" "$timestamp_metadata_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_timestamp_metadata_text" "$timestamp_metadata_app_icon_zip"
 assert_not_contains "$artifact_app_icon_timestamp_metadata_text" "$timestamp_metadata_app_icon_marker"
@@ -6351,7 +6351,7 @@ assert_contains "$artifact_app_icon_exif_metadata_text" "Release artifact Info.p
 assert_contains "$artifact_app_icon_exif_metadata_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_exif_metadata_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_exif_metadata_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_exif_metadata_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_exif_metadata_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_exif_metadata_text" "$exif_metadata_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_exif_metadata_text" "$exif_metadata_app_icon_zip"
 assert_not_contains "$artifact_app_icon_exif_metadata_text" "$exif_metadata_app_icon_marker"
@@ -6383,7 +6383,7 @@ assert_contains "$artifact_app_icon_physical_pixel_metadata_text" "Release artif
 assert_contains "$artifact_app_icon_physical_pixel_metadata_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_physical_pixel_metadata_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_physical_pixel_metadata_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_physical_pixel_metadata_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_physical_pixel_metadata_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_physical_pixel_metadata_text" "$physical_pixel_metadata_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_physical_pixel_metadata_text" "$physical_pixel_metadata_app_icon_zip"
 assert_not_contains "$artifact_app_icon_physical_pixel_metadata_text" "$physical_pixel_metadata_app_icon_marker"
@@ -6415,7 +6415,7 @@ assert_contains "$artifact_app_icon_significant_bits_metadata_text" "Release art
 assert_contains "$artifact_app_icon_significant_bits_metadata_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_significant_bits_metadata_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_significant_bits_metadata_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_significant_bits_metadata_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_significant_bits_metadata_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_significant_bits_metadata_text" "$significant_bits_metadata_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_significant_bits_metadata_text" "$significant_bits_metadata_app_icon_zip"
 assert_not_contains "$artifact_app_icon_significant_bits_metadata_text" "$significant_bits_metadata_app_icon_marker"
@@ -6447,7 +6447,7 @@ assert_contains "$artifact_app_icon_background_metadata_text" "Release artifact 
 assert_contains "$artifact_app_icon_background_metadata_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_background_metadata_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_background_metadata_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_background_metadata_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_background_metadata_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_background_metadata_text" "$background_metadata_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_background_metadata_text" "$background_metadata_app_icon_zip"
 assert_not_contains "$artifact_app_icon_background_metadata_text" "$background_metadata_app_icon_marker"
@@ -6479,7 +6479,7 @@ assert_contains "$artifact_app_icon_histogram_metadata_text" "Release artifact I
 assert_contains "$artifact_app_icon_histogram_metadata_text" "Release artifact app icon: invalid"
 assert_contains "$artifact_app_icon_histogram_metadata_text" "Release artifact code signature verification: valid"
 assert_contains "$artifact_app_icon_histogram_metadata_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_histogram_metadata_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_histogram_metadata_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_histogram_metadata_text" "$histogram_metadata_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_histogram_metadata_text" "$histogram_metadata_app_icon_zip"
 assert_not_contains "$artifact_app_icon_histogram_metadata_text" "$histogram_metadata_app_icon_marker"
@@ -6510,7 +6510,7 @@ assert_contains "$artifact_app_icon_oversized_file_text" "Release artifact zip: 
 assert_contains "$artifact_app_icon_oversized_file_text" "Release artifact Info.plist metadata: matches"
 assert_contains "$artifact_app_icon_oversized_file_text" "Release artifact app icon: unsafe"
 assert_contains "$artifact_app_icon_oversized_file_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_app_icon_oversized_file_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_app_icon_oversized_file_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_app_icon_oversized_file_text" "$oversized_file_app_icon_zip_sha"
 assert_not_contains "$artifact_app_icon_oversized_file_text" "$oversized_file_app_icon_zip"
 assert_not_contains "$artifact_app_icon_oversized_file_text" "$oversized_file_app_icon_marker"
@@ -6550,7 +6550,7 @@ assert_contains "$artifact_executable_format_invalid_text" "Release artifact exe
 assert_contains "$artifact_executable_format_invalid_text" "Release artifact code signature resources: present"
 assert_contains "$artifact_executable_format_invalid_text" "Release artifact top-level entries: clean"
 assert_contains "$artifact_executable_format_invalid_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_executable_format_invalid_text" "v1.0 publication blocked"
+assert_contains "$artifact_executable_format_invalid_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_executable_format_invalid_text" "$text_executable_marker"
 assert_not_contains "$artifact_executable_format_invalid_text" "$text_executable_bundle_zip_sha"
 assert_not_contains "$artifact_executable_format_invalid_text" "fast preflight is clear"
@@ -6580,7 +6580,7 @@ assert_contains "$artifact_executable_over_budget_text" "Release artifact bundle
 assert_contains "$artifact_executable_over_budget_text" "Release artifact bundle executable mode: safe"
 assert_contains "$artifact_executable_over_budget_text" "Release artifact executable size: over budget"
 assert_contains "$artifact_executable_over_budget_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_executable_over_budget_text" "v1.0 artifact-only blocked"
+assert_contains "$artifact_executable_over_budget_text" "v1.0.0 artifact-only blocked"
 assert_not_contains "$artifact_executable_over_budget_text" "$over_budget_executable_zip_sha"
 assert_not_contains "$artifact_executable_over_budget_text" "$over_budget_executable_zip"
 assert_not_contains "$artifact_executable_over_budget_text" "Release artifact executable format: Mach-O"
@@ -6615,7 +6615,7 @@ assert_contains "$artifact_duplicate_essential_entries_text" "Release artifact b
 assert_contains "$artifact_duplicate_essential_entries_text" "Release artifact bundle file types: regular"
 assert_contains "$artifact_duplicate_essential_entries_text" "Release artifact entry paths: collision"
 assert_contains "$artifact_duplicate_essential_entries_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_duplicate_essential_entries_text" "v1.0 publication blocked"
+assert_contains "$artifact_duplicate_essential_entries_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_duplicate_essential_entries_text" "$duplicate_essential_marker"
 assert_not_contains "$artifact_duplicate_essential_entries_text" "$duplicate_essential_entries_zip_sha"
 assert_not_contains "$artifact_duplicate_essential_entries_text" "LithePG.app/Contents/MacOS/LithePGApp"
@@ -6651,7 +6651,7 @@ assert_contains "$artifact_noncanonical_zip_path_text" "Release artifact bundle 
 assert_contains "$artifact_noncanonical_zip_path_text" "Release artifact bundle file types: regular"
 assert_contains "$artifact_noncanonical_zip_path_text" "Release artifact entry paths: non-canonical"
 assert_contains "$artifact_noncanonical_zip_path_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_noncanonical_zip_path_text" "v1.0 publication blocked"
+assert_contains "$artifact_noncanonical_zip_path_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_noncanonical_zip_path_text" "$noncanonical_zip_path_marker"
 assert_not_contains "$artifact_noncanonical_zip_path_text" "$noncanonical_zip_path_zip_sha"
 assert_not_contains "$artifact_noncanonical_zip_path_text" "LithePG.app/Contents/MacOS//LithePGApp"
@@ -6685,7 +6685,7 @@ assert_contains "$artifact_casefold_zip_path_collision_text" "Release artifact b
 assert_contains "$artifact_casefold_zip_path_collision_text" "Release artifact bundle file types: regular"
 assert_contains "$artifact_casefold_zip_path_collision_text" "Release artifact entry paths: collision"
 assert_contains "$artifact_casefold_zip_path_collision_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_casefold_zip_path_collision_text" "v1.0 publication blocked"
+assert_contains "$artifact_casefold_zip_path_collision_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_casefold_zip_path_collision_text" "$casefold_zip_path_collision_marker"
 assert_not_contains "$artifact_casefold_zip_path_collision_text" "$casefold_zip_path_collision_zip_sha"
 assert_not_contains "$artifact_casefold_zip_path_collision_text" "LithePG.app/Contents/MacOS/LithePGApp"
@@ -6722,7 +6722,7 @@ assert_contains "$artifact_unicode_zip_path_collision_text" "Release artifact bu
 assert_contains "$artifact_unicode_zip_path_collision_text" "Release artifact bundle file types: regular"
 assert_contains "$artifact_unicode_zip_path_collision_text" "Release artifact entry paths: non-canonical"
 assert_contains "$artifact_unicode_zip_path_collision_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_unicode_zip_path_collision_text" "v1.0 publication blocked"
+assert_contains "$artifact_unicode_zip_path_collision_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_unicode_zip_path_collision_text" "$unicode_zip_path_collision_marker"
 assert_not_contains "$artifact_unicode_zip_path_collision_text" "$unicode_zip_path_collision_zip_sha"
 assert_not_contains "$artifact_unicode_zip_path_collision_text" "LithePG.app/Contents/Resources/ß.txt"
@@ -6759,7 +6759,7 @@ assert_contains "$artifact_malformed_zip_path_encoding_text" "Release artifact b
 assert_contains "$artifact_malformed_zip_path_encoding_text" "Release artifact bundle file types: regular"
 assert_contains "$artifact_malformed_zip_path_encoding_text" "Release artifact entry paths: non-canonical"
 assert_contains "$artifact_malformed_zip_path_encoding_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_malformed_zip_path_encoding_text" "v1.0 publication blocked"
+assert_contains "$artifact_malformed_zip_path_encoding_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_malformed_zip_path_encoding_text" "$malformed_zip_path_encoding_marker"
 assert_not_contains "$artifact_malformed_zip_path_encoding_text" "$malformed_zip_path_encoding_zip_sha"
 assert_not_contains "$artifact_malformed_zip_path_encoding_text" "Traceback"
@@ -6799,7 +6799,7 @@ assert_contains "$artifact_code_signature_resources_missing_text" "Release artif
 assert_contains "$artifact_code_signature_resources_missing_text" "Release artifact code signature resources: missing"
 assert_contains "$artifact_code_signature_resources_missing_text" "Release artifact top-level entries: clean"
 assert_contains "$artifact_code_signature_resources_missing_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_code_signature_resources_missing_text" "v1.0 publication blocked"
+assert_contains "$artifact_code_signature_resources_missing_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_code_signature_resources_missing_text" "$missing_code_resources_zip_sha"
 assert_not_contains "$artifact_code_signature_resources_missing_text" "CodeResources"
 assert_not_contains "$artifact_code_signature_resources_missing_text" "Release artifact code signature verification:"
@@ -6840,7 +6840,7 @@ assert_contains "$artifact_code_signature_verification_invalid_text" "Release ar
 assert_contains "$artifact_code_signature_verification_invalid_text" "Release artifact code signature verification: invalid"
 assert_contains "$artifact_code_signature_verification_invalid_text" "Release artifact top-level entries: clean"
 assert_contains "$artifact_code_signature_verification_invalid_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_code_signature_verification_invalid_text" "v1.0 publication blocked"
+assert_contains "$artifact_code_signature_verification_invalid_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_code_signature_verification_invalid_text" "$invalid_code_signature_marker"
 assert_not_contains "$artifact_code_signature_verification_invalid_text" "$invalid_code_signature_zip_sha"
 assert_not_contains "$artifact_code_signature_verification_invalid_text" "$invalid_code_signature_zip"
@@ -6888,7 +6888,7 @@ assert_contains "$artifact_code_signature_identifier_mismatch_text" "Release art
 assert_contains "$artifact_code_signature_identifier_mismatch_text" "Release artifact code signature identifier: mismatch"
 assert_contains "$artifact_code_signature_identifier_mismatch_text" "Release artifact top-level entries: clean"
 assert_contains "$artifact_code_signature_identifier_mismatch_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_code_signature_identifier_mismatch_text" "v1.0 publication blocked"
+assert_contains "$artifact_code_signature_identifier_mismatch_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_code_signature_identifier_mismatch_text" "$mismatched_code_signature_identifier"
 assert_not_contains "$artifact_code_signature_identifier_mismatch_text" "$mismatched_code_signature_identifier_zip_sha"
 assert_not_contains "$artifact_code_signature_identifier_mismatch_text" "$mismatched_code_signature_identifier_zip"
@@ -6936,7 +6936,7 @@ assert_contains "$artifact_code_signature_runtime_missing_text" "Release artifac
 assert_contains "$artifact_code_signature_runtime_missing_text" "Release artifact code signature runtime: missing"
 assert_contains "$artifact_code_signature_runtime_missing_text" "Release artifact top-level entries: clean"
 assert_contains "$artifact_code_signature_runtime_missing_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_code_signature_runtime_missing_text" "v1.0 publication blocked"
+assert_contains "$artifact_code_signature_runtime_missing_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_code_signature_runtime_missing_text" "$missing_runtime_zip_sha"
 assert_not_contains "$artifact_code_signature_runtime_missing_text" "$missing_runtime_zip"
 assert_not_contains "$artifact_code_signature_runtime_missing_text" "LithePG.app/Contents/MacOS/LithePGApp"
@@ -6987,7 +6987,7 @@ assert_contains "$artifact_metadata_files_present_text" "Release artifact code s
 assert_contains "$artifact_metadata_files_present_text" "Release artifact code signature runtime: present"
 assert_contains "$artifact_metadata_files_present_text" "Release artifact top-level entries: clean"
 assert_contains "$artifact_metadata_files_present_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_metadata_files_present_text" "v1.0 publication blocked"
+assert_contains "$artifact_metadata_files_present_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_metadata_files_present_text" "$metadata_files_marker"
 assert_not_contains "$artifact_metadata_files_present_text" "$metadata_files_zip_sha"
 assert_not_contains "$artifact_metadata_files_present_text" "$metadata_files_zip"
@@ -7021,7 +7021,7 @@ assert_contains "$artifact_top_level_unexpected_text" "Release artifact app wrap
 assert_contains "$artifact_top_level_unexpected_text" "Release artifact bundle contents: present"
 assert_contains "$artifact_top_level_unexpected_text" "Release artifact top-level entries: unexpected"
 assert_contains "$artifact_top_level_unexpected_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_top_level_unexpected_text" "v1.0 publication blocked"
+assert_contains "$artifact_top_level_unexpected_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_top_level_unexpected_text" "README.txt"
 assert_not_contains "$artifact_top_level_unexpected_text" "$unexpected_top_level_zip_sha"
 assert_not_contains "$artifact_top_level_unexpected_text" "fast preflight is clear"
@@ -7055,7 +7055,7 @@ assert_contains "$artifact_info_plist_metadata_mismatch_text" "Release artifact 
 assert_contains "$artifact_info_plist_metadata_mismatch_text" "Release artifact bundle executable: executable"
 assert_contains "$artifact_info_plist_metadata_mismatch_text" "Release artifact top-level entries: clean"
 assert_contains "$artifact_info_plist_metadata_mismatch_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_info_plist_metadata_mismatch_text" "v1.0 publication blocked"
+assert_contains "$artifact_info_plist_metadata_mismatch_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_info_plist_metadata_mismatch_text" "$invalid_metadata_zip_sha"
 assert_not_contains "$artifact_info_plist_metadata_mismatch_text" "<plist>"
 assert_not_contains "$artifact_info_plist_metadata_mismatch_text" "fast preflight is clear"
@@ -7090,7 +7090,7 @@ assert_contains "$artifact_info_plist_metadata_legacy_mismatch_text" "Release ar
 assert_contains "$artifact_info_plist_metadata_legacy_mismatch_text" "Release artifact code signature resources: present"
 assert_contains "$artifact_info_plist_metadata_legacy_mismatch_text" "Release artifact top-level entries: clean"
 assert_contains "$artifact_info_plist_metadata_legacy_mismatch_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_info_plist_metadata_legacy_mismatch_text" "v1.0 publication blocked"
+assert_contains "$artifact_info_plist_metadata_legacy_mismatch_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_info_plist_metadata_legacy_mismatch_text" "$legacy_metadata_zip_sha"
 assert_not_contains "$artifact_info_plist_metadata_legacy_mismatch_text" "CFBundleVersion"
 assert_not_contains "$artifact_info_plist_metadata_legacy_mismatch_text" "LSMinimumSystemVersion"
@@ -7129,7 +7129,7 @@ assert_contains "$artifact_info_plist_metadata_cannot_inspect_text" "Release art
 assert_contains "$artifact_info_plist_metadata_cannot_inspect_text" "Release artifact bundle executable: executable"
 assert_contains "$artifact_info_plist_metadata_cannot_inspect_text" "Release artifact top-level entries: clean"
 assert_contains "$artifact_info_plist_metadata_cannot_inspect_text" "Release artifact SHA-256: matches"
-assert_contains "$artifact_info_plist_metadata_cannot_inspect_text" "v1.0 publication blocked"
+assert_contains "$artifact_info_plist_metadata_cannot_inspect_text" "v1.0.0 publication blocked"
 assert_not_contains "$artifact_info_plist_metadata_cannot_inspect_text" "$malformed_metadata_marker"
 assert_not_contains "$artifact_info_plist_metadata_cannot_inspect_text" "$malformed_metadata_zip_sha"
 assert_not_contains "$artifact_info_plist_metadata_cannot_inspect_text" "<plist>"
@@ -7155,7 +7155,7 @@ missing_artifact_sha_text="$(<"$missing_artifact_sha_output")"
 assert_contains "$missing_artifact_sha_text" "Release artifact zip: present"
 assert_contains "$missing_artifact_sha_text" "Release artifact executable format: Mach-O"
 assert_contains "$missing_artifact_sha_text" "Release artifact SHA-256: missing"
-assert_contains "$missing_artifact_sha_text" "v1.0 publication blocked"
+assert_contains "$missing_artifact_sha_text" "v1.0.0 publication blocked"
 assert_not_contains "$missing_artifact_sha_text" "fast preflight is clear"
 
 invalid_sha_marker="INVALID_SHA_VALUE_DO_NOT_PRINT"
@@ -7180,7 +7180,7 @@ invalid_artifact_sha_text="$(<"$invalid_artifact_sha_output")"
 assert_contains "$invalid_artifact_sha_text" "Release artifact zip: present"
 assert_contains "$invalid_artifact_sha_text" "Release artifact SHA-256: invalid format"
 assert_not_contains "$invalid_artifact_sha_text" "$invalid_sha_marker"
-assert_contains "$invalid_artifact_sha_text" "v1.0 publication blocked"
+assert_contains "$invalid_artifact_sha_text" "v1.0.0 publication blocked"
 
 mismatched_sha_marker="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 if run_gate_capture "$mismatched_artifact_sha_output" env -i \
@@ -7205,7 +7205,7 @@ assert_contains "$mismatched_artifact_sha_text" "Release artifact zip: present"
 assert_contains "$mismatched_artifact_sha_text" "Release artifact SHA-256: mismatch"
 assert_not_contains "$mismatched_artifact_sha_text" "$mismatched_sha_marker"
 assert_not_contains "$mismatched_artifact_sha_text" "$release_zip_sha"
-assert_contains "$mismatched_artifact_sha_text" "v1.0 publication blocked"
+assert_contains "$mismatched_artifact_sha_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$mismatched_release_copy_sha_output" env -i \
   PATH="$fake_path" \
@@ -7230,7 +7230,7 @@ assert_contains "$mismatched_release_copy_sha_text" "Release copy SHA-256: misma
 assert_contains "$mismatched_release_copy_sha_text" "Release artifact SHA-256: matches"
 assert_not_contains "$mismatched_release_copy_sha_text" "$wrong_release_copy_sha"
 assert_not_contains "$mismatched_release_copy_sha_text" "$release_zip_sha"
-assert_contains "$mismatched_release_copy_sha_text" "v1.0 publication blocked"
+assert_contains "$mismatched_release_copy_sha_text" "v1.0.0 publication blocked"
 assert_not_contains "$mismatched_release_copy_sha_text" "fast preflight is clear"
 
 if run_gate_capture "$embedded_release_copy_sha_output" env -i \
@@ -7256,7 +7256,7 @@ assert_contains "$embedded_release_copy_sha_text" "Release copy SHA-256: mismatc
 assert_contains "$embedded_release_copy_sha_text" "Release artifact SHA-256: matches"
 assert_not_contains "$embedded_release_copy_sha_text" "$release_zip_sha"
 assert_not_contains "$embedded_release_copy_sha_text" "${release_zip_sha}0"
-assert_contains "$embedded_release_copy_sha_text" "v1.0 publication blocked"
+assert_contains "$embedded_release_copy_sha_text" "v1.0.0 publication blocked"
 assert_not_contains "$embedded_release_copy_sha_text" "fast preflight is clear"
 
 if run_gate_capture "$unchecked_release_copy_output" env -i \
@@ -7280,7 +7280,7 @@ unchecked_release_copy_text="$(<"$unchecked_release_copy_output")"
 assert_contains "$unchecked_release_copy_text" "Release copy placeholders: none found"
 assert_contains "$unchecked_release_copy_text" "Release copy checklist: unchecked items present"
 assert_contains "$unchecked_release_copy_text" "Release copy SHA-256: matches"
-assert_contains "$unchecked_release_copy_text" "v1.0 publication blocked"
+assert_contains "$unchecked_release_copy_text" "v1.0.0 publication blocked"
 assert_not_contains "$unchecked_release_copy_text" "Remove draft checklist"
 assert_not_contains "$unchecked_release_copy_text" "$release_zip_sha"
 assert_not_contains "$unchecked_release_copy_text" "fast preflight is clear"
@@ -7308,7 +7308,7 @@ assert_contains "$mismatched_homebrew_cask_sha_text" "Homebrew cask placeholders
 assert_contains "$mismatched_homebrew_cask_sha_text" "Homebrew cask SHA-256: mismatch"
 assert_not_contains "$mismatched_homebrew_cask_sha_text" "$mismatched_cask_sha_marker"
 assert_not_contains "$mismatched_homebrew_cask_sha_text" "$release_zip_sha"
-assert_contains "$mismatched_homebrew_cask_sha_text" "v1.0 publication blocked"
+assert_contains "$mismatched_homebrew_cask_sha_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$homebrew_cask_token_mismatch_output" env -i \
   PATH="$fake_path" \
@@ -7336,7 +7336,7 @@ assert_contains "$homebrew_cask_token_mismatch_text" "Homebrew cask version: mat
 assert_contains "$homebrew_cask_token_mismatch_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$homebrew_cask_token_mismatch_text" "$wrong_homebrew_cask_token"
 assert_not_contains "$homebrew_cask_token_mismatch_text" "$release_zip_sha"
-assert_contains "$homebrew_cask_token_mismatch_text" "v1.0 publication blocked"
+assert_contains "$homebrew_cask_token_mismatch_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$missing_homebrew_cask_token_output" env -i \
   PATH="$fake_path" \
@@ -7361,7 +7361,7 @@ assert_contains "$missing_homebrew_cask_token_text" "Homebrew cask token: missin
 assert_contains "$missing_homebrew_cask_token_text" "Homebrew cask version: matches"
 assert_contains "$missing_homebrew_cask_token_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$missing_homebrew_cask_token_text" "$release_zip_sha"
-assert_contains "$missing_homebrew_cask_token_text" "v1.0 publication blocked"
+assert_contains "$missing_homebrew_cask_token_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$missing_homebrew_cask_name_output" env -i \
   PATH="$fake_path" \
@@ -7387,7 +7387,7 @@ assert_contains "$missing_homebrew_cask_name_text" "Homebrew cask name: missing"
 assert_contains "$missing_homebrew_cask_name_text" "Homebrew cask version: matches"
 assert_contains "$missing_homebrew_cask_name_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$missing_homebrew_cask_name_text" "$release_zip_sha"
-assert_contains "$missing_homebrew_cask_name_text" "v1.0 publication blocked"
+assert_contains "$missing_homebrew_cask_name_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$homebrew_cask_name_mismatch_output" env -i \
   PATH="$fake_path" \
@@ -7416,7 +7416,7 @@ assert_contains "$homebrew_cask_name_mismatch_text" "Homebrew cask version: matc
 assert_contains "$homebrew_cask_name_mismatch_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$homebrew_cask_name_mismatch_text" "$wrong_homebrew_cask_name"
 assert_not_contains "$homebrew_cask_name_mismatch_text" "$release_zip_sha"
-assert_contains "$homebrew_cask_name_mismatch_text" "v1.0 publication blocked"
+assert_contains "$homebrew_cask_name_mismatch_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$homebrew_cask_desc_mismatch_output" env -i \
   PATH="$fake_path" \
@@ -7446,7 +7446,7 @@ assert_contains "$homebrew_cask_desc_mismatch_text" "Homebrew cask version: matc
 assert_contains "$homebrew_cask_desc_mismatch_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$homebrew_cask_desc_mismatch_text" "$wrong_homebrew_cask_desc"
 assert_not_contains "$homebrew_cask_desc_mismatch_text" "$release_zip_sha"
-assert_contains "$homebrew_cask_desc_mismatch_text" "v1.0 publication blocked"
+assert_contains "$homebrew_cask_desc_mismatch_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$missing_homebrew_cask_desc_output" env -i \
   PATH="$fake_path" \
@@ -7473,7 +7473,7 @@ assert_contains "$missing_homebrew_cask_desc_text" "Homebrew cask desc: missing"
 assert_contains "$missing_homebrew_cask_desc_text" "Homebrew cask version: matches"
 assert_contains "$missing_homebrew_cask_desc_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$missing_homebrew_cask_desc_text" "$release_zip_sha"
-assert_contains "$missing_homebrew_cask_desc_text" "v1.0 publication blocked"
+assert_contains "$missing_homebrew_cask_desc_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$homebrew_cask_url_mismatch_output" env -i \
   PATH="$fake_path" \
@@ -7501,7 +7501,7 @@ assert_contains "$homebrew_cask_url_mismatch_text" "Homebrew cask URL: mismatch"
 assert_contains "$homebrew_cask_url_mismatch_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$homebrew_cask_url_mismatch_text" "$wrong_homebrew_cask_url"
 assert_not_contains "$homebrew_cask_url_mismatch_text" "$release_zip_sha"
-assert_contains "$homebrew_cask_url_mismatch_text" "v1.0 publication blocked"
+assert_contains "$homebrew_cask_url_mismatch_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$homebrew_cask_verified_mismatch_output" env -i \
   PATH="$fake_path" \
@@ -7531,7 +7531,7 @@ assert_contains "$homebrew_cask_verified_mismatch_text" "Homebrew cask homepage:
 assert_contains "$homebrew_cask_verified_mismatch_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$homebrew_cask_verified_mismatch_text" "$wrong_homebrew_cask_verified"
 assert_not_contains "$homebrew_cask_verified_mismatch_text" "$release_zip_sha"
-assert_contains "$homebrew_cask_verified_mismatch_text" "v1.0 publication blocked"
+assert_contains "$homebrew_cask_verified_mismatch_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$missing_homebrew_cask_verified_output" env -i \
   PATH="$fake_path" \
@@ -7558,7 +7558,7 @@ assert_contains "$missing_homebrew_cask_verified_text" "Homebrew cask verified U
 assert_contains "$missing_homebrew_cask_verified_text" "Homebrew cask homepage: matches"
 assert_contains "$missing_homebrew_cask_verified_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$missing_homebrew_cask_verified_text" "$release_zip_sha"
-assert_contains "$missing_homebrew_cask_verified_text" "v1.0 publication blocked"
+assert_contains "$missing_homebrew_cask_verified_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$homebrew_cask_homepage_mismatch_output" env -i \
   PATH="$fake_path" \
@@ -7588,7 +7588,7 @@ assert_contains "$homebrew_cask_homepage_mismatch_text" "Homebrew cask homepage:
 assert_contains "$homebrew_cask_homepage_mismatch_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$homebrew_cask_homepage_mismatch_text" "$wrong_homebrew_cask_homepage"
 assert_not_contains "$homebrew_cask_homepage_mismatch_text" "$release_zip_sha"
-assert_contains "$homebrew_cask_homepage_mismatch_text" "v1.0 publication blocked"
+assert_contains "$homebrew_cask_homepage_mismatch_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$missing_homebrew_cask_homepage_output" env -i \
   PATH="$fake_path" \
@@ -7615,7 +7615,7 @@ assert_contains "$missing_homebrew_cask_homepage_text" "Homebrew cask verified U
 assert_contains "$missing_homebrew_cask_homepage_text" "Homebrew cask homepage: missing"
 assert_contains "$missing_homebrew_cask_homepage_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$missing_homebrew_cask_homepage_text" "$release_zip_sha"
-assert_contains "$missing_homebrew_cask_homepage_text" "v1.0 publication blocked"
+assert_contains "$missing_homebrew_cask_homepage_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$homebrew_cask_bundle_id_mismatch_output" env -i \
   PATH="$fake_path" \
@@ -7650,7 +7650,7 @@ assert_contains "$homebrew_cask_bundle_id_mismatch_text" "Homebrew cask uninstal
 assert_contains "$homebrew_cask_bundle_id_mismatch_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$homebrew_cask_bundle_id_mismatch_text" "$wrong_homebrew_cask_bundle_id"
 assert_not_contains "$homebrew_cask_bundle_id_mismatch_text" "$release_zip_sha"
-assert_contains "$homebrew_cask_bundle_id_mismatch_text" "v1.0 publication blocked"
+assert_contains "$homebrew_cask_bundle_id_mismatch_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$missing_homebrew_cask_bundle_id_output" env -i \
   PATH="$fake_path" \
@@ -7681,7 +7681,7 @@ assert_contains "$missing_homebrew_cask_bundle_id_text" "Homebrew cask homepage:
 assert_contains "$missing_homebrew_cask_bundle_id_text" "Homebrew cask uninstall quit bundle ID: missing"
 assert_contains "$missing_homebrew_cask_bundle_id_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$missing_homebrew_cask_bundle_id_text" "$release_zip_sha"
-assert_contains "$missing_homebrew_cask_bundle_id_text" "v1.0 publication blocked"
+assert_contains "$missing_homebrew_cask_bundle_id_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$homebrew_cask_version_mismatch_output" env -i \
   PATH="$fake_path" \
@@ -7706,7 +7706,7 @@ assert_contains "$homebrew_cask_version_mismatch_text" "Homebrew cask version: m
 assert_contains "$homebrew_cask_version_mismatch_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$homebrew_cask_version_mismatch_text" "0.9"
 assert_not_contains "$homebrew_cask_version_mismatch_text" "$release_zip_sha"
-assert_contains "$homebrew_cask_version_mismatch_text" "v1.0 publication blocked"
+assert_contains "$homebrew_cask_version_mismatch_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$missing_homebrew_cask_version_output" env -i \
   PATH="$fake_path" \
@@ -7730,7 +7730,7 @@ assert_contains "$missing_homebrew_cask_version_text" "Homebrew cask placeholder
 assert_contains "$missing_homebrew_cask_version_text" "Homebrew cask version: missing"
 assert_contains "$missing_homebrew_cask_version_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$missing_homebrew_cask_version_text" "$release_zip_sha"
-assert_contains "$missing_homebrew_cask_version_text" "v1.0 publication blocked"
+assert_contains "$missing_homebrew_cask_version_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$missing_homebrew_cask_sha_output" env -i \
   PATH="$fake_path" \
@@ -7753,7 +7753,7 @@ missing_homebrew_cask_sha_text="$(<"$missing_homebrew_cask_sha_output")"
 assert_contains "$missing_homebrew_cask_sha_text" "Homebrew cask placeholders: none found"
 assert_contains "$missing_homebrew_cask_sha_text" "Homebrew cask SHA-256: missing"
 assert_not_contains "$missing_homebrew_cask_sha_text" "$release_zip_sha"
-assert_contains "$missing_homebrew_cask_sha_text" "v1.0 publication blocked"
+assert_contains "$missing_homebrew_cask_sha_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$homebrew_cask_app_mismatch_output" env -i \
   PATH="$fake_path" \
@@ -7784,7 +7784,7 @@ assert_contains "$homebrew_cask_app_mismatch_text" "Homebrew cask app stanza: mi
 assert_contains "$homebrew_cask_app_mismatch_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$homebrew_cask_app_mismatch_text" "$wrong_homebrew_cask_app"
 assert_not_contains "$homebrew_cask_app_mismatch_text" "$release_zip_sha"
-assert_contains "$homebrew_cask_app_mismatch_text" "v1.0 publication blocked"
+assert_contains "$homebrew_cask_app_mismatch_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$missing_homebrew_cask_app_output" env -i \
   PATH="$fake_path" \
@@ -7812,7 +7812,7 @@ assert_contains "$missing_homebrew_cask_app_text" "Homebrew cask homepage: match
 assert_contains "$missing_homebrew_cask_app_text" "Homebrew cask app stanza: missing"
 assert_contains "$missing_homebrew_cask_app_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$missing_homebrew_cask_app_text" "$release_zip_sha"
-assert_contains "$missing_homebrew_cask_app_text" "v1.0 publication blocked"
+assert_contains "$missing_homebrew_cask_app_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$homebrew_cask_macos_mismatch_output" env -i \
   PATH="$fake_path" \
@@ -7842,7 +7842,7 @@ assert_contains "$homebrew_cask_macos_mismatch_text" "Homebrew cask macOS requir
 assert_contains "$homebrew_cask_macos_mismatch_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$homebrew_cask_macos_mismatch_text" "ventura"
 assert_not_contains "$homebrew_cask_macos_mismatch_text" "$release_zip_sha"
-assert_contains "$homebrew_cask_macos_mismatch_text" "v1.0 publication blocked"
+assert_contains "$homebrew_cask_macos_mismatch_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$missing_homebrew_cask_macos_output" env -i \
   PATH="$fake_path" \
@@ -7871,7 +7871,7 @@ assert_contains "$missing_homebrew_cask_macos_text" "Homebrew cask app stanza: m
 assert_contains "$missing_homebrew_cask_macos_text" "Homebrew cask macOS requirement: missing"
 assert_contains "$missing_homebrew_cask_macos_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$missing_homebrew_cask_macos_text" "$release_zip_sha"
-assert_contains "$missing_homebrew_cask_macos_text" "v1.0 publication blocked"
+assert_contains "$missing_homebrew_cask_macos_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$homebrew_cask_zap_mismatch_output" env -i \
   PATH="$fake_path" \
@@ -7902,7 +7902,7 @@ assert_contains "$homebrew_cask_zap_mismatch_text" "Homebrew cask zap stanza: mi
 assert_contains "$homebrew_cask_zap_mismatch_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$homebrew_cask_zap_mismatch_text" "NotLithePG"
 assert_not_contains "$homebrew_cask_zap_mismatch_text" "$release_zip_sha"
-assert_contains "$homebrew_cask_zap_mismatch_text" "v1.0 publication blocked"
+assert_contains "$homebrew_cask_zap_mismatch_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$missing_homebrew_cask_zap_output" env -i \
   PATH="$fake_path" \
@@ -7932,7 +7932,7 @@ assert_contains "$missing_homebrew_cask_zap_text" "Homebrew cask macOS requireme
 assert_contains "$missing_homebrew_cask_zap_text" "Homebrew cask zap stanza: missing"
 assert_contains "$missing_homebrew_cask_zap_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$missing_homebrew_cask_zap_text" "$release_zip_sha"
-assert_contains "$missing_homebrew_cask_zap_text" "v1.0 publication blocked"
+assert_contains "$missing_homebrew_cask_zap_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$commented_homebrew_cask_zap_output" env -i \
   PATH="$fake_path" \
@@ -7962,7 +7962,7 @@ assert_contains "$commented_homebrew_cask_zap_text" "Homebrew cask macOS require
 assert_contains "$commented_homebrew_cask_zap_text" "Homebrew cask zap stanza: mismatch"
 assert_contains "$commented_homebrew_cask_zap_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$commented_homebrew_cask_zap_text" "$release_zip_sha"
-assert_contains "$commented_homebrew_cask_zap_text" "v1.0 publication blocked"
+assert_contains "$commented_homebrew_cask_zap_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$inline_commented_homebrew_cask_zap_output" env -i \
   PATH="$fake_path" \
@@ -7992,7 +7992,7 @@ assert_contains "$inline_commented_homebrew_cask_zap_text" "Homebrew cask macOS 
 assert_contains "$inline_commented_homebrew_cask_zap_text" "Homebrew cask zap stanza: mismatch"
 assert_contains "$inline_commented_homebrew_cask_zap_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$inline_commented_homebrew_cask_zap_text" "$release_zip_sha"
-assert_contains "$inline_commented_homebrew_cask_zap_text" "v1.0 publication blocked"
+assert_contains "$inline_commented_homebrew_cask_zap_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$unterminated_homebrew_cask_zap_output" env -i \
   PATH="$fake_path" \
@@ -8022,7 +8022,7 @@ assert_contains "$unterminated_homebrew_cask_zap_text" "Homebrew cask macOS requ
 assert_contains "$unterminated_homebrew_cask_zap_text" "Homebrew cask zap stanza: missing"
 assert_contains "$unterminated_homebrew_cask_zap_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$unterminated_homebrew_cask_zap_text" "$release_zip_sha"
-assert_contains "$unterminated_homebrew_cask_zap_text" "v1.0 publication blocked"
+assert_contains "$unterminated_homebrew_cask_zap_text" "v1.0.0 publication blocked"
 
 if run_gate_capture "$syntax_error_homebrew_cask_output" env -i \
   PATH="$fake_path" \
@@ -8047,7 +8047,7 @@ assert_contains "$syntax_error_homebrew_cask_text" "Homebrew cask zap stanza: ma
 assert_contains "$syntax_error_homebrew_cask_text" "Homebrew cask Ruby syntax: invalid"
 assert_contains "$syntax_error_homebrew_cask_text" "Homebrew cask SHA-256: matches"
 assert_not_contains "$syntax_error_homebrew_cask_text" "$release_zip_sha"
-assert_contains "$syntax_error_homebrew_cask_text" "v1.0 publication blocked"
+assert_contains "$syntax_error_homebrew_cask_text" "v1.0.0 publication blocked"
 assert_not_contains "$syntax_error_homebrew_cask_text" "fast preflight is clear"
 
 if run_gate_capture "$placeholder_output" env -i \
@@ -8069,7 +8069,7 @@ if run_gate_capture "$placeholder_output" env -i \
 fi
 placeholder_text="$(<"$placeholder_output")"
 assert_contains "$placeholder_text" "Release copy placeholders: present in $placeholder_release_copy"
-assert_contains "$placeholder_text" "v1.0 publication blocked"
+assert_contains "$placeholder_text" "v1.0.0 publication blocked"
 assert_not_contains "$placeholder_text" "Release copy checklist:"
 assert_not_contains "$placeholder_text" "Release copy SHA-256:"
 assert_not_contains "$placeholder_text" "fast preflight is clear"
@@ -8107,7 +8107,7 @@ assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask macOS requi
 assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask zap stanza:"
 assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask Ruby syntax:"
 assert_not_contains "$homebrew_cask_placeholder_text" "Homebrew cask SHA-256: mismatch"
-assert_contains "$homebrew_cask_placeholder_text" "v1.0 publication blocked"
+assert_contains "$homebrew_cask_placeholder_text" "v1.0.0 publication blocked"
 assert_not_contains "$homebrew_cask_placeholder_text" "fast preflight is clear"
 
 if run_specific_gate_capture "$default_security_docs_output" "$default_security_docs_helper" env -i \
@@ -8131,7 +8131,7 @@ assert_contains "$default_security_docs_text" "Release copy placeholders: none f
 assert_contains "$default_security_docs_text" "Homebrew cask placeholders: none found"
 assert_contains "$default_security_docs_text" "Security policy placeholders: none found in SECURITY.md"
 assert_contains "$default_security_docs_text" "Security policy placeholders: present in docs/SECURITY.md"
-assert_contains "$default_security_docs_text" "v1.0 publication blocked"
+assert_contains "$default_security_docs_text" "v1.0.0 publication blocked"
 assert_not_contains "$default_security_docs_text" "[security contact pending]"
 assert_not_contains "$default_security_docs_text" "fast preflight is clear"
 
@@ -8156,7 +8156,7 @@ security_doc_placeholder_text="$(<"$security_doc_placeholder_output")"
 assert_contains "$security_doc_placeholder_text" "Release copy placeholders: none found"
 assert_contains "$security_doc_placeholder_text" "Homebrew cask placeholders: none found"
 assert_contains "$security_doc_placeholder_text" "Security policy placeholders: present in $placeholder_security_doc"
-assert_contains "$security_doc_placeholder_text" "v1.0 publication blocked"
+assert_contains "$security_doc_placeholder_text" "v1.0.0 publication blocked"
 assert_not_contains "$security_doc_placeholder_text" "[security contact pending]"
 assert_not_contains "$security_doc_placeholder_text" "fast preflight is clear"
 
@@ -8179,7 +8179,7 @@ if run_gate_capture "$missing_copy_output" env -i \
 fi
 missing_copy_text="$(<"$missing_copy_output")"
 assert_contains "$missing_copy_text" "Release copy placeholders: missing release copy at $missing_release_copy"
-assert_contains "$missing_copy_text" "v1.0 publication blocked"
+assert_contains "$missing_copy_text" "v1.0.0 publication blocked"
 assert_not_contains "$missing_copy_text" "fast preflight is clear"
 
 if run_gate_capture "$grep_error_output" env -i \
@@ -8201,7 +8201,7 @@ if run_gate_capture "$grep_error_output" env -i \
 fi
 grep_error_text="$(<"$grep_error_output")"
 assert_contains "$grep_error_text" "Release copy placeholders: could not scan $grep_error_release_copy"
-assert_contains "$grep_error_text" "v1.0 publication blocked"
+assert_contains "$grep_error_text" "v1.0.0 publication blocked"
 assert_not_contains "$grep_error_text" "Release copy placeholders: none found"
 assert_not_contains "$grep_error_text" "fast preflight is clear"
 
@@ -8229,7 +8229,7 @@ assert_contains "$external_placeholder_text" "LITHEPG_CODESIGN_IDENTITY: configu
 assert_contains "$external_placeholder_text" "LITHEPG_NOTARY_PROFILE: configured"
 assert_contains "$external_placeholder_text" "LITHEPG_SECURITY_CONTACT: placeholder"
 assert_contains "$external_placeholder_text" "LITHEPG_HOMEBREW_TAP: configured"
-assert_contains "$external_placeholder_text" "v1.0 publication blocked"
+assert_contains "$external_placeholder_text" "v1.0.0 publication blocked"
 assert_not_contains "$external_placeholder_text" "[security contact pending]"
 assert_not_contains "$external_placeholder_text" "fast preflight is clear"
 
@@ -8287,7 +8287,7 @@ assert_contains "$no_remote_lookup_text" "Release artifact code signature verifi
 assert_contains "$no_remote_lookup_text" "Release artifact code signature runtime: present"
 assert_contains "$no_remote_lookup_text" "Release artifact top-level entries: clean"
 assert_contains "$no_remote_lookup_text" "Release artifact SHA-256: matches"
-assert_contains "$no_remote_lookup_text" "Remote origin tag v1.0: not checked (set LITHEPG_CHECK_REMOTE_TAGS=1 or pass --check-remote)"
+assert_contains "$no_remote_lookup_text" "Remote origin tag v1.0.0: not checked (set LITHEPG_CHECK_REMOTE_TAGS=1 or pass --check-remote)"
 if [[ -e "$fake_git_marker" ]]; then
   fail "default gate invoked git ls-remote despite remote lookup not being requested"
 fi
@@ -8318,7 +8318,7 @@ assert_contains "$remote_opt_in_text" "Release artifact symlinks: absent"
 assert_contains "$remote_opt_in_text" "Release artifact metadata files: absent"
 assert_contains "$remote_opt_in_text" "Release artifact essential entries: unique"
 assert_contains "$remote_opt_in_text" "Release artifact executable format: Mach-O"
-assert_contains "$remote_opt_in_text" "Remote origin tag v1.0: unknown (remote/network unavailable; not blocking this fast check)"
+assert_contains "$remote_opt_in_text" "Remote origin tag v1.0.0: unknown (remote/network unavailable; not blocking this fast check)"
 if [[ ! -e "$fake_git_marker" ]]; then
   fail "opt-in remote lookup did not invoke git ls-remote"
 fi
@@ -8346,8 +8346,8 @@ if run_gate_capture "$remote_v05_missing_output" env -i \
 fi
 remote_v05_missing_text="$(<"$remote_v05_missing_output")"
 assert_contains "$remote_v05_missing_text" "Remote origin tag v0.5: missing"
-assert_contains "$remote_v05_missing_text" "Remote origin tag v1.0: absent"
-assert_contains "$remote_v05_missing_text" "v1.0 publication blocked"
+assert_contains "$remote_v05_missing_text" "Remote origin tag v1.0.0: absent"
+assert_contains "$remote_v05_missing_text" "v1.0.0 publication blocked"
 assert_not_contains "$remote_v05_missing_text" "fast preflight is clear"
 if [[ ! -e "$fake_git_marker" ]]; then
   fail "opt-in remote v0.5 readiness check did not invoke git ls-remote"
@@ -8372,8 +8372,8 @@ if run_gate_capture "$status_failure_output" env -i \
   fail "gate unexpectedly passed when git status failed"
 fi
 status_failure_text="$(<"$status_failure_output")"
-assert_contains "$status_failure_text" "Git status: unknown (git status failed; expected clean before tagging/publishing)"
-assert_contains "$status_failure_text" "v1.0 publication blocked"
+assert_contains "$status_failure_text" "Git status: unknown (git status failed; expected clean before release publication)"
+assert_contains "$status_failure_text" "v1.0.0 publication blocked"
 assert_not_contains "$status_failure_text" "Git status: clean"
 
 printf 'test_v10_release_gate passed\n'

@@ -62,7 +62,7 @@ fi
 
 set -euo pipefail
 
-VERSION="1.0"
+VERSION="1.0.0"
 CHECK_REMOTE_TAGS="${LITHEPG_CHECK_REMOTE_TAGS:-0}"
 ARTIFACT_ONLY="${LITHEPG_ARTIFACT_ONLY:-0}"
 RELEASE_COPY_PATH="${LITHEPG_RELEASE_COPY_PATH:-docs/releases/v1.0-draft.md}"
@@ -78,7 +78,7 @@ usage() {
   /bin/cat <<'USAGE'
 Usage: script/v10_release_gate.sh [--version <version>] [--check-remote] [--artifact-only]
 
-Fast v1.0 publication preflight. Summarizes local tag readiness and required
+Fast v1.0.0 publication preflight. Summarizes local tag readiness and required
 external release inputs without running long build/test/dogfood gates, contacting
 origin by default, or printing secret/contact/tap environment values.
 
@@ -105,7 +105,7 @@ USAGE
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --version)
-      [[ $# -ge 2 ]] || { printf 'v1.0 release gate failed: --version requires a value\n' >&2; exit 2; }
+      [[ $# -ge 2 ]] || { printf 'v1.0.0 release gate failed: --version requires a value\n' >&2; exit 2; }
       VERSION="$2"
       shift 2
       ;;
@@ -122,12 +122,17 @@ while [[ $# -gt 0 ]]; do
       exit 0
       ;;
     *)
-      printf 'v1.0 release gate failed: unknown argument: %s\n' "$1" >&2
+      printf 'v1.0.0 release gate failed: unknown argument: %s\n' "$1" >&2
       usage >&2
       exit 2
       ;;
   esac
 done
+
+if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  printf 'v1.0.0 release gate failed: version must use SemVer major.minor.patch\n' >&2
+  exit 2
+fi
 
 ROOT_DIR="$(/bin/realpath "$(/usr/bin/dirname "${BASH_SOURCE[0]}")/..")"
 
@@ -1684,11 +1689,11 @@ if git_in_repo rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     if [[ -z "$status_output" ]]; then
       printf 'Git status: clean\n'
     else
-      printf 'Git status: changes present (expected clean before tagging/publishing)\n'
+      printf 'Git status: changes present (expected clean before release publication)\n'
       mark_blocker
     fi
   else
-    printf 'Git status: unknown (git status failed; expected clean before tagging/publishing)\n'
+    printf 'Git status: unknown (git status failed; expected clean before release publication)\n'
     mark_blocker
   fi
 
@@ -1700,8 +1705,14 @@ if git_in_repo rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   fi
 
   if git_in_repo rev-parse -q --verify "refs/tags/$TAG" >/dev/null 2>&1; then
-    printf 'Local tag %s: present (expected absent before publication)\n' "$TAG"
-    mark_blocker
+    tag_commit="$(git_in_repo rev-list -n 1 "$TAG" 2>/dev/null || true)"
+    head_commit="$(git_in_repo rev-parse HEAD 2>/dev/null || true)"
+    if [[ -n "$tag_commit" && "$tag_commit" == "$head_commit" ]]; then
+      printf 'Local tag %s: present at HEAD\n' "$TAG"
+    else
+      printf 'Local tag %s: present but does not point at HEAD\n' "$TAG"
+      mark_blocker
+    fi
   else
     printf 'Local tag %s: absent\n' "$TAG"
   fi
@@ -1731,8 +1742,7 @@ if git_in_repo rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       set -e
       case "$remote_status" in
         0)
-          printf 'Remote origin tag %s: present (expected absent before publication)\n' "$TAG"
-          mark_blocker
+          printf 'Remote origin tag %s: present\n' "$TAG"
           ;;
         2)
           printf 'Remote origin tag %s: absent\n' "$TAG"
@@ -1937,7 +1947,7 @@ fi
 
 if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
   if cask_homepage="$(extract_homebrew_cask_homepage "$homebrew_cask_file")"; then
-    if [[ "$cask_homepage" == "https://github.com/omarpr/lithepg" ]]; then
+    if [[ "$cask_homepage" == "https://www.lithepg.app" ]]; then
       printf 'Homebrew cask homepage: matches\n'
     else
       printf 'Homebrew cask homepage: mismatch\n'
@@ -2506,5 +2516,5 @@ if [[ "$BLOCKERS" -eq 0 ]]; then
 fi
 
 printf '%s publication blocked: %s blocker(s) found.\n' "$TAG" "$BLOCKERS"
-printf 'Resolve the release copy, Homebrew cask, security policy placeholders, release artifact zip/SHA-256 issues, missing/false external inputs, and any tag-readiness blockers before tagging or publishing.\n'
+printf 'Resolve the release copy, Homebrew cask, security policy placeholders, release artifact zip/SHA-256 issues, missing/false external inputs, and any tag-readiness blockers before binary publication.\n'
 exit 1

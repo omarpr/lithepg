@@ -142,9 +142,19 @@ run_from_root() {
 }
 
 LATEST_TAG="$(git -C "$ROOT_DIR" describe --tags --abbrev=0 2>/dev/null || true)"
-MARKETING_VERSION="${LITHEPG_MARKETING_VERSION:-${LATEST_TAG#v}}"
-MARKETING_VERSION="${MARKETING_VERSION:-0.0}"
+TAG_VERSION="${LATEST_TAG#v}"
+TAG_VERSION="${TAG_VERSION%%-*}"
+if [[ "$TAG_VERSION" =~ ^[0-9]+\.[0-9]+$ ]]; then
+  TAG_VERSION="${TAG_VERSION}.0"
+fi
+MARKETING_VERSION="${LITHEPG_MARKETING_VERSION:-$TAG_VERSION}"
+MARKETING_VERSION="${MARKETING_VERSION:-0.0.0}"
 BUILD_VERSION="${LITHEPG_BUILD_VERSION:-$(git -C "$ROOT_DIR" rev-list --count HEAD 2>/dev/null || printf '0')}"
+
+if [[ ! "$MARKETING_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  printf 'build failed: LITHEPG_MARKETING_VERSION must use SemVer major.minor.patch\n' >&2
+  exit 2
+fi
 
 case "$MODE" in
   --package|package|release)

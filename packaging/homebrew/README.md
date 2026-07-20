@@ -12,7 +12,7 @@ https://github.com/omarpr/lithepg/releases/download/v<VERSION>/LithePG.app.zip
 
 Required inputs before publication:
 
-- Final release version, matching the Git tag and GitHub Release, for example `1.0` with tag `v1.0` unless Omar chooses a different public version.
+- Final release version, matching the Git tag and GitHub Release, for example `1.0.0` with tag `v1.0.0`.
 - Final signed/notarized `LithePG.app.zip` attached to the GitHub Release.
 - SHA-256 of the exact public zip artifact, computed after the release artifact is final.
 - Omar-approved Homebrew tap target.
@@ -24,7 +24,7 @@ Required inputs before publication:
 3. Compute the SHA-256 from the final artifact, preferably after downloading it from the release URL:
 
    ```sh
-   VERSION=1.0
+   VERSION=1.0.0
    curl -L -o /tmp/LithePG.app.zip \
      "https://github.com/omarpr/lithepg/releases/download/v${VERSION}/LithePG.app.zip"
    shasum -a 256 /tmp/LithePG.app.zip

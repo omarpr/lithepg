@@ -2,9 +2,9 @@
 
 All notable release-history entries for LithePG are collected here for public readers. The historical notes below are summarized from the roadmap, milestone specs, and dogfood receipts; detailed verification evidence lives in [`docs/dogfood-log.md`](docs/dogfood-log.md).
 
-LithePG follows outcome-named milestones with semantic-version tags. v1.0 remains unreleased until the public-launch gates are complete, including Apple Developer signing/notarization credentials and final distribution approval.
+LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag marks the source release; signed and notarized binary publication is tracked separately because it requires Apple Developer credentials and final distribution approval.
 
-## [v1.0] — Unreleased — Public Launch
+## [v1.0.0] — 2026-07-19 — Source Release
 
 ### Added
 
@@ -30,6 +30,7 @@ LithePG follows outcome-named milestones with semantic-version tags. v1.0 remain
 - Keychain resilience: entitlement-less builds fall back to the legacy login keychain instead of failing to save credentials; a gated suite (`LITHEPG_KEYCHAIN_TESTS=1`) covers real-keychain round trips.
 - Release tooling: local package verification, artifact and icon hardening, `script/v10_release_gate.sh` preflight, `script/create_release_zip.sh`, a credential-gated signing/notarization wrapper and a Homebrew cask template under `packaging/homebrew/`.
 - `CORE_TECHNOLOGIES.md` documents every core technology choice and why.
+- A native About window shows the website, main developer and bundle-derived semantic version/build number.
 
 ### Changed
 
@@ -39,16 +40,16 @@ LithePG follows outcome-named milestones with semantic-version tags. v1.0 remain
 
 ### Verified
 
-- 248 tests across 39 suites pass locally; live suites were separately verified against seeded Docker Postgres and real Neon endpoints.
+- 252 tests across 40 suites pass locally; live suites were separately verified against seeded Docker Postgres and real Neon endpoints.
 - Full git history (412 commits) scanned for secrets with gitleaks plus manual pattern sweeps: clean, no rewrite needed before open-sourcing.
 - Binary and speed budgets hold: ~21.7 MiB release executable (50 MiB cap, 30 MiB stretch), sub-500 ms connected startup, sub-5 ms query overhead. Receipts in `docs/dogfood-log.md`.
 
-### Still blocked before release
+### Still blocked before public binary distribution
 
 - Apple Developer signing identity and notarytool profile on the release machine.
 - An approved public security-reporting contact to replace the placeholder policy.
 - An approved Homebrew tap target.
-- Release-copy approval, resolved draft placeholders and the `v1.0` tag, all gated on explicit publication approval.
+- Release-copy approval and resolved draft placeholders, both gated on explicit publication approval.
 
 ## [v0.5] — 2026-05-28 — AI-Ready
 
@@ -136,7 +137,7 @@ LithePG follows outcome-named milestones with semantic-version tags. v1.0 remain
 - `SELECT 1` succeeded over plain loopback, TLS verify-full, and SSH-tunneled paths.
 - Dependency inspection showed no `libpq` linkage and no LithePG-authored C shims.
 
-[v1.0]: docs/superpowers/specs/2026-05-28-v1.0-public-launch-design.md
+[v1.0.0]: https://github.com/omarpr/lithepg/tree/v1.0.0
 [v0.5]: https://github.com/omarpr/lithepg/tree/v0.5
 [v0.4]: https://github.com/omarpr/lithepg/tree/v0.4
 [v0.3]: https://github.com/omarpr/lithepg/tree/v0.3

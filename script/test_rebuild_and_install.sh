@@ -56,8 +56,8 @@ run_installer() {
 }
 
 output="$(run_installer "$FIXTURE/Applications")"
-assert_contains "$output" "Installed LithePG 1.0"
-[[ "$(cat "$FIXTURE/build-version.log")" == "1.0" ]] || fail "default version was not 1.0"
+assert_contains "$output" "Installed LithePG 1.0.0"
+[[ "$(cat "$FIXTURE/build-version.log")" == "1.0.0" ]] || fail "default version was not 1.0.0"
 [[ "$(cat "$FIXTURE/Applications/LithePG.app/Contents/MacOS/LithePGApp")" == "fresh build" ]] \
   || fail "fresh app was not installed"
 

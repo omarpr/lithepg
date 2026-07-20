@@ -20,7 +20,7 @@ Build a fresh release bundle, verify it, replace /Applications/LithePG.app,
 verify the installed copy, and open it. Use --no-open to leave it closed.
 
 Environment:
-  LITHEPG_MARKETING_VERSION  App version to build (default: 1.0)
+  LITHEPG_MARKETING_VERSION  App version to build (default: 1.0.0)
 USAGE
 }
 
@@ -74,7 +74,7 @@ if [[ -e "$DESTINATION" ]]; then
   fi
 fi
 
-MARKETING_VERSION="${LITHEPG_MARKETING_VERSION:-1.0}"
+MARKETING_VERSION="${LITHEPG_MARKETING_VERSION:-1.0.0}"
 (
   cd "$ROOT_DIR"
   LITHEPG_MARKETING_VERSION="$MARKETING_VERSION" \
