@@ -34,7 +34,8 @@ High-level module boundaries and data flow for LithePG. Implementation details l
 ## Layer Responsibilities
 
 ### App Layer
-- SwiftUI views plus `AppState` for connection, query, schema, saved-connection, query-history, appearance and Ask-in-English workflow state.
+- SwiftUI views plus `AppState` for the left connection navigator, schema, query, saved-connection, query-history, appearance and Ask-in-English workflow state.
+- `NeonCLIScanner` discovers a user-installed Homebrew CLI, requests machine-readable projects/branches/databases only after a button press and returns connection URLs directly to the credential-separating persistence flow.
 - UI code talks to the driver through `PostgresConnector` and to credentials through persistence protocols; views do not touch Keychain APIs directly.
 - Presentation helpers stay headless-testable where practical, for example results pagination/copy/export formatting.
 
@@ -55,7 +56,7 @@ High-level module boundaries and data flow for LithePG. Implementation details l
 - Appearance preference is stored in `UserDefaults`.
 
 ### Inference
-- Default SQL drafting is deterministic and local. See `TECH_STACK.md` section 4.
+- Default SQL drafting is deterministic, read-only and local. It supports schema-aware lists, counts, projections, ordering, limits and known joins; it is not presented as a general model. See `TECH_STACK.md` section 4.
 - A CoreML adapter scaffold exists for user-provided local model artifacts, disabled by default.
 - Schema awareness uses local metadata/indexing; vector storage remains a future optimization.
 

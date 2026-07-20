@@ -22,6 +22,8 @@ LithePG follows outcome-named milestones with semantic-version tags. v1.0 remain
 - EXPLAIN plan parsing (`QueryPlan`) and headless plan-tree presentation seams, ready for a v1.1 plan view.
 - Schema graph (`⇧⌘G`): an in-app force-directed graph of tables and foreign keys with pan, zoom, drag, selection highlighting and a column inspector with PK/FK badges. Read-only, derived from already-loaded schema metadata; graphs past 300 tables use a static grid layout.
 - Neon connection support: pasted Neon URLs are detected and surface endpoint, database, role and pooled or direct mode, with a suggested connection name. Verified live against real Neon endpoints (Postgres 17, direct and pooled, current host shape) by CLI smoke and the gated live app suite.
+- A left-side connection navigator switches among saved databases without returning to the connect sheet. An optional, explicit Neon CLI scanner discovers project/branch databases and imports only missing endpoints; its button remains disabled when the CLI is unavailable.
+- The built-in English-to-SQL drafter now covers generic counts, column projection, ordering and limits in addition to relation listing and known joins, rejects mutation prompts and labels its deterministic limitations directly in the UI.
 - Pasted connection strings are sanitized before parsing, so quoted strings, `psql '<url>'` commands, `DATABASE_URL=` lines and trailing newlines all work.
 - Bare-executable runs (`swift run`, Xcode package schemes) now activate the app so windows accept keyboard input.
 - Keychain resilience: entitlement-less builds fall back to the legacy login keychain instead of failing to save credentials; a gated suite (`LITHEPG_KEYCHAIN_TESTS=1`) covers real-keychain round trips.
@@ -36,7 +38,7 @@ LithePG follows outcome-named milestones with semantic-version tags. v1.0 remain
 
 ### Verified
 
-- 238 tests across 37 suites pass locally; live suites were separately verified against seeded Docker Postgres and real Neon endpoints.
+- 245 tests across 38 suites pass locally; live suites were separately verified against seeded Docker Postgres and real Neon endpoints.
 - Full git history (412 commits) scanned for secrets with gitleaks plus manual pattern sweeps: clean, no rewrite needed before open-sourcing.
 - Binary and speed budgets hold: ~21.7 MiB release executable (50 MiB cap, 30 MiB stretch), sub-500 ms connected startup, sub-5 ms query overhead. Receipts in `docs/dogfood-log.md`.
 

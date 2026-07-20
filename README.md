@@ -3,7 +3,7 @@
 [![CI](https://github.com/omarpr/lithepg/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/omarpr/lithepg/actions/workflows/ci.yml?query=branch%3Amain)
 &nbsp;**Latest tagged release:** [`v0.5`](https://github.com/omarpr/lithepg/tree/v0.5)
 
-LithePG is a lean, Mac-native PostgreSQL client with local-first AI. Pure Swift on `postgres-nio` (no `libpq`), a ~22 MiB binary and nothing ever leaves your machine.
+LithePG is a lean, Mac-native PostgreSQL client with local-first AI. It is pure Swift on `postgres-nio` (no `libpq`), ships as a ~22 MiB binary and never sends prompts or database contents to an AI service.
 
 ![LithePG app window showing a seeded dogfood schema, query editor, and results grid](docs/assets/lithepg-app-snapshot.png)
 
@@ -13,7 +13,9 @@ LithePG is a lean, Mac-native PostgreSQL client with local-first AI. Pure Swift 
 
 - A native macOS app for connecting to Postgres, writing SQL and viewing results.
 - Saved connections with passwords in the macOS Keychain, never on disk.
-- Schema sidebar, query tabs, history, result copy and export as CSV, TSV, JSON, Markdown or SQL inserts.
+- A left-side connection navigator plus schema sidebar, query tabs and history.
+- Optional Neon CLI scanning imports missing project/branch databases when the user-installed CLI is available; otherwise the action stays disabled.
+- Result copy and export as CSV, TSV, JSON, Markdown or SQL inserts.
 - One-click table preview: the sidebar's select action inserts and runs `SELECT * ... LIMIT 100`.
 - Clickable cells: select and `⌘C`, right-click to copy cell or row, double-click to view and edit a value locally.
 - EXPLAIN and EXPLAIN ANALYZE (`⌘E` / `⇧⌘E`) with an indented plan tree that flags the costliest node.
@@ -25,7 +27,7 @@ LithePG is a lean, Mac-native PostgreSQL client with local-first AI. Pure Swift 
 
 ## Status
 
-v0.5 is the current tag. The v1.0 code is complete and verified: 238 tests across 37 suites pass locally, connectivity is proven live against local Docker Postgres and real Neon endpoints (direct and pooled), the full git history has been scanned for secrets, and the release executable remains under the 50 MiB cap. What remains for a public v1.0 is distribution, not app code: Apple Developer ID signing and notarization, a final security contact, a Homebrew target and release approval. Receipts live in [`docs/dogfood-log.md`](docs/dogfood-log.md) and [`CHANGELOG.md`](CHANGELOG.md).
+v0.5 is the current tag. The v1.0 code is complete and verified: 245 tests across 38 suites pass locally, connectivity is proven live against local Docker Postgres and real Neon endpoints (direct and pooled), the full git history has been scanned for secrets, and the release executable remains under the 50 MiB cap. What remains for a public v1.0 is distribution, not app code: Apple Developer ID signing and notarization, a final security contact, a Homebrew target and release approval. Receipts live in [`docs/dogfood-log.md`](docs/dogfood-log.md) and [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Install
 
@@ -70,7 +72,11 @@ The demo database uses the synthetic local password `postgres`. Normal app launc
 
 ## Local-first AI in plain language
 
-Ask in English (`⇧⌘K`) drafts SQL from your request plus local schema metadata. The draft lands in the editor for you to inspect; it never runs automatically. There is no telemetry, no cloud call path and no model download. The default engine is deterministic and local. An optional CoreML adapter activates only when you set `LITHEPG_ENABLE_LOCAL_MODEL=1` and point `LITHEPG_LOCAL_MODEL_PATH` at your own model artifact.
+Ask in English (`⇧⌘K`) drafts SQL from your request plus local schema metadata. The draft lands in the editor for you to inspect; it never runs automatically. The built-in engine is a deterministic, read-only local drafter for relation listing, counts, column projection, ordering, limits and known foreign-key joins. It is intentionally not a general language model. There is no cloud AI call or model download. The optional CoreML adapter remains an inference scaffold: it can validate a user-provided artifact, but model-specific NL2SQL input/output mapping is not implemented yet.
+
+## Neon CLI scanner
+
+When `neon` or `neonctl` is installed, the connection navigator can explicitly scan the user's Neon projects, branches and databases and save only endpoints LithePG does not already know. The scanner invokes machine-readable, read-only CLI commands with Neon analytics disabled. Generated passwords are never logged or written to JSON; imported passwords go directly to the macOS Keychain. Without the CLI, the scan button remains visible but disabled.
 
 ## CLI smoke utility
 

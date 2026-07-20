@@ -23,14 +23,16 @@ LithePG is a local macOS client that connects to user-owned PostgreSQL databases
 - Current pre-1.0 builds still permit cleartext for localhost/dogfood and explicit `sslmode=disable`; remote cleartext warnings and richer TLS modes remain tracked hardening work.
 
 ## Local Data at Rest
-- Saved connection metadata and opt-in query history are stored as local JSON files under Application Support in current pre-sandbox builds.
+- Saved connection metadata and opt-in query history are stored as local JSON files under Application Support.
 - Query history is opt-in and can be cleared at any time.
 - Credentials and query results are not written to LithePG-owned JSON files.
-- Public distribution must add App Sandbox, Hardened Runtime, signing and notarization before broad release.
+- Release bundles use Hardened Runtime and remain unsandboxed so explicit user-initiated integrations can execute OpenSSH and a user-installed Neon CLI. Public distribution still requires Developer ID signing and notarization.
+- Neon discovery runs only after the user presses Scan. It invokes the installed CLI with JSON output, color disabled and Neon analytics disabled. CLI-generated URLs stay in process memory long enough to split metadata from passwords; passwords are sent to Keychain and are never logged or persisted in JSON.
 
 ## AI & Privacy
 - **All inference is intended to run on-device.** v0.5's first adapter scaffold uses CoreML because it is provided by the macOS SDK and adds no package dependency; MLX remains a future measured option.
-- v0.5 ships deterministic/local NL2SQL scaffolding plus a gated `LocalModelAIQueryService`. The adapter is disabled by default and requires both `LITHEPG_ENABLE_LOCAL_MODEL=1` and `LITHEPG_LOCAL_MODEL_PATH` before it will attempt to load a user-provided CoreML artifact.
+- The built-in deterministic NL2SQL service supports a documented read-only subset: relation listing, counts, projected columns, ordering, limits and known foreign-key joins. Unsupported requests are labeled as such instead of being presented as model failures.
+- `LocalModelAIQueryService` remains a gated scaffold. The adapter can validate an external CoreML artifact but model-specific NL2SQL inference mapping is not implemented.
 - Model artifacts are separate from the app binary, are expected under LithePG's Application Support model directory by default, and are never downloaded by the app.
 - No prompts, schemas, query text or results are transmitted to any external service.
 - AI context construction is intentionally narrow: it may include the natural-language request and schema metadata, but it excludes raw connection URLs and query result rows and redacts credential-shaped substrings before any model adapter receives context.
