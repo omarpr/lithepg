@@ -1,4 +1,5 @@
 import Testing
+
 @testable import LithePGAppUI
 @testable import LithePGCore
 
@@ -8,7 +9,8 @@ struct ConnectSheetPresentationTests {
   func neonHintSummarizesProfile() throws {
     let profile = try #require(
       NeonConnectionProfile.detect(
-        url: "postgres://writer:***@ep-small-moon-a1b2c3-pooler.us-east-1.aws.neon.tech/appdb?sslmode=require"
+        url:
+          "postgres://writer:***@ep-small-moon-a1b2c3-pooler.us-east-1.aws.neon.tech/appdb?sslmode=require"
       )
     )
 
@@ -22,7 +24,8 @@ struct ConnectSheetPresentationTests {
   func neonHintMarksDirectHosts() throws {
     let profile = try #require(
       NeonConnectionProfile.detect(
-        url: "postgres://writer:***@ep-small-moon-a1b2c3.us-east-1.aws.neon.tech/appdb?sslmode=require"
+        url:
+          "postgres://writer:***@ep-small-moon-a1b2c3.us-east-1.aws.neon.tech/appdb?sslmode=require"
       )
     )
 
@@ -91,6 +94,28 @@ struct ConnectSheetPresentationTests {
         host: "localhost",
         database: "postgres"
       ) == "Local dev"
+    )
+  }
+
+  @Test("URL naming never leaks values from the manual-fields mode")
+  func urlNamingIsModeIsolated() {
+    #expect(
+      ConnectSheetPresentation.savedConnectionName(
+        enteredName: "",
+        inputMode: .url,
+        url: "postgres://incomplete",
+        fieldHost: "hidden-host",
+        fieldDatabase: "hidden-database"
+      ) == "Postgres connection"
+    )
+    #expect(
+      ConnectSheetPresentation.savedConnectionName(
+        enteredName: "",
+        inputMode: .url,
+        url: "postgres://user@url-host:5432/url-database",
+        fieldHost: "hidden-host",
+        fieldDatabase: "hidden-database"
+      ) == "url-host · url-database"
     )
   }
 

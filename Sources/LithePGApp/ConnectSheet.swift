@@ -221,15 +221,15 @@ struct ConnectSheet: View {
             // The example vanishes on click (focus), not just on first keystroke.
             prompt: urlFieldFocused ? nil : Text("postgres://user:***@host:5432/database")
           )
-            .focused($urlFieldFocused)
-            .accessibilityIdentifier("postgres-url-field")
-            .onChange(of: url) { _, newValue in
-              if newValue != Self.redactedURLForDisplay(sensitivePrefilledURL) {
-                sensitivePrefilledURL = nil
-              }
-              tls = Self.defaultTLSPreference(for: effectiveURL)
-              applyNeonConnectionNameSuggestion()
+          .focused($urlFieldFocused)
+          .accessibilityIdentifier("postgres-url-field")
+          .onChange(of: url) { _, newValue in
+            if newValue != Self.redactedURLForDisplay(sensitivePrefilledURL) {
+              sensitivePrefilledURL = nil
             }
+            tls = Self.defaultTLSPreference(for: effectiveURL)
+            applyNeonConnectionNameSuggestion()
+          }
           if let neonHint {
             Label {
               VStack(alignment: .leading, spacing: 2) {
@@ -462,7 +462,8 @@ struct ConnectSheet: View {
     if inputMode == .url {
       inputEmpty = effectiveURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     } else {
-      inputEmpty = fieldHost.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+      inputEmpty =
+        fieldHost.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         || fieldDatabase.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         || fieldUsername.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
@@ -489,26 +490,22 @@ struct ConnectSheet: View {
     if let suggestedName = neonProfile?.suggestedName {
       return suggestedName
     }
-    if inputMode == .url, let config = try? ConnectionConfig(url: effectiveURL) {
-      return ConnectSheetPresentation.savedConnectionName(
-        enteredName: "",
-        host: config.host,
-        database: config.database
-      )
-    }
     return ConnectSheetPresentation.savedConnectionName(
       enteredName: "",
-      host: fieldHost,
-      database: fieldDatabase
+      inputMode: inputMode,
+      url: effectiveURL,
+      fieldHost: fieldHost,
+      fieldDatabase: fieldDatabase
     )
   }
 
   private var savedConnectionName: String {
-    let parsedConfig = inputMode == .url ? try? ConnectionConfig(url: effectiveURL) : nil
     return ConnectSheetPresentation.savedConnectionName(
       enteredName: connectionName,
-      host: parsedConfig?.host ?? fieldHost,
-      database: parsedConfig?.database ?? fieldDatabase
+      inputMode: inputMode,
+      url: effectiveURL,
+      fieldHost: fieldHost,
+      fieldDatabase: fieldDatabase
     )
   }
 
@@ -721,6 +718,30 @@ enum ConnectSheetPresentation {
       return database
     case (true, true):
       return "Postgres connection"
+    }
+  }
+
+  static func savedConnectionName(
+    enteredName: String,
+    inputMode: ConnectSheet.InputMode,
+    url: String,
+    fieldHost: String,
+    fieldDatabase: String
+  ) -> String {
+    switch inputMode {
+    case .url:
+      let config = try? ConnectionConfig(url: url)
+      return savedConnectionName(
+        enteredName: enteredName,
+        host: config?.host ?? "",
+        database: config?.database ?? ""
+      )
+    case .fields:
+      return savedConnectionName(
+        enteredName: enteredName,
+        host: fieldHost,
+        database: fieldDatabase
+      )
     }
   }
 }
