@@ -37,6 +37,10 @@ public final class AppState {
   public var savedConnections: [SavedConnectionMetadata] = []
   public var selectedSavedConnectionID: SavedConnectionMetadata.ID?
   public var activeSavedConnection: SavedConnectionMetadata?
+  public var neonCLIAvailability: NeonCLIAvailability = .unavailable
+  public var isScanningNeon: Bool = false
+  public var neonScanMessage: String?
+  public var neonScanError: String?
   public var queryHistoryEnabled: Bool = false
   public var queryHistory: [QueryHistoryEntry] = []
   public var persistenceError: String?
@@ -87,6 +91,7 @@ public final class AppState {
   @ObservationIgnored private let credentialStore: any CredentialStore
   @ObservationIgnored private let queryHistoryStore: any QueryHistoryStore
   @ObservationIgnored private let aiQueryService: any AIQueryService
+  @ObservationIgnored private let neonScanner: any NeonCLIScanning
   @ObservationIgnored private let appearanceDefaults: UserDefaults
   @ObservationIgnored private var isRestoringAppearancePreference = false
 
@@ -95,13 +100,16 @@ public final class AppState {
     credentialStore: any CredentialStore = KeychainCredentialStore(),
     queryHistoryStore: any QueryHistoryStore = JSONFileQueryHistoryStore(),
     aiQueryService: any AIQueryService = DeterministicAIQueryService(),
+    neonScanner: any NeonCLIScanning = NeonCLIScanner(),
     appearanceDefaults: UserDefaults = .standard
   ) {
     self.savedConnectionStore = savedConnectionStore
     self.credentialStore = credentialStore
     self.queryHistoryStore = queryHistoryStore
     self.aiQueryService = aiQueryService
+    self.neonScanner = neonScanner
     self.appearanceDefaults = appearanceDefaults
+    neonCLIAvailability = neonScanner.availability()
     isRestoringAppearancePreference = true
     appearancePreference = AppearancePreference(defaults: appearanceDefaults)
     isRestoringAppearancePreference = false
@@ -175,6 +183,67 @@ public final class AppState {
       persistenceError = nil
     } catch {
       setPersistenceError(error)
+    }
+  }
+
+  public var canScanNeon: Bool {
+    neonCLIAvailability.isAvailable && !isScanningNeon
+  }
+
+  public func refreshNeonCLIAvailability() {
+    neonCLIAvailability = neonScanner.availability()
+  }
+
+  public func scanAndImportNeonConnections() async {
+    refreshNeonCLIAvailability()
+    guard neonCLIAvailability.isAvailable else {
+      neonScanMessage = nil
+      neonScanError = "Install Neon CLI to scan your Neon databases."
+      return
+    }
+
+    isScanningNeon = true
+    neonScanMessage = nil
+    neonScanError = nil
+    defer { isScanningNeon = false }
+
+    do {
+      await loadSavedConnections()
+      let report = try await neonScanner.scan()
+      var known = Set(savedConnections.map(Self.connectionIdentity))
+      var imported = 0
+      var alreadySaved = 0
+      var skipped = report.skippedResources
+
+      for discovered in report.connections {
+        guard let config = try? ConnectionConfig(url: discovered.connectionURL) else {
+          skipped += 1
+          continue
+        }
+        let identity = Self.connectionIdentity(config)
+        guard !known.contains(identity) else {
+          alreadySaved += 1
+          continue
+        }
+        if await persistConnection(
+          name: discovered.suggestedName,
+          config: config,
+          environment: .development
+        ) != nil {
+          known.insert(identity)
+          imported += 1
+        } else {
+          skipped += 1
+        }
+      }
+
+      neonScanMessage = Self.neonScanSummary(
+        imported: imported,
+        alreadySaved: alreadySaved,
+        skipped: skipped
+      )
+    } catch {
+      neonScanError = ErrorRedaction.redactCredentials(in: error)
     }
   }
 
@@ -351,6 +420,11 @@ public final class AppState {
     lastRequest: ConnectionRequest?,
     savedConnection: SavedConnectionMetadata?
   ) async {
+    if let activeConnector = connector {
+      await activeConnector.close()
+      try? await activeConnector.shutdown()
+      connector = nil
+    }
     markConnecting()
     do {
       let connector = PostgresConnector()
@@ -735,6 +809,55 @@ public final class AppState {
 
   private static func connectionLabel(for config: ConnectionConfig) -> String {
     "\(config.username)@\(config.host):\(config.port)/\(config.database)"
+  }
+
+  private static func connectionIdentity(_ metadata: SavedConnectionMetadata) -> String {
+    connectionIdentity(
+      host: metadata.host,
+      port: metadata.port,
+      database: metadata.database,
+      username: metadata.username
+    )
+  }
+
+  private static func connectionIdentity(_ config: ConnectionConfig) -> String {
+    connectionIdentity(
+      host: config.host,
+      port: config.port,
+      database: config.database,
+      username: config.username
+    )
+  }
+
+  private static func connectionIdentity(
+    host: String,
+    port: Int,
+    database: String,
+    username: String
+  ) -> String {
+    "\(username.lowercased())|\(host.lowercased())|\(port)|\(database.lowercased())"
+  }
+
+  private static func neonScanSummary(
+    imported: Int,
+    alreadySaved: Int,
+    skipped: Int
+  ) -> String {
+    var sentences: [String] = []
+    if imported == 0 {
+      sentences.append("No new Neon databases found.")
+    } else {
+      sentences.append("Imported \(imported) Neon database\(imported == 1 ? "" : "s").")
+    }
+    if alreadySaved > 0 {
+      sentences.append(
+        "\(alreadySaved) \(alreadySaved == 1 ? "was" : "were") already saved."
+      )
+    }
+    if skipped > 0 {
+      sentences.append("Skipped \(skipped) unavailable resource\(skipped == 1 ? "" : "s").")
+    }
+    return sentences.joined(separator: " ")
   }
 
   private static func connectionConfig(

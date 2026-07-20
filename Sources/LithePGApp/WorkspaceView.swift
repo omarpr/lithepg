@@ -23,7 +23,12 @@ struct WorkspaceView: View {
 
   var body: some View {
     HSplitView {
-      SchemaSidebar(state: state)
+      VStack(spacing: 0) {
+        ConnectionNavigator(state: state)
+        Divider()
+        SchemaSidebar(state: state)
+      }
+      .frame(minWidth: 240, idealWidth: 280, maxWidth: 340)
       VStack(spacing: 0) {
         header
         productionWarning
@@ -169,6 +174,10 @@ struct WorkspaceView: View {
       if state.editorText.isEmpty {
         state.editorText = state.defaultEditorText
       }
+    }
+    .task {
+      await state.loadSavedConnections()
+      state.refreshNeonCLIAvailability()
     }
   }
 

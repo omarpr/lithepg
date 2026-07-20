@@ -113,6 +113,10 @@ struct ConnectSheet: View {
         }
       }
 
+      Section("Neon") {
+        NeonScannerButton(state: state)
+      }
+
       if !discoveredInstances.isEmpty {
         Section("Local servers") {
           ForEach(discoveredInstances) { instance in
@@ -257,6 +261,7 @@ struct ConnectSheet: View {
     .frame(width: 560)
     .task {
       await state.loadSavedConnections()
+      state.refreshNeonCLIAvailability()
       discoveredInstances = Self.scanLocalInstances()
     }
     .confirmationDialog(
