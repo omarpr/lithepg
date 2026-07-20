@@ -225,8 +225,10 @@ PLIST
 sign_release_bundle() {
   local identity="${LITHEPG_CODESIGN_IDENTITY:--}"
   # Prefer an existing persistent local dev identity over ad-hoc signing so
-  # Keychain "Always Allow" choices survive rebuilds.
+  # Keychain "Always Allow" choices survive rebuilds. Release helpers that
+  # intentionally produce an ad-hoc-signed artifact can disable this fallback.
   if [[ "$identity" == "-" ]] \
+    && [[ "${LITHEPG_FORCE_ADHOC_CODESIGN:-0}" != "1" ]] \
     && /usr/bin/security find-identity -v -p codesigning 2>/dev/null | grep -q "LithePG Local Dev"; then
     identity="LithePG Local Dev"
   fi

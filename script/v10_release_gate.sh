@@ -1947,7 +1947,7 @@ fi
 
 if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
   if cask_homepage="$(extract_homebrew_cask_homepage "$homebrew_cask_file")"; then
-    if [[ "$cask_homepage" == "https://www.lithepg.app" ]]; then
+    if [[ "$cask_homepage" == "https://www.lithepg.app/" ]]; then
       printf 'Homebrew cask homepage: matches\n'
     else
       printf 'Homebrew cask homepage: mismatch\n'
@@ -1989,7 +1989,7 @@ fi
 
 if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
   if cask_macos_requirement="$(extract_homebrew_cask_macos_requirement "$homebrew_cask_file")"; then
-    if [[ "$cask_macos_requirement" == ">= :sonoma" ]]; then
+    if [[ "$cask_macos_requirement" == ":sonoma" ]]; then
       printf 'Homebrew cask macOS requirement: matches\n'
     else
       printf 'Homebrew cask macOS requirement: mismatch\n'

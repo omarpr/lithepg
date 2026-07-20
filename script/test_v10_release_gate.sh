@@ -3282,10 +3282,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3304,10 +3304,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3326,10 +3326,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3348,10 +3348,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3370,10 +3370,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3392,10 +3392,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3414,10 +3414,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3436,10 +3436,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3458,10 +3458,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3480,10 +3480,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3502,10 +3502,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3524,10 +3524,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3546,10 +3546,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3568,10 +3568,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3590,10 +3590,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3612,10 +3612,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3634,10 +3634,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3656,10 +3656,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3678,10 +3678,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3700,10 +3700,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3722,10 +3722,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3744,10 +3744,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3766,10 +3766,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3788,10 +3788,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3810,10 +3810,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3832,10 +3832,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3854,10 +3854,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3876,10 +3876,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3899,10 +3899,10 @@ cask "$wrong_homebrew_cask_token" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3921,10 +3921,10 @@ url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app
     verified: "github.com/omarpr/lithepg/"
 name "LithePG"
 desc "Lean PostgreSQL client with local-first AI"
-homepage "https://www.lithepg.app"
+homepage "https://www.lithepg.app/"
 uninstall quit: "dev.omarpr.lithepg"
 
-depends_on macos: ">= :sonoma"
+depends_on macos: :sonoma
 
 app "LithePG.app"
 
@@ -3943,10 +3943,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "$wrong_homebrew_cask_name"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3964,10 +3964,10 @@ cask "lithepg" do
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -3987,10 +3987,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "$wrong_homebrew_cask_desc"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -4008,10 +4008,10 @@ cask "lithepg" do
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -4030,10 +4030,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -4053,10 +4053,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -4076,10 +4076,10 @@ cask "lithepg" do
       verified: "$wrong_homebrew_cask_verified"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -4097,10 +4097,10 @@ cask "lithepg" do
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -4123,7 +4123,7 @@ cask "lithepg" do
   homepage "$wrong_homebrew_cask_homepage"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -4144,7 +4144,7 @@ cask "lithepg" do
   desc "Lean PostgreSQL client with local-first AI"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -4164,10 +4164,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "$wrong_homebrew_cask_bundle_id"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -4186,9 +4186,9 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -4207,10 +4207,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -4228,10 +4228,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -4249,10 +4249,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -4272,10 +4272,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "$wrong_homebrew_cask_app"
 
@@ -4294,10 +4294,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   zap trash: [
     "~/Library/Application Support/LithePG",
@@ -4314,7 +4314,7 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
   depends_on macos: ">= :ventura"
@@ -4336,7 +4336,7 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
   app "LithePG.app"
@@ -4356,10 +4356,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -4378,10 +4378,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 end
@@ -4395,10 +4395,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -4417,10 +4417,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -4439,10 +4439,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
@@ -4460,10 +4460,10 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
   uninstall quit: "dev.omarpr.lithepg"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 

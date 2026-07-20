@@ -2,23 +2,13 @@
 
 set -euo pipefail
 
-# ---------------------------------------------------------------------------
-# EDIT THIS BLOCK ONCE BEFORE RUNNING A PUBLIC RELEASE.
-#
-# These values are identifiers and release approvals, not passwords. Keep Apple
-# credentials in Keychain via `xcrun notarytool store-credentials`; never put an
-# Apple password, app-specific password, private key, or GitHub token here.
-# Existing environment variables override these defaults.
-# ---------------------------------------------------------------------------
-export LITHEPG_CODESIGN_IDENTITY="${LITHEPG_CODESIGN_IDENTITY:-D15E093978846F53B92A40E54F2E3D24F3D94430}"
-export LITHEPG_NOTARY_PROFILE="${LITHEPG_NOTARY_PROFILE:-lithepg-notary}"
-export LITHEPG_SECURITY_CONTACT="${LITHEPG_SECURITY_CONTACT:-https://github.com/omarpr/lithepg/security/advisories/new}"
+# Publish an explicitly ad-hoc-signed preview through the project-owned tap.
+# This is not a substitute for the Developer ID + notarization release path.
 export LITHEPG_HOMEBREW_TAP="${LITHEPG_HOMEBREW_TAP:-omarpr/tap}"
 export LITHEPG_GITHUB_REPOSITORY="${LITHEPG_GITHUB_REPOSITORY:-omarpr/lithepg}"
 export LITHEPG_RELEASE_BRANCH="${LITHEPG_RELEASE_BRANCH:-main}"
-export LITHEPG_GITHUB_ACTIONS_READY="${LITHEPG_GITHUB_ACTIONS_READY:-true}"
-export LITHEPG_RELEASE_COPY_APPROVED="${LITHEPG_RELEASE_COPY_APPROVED:-true}"
-export LITHEPG_PUBLICATION_APPROVED="${LITHEPG_PUBLICATION_APPROVED:-true}"
+export LITHEPG_CASK_PREVIEW_NUMBER="${LITHEPG_CASK_PREVIEW_NUMBER:-1}"
+export LITHEPG_CASK_PREVIEW_APPROVED="${LITHEPG_CASK_PREVIEW_APPROVED:-true}"
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 
 DEFAULT_VERSION="1.0.1"
@@ -29,19 +19,20 @@ ZIP_PATH="$ROOT_DIR/dist/LithePG.app.zip"
 
 usage() {
   /bin/cat <<'USAGE'
-Usage: ./script/release.sh
+Usage: ./script/release_cask_preview.sh
 
-Prompt once for a stable SemVer version, then run the complete LithePG public
-release workflow: test, package, sign, notarize, zip, validate, commit, tag,
-publish a GitHub release, and update the configured Homebrew tap.
+Prompt once for a stable base SemVer, then publish an explicitly unnotarized
+v<version>-preview.<number> GitHub prerelease and update the project-owned
+Homebrew tap. The app is forced to use ad-hoc signing, and the tap cask warns
+users that macOS requires manual approval in Privacy & Security.
 
-Edit the configuration block at the top of this script before the first run.
-The script intentionally has no unsigned public-release mode.
+This helper never uses an Apple signing identity or a notary profile. Use
+script/release.sh for a trusted production release.
 USAGE
 }
 
 fail() {
-  /usr/bin/printf 'release failed: %s\n' "$1" >&2
+  /usr/bin/printf 'cask preview release failed: %s\n' "$1" >&2
   exit 1
 }
 
@@ -59,12 +50,7 @@ is_approved() {
 require_value() {
   local name="$1"
   local value="${!name:-}"
-  [[ -n "$value" && "$value" != *CHANGE_ME* ]] || fail "configure $name in script/release.sh"
-}
-
-require_approval() {
-  local name="$1"
-  is_approved "${!name:-}" || fail "set $name=approved in script/release.sh after reviewing that gate"
+  [[ -n "$value" && "$value" != *CHANGE_ME* ]] || fail "configure $name in script/release_cask_preview.sh"
 }
 
 require_command() {
@@ -118,29 +104,56 @@ update_cask() {
   ' "$source" "$destination" "$version" "$sha"
 }
 
+add_preview_caveat() {
+  local source="$1"
+  local destination="$2"
+
+  /usr/bin/perl -0 -e '
+    use strict;
+    use warnings;
+    my ($source, $destination) = @ARGV;
+    open my $input, "<", $source or die "could not read prepared cask\n";
+    local $/;
+    my $contents = <$input>;
+    close $input or die "could not close prepared cask\n";
+    die "preview caveat already exists\n" if $contents =~ /This preview build uses ad-hoc signing/;
+    my $block = <<"CAVEAT";
+  caveats <<~EOS
+    This preview build uses ad-hoc signing and is not notarized by Apple.
+    After the first blocked launch, open:
+      System Settings -> Privacy & Security -> Open Anyway
+  EOS
+CAVEAT
+    my $end_count = ($contents =~ s/\nend\s*\z/\n\n$block\nend\n/);
+    die "expected one final cask end\n" unless $end_count == 1;
+    open my $output, ">", $destination or die "could not write tap cask\n";
+    print {$output} $contents or die "could not write tap cask\n";
+    close $output or die "could not close tap cask\n";
+  ' "$source" "$destination"
+}
+
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   usage
   exit 0
 fi
 [[ "$#" -eq 0 ]] || { usage >&2; fail "this script takes no arguments; enter the version at the prompt"; }
 
-/usr/bin/printf 'Release version [%s]: ' "$DEFAULT_VERSION"
+/usr/bin/printf 'Cask preview base version [%s]: ' "$DEFAULT_VERSION"
 IFS= read -r VERSION
 VERSION="${VERSION:-$DEFAULT_VERSION}"
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "version must use stable SemVer major.minor.patch"
-TAG="v$VERSION"
+[[ "$LITHEPG_CASK_PREVIEW_NUMBER" =~ ^[1-9][0-9]*$ ]] || fail "LITHEPG_CASK_PREVIEW_NUMBER must be a positive integer"
+is_approved "$LITHEPG_CASK_PREVIEW_APPROVED" || \
+  fail "set LITHEPG_CASK_PREVIEW_APPROVED=approved after accepting the Gatekeeper limitation"
 
-require_value LITHEPG_CODESIGN_IDENTITY
-require_value LITHEPG_NOTARY_PROFILE
-require_value LITHEPG_SECURITY_CONTACT
+CASK_VERSION="$VERSION-preview.$LITHEPG_CASK_PREVIEW_NUMBER"
+TAG="v$CASK_VERSION"
+
 require_value LITHEPG_HOMEBREW_TAP
 require_value LITHEPG_GITHUB_REPOSITORY
 require_value LITHEPG_RELEASE_BRANCH
-require_approval LITHEPG_GITHUB_ACTIONS_READY
-require_approval LITHEPG_RELEASE_COPY_APPROVED
-require_approval LITHEPG_PUBLICATION_APPROVED
 
-for required_command in git swift gh brew xcrun codesign ditto shasum ruby; do
+for required_command in git swift gh brew codesign shasum ruby; do
   require_command "$required_command"
 done
 
@@ -167,6 +180,7 @@ case "$REMOTE_TAG_STATUS" in
     fail "could not verify whether remote tag exists: $TAG"
     ;;
 esac
+
 gh auth status >/dev/null 2>&1 || fail "GitHub CLI is not authenticated"
 if gh release view "$TAG" --repo "$LITHEPG_GITHUB_REPOSITORY" >/dev/null 2>&1; then
   fail "GitHub release already exists: $TAG"
@@ -187,83 +201,67 @@ if [[ -n "$TAP_STATUS" ]]; then
       && ! is_lithepg_placeholder_cask "$TAP_DIR/Casks/lithepg.rb"; }; then
     fail "Homebrew tap has changes other than the recognized draft Casks/lithepg.rb"
   fi
-  /usr/bin/printf 'Homebrew tap contains the recognized draft cask; it will be finalized during this release.\n'
+  /usr/bin/printf 'Homebrew tap contains the recognized draft cask; it will be finalized during this preview release.\n'
 fi
 git -C "$TAP_DIR" remote get-url origin >/dev/null 2>&1 || fail "Homebrew tap has no origin remote"
 
-TEMP_DIR="$(/usr/bin/mktemp -d "${TMPDIR:-/tmp}/lithepg-release.XXXXXX")"
+TEMP_DIR="$(/usr/bin/mktemp -d "${TMPDIR:-/tmp}/lithepg-cask-preview.XXXXXX")"
 cleanup() {
   [[ -n "${TEMP_DIR:-}" && -d "$TEMP_DIR" ]] && /bin/rm -rf -- "$TEMP_DIR"
 }
 trap cleanup EXIT
 PREPARED_CASK="$TEMP_DIR/lithepg.rb"
-RELEASE_COPY="$TEMP_DIR/release-notes.md"
+TAP_CASK="$TEMP_DIR/lithepg-tap.rb"
 DOWNLOADED_ZIP="$TEMP_DIR/download/LithePG.app.zip"
 
-/usr/bin/printf '\n[1/9] Running Swift tests…\n'
+/usr/bin/printf '\n[1/7] Running Swift tests…\n'
 run_at_root /usr/bin/env DEVELOPER_DIR="$DEVELOPER_DIR" swift test
 
-/usr/bin/printf '\n[2/9] Building and verifying LithePG %s…\n' "$VERSION"
+/usr/bin/printf '\n[2/7] Building ad-hoc-signed LithePG %s…\n' "$VERSION"
 run_at_root /usr/bin/env \
+  -u LITHEPG_NOTARY_PROFILE \
   DEVELOPER_DIR="$DEVELOPER_DIR" \
+  LITHEPG_CODESIGN_IDENTITY=- \
+  LITHEPG_FORCE_ADHOC_CODESIGN=1 \
   LITHEPG_MARKETING_VERSION="$VERSION" \
   ./script/build_and_run.sh --package
 run_at_root /usr/bin/env \
   LITHEPG_EXPECTED_MARKETING_VERSION="$VERSION" \
   ./script/package_verify.sh "$APP_PATH"
+SIGNATURE_DETAILS="$(/usr/bin/codesign -d --verbose=4 "$APP_PATH" 2>&1)"
+[[ "$SIGNATURE_DETAILS" == *"Signature=adhoc"* ]] || fail "packaged app is not ad-hoc signed"
 
-/usr/bin/printf '\n[3/9] Signing, notarizing, and stapling…\n'
-run_at_root /usr/bin/env \
-  LITHEPG_CODESIGN_IDENTITY="$LITHEPG_CODESIGN_IDENTITY" \
-  LITHEPG_NOTARY_PROFILE="$LITHEPG_NOTARY_PROFILE" \
-  LITHEPG_NOTARY_ZIP_OVERWRITE=approved \
-  ./script/sign_and_notarize.sh "$APP_PATH"
-
-/usr/bin/printf '\n[4/9] Creating the public release archive…\n'
+/usr/bin/printf '\n[3/7] Creating and hashing the preview archive…\n'
 run_at_root /usr/bin/env \
   LITHEPG_RELEASE_ZIP_OVERWRITE=approved \
   ./script/create_release_zip.sh "$APP_PATH" "$ZIP_PATH"
 ZIP_SHA="$(/usr/bin/shasum -a 256 "$ZIP_PATH")"
 ZIP_SHA="${ZIP_SHA%%[[:space:]]*}"
 [[ "$ZIP_SHA" =~ ^[0-9a-f]{64}$ ]] || fail "could not compute release archive SHA-256"
+update_cask "$CASK_PATH" "$PREPARED_CASK" "$CASK_VERSION" "$ZIP_SHA"
+add_preview_caveat "$PREPARED_CASK" "$TAP_CASK"
+/usr/bin/ruby -c "$PREPARED_CASK" >/dev/null
+/usr/bin/ruby -c "$TAP_CASK" >/dev/null
 
-update_cask "$CASK_PATH" "$PREPARED_CASK" "$VERSION" "$ZIP_SHA"
-/usr/bin/printf '# LithePG %s\n\nSHA-256: `%s`\n' "$TAG" "$ZIP_SHA" >"$RELEASE_COPY"
-
-/usr/bin/printf '\n[5/9] Running the publication gate…\n'
-run_at_root /usr/bin/env \
-  LITHEPG_RELEASE_COPY_PATH="$RELEASE_COPY" \
-  LITHEPG_HOMEBREW_CASK_PATH="$PREPARED_CASK" \
-  LITHEPG_RELEASE_ZIP_PATH="$ZIP_PATH" \
-  LITHEPG_RELEASE_ZIP_SHA256="$ZIP_SHA" \
-  LITHEPG_CODESIGN_IDENTITY="$LITHEPG_CODESIGN_IDENTITY" \
-  LITHEPG_NOTARY_PROFILE="$LITHEPG_NOTARY_PROFILE" \
-  LITHEPG_SECURITY_CONTACT="$LITHEPG_SECURITY_CONTACT" \
-  LITHEPG_HOMEBREW_TAP="$LITHEPG_HOMEBREW_TAP" \
-  LITHEPG_GITHUB_ACTIONS_READY="$LITHEPG_GITHUB_ACTIONS_READY" \
-  LITHEPG_RELEASE_COPY_APPROVED="$LITHEPG_RELEASE_COPY_APPROVED" \
-  LITHEPG_PUBLICATION_APPROVED="$LITHEPG_PUBLICATION_APPROVED" \
-  ./script/v10_release_gate.sh --version "$VERSION" --check-remote
-
-/usr/bin/printf '\n[6/9] Creating the release commit and tag…\n'
+/usr/bin/printf '\n[4/7] Creating the preview commit and tag…\n'
 /bin/cp "$PREPARED_CASK" "$CASK_PATH"
 git -C "$ROOT_DIR" add -- packaging/homebrew/lithepg.rb
 git -C "$ROOT_DIR" diff --cached --quiet && fail "the prepared cask did not change"
 git -C "$ROOT_DIR" commit -m "chore(release): prepare $TAG"
 git -C "$ROOT_DIR" tag -a "$TAG" -m "LithePG $TAG"
-
-/usr/bin/printf '\n[7/9] Pushing and creating the GitHub release…\n'
 git -C "$ROOT_DIR" push --atomic origin "$LITHEPG_RELEASE_BRANCH" "$TAG"
-gh release create "$TAG" "$ZIP_PATH#LithePG for macOS" \
+
+/usr/bin/printf '\n[5/7] Creating and verifying the GitHub prerelease…\n'
+gh release create "$TAG" "$ZIP_PATH#LithePG for macOS (unnotarized preview)" \
   --repo "$LITHEPG_GITHUB_REPOSITORY" \
   --verify-tag \
   --draft \
+  --prerelease \
+  --latest=false \
   --title "LithePG $TAG" \
   --generate-notes \
-  --notes "SHA-256: \`$ZIP_SHA\`" \
-  --fail-on-no-commits
-
-/usr/bin/printf '\n[8/9] Verifying the uploaded artifact and publishing…\n'
+  --notes "Unsigned preview: this artifact is ad-hoc signed and is not notarized by Apple. \
+macOS requires manual approval in System Settings -> Privacy & Security."
 /bin/mkdir -p "$(/usr/bin/dirname "$DOWNLOADED_ZIP")"
 gh release download "$TAG" \
   --repo "$LITHEPG_GITHUB_REPOSITORY" \
@@ -271,21 +269,26 @@ gh release download "$TAG" \
   --dir "$(/usr/bin/dirname "$DOWNLOADED_ZIP")"
 DOWNLOADED_SHA="$(/usr/bin/shasum -a 256 "$DOWNLOADED_ZIP")"
 DOWNLOADED_SHA="${DOWNLOADED_SHA%%[[:space:]]*}"
-[[ "$DOWNLOADED_SHA" == "$ZIP_SHA" ]] || fail "uploaded release artifact SHA-256 does not match"
-gh release edit "$TAG" --repo "$LITHEPG_GITHUB_REPOSITORY" --draft=false --latest
+[[ "$DOWNLOADED_SHA" == "$ZIP_SHA" ]] || fail "uploaded preview artifact SHA-256 does not match"
+gh release edit "$TAG" \
+  --repo "$LITHEPG_GITHUB_REPOSITORY" \
+  --draft=false \
+  --prerelease \
+  --latest=false
 
-/usr/bin/printf '\n[9/9] Updating the Homebrew tap…\n'
+/usr/bin/printf '\n[6/7] Validating and updating the Homebrew tap…\n'
 /bin/mkdir -p "$TAP_DIR/Casks"
-/bin/cp "$CASK_PATH" "$TAP_DIR/Casks/lithepg.rb"
+/bin/cp "$TAP_CASK" "$TAP_DIR/Casks/lithepg.rb"
 (
   cd "$TAP_DIR"
   brew style --cask Casks/lithepg.rb
-  brew audit --new --strict --cask Casks/lithepg.rb
+  brew audit --cask --skip-style Casks/lithepg.rb
 )
 git -C "$TAP_DIR" add -- Casks/lithepg.rb
 git -C "$TAP_DIR" diff --cached --quiet && fail "the Homebrew tap cask did not change"
-git -C "$TAP_DIR" commit -m "lithepg $VERSION"
+git -C "$TAP_DIR" commit -m "lithepg $CASK_VERSION"
 git -C "$TAP_DIR" push origin HEAD
 
-/usr/bin/printf '\nLithePG %s is released.\n' "$TAG"
+/usr/bin/printf '\n[7/7] Cask preview published.\n'
 /usr/bin/printf 'Install with: brew install --cask %s/lithepg\n' "$LITHEPG_HOMEBREW_TAP"
+/usr/bin/printf 'This preview requires manual Gatekeeper approval after its first launch.\n'

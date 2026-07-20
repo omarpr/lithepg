@@ -60,6 +60,30 @@ The verifier checks:
 
 An unsigned/ad-hoc-signed local bundle is only a development artifact. Do not publish it as a public v1.0.0 release.
 
+## Unnotarized Homebrew cask preview
+
+When Apple Developer Program credentials are not yet available, a separate
+preview helper can publish an explicitly ad-hoc-signed prerelease through the
+project-owned Homebrew tap:
+
+```sh
+./script/release_cask_preview.sh
+```
+
+The helper prompts once for a stable base version such as `1.0.1` and publishes
+`v1.0.1-preview.1`. Set `LITHEPG_CASK_PREVIEW_NUMBER` to a positive integer to
+publish a later preview of the same base version. It runs the Swift tests,
+forces and verifies ad-hoc signing, creates and verifies the GitHub prerelease
+artifact, and updates `omarpr/tap`. The external tap cask includes a visible
+warning directing users to manually approve the first launch in **System
+Settings → Privacy & Security**.
+
+This preview path intentionally skips Developer ID signing, notarization, and
+the official Homebrew new-cask audit. It cannot be submitted to
+`homebrew/cask`, must never be described as Gatekeeper-trusted, and does not
+replace the production `script/release.sh` workflow. Publish the eventual
+notarized build under the stable tag rather than replacing preview bytes.
+
 ## Signed + notarized release path
 
 `script/sign_and_notarize.sh` is the credential-gated wrapper for public macOS distribution. It expects a package produced by `script/build_and_run.sh --package` and reads configuration from environment variables only:
@@ -124,8 +148,8 @@ Use that approved local digest for `LITHEPG_RELEASE_ZIP_SHA256`, the final GitHu
 1. Confirm the prepared `version "1.0.0"` matches the release version and tag.
 2. Replace `sha256 "REPLACE_WITH_SHA256"` with the approved local `shasum -a 256` digest.
 3. Confirm the `url` still matches the GitHub Release artifact path.
-4. Confirm the cask token and public metadata keep `cask "lithepg" do`, `name "LithePG"`, `desc "Lean PostgreSQL client with local-first AI"`, and `homepage "https://www.lithepg.app"`.
-5. Confirm the cask supports the same public macOS floor as the app bundle with `depends_on macos: ">= :sonoma"`.
+4. Confirm the cask token and public metadata keep `cask "lithepg" do`, `name "LithePG"`, `desc "Lean PostgreSQL client with local-first AI"`, and `homepage "https://www.lithepg.app/"`.
+5. Confirm the cask supports the same public macOS floor as the app bundle with `depends_on macos: :sonoma`.
 6. Confirm the valid uninstall quit gate remains `uninstall quit: "dev.omarpr.lithepg"`.
 7. Confirm the cask installs `app "LithePG.app"`.
 8. Confirm the `zap trash:` stanza includes both local cleanup paths: `~/Library/Application Support/LithePG` and `~/Library/Preferences/dev.omarpr.lithepg.plist`.

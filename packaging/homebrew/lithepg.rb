@@ -1,8 +1,6 @@
-# Draft Homebrew cask template for the LithePG main repository.
-#
-# Do not publish this file to an external Homebrew tap until Omar approves the
-# tap target. Replace the version and sha256 placeholders with values from the
-# final signed/notarized GitHub Release artifact before running tap checks.
+# Homebrew cask template for LithePG releases. The production release helper
+# publishes a signed and notarized artifact. The separate preview helper adds a
+# visible unsigned-build warning to the copy published in the external tap.
 
 cask "lithepg" do
   version "1.0.0"
@@ -12,9 +10,9 @@ cask "lithepg" do
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
-  homepage "https://www.lithepg.app"
+  homepage "https://www.lithepg.app/"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "LithePG.app"
 
