@@ -29,6 +29,7 @@ public struct LithePGApp: App {
             RootView(state: state)
         }
         .commands {
+            AboutCommand()
             CommandMenu("Appearance") {
                 Picker("Appearance", selection: Binding(
                     get: { state.appearancePreference },
@@ -41,6 +42,11 @@ public struct LithePGApp: App {
                 .pickerStyle(.inline)
             }
         }
+
+        Window("About LithePG", id: AboutPresentation.windowID) {
+            AboutView()
+        }
+        .windowResizability(.contentSize)
     }
 }
 
