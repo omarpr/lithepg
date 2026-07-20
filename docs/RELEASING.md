@@ -132,6 +132,7 @@ https://github.com/omarpr/lithepg/releases/download/v<VERSION>/LithePG.app.zip
 Use `LithePG.app.zip` as the public zip name for the release attachment. If the notarization wrapper produced an intermediate zip before stapling, rebuild the public zip from the signed, notarized, stapled, and validated `dist/LithePG.app` before upload with the safe local helper:
 
 ```sh
+LITHEPG_EXPECTED_MARKETING_VERSION=<version> \
 ./script/create_release_zip.sh dist/LithePG.app dist/LithePG.app.zip
 ```
 

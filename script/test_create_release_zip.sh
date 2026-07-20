@@ -120,10 +120,14 @@ if [[ -n "${FAKE_GATE_LOG:-}" ]]; then
   fi
 fi
 
-if [[ "$*" != "--artifact-only" ]]; then
-  printf 'fake artifact gate expected --artifact-only\n' >&2
-  exit 44
-fi
+case "$*" in
+  "--artifact-only"|"--version 1.0.1 --artifact-only")
+    ;;
+  *)
+    printf 'fake artifact gate expected artifact-only arguments\n' >&2
+    exit 44
+    ;;
+esac
 if [[ ! "${LITHEPG_RELEASE_ZIP_SHA256:-}" =~ ^[0-9a-f]{64}$ ]]; then
   printf 'fake artifact gate expected 64-hex SHA\n' >&2
   exit 45
@@ -171,6 +175,7 @@ run_helper_from_cwd_capture() {
 helper_contents="$(<"$HELPER")"
 assert_contains "$helper_contents" "/usr/bin/ditto -c -k --keepParent"
 assert_contains "$helper_contents" "/usr/bin/shasum -a 256"
+assert_contains "$helper_contents" 'artifact_gate_args=(--version "$LITHEPG_EXPECTED_MARKETING_VERSION" --artifact-only)'
 assert_contains "$helper_contents" 'mktemp -d "${output_parent%/}/.release-zip.XXXXXX"'
 assert_contains "$helper_contents" '/usr/bin/ditto -c -k --keepParent --norsrc --noextattr --noqtn --noacl "$APP_BUNDLE_ABS" "$temp_zip"'
 assert_contains "$helper_contents" 'rename($ARGV[0], $ARGV[1])'
@@ -1211,6 +1216,7 @@ success_gate_log="$success_fixture/artifact-gate.log"
 if ! FAKE_VERIFY_LOG="$verify_log" \
   FAKE_GATE_LOG="$success_gate_log" \
   FAKE_GATE_FINAL_ZIP_PATH="$success_fixture/artifacts/public/LithePG.app.zip" \
+  LITHEPG_EXPECTED_MARKETING_VERSION="1.0.1" \
   LITHEPG_CODESIGN_IDENTITY="$sensitive_identity" \
   LITHEPG_NOTARY_PROFILE="$sensitive_notary" \
   LITHEPG_RELEASE_MARKER="$sensitive_release_marker" \
@@ -1229,7 +1235,7 @@ assert_zip_contains_app_wrapper "$success_fixture/artifacts/public/LithePG.app.z
 assert_zip_has_no_appledouble_metadata "$success_fixture/artifacts/public/LithePG.app.zip"
 assert_file_contains "$verify_log" "package_verify dist/LithePG.app"
 success_gate_text="$(<"$success_gate_log")"
-assert_contains "$success_gate_text" "args=--artifact-only"
+assert_contains "$success_gate_text" "args=--version 1.0.1 --artifact-only"
 assert_contains "$success_gate_text" "zip_exists=1"
 assert_contains "$success_gate_text" "final_zip_exists=0"
 success_gate_path="$(first_log_value "$success_gate_text" "zip_path")"

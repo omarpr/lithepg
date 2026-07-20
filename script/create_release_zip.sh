@@ -66,6 +66,8 @@ Arguments:
 
 Set LITHEPG_RELEASE_ZIP_OVERWRITE=1 (also true/yes/approved) to replace an
 existing output zip.
+Set LITHEPG_EXPECTED_MARKETING_VERSION to the app's stable SemVer when it is
+not 1.0.0 so the artifact gate validates the intended release metadata.
 USAGE
 }
 
@@ -266,6 +268,13 @@ if ! zip_size_bytes="$(/usr/bin/stat -f%z "$temp_zip" 2>/dev/null)"; then
 fi
 [[ "$zip_size_bytes" =~ ^[0-9]+$ ]] || fail "computed byte size for output zip was empty or non-numeric"
 
+artifact_gate_args=(--artifact-only)
+if [[ -n "${LITHEPG_EXPECTED_MARKETING_VERSION:-}" ]]; then
+  [[ "$LITHEPG_EXPECTED_MARKETING_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || \
+    fail "LITHEPG_EXPECTED_MARKETING_VERSION must use stable SemVer major.minor.patch"
+  artifact_gate_args=(--version "$LITHEPG_EXPECTED_MARKETING_VERSION" --artifact-only)
+fi
+
 if ! LITHEPG_RELEASE_ZIP_PATH="$temp_zip" \
   LITHEPG_RELEASE_ZIP_SHA256="$sha_digest" \
   /usr/bin/perl -e '
@@ -275,7 +284,7 @@ my ($root_dir, @cmd) = @ARGV;
 chdir $root_dir or exit 126;
 exec @cmd;
 exit 127;
-' "$ROOT_DIR" "$ROOT_DIR/script/v10_release_gate.sh" --artifact-only >/dev/null 2>&1; then
+' "$ROOT_DIR" "$ROOT_DIR/script/v10_release_gate.sh" "${artifact_gate_args[@]}" >/dev/null 2>&1; then
   fail "release artifact validation failed"
 fi
 

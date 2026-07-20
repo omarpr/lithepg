@@ -233,6 +233,7 @@ SIGNATURE_DETAILS="$(/usr/bin/codesign -d --verbose=4 "$APP_PATH" 2>&1)"
 
 /usr/bin/printf '\n[3/7] Creating and hashing the preview archive…\n'
 run_at_root /usr/bin/env \
+  LITHEPG_EXPECTED_MARKETING_VERSION="$VERSION" \
   LITHEPG_RELEASE_ZIP_OVERWRITE=approved \
   ./script/create_release_zip.sh "$APP_PATH" "$ZIP_PATH"
 ZIP_SHA="$(/usr/bin/shasum -a 256 "$ZIP_PATH")"

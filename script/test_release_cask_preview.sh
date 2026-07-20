@@ -45,6 +45,7 @@ assert_contains "$preview_number_output" "LITHEPG_CASK_PREVIEW_NUMBER must be a 
 script_contents="$(<"$HELPER")"
 assert_contains "$script_contents" 'LITHEPG_CODESIGN_IDENTITY=-'
 assert_contains "$script_contents" 'LITHEPG_FORCE_ADHOC_CODESIGN=1'
+assert_contains "$script_contents" 'LITHEPG_EXPECTED_MARKETING_VERSION="$VERSION"'
 assert_contains "$script_contents" 'Signature=adhoc'
 assert_contains "$script_contents" '--prerelease'
 assert_contains "$script_contents" '--latest=false'

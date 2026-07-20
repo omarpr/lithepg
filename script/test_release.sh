@@ -50,6 +50,7 @@ assert_contains "$config_output" "Release version [1.0.1]:"
 
 script_contents="$(<"$HELPER")"
 assert_contains "$script_contents" 'LITHEPG_MARKETING_VERSION="$VERSION"'
+assert_contains "$script_contents" 'LITHEPG_EXPECTED_MARKETING_VERSION="$VERSION"'
 assert_contains "$script_contents" './script/sign_and_notarize.sh "$APP_PATH"'
 assert_contains "$script_contents" './script/v10_release_gate.sh --version "$VERSION" --check-remote'
 assert_contains "$script_contents" 'git -C "$ROOT_DIR" push --atomic origin'
