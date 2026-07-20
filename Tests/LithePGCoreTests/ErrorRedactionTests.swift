@@ -61,4 +61,36 @@ struct ErrorRedactionTests {
         #expect(!out.contains("leakage"))
         #expect(out.contains("[redacted]"))
     }
+
+    @Test("formats only safe actionable PostgreSQL server fields")
+    func formatsPostgresServerMessage() {
+        let output = ErrorRedaction.postgresServerMessage(
+            message: "for SELECT DISTINCT, ORDER BY expressions must appear in select list",
+            sqlState: "42P10",
+            position: "151"
+        )
+
+        #expect(
+            output
+                == "for SELECT DISTINCT, ORDER BY expressions must appear in select list · SQLSTATE 42P10 · Position 151"
+        )
+    }
+
+    @Test("PostgreSQL server formatting tolerates missing optional fields")
+    func formatsSparsePostgresServerMessage() {
+        #expect(
+            ErrorRedaction.postgresServerMessage(
+                message: "syntax error",
+                sqlState: nil,
+                position: nil
+            ) == "syntax error"
+        )
+        #expect(
+            ErrorRedaction.postgresServerMessage(
+                message: "  ",
+                sqlState: "42P10",
+                position: nil
+            ) == "PostgreSQL rejected the request. · SQLSTATE 42P10"
+        )
+    }
 }
