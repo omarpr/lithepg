@@ -7,7 +7,7 @@
 
 ## 2. Persistence Layer
 - **Local JSON metadata:** Saved connections and opt-in query history are stored under Application Support with restrictive directory/file permissions and file-protection write options.
-- **Keychain:** Saved passwords and saved-connection integrity keys live in the macOS Keychain. JSON metadata stores references and HMAC tags, not passwords. Navigator listing stays Keychain-free; integrity and credential reads are deferred until an action uses one connection, then cached for that app session.
+- **Keychain:** Saved passwords and saved-connection integrity keys live in the macOS Keychain. Passwordless connections store no password reference. JSON metadata stores references and HMAC tags, not passwords. Navigator listing stays Keychain-free; integrity and credential reads are deferred until an action uses one connection, then cached for that app session.
 - **UserDefaults:** Appearance preference uses standard app defaults.
 - **Rationale:** The current app keeps persistence simple, testable, and dependency-free while preserving credential separation. SwiftData remains a possible future migration only if it earns its complexity.
 

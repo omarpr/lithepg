@@ -336,11 +336,7 @@ public final class AppState {
       guard let metadata = try await savedConnectionStore.validatedConnection(id: id) else {
         throw PersistenceError.savedConnectionNotFound
       }
-      guard let secretReference = metadata.secretReference,
-        let password = try await credentialStore.loadSecret(for: secretReference)
-      else {
-        throw PersistenceError.missingSecret
-      }
+      let password = try await savedPassword(for: metadata)
       persistenceError = nil
       return password
     } catch {
@@ -381,11 +377,7 @@ public final class AppState {
       guard let metadata = try await savedConnectionStore.validatedConnection(id: id) else {
         throw PersistenceError.savedConnectionNotFound
       }
-      guard let secretReference = metadata.secretReference,
-        let password = try await credentialStore.loadSecret(for: secretReference)
-      else {
-        throw PersistenceError.missingSecret
-      }
+      let password = try await savedPassword(for: metadata)
       let config = try Self.connectionConfig(from: metadata, password: password)
       await open(
         config: config,
@@ -872,14 +864,28 @@ public final class AppState {
   ) async -> SavedConnectionMetadata? {
     do {
       let id = existing?.id ?? UUID()
-      let secretReference = existing?.secretReference ?? Self.secretReference(for: id)
+      let previousSecretReference = existing?.secretReference
       let previousSecret: String?
-      if existing != nil {
-        previousSecret = try await credentialStore.loadSecret(for: secretReference)
+      if let previousSecretReference {
+        previousSecret = try await credentialStore.loadSecret(for: previousSecretReference)
       } else {
         previousSecret = nil
       }
-      try await credentialStore.saveSecret(config.password, for: secretReference)
+
+      let secretReference: String?
+      let mutatedSecretReference: String?
+      if config.password.isEmpty {
+        secretReference = nil
+        mutatedSecretReference = previousSecretReference
+        if let previousSecretReference {
+          try await credentialStore.deleteSecret(for: previousSecretReference)
+        }
+      } else {
+        let reference = previousSecretReference ?? Self.secretReference(for: id)
+        secretReference = reference
+        mutatedSecretReference = reference
+        try await credentialStore.saveSecret(config.password, for: reference)
+      }
 
       let metadata = SavedConnectionMetadata(
         id: id,
@@ -901,10 +907,12 @@ public final class AppState {
       do {
         try await savedConnectionStore.save(metadata)
       } catch {
-        if let previousSecret {
-          try? await credentialStore.saveSecret(previousSecret, for: secretReference)
-        } else {
-          try? await credentialStore.deleteSecret(for: secretReference)
+        if let mutatedSecretReference {
+          if mutatedSecretReference == previousSecretReference, let previousSecret {
+            try? await credentialStore.saveSecret(previousSecret, for: mutatedSecretReference)
+          } else {
+            try? await credentialStore.deleteSecret(for: mutatedSecretReference)
+          }
         }
         throw error
       }
@@ -1056,6 +1064,17 @@ public final class AppState {
     )
   }
 
+  private func savedPassword(for metadata: SavedConnectionMetadata) async throws -> String {
+    guard let secretReference = metadata.secretReference else {
+      return ""
+    }
+    // Older builds created a Keychain reference even for an empty password. If
+    // that zero-length item is absent (for example after a signing-identity
+    // migration), preserve passwordless authentication instead of blocking the
+    // connection before PostgreSQL gets a chance to authenticate it.
+    return try await credentialStore.loadSecret(for: secretReference) ?? ""
+  }
+
   private static func secretReference(for id: SavedConnectionMetadata.ID) -> String {
     "lithepg.connection.\(id.uuidString.lowercased()).password"
   }
@@ -1147,14 +1166,11 @@ public final class AppState {
   }
 
   private enum PersistenceError: Error, CustomStringConvertible {
-    case missingSecret
     case savedConnectionNotFound
     case unsupportedTLSMode(String)
 
     var description: String {
       switch self {
-      case .missingSecret:
-        "Saved connection password is missing from credential storage."
       case .savedConnectionNotFound:
         "Saved connection not found."
       case .unsupportedTLSMode(let label):

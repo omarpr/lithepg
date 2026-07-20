@@ -76,8 +76,14 @@ public struct ConnectionConfig: Sendable, Equatable {
         guard let user = parsed.user?.removingPercentEncoding else {
             throw ParseError.missingComponent("user")
         }
-        guard let password = parsed.password?.removingPercentEncoding else {
-            throw ParseError.missingComponent("password")
+        let password: String
+        if let encodedPassword = parsed.password {
+            guard let decodedPassword = encodedPassword.removingPercentEncoding else {
+                throw ParseError.invalidURL
+            }
+            password = decodedPassword
+        } else {
+            password = ""
         }
         let db = parsed.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         guard !db.isEmpty else { throw ParseError.missingComponent("database") }

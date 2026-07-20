@@ -41,7 +41,7 @@ struct SavedConnectionEditor: View {
         Label("Edit saved connection", systemImage: "pencil.circle.fill")
           .font(.title2.bold())
           .foregroundStyle(.tint)
-        Text("Changes apply the next time you connect. The password remains in Keychain.")
+        Text("Changes apply the next time you connect. Passwords, when used, remain in Keychain.")
           .font(.caption)
           .foregroundStyle(.secondary)
       }

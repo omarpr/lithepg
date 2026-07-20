@@ -427,6 +427,86 @@ struct AppStateTests {
     #expect(s.persistenceError == nil)
   }
 
+  @Test("passwordless saved connections do not require credential storage")
+  func passwordlessSavedConnectionUsesEmptyPassword() async throws {
+    let savedStore = InMemorySavedConnectionStore()
+    let credentialStore = InMemoryCredentialStore()
+    let state = AppState(savedConnectionStore: savedStore, credentialStore: credentialStore)
+
+    let metadata = try #require(
+      await state.saveConnection(
+        name: "Local trust",
+        host: "localhost",
+        port: 5432,
+        database: "postgres",
+        username: "omar",
+        password: "",
+        environment: .development
+      )
+    )
+
+    #expect(metadata.secretReference == nil)
+    #expect(await state.savedConnectionPassword(id: metadata.id) == "")
+    #expect(state.persistenceError == nil)
+  }
+
+  @Test("a legacy empty credential reference falls back to passwordless authentication")
+  func legacyMissingPasswordFallsBackToEmpty() async {
+    let id = UUID()
+    let metadata = SavedConnectionMetadata(
+      id: id,
+      name: "Missing credential",
+      host: "db.example.com",
+      port: 5432,
+      database: "postgres",
+      username: "omar",
+      tlsMode: "verify-full",
+      environment: .development,
+      secretReference: "missing-password"
+    )
+    let state = AppState(
+      savedConnectionStore: InMemorySavedConnectionStore(connections: [metadata]),
+      credentialStore: InMemoryCredentialStore()
+    )
+
+    #expect(await state.savedConnectionPassword(id: id) == "")
+    #expect(state.persistenceError == nil)
+  }
+
+  @Test("clearing a saved password removes its credential reference")
+  func clearingSavedPasswordRemovesCredential() async throws {
+    let savedStore = InMemorySavedConnectionStore()
+    let credentialStore = InMemoryCredentialStore()
+    let state = AppState(savedConnectionStore: savedStore, credentialStore: credentialStore)
+    let original = try #require(
+      await state.saveConnection(
+        name: "Password to trust",
+        host: "localhost",
+        port: 5432,
+        database: "postgres",
+        username: "omar",
+        password: "old-password"
+      )
+    )
+    let oldReference = try #require(original.secretReference)
+
+    let updated = try #require(
+      await state.updateSavedConnection(
+        id: original.id,
+        name: original.name,
+        host: original.host,
+        port: original.port,
+        database: original.database,
+        username: original.username,
+        password: ""
+      )
+    )
+
+    #expect(updated.secretReference == nil)
+    #expect(try await credentialStore.loadSecret(for: oldReference) == nil)
+    #expect(await state.savedConnectionPassword(id: updated.id) == "")
+  }
+
   @Test("saving a connection redacts parse errors")
   func saveConnectionRedactsParseErrors() async throws {
     let s = AppState()

@@ -59,7 +59,7 @@ struct ConnectionNavigator: View {
       }
       Button("Cancel", role: .cancel) { pendingDelete = nil }
     } message: { _ in
-      Text("This removes the local connection and its Keychain password. It does not touch the database.")
+      Text("This removes the local connection and any Keychain password. It does not touch the database.")
     }
     .sheet(item: $editingConnection) { connection in
       SavedConnectionEditor(state: state, connection: connection)

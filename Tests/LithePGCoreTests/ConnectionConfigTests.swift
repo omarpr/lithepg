@@ -41,6 +41,16 @@ struct ConnectionConfigTests {
         #expect(c.tlsMode == .verifyFull)
     }
 
+    @Test("accepts a Postgres URL without a password")
+    func parsesPasswordlessURL() throws {
+        let c = try ConnectionConfig(url: "postgres://alice@localhost/shop")
+
+        #expect(c.username == "alice")
+        #expect(c.password.isEmpty)
+        #expect(c.host == "localhost")
+        #expect(c.database == "shop")
+    }
+
     @Test("keeps loopback URLs cleartext by default")
     func parsesLoopbackURLAsCleartextByDefault() throws {
         let c = try ConnectionConfig(url: "postgres://alice:secret@localhost/shop")
