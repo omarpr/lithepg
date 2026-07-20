@@ -36,6 +36,15 @@ if "pipx install semgrep==1.170.0" not in ci:
 
 codeql = (root / ".github" / "workflows" / "codeql.yml").read_text()
 codeql_sha = "7188fc363630916deb702c7fdcf4e481b751f97a"
+codeql_triggers = codeql.split("permissions:", 1)[0]
+if "workflow_dispatch:" not in codeql_triggers:
+    raise SystemExit("test_ci_security failed: CodeQL must remain manually runnable")
+for automatic_trigger in ("push:", "pull_request:", "public:"):
+    if automatic_trigger in codeql_triggers:
+        raise SystemExit(
+            f"test_ci_security failed: CodeQL is temporarily manual-only but enables `{automatic_trigger}`"
+        )
+
 for action in ("init", "analyze"):
     expected = f"github/codeql-action/{action}@{codeql_sha}"
     if expected not in codeql:
