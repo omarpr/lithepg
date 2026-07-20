@@ -37,6 +37,9 @@ public final class AppState {
   public var savedConnections: [SavedConnectionMetadata] = []
   public var selectedSavedConnectionID: SavedConnectionMetadata.ID?
   public var activeSavedConnection: SavedConnectionMetadata?
+  public var isTestingConnection: Bool = false
+  public var connectionTestMessage: String?
+  public var connectionTestError: String?
   public var neonCLIAvailability: NeonCLIAvailability = .unavailable
   public var isScanningNeon: Bool = false
   public var neonScanMessage: String?
@@ -91,6 +94,7 @@ public final class AppState {
   @ObservationIgnored private let credentialStore: any CredentialStore
   @ObservationIgnored private let queryHistoryStore: any QueryHistoryStore
   @ObservationIgnored private let aiQueryService: any AIQueryService
+  @ObservationIgnored private let connectionTester: any ConnectionTesting
   @ObservationIgnored private let neonScanner: any NeonCLIScanning
   @ObservationIgnored private let appearanceDefaults: UserDefaults
   @ObservationIgnored private var isRestoringAppearancePreference = false
@@ -100,6 +104,7 @@ public final class AppState {
     credentialStore: any CredentialStore = KeychainCredentialStore(),
     queryHistoryStore: any QueryHistoryStore = JSONFileQueryHistoryStore(),
     aiQueryService: any AIQueryService = DeterministicAIQueryService(),
+    connectionTester: any ConnectionTesting = PostgresConnectionTester(),
     neonScanner: any NeonCLIScanning = NeonCLIScanner(),
     appearanceDefaults: UserDefaults = .standard
   ) {
@@ -107,6 +112,7 @@ public final class AppState {
     self.credentialStore = credentialStore
     self.queryHistoryStore = queryHistoryStore
     self.aiQueryService = aiQueryService
+    self.connectionTester = connectionTester
     self.neonScanner = neonScanner
     self.appearanceDefaults = appearanceDefaults
     neonCLIAvailability = neonScanner.availability()
@@ -145,6 +151,32 @@ public final class AppState {
     } catch {
       connectionState = .disconnected
       setError(ErrorRedaction.redactCredentials(in: error))
+    }
+  }
+
+  public func testConnection(
+    url: String, tls: Bool = false, tlsCAPath: String? = nil, sshTarget: String? = nil
+  ) async {
+    await testConnection {
+      try Self.connectionConfig(
+        url: url, tls: tls, tlsCAPath: tlsCAPath, sshTarget: sshTarget)
+    }
+  }
+
+  public func clearConnectionTestResult() {
+    guard !isTestingConnection else { return }
+    connectionTestMessage = nil
+    connectionTestError = nil
+  }
+
+  public func testConnection(
+    host: String, port: Int, database: String, username: String, password: String,
+    tls: Bool = false, tlsCAPath: String? = nil, sshTarget: String? = nil
+  ) async {
+    await testConnection {
+      try Self.connectionConfig(
+        host: host, port: port, database: database, username: username, password: password,
+        tls: tls, tlsCAPath: tlsCAPath, sshTarget: sshTarget)
     }
   }
 
@@ -809,6 +841,23 @@ public final class AppState {
 
   private static func connectionLabel(for config: ConnectionConfig) -> String {
     "\(config.username)@\(config.host):\(config.port)/\(config.database)"
+  }
+
+  private func testConnection(_ makeConfig: () throws -> ConnectionConfig) async {
+    guard !isTestingConnection else { return }
+    isTestingConnection = true
+    connectionTestMessage = nil
+    connectionTestError = nil
+    lastError = nil
+    defer { isTestingConnection = false }
+
+    do {
+      let config = try makeConfig()
+      try await connectionTester.test(config: config)
+      connectionTestMessage = "Connection successful. SELECT 1 completed."
+    } catch {
+      connectionTestError = ErrorRedaction.redactCredentials(in: error)
+    }
   }
 
   private static func connectionIdentity(_ metadata: SavedConnectionMetadata) -> String {

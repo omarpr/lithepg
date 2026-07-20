@@ -238,9 +238,39 @@ struct ConnectSheet: View {
         }
       }
 
+      if let message = state.connectionTestMessage {
+        Section {
+          Label(message, systemImage: "checkmark.circle.fill")
+            .foregroundStyle(.green)
+            .accessibilityIdentifier("connection-test-success")
+        }
+      } else if let error = state.connectionTestError {
+        Section {
+          ErrorBanner(message: error)
+            .accessibilityIdentifier("connection-test-error")
+        }
+      }
+
       Section {
         HStack {
           Spacer()
+          Button {
+            Task { await testConnection() }
+          } label: {
+            if state.isTestingConnection {
+              HStack(spacing: 6) {
+                ProgressView()
+                  .controlSize(.small)
+                Text("Testing")
+              }
+            } else {
+              Text("Test connection")
+            }
+          }
+          .buttonStyle(.bordered)
+          .accessibilityIdentifier("test-connection-button")
+          .disabled(testConnectionDisabled)
+
           Button {
             Task { await connectAndMaybeSave() }
           } label: {
@@ -259,6 +289,9 @@ struct ConnectSheet: View {
     }
     .formStyle(.grouped)
     .frame(width: 560)
+    .onChange(of: testInputSignature) { _, _ in
+      state.clearConnectionTestResult()
+    }
     .task {
       await state.loadSavedConnections()
       state.refreshNeonCLIAvailability()
@@ -298,6 +331,19 @@ struct ConnectSheet: View {
   }
 
   private var connectDisabled: Bool {
+    connectionInputEmpty
+      || state.connectionState == .connecting
+      || state.isTestingConnection
+      || (saveConnection && connectionName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+  }
+
+  private var testConnectionDisabled: Bool {
+    connectionInputEmpty
+      || state.connectionState == .connecting
+      || state.isTestingConnection
+  }
+
+  private var connectionInputEmpty: Bool {
     let inputEmpty: Bool
     if inputMode == .url {
       inputEmpty = effectiveURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -307,8 +353,13 @@ struct ConnectSheet: View {
         || fieldUsername.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     return inputEmpty
-      || state.connectionState == .connecting
-      || (saveConnection && connectionName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+  }
+
+  private var testInputSignature: String {
+    [
+      inputMode.rawValue, effectiveURL, fieldHost, fieldPort, fieldDatabase,
+      fieldUsername, fieldPassword, String(tls), tlsCAPath, String(useSSH), sshTarget,
+    ].joined(separator: "\u{1F}")
   }
 
   private var effectiveURL: String {
@@ -334,6 +385,7 @@ struct ConnectSheet: View {
   }
 
   private func connectAndMaybeSave() async {
+    state.clearConnectionTestResult()
     let tlsCA = tls ? tlsCAPath : nil
     let ssh = useSSH && !tls ? sshTarget : nil
 
@@ -365,6 +417,21 @@ struct ConnectSheet: View {
 
     if let metadata {
       state.activeSavedConnection = metadata
+    }
+  }
+
+  private func testConnection() async {
+    let tlsCA = tls ? tlsCAPath : nil
+    let ssh = useSSH && !tls ? sshTarget : nil
+
+    if inputMode == .url {
+      await state.testConnection(
+        url: effectiveURL, tls: tls, tlsCAPath: tlsCA, sshTarget: ssh)
+    } else {
+      await state.testConnection(
+        host: fieldHost, port: Int(fieldPort) ?? 5432, database: fieldDatabase,
+        username: fieldUsername, password: fieldPassword,
+        tls: tls, tlsCAPath: tlsCA, sshTarget: ssh)
     }
   }
 

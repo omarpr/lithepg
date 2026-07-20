@@ -11,7 +11,7 @@ LithePG is a lean, Mac-native PostgreSQL client with local-first AI. It is pure 
 
 ## What you get
 
-- A native macOS app for connecting to Postgres, writing SQL and viewing results.
+- A native macOS app for testing and opening Postgres connections, writing SQL and viewing results.
 - Saved connections with passwords in the macOS Keychain, never on disk.
 - A left-side connection navigator plus schema sidebar, query tabs and history.
 - Optional Neon CLI scanning imports missing project/branch databases when the user-installed CLI is available; otherwise the action stays disabled.
@@ -27,7 +27,7 @@ LithePG is a lean, Mac-native PostgreSQL client with local-first AI. It is pure 
 
 ## Status
 
-v0.5 is the current tag. The v1.0 code is complete and verified: 245 tests across 38 suites pass locally, connectivity is proven live against local Docker Postgres and real Neon endpoints (direct and pooled), the full git history has been scanned for secrets, and the release executable remains under the 50 MiB cap. What remains for a public v1.0 is distribution, not app code: Apple Developer ID signing and notarization, a final security contact, a Homebrew target and release approval. Receipts live in [`docs/dogfood-log.md`](docs/dogfood-log.md) and [`CHANGELOG.md`](CHANGELOG.md).
+v0.5 is the current tag. The v1.0 code is complete and verified: 248 tests across 39 suites pass locally, connectivity is proven live against local Docker Postgres and real Neon endpoints (direct and pooled), the full git history has been scanned for secrets, and the release executable remains under the 50 MiB cap. What remains for a public v1.0 is distribution, not app code: Apple Developer ID signing and notarization, a final security contact, a Homebrew target and release approval. Receipts live in [`docs/dogfood-log.md`](docs/dogfood-log.md) and [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Install
 

@@ -28,6 +28,7 @@ LithePG is a local macOS client that connects to user-owned PostgreSQL databases
 - Credentials and query results are not written to LithePG-owned JSON files.
 - Release bundles use Hardened Runtime and remain unsandboxed so explicit user-initiated integrations can execute OpenSSH and a user-installed Neon CLI. Public distribution still requires Developer ID signing and notarization.
 - Neon discovery runs only after the user presses Scan. It invokes the installed CLI with JSON output, color disabled and Neon analytics disabled. CLI-generated URLs stay in process memory long enough to split metadata from passwords; passwords are sent to Keychain and are never logged or persisted in JSON.
+- Test connection uses the entered credentials only for a temporary `SELECT 1` probe. It closes the temporary connection immediately, saves no metadata or password and redacts credentials from reported failures.
 
 ## AI & Privacy
 - **All inference is intended to run on-device.** v0.5's first adapter scaffold uses CoreML because it is provided by the macOS SDK and adds no package dependency; MLX remains a future measured option.

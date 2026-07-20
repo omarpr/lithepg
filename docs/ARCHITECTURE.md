@@ -36,6 +36,7 @@ High-level module boundaries and data flow for LithePG. Implementation details l
 ### App Layer
 - SwiftUI views plus `AppState` for the left connection navigator, schema, query, saved-connection, query-history, appearance and Ask-in-English workflow state.
 - `NeonCLIScanner` discovers a user-installed Homebrew CLI, requests machine-readable projects/branches/databases only after a button press and returns connection URLs directly to the credential-separating persistence flow.
+- `PostgresConnectionTester` opens a temporary connector, runs `SELECT 1` and shuts it down without changing workspace connection or persistence state.
 - UI code talks to the driver through `PostgresConnector` and to credentials through persistence protocols; views do not touch Keychain APIs directly.
 - Presentation helpers stay headless-testable where practical, for example results pagination/copy/export formatting.
 

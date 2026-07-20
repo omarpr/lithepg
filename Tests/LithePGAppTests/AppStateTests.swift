@@ -779,3 +779,74 @@ struct AppStateTabRenameTests {
     #expect(s.queryTabs.map(\.title) == before)
   }
 }
+
+@Suite("AppState connection testing")
+@MainActor
+struct AppStateConnectionTestingTests {
+  @Test("successful test validates SELECT 1 without connecting the workspace")
+  func successfulTestIsNonPersistent() async throws {
+    let tester = FixtureConnectionTester()
+    let state = AppState(connectionTester: tester)
+
+    await state.testConnection(
+      url: "postgresql://owner:secret@ep-blue.neon.tech/app?sslmode=require")
+
+    #expect(state.connectionTestMessage == "Connection successful. SELECT 1 completed.")
+    #expect(state.connectionTestError == nil)
+    #expect(state.connectionState == .disconnected)
+    #expect(state.savedConnections.isEmpty)
+    let config = try #require(await tester.lastConfig)
+    #expect(config.host == "ep-blue.neon.tech")
+    #expect(config.database == "app")
+    #expect(config.tlsMode == .verifyFull)
+  }
+
+  @Test("failed test redacts credentials and leaves workspace disconnected")
+  func failureIsRedacted() async {
+    let tester = FixtureConnectionTester(error: FixtureConnectionTestError(
+      message: "authentication failed for postgresql://owner:super-secret@db.example.com/app"
+    ))
+    let state = AppState(connectionTester: tester)
+
+    await state.testConnection(
+      url: "postgresql://owner:super-secret@db.example.com/app")
+
+    #expect(state.connectionTestMessage == nil)
+    #expect(state.connectionTestError?.contains("super-secret") == false)
+    #expect(state.connectionTestError != nil)
+    #expect(state.connectionState == .disconnected)
+  }
+
+  @Test("invalid connection input fails before opening a test connection")
+  func invalidInputDoesNotReachTester() async {
+    let tester = FixtureConnectionTester()
+    let state = AppState(connectionTester: tester)
+
+    await state.testConnection(url: "not a postgres URL")
+
+    #expect(state.connectionTestMessage == nil)
+    #expect(state.connectionTestError != nil)
+    #expect(await tester.callCount == 0)
+  }
+}
+
+private actor FixtureConnectionTester: ConnectionTesting {
+  private(set) var lastConfig: ConnectionConfig?
+  private(set) var callCount = 0
+  let error: (any Error & Sendable)?
+
+  init(error: (any Error & Sendable)? = nil) {
+    self.error = error
+  }
+
+  func test(config: ConnectionConfig) async throws {
+    callCount += 1
+    lastConfig = config
+    if let error { throw error }
+  }
+}
+
+private struct FixtureConnectionTestError: Error, Sendable, LocalizedError {
+  let message: String
+  var errorDescription: String? { message }
+}
