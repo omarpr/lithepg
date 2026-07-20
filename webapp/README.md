@@ -57,7 +57,6 @@ and [Fly custom-domain guide](https://fly.io/docs/networking/custom-domain/).
 
 ## Homebrew copy
 
-The hero and install section intentionally label the Homebrew cask as coming
-soon. Once the signed and notarized cask is published, remove that availability
-note. The command itself needs no version pin: Homebrew installs and upgrades to
-the latest published release.
+The hero and install section present the Homebrew cask as live. The command is
+`brew install --cask omarpr/tap/lithepg` and needs no version pin: Homebrew
+installs and upgrades to the latest published release.

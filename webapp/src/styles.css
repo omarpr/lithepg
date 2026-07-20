@@ -543,19 +543,42 @@ button {
   right: 28px;
   bottom: 26px;
   left: 28px;
-  overflow: hidden;
-  height: 150px;
-  border: 1px solid rgba(139, 169, 217, 0.13);
-  border-radius: 12px;
-  background: rgba(4, 12, 26, 0.58);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
 }
 
-.connection-visual img {
-  position: absolute;
-  top: -158px;
-  left: -16.8%;
-  width: 481%;
-  max-width: none;
+.conn-row {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  gap: 11px;
+  padding: 0 13px;
+  border: 1px solid rgba(112, 168, 255, 0.14);
+  border-radius: 9px;
+  background: rgba(4, 12, 26, 0.6);
+  color: #aebbd0;
+  font: 10px var(--mono);
+}
+
+.conn-row.is-active {
+  border-color: rgba(112, 168, 255, 0.28);
+  color: #cdd8ea;
+}
+
+.conn-row i {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #53d593;
+  box-shadow: 0 0 8px #53d593;
+}
+
+.conn-row em {
+  margin-left: auto;
+  color: #6d83a5;
+  font-style: normal;
 }
 
 .ai-card {
@@ -843,6 +866,11 @@ button {
   margin-top: 5px;
   border-radius: 50%;
   background: #e7b96c;
+}
+
+.availability-note.is-live span {
+  background: #53d593;
+  box-shadow: 0 0 8px rgba(83, 213, 147, 0.6);
 }
 
 .source-install {

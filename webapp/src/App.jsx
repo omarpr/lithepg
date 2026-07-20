@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   Button,
-  Chip,
   Tooltip,
 } from "@mui/material";
 import AccountTreeRoundedIcon from "@mui/icons-material/AccountTreeRounded";
@@ -16,7 +15,7 @@ import StorageRoundedIcon from "@mui/icons-material/StorageRounded";
 import TableChartRoundedIcon from "@mui/icons-material/TableChartRounded";
 import TerminalRoundedIcon from "@mui/icons-material/TerminalRounded";
 
-const installCommand = "brew install --cask lithepg";
+const installCommand = "brew install --cask omarpr/tap/lithepg";
 const repositoryURL = "https://github.com/omarpr/lithepg";
 const sourceTagsURL = `${repositoryURL}/tags`;
 
@@ -57,7 +56,6 @@ function InstallCommand({ hero = false }) {
       {hero && (
         <div className="hero-install-heading">
           <span>Install the latest release</span>
-          <Chip className="availability-chip" label="Cask coming soon" size="small" />
         </div>
       )}
       <div className="command-row">
@@ -66,7 +64,7 @@ function InstallCommand({ hero = false }) {
       </div>
       {hero && (
         <p className="hero-install-note">
-          Homebrew will track the latest published build automatically once the cask is live.
+          Homebrew tracks the latest published build automatically.
         </p>
       )}
     </div>
@@ -97,7 +95,9 @@ const features = [
     className: "feature-card-large connection-card",
     visual: (
       <div className="connection-visual" aria-hidden="true">
-        <img src="/assets/lithepg-app-snapshot.png" alt="" />
+        <div className="conn-row is-active"><i /><span>production</span><em>db.internal</em></div>
+        <div className="conn-row"><i /><span>staging</span><em>Keychain</em></div>
+        <div className="conn-row"><i /><span>analytics</span><em>read-only</em></div>
       </div>
     ),
   },
@@ -250,18 +250,17 @@ function App() {
             <p className="kicker">Install LithePG</p>
             <h2>One command.<br />Always the latest.</h2>
             <p>
-              Homebrew Cask is the intended default for clean installs and future updates.
-              It will go live after the macOS build is Developer ID signed, notarized and published with its final checksum.
+              Homebrew Cask is the default for clean installs and future updates.
+              One command pulls the latest published build straight from the tap.
             </p>
           </div>
           <div className="install-panel">
             <div className="install-tabs">
               <span className="active">Homebrew</span>
               <span>macOS 14+</span>
-              <Chip className="availability-chip" label="Coming soon" size="small" />
             </div>
             <InstallCommand />
-            <p className="availability-note"><span />The cask is prepared but not published yet. Until signing is complete, build the latest tagged source below.</p>
+            <p className="availability-note is-live"><span />Live on the tap. Prefer to build it yourself? The latest tagged source is below.</p>
             <div className="source-install">
               <div><strong>Build the latest tagged source</strong><small>Requires macOS 14+ and Xcode / Swift 6.2.</small></div>
               <pre><code>{`git clone https://github.com/omarpr/lithepg.git\ncd lithepg\ngit checkout "$(git describe --tags --abbrev=0)"\n./script/rebuild_and_install.sh`}</code></pre>
