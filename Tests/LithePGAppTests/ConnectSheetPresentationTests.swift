@@ -67,6 +67,46 @@ struct ConnectSheetPresentationTests {
     )
   }
 
+  @Test("save mode uses an enabled Save & Connect action with an automatic name")
+  func saveAndConnectPresentation() {
+    #expect(ConnectSheetPresentation.primaryActionTitle(saveConnection: true) == "Save & Connect")
+    #expect(ConnectSheetPresentation.primaryActionTitle(saveConnection: false) == "Connect")
+    #expect(
+      !ConnectSheetPresentation.primaryActionDisabled(
+        connectionInputEmpty: false,
+        isConnecting: false,
+        isTestingConnection: false
+      )
+    )
+    #expect(
+      ConnectSheetPresentation.savedConnectionName(
+        enteredName: "",
+        host: "localhost",
+        database: "postgres"
+      ) == "localhost · postgres"
+    )
+    #expect(
+      ConnectSheetPresentation.savedConnectionName(
+        enteredName: "  Local dev  ",
+        host: "localhost",
+        database: "postgres"
+      ) == "Local dev"
+    )
+  }
+
+  @Test("required fields use a consistent indicator and conditional requirements disable submit")
+  func requiredFieldPresentation() {
+    #expect(ConnectSheetPresentation.requiredFieldLabel("Host") == "Host *")
+    #expect(
+      ConnectSheetPresentation.primaryActionDisabled(
+        connectionInputEmpty: false,
+        requiredSupplementalInputEmpty: true,
+        isConnecting: false,
+        isTestingConnection: false
+      )
+    )
+  }
+
   @Test("saved connections paginate in groups of five and clamp stale pages")
   func savedConnectionPaginationUsesFiveItems() {
     let connections = Array(0..<12)
