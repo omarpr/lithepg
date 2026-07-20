@@ -16,6 +16,7 @@ struct ConnectSheet: View {
   }
 
   @Bindable var state: AppState
+  let closeAction: (() -> Void)?
   @State private var inputMode: InputMode = Self.initialDisplayURL().isEmpty ? .fields : .url
   @State private var url: String = Self.initialDisplayURL()
   @State private var sensitivePrefilledURL: String? = Self.initialSensitiveURL()
@@ -30,13 +31,26 @@ struct ConnectSheet: View {
     ProcessInfo.processInfo.environment["POSTGRES_TLS_CA"] ?? ""
   @State private var useSSH = ProcessInfo.processInfo.environment["POSTGRES_SSH"] != nil
   @State private var sshTarget: String = ProcessInfo.processInfo.environment["POSTGRES_SSH"] ?? ""
-  @State private var saveConnection = false
+  @State private var saveConnection: Bool
   @State private var connectionName = ""
   @State private var lastAutoConnectionName: String?
   @State private var environment: ConnectionEnvironment = .development
   @State private var showingCAImporter = false
   @State private var pendingDelete: SavedConnectionMetadata?
+  @State private var editingConnection: SavedConnectionMetadata?
+  @State private var savedConnectionsExpanded = true
+  @State private var savedConnectionsPage = 0
   @FocusState private var urlFieldFocused: Bool
+
+  init(
+    state: AppState,
+    closeAction: (() -> Void)? = nil,
+    saveByDefault: Bool = false
+  ) {
+    self.state = state
+    self.closeAction = closeAction
+    _saveConnection = State(initialValue: saveByDefault)
+  }
 
   private var neonProfile: NeonConnectionProfile? {
     guard inputMode == .url else { return nil }
@@ -79,37 +93,82 @@ struct ConnectSheet: View {
       }
 
       if !state.savedConnections.isEmpty {
-        Section("Saved connections") {
-          ForEach(state.savedConnections) { connection in
-            HStack(spacing: 8) {
-              VStack(alignment: .leading, spacing: 2) {
-                Text(connection.name)
-                  .font(.subheadline.bold())
-                Text(connection.connectionLabel)
-                  .font(.caption)
-                  .foregroundStyle(.secondary)
-              }
-              Spacer()
-              Text(connection.environment.displayName)
-                .font(.caption2.bold())
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(environmentColor(connection.environment).opacity(0.16), in: Capsule())
-                .foregroundStyle(environmentColor(connection.environment))
-              Button("Connect") {
-                Task { await state.connectSavedConnection(id: connection.id) }
-              }
-              .buttonStyle(.bordered)
+        Section {
+          if savedConnectionsExpanded {
+            ForEach(
+              SavedConnectionPagination.page(
+                of: state.savedConnections,
+                index: savedConnectionsPage
+              )
+            ) { connection in
+              HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                  Text(connection.name)
+                    .font(.subheadline.bold())
+                  Text(connection.connectionLabel)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Text(connection.environment.displayName)
+                  .font(.caption2.bold())
+                  .padding(.horizontal, 8)
+                  .padding(.vertical, 4)
+                  .background(environmentColor(connection.environment).opacity(0.16), in: Capsule())
+                  .foregroundStyle(environmentColor(connection.environment))
+                Button("Connect") {
+                  Task {
+                    await state.connectSavedConnection(id: connection.id)
+                    if state.isConnected { closeAction?() }
+                  }
+                }
+                .buttonStyle(.bordered)
 
-              Button(role: .destructive) {
-                pendingDelete = connection
-              } label: {
-                Label("Delete saved connection", systemImage: "trash")
-                  .labelStyle(.iconOnly)
+                Button {
+                  editingConnection = connection
+                } label: {
+                  Label("Edit saved connection", systemImage: "pencil")
+                    .labelStyle(.iconOnly)
+                }
+                .buttonStyle(.borderless)
+                .help("Edit saved connection")
+                .accessibilityIdentifier("edit-saved-connection-\(connection.id.uuidString)")
+
+                Button(role: .destructive) {
+                  pendingDelete = connection
+                } label: {
+                  Label("Delete saved connection", systemImage: "trash")
+                    .labelStyle(.iconOnly)
+                }
+                .buttonStyle(.borderless)
+                .help("Delete saved connection")
               }
-              .buttonStyle(.borderless)
-              .help("Delete saved connection")
             }
+
+            SavedConnectionPager(
+              page: $savedConnectionsPage,
+              itemCount: state.savedConnections.count,
+              accessibilityPrefix: "connect-sheet-connections"
+            )
+          }
+        } header: {
+          HStack {
+            Text("Saved connections")
+            Spacer()
+            Button {
+              withAnimation(.easeInOut(duration: 0.15)) {
+                savedConnectionsExpanded.toggle()
+              }
+            } label: {
+              Label(
+                savedConnectionsExpanded ? "Collapse connections" : "Expand connections",
+                systemImage: savedConnectionsExpanded ? "chevron.up" : "chevron.down"
+              )
+              .labelStyle(.iconOnly)
+            }
+            .buttonStyle(.borderless)
+            .help(savedConnectionsExpanded ? "Collapse connections" : "Expand connections")
+            .accessibilityIdentifier("toggle-saved-connections-section-button")
           }
         }
       }
@@ -254,15 +313,22 @@ struct ConnectSheet: View {
 
       Section {
         HStack {
-          Button {
-            NSApplication.shared.terminate(nil)
-          } label: {
-            Label("Quit LithePG", systemImage: "power")
+          if let closeAction {
+            Button("Cancel", action: closeAction)
+              .buttonStyle(.bordered)
+              .keyboardShortcut(.cancelAction)
+              .accessibilityIdentifier("close-connection-form-button")
+          } else {
+            Button {
+              NSApplication.shared.terminate(nil)
+            } label: {
+              Label("Quit LithePG", systemImage: "power")
+            }
+            .buttonStyle(.bordered)
+            .keyboardShortcut("q", modifiers: .command)
+            .help("Quit LithePG (⌘Q)")
+            .accessibilityIdentifier("quit-application-button")
           }
-          .buttonStyle(.bordered)
-          .keyboardShortcut("q", modifiers: .command)
-          .help("Quit LithePG (⌘Q)")
-          .accessibilityIdentifier("quit-application-button")
 
           Spacer()
           Button {
@@ -303,6 +369,12 @@ struct ConnectSheet: View {
     .onChange(of: testInputSignature) { _, _ in
       state.clearConnectionTestResult()
     }
+    .onChange(of: state.savedConnections.count) { _, count in
+      savedConnectionsPage = SavedConnectionPagination.normalizedPage(
+        savedConnectionsPage,
+        itemCount: count
+      )
+    }
     .task {
       await state.loadSavedConnections()
       state.refreshNeonCLIAvailability()
@@ -329,6 +401,9 @@ struct ConnectSheet: View {
       Text(
         "This removes local metadata and its credential-store secret reference. It does not touch the database."
       )
+    }
+    .sheet(item: $editingConnection) { connection in
+      SavedConnectionEditor(state: state, connection: connection)
     }
     .fileImporter(
       isPresented: $showingCAImporter,
@@ -410,7 +485,11 @@ struct ConnectSheet: View {
         tls: tls, tlsCAPath: tlsCA, sshTarget: ssh)
     }
 
-    guard saveConnection, state.isConnected else { return }
+    guard state.isConnected else { return }
+    guard saveConnection else {
+      closeAction?()
+      return
+    }
 
     let metadata: SavedConnectionMetadata?
     if inputMode == .url {
@@ -429,6 +508,7 @@ struct ConnectSheet: View {
     if let metadata {
       state.activeSavedConnection = metadata
     }
+    closeAction?()
   }
 
   private func testConnection() async {
@@ -451,7 +531,10 @@ struct ConnectSheet: View {
     await state.connect(
       host: "localhost", port: instance.port, database: "postgres",
       username: username, password: "")
-    guard !state.isConnected else { return }
+    guard !state.isConnected else {
+      closeAction?()
+      return
+    }
     inputMode = .fields
     fieldHost = "localhost"
     fieldPort = String(instance.port)

@@ -83,6 +83,19 @@ struct AppStateTests {
     #expect(s.editorText == "SELECT first")
   }
 
+  @Test("closing a background query tab keeps the selected tab active")
+  func closeQueryTabByIDPreservesSelection() {
+    let state = AppState()
+    let firstID = state.selectedQueryTabID!
+    state.newQueryTab()
+    let selectedID = state.selectedQueryTabID!
+
+    state.closeQueryTab(id: firstID)
+
+    #expect(state.queryTabs.count == 1)
+    #expect(state.selectedQueryTabID == selectedID)
+  }
+
   @Test("query tab navigation wraps around")
   func queryTabNavigationWrapsAround() {
     let s = AppState()
@@ -427,6 +440,63 @@ struct AppStateTests {
     #expect(metadata == nil)
     #expect(s.persistenceError != nil)
     #expect(s.persistenceError?.contains("super-secret") == false)
+  }
+
+  @Test("editing a saved connection updates it in place and replaces its credential")
+  func updateSavedConnectionPreservesIdentity() async throws {
+    let id = UUID()
+    let reference = "fixture.saved-connection.password"
+    let createdAt = Date(timeIntervalSince1970: 100)
+    let original = SavedConnectionMetadata(
+      id: id,
+      name: "Original",
+      host: "old.example.com",
+      port: 5432,
+      database: "old_db",
+      username: "old_user",
+      tlsMode: "disable",
+      environment: .development,
+      secretReference: reference,
+      createdAt: createdAt,
+      updatedAt: Date(timeIntervalSince1970: 200)
+    )
+    let savedStore = InMemorySavedConnectionStore(connections: [original])
+    let credentialStore = InMemoryCredentialStore(secrets: [reference: "old-password"])
+    let state = AppState(
+      savedConnectionStore: savedStore,
+      credentialStore: credentialStore
+    )
+    await state.loadSavedConnections()
+
+    #expect(await state.savedConnectionPassword(id: id) == "old-password")
+    let updated = try #require(
+      await state.updateSavedConnection(
+        id: id,
+        name: " Production ",
+        host: "new.example.com",
+        port: 6432,
+        database: "app",
+        username: "app_user",
+        password: "new-password",
+        tls: true,
+        tlsCAPath: " /tmp/root.pem ",
+        environment: .production
+      )
+    )
+
+    #expect(state.savedConnections.count == 1)
+    #expect(updated.id == id)
+    #expect(updated.name == "Production")
+    #expect(updated.connectionLabel == "app_user@new.example.com:6432/app")
+    #expect(updated.tlsMode == "verify-full")
+    #expect(updated.pinnedRootCertificatePath == "/tmp/root.pem")
+    #expect(updated.environment == .production)
+    #expect(updated.secretReference == reference)
+    #expect(updated.createdAt == createdAt)
+    #expect(updated.updatedAt > original.updatedAt)
+    #expect(try await credentialStore.loadSecret(for: reference) == "new-password")
+    #expect(state.selectedSavedConnectionID == id)
+    #expect(state.persistenceError == nil)
   }
 
   @Test("connecting a saved connection rejects unknown TLS labels")

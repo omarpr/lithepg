@@ -316,6 +316,55 @@ public final class AppState {
     }
   }
 
+  func savedConnectionPassword(id: SavedConnectionMetadata.ID) async -> String? {
+    guard let metadata = savedConnections.first(where: { $0.id == id }) else {
+      setPersistenceError(PersistenceError.savedConnectionNotFound)
+      return nil
+    }
+
+    do {
+      guard let secretReference = metadata.secretReference,
+        let password = try await credentialStore.loadSecret(for: secretReference)
+      else {
+        throw PersistenceError.missingSecret
+      }
+      persistenceError = nil
+      return password
+    } catch {
+      setPersistenceError(error)
+      return nil
+    }
+  }
+
+  @discardableResult
+  func updateSavedConnection(
+    id: SavedConnectionMetadata.ID,
+    name: String,
+    host: String, port: Int, database: String, username: String, password: String,
+    tls: Bool = false, tlsCAPath: String? = nil, sshTarget: String? = nil,
+    environment: ConnectionEnvironment = .development
+  ) async -> SavedConnectionMetadata? {
+    guard let existing = savedConnections.first(where: { $0.id == id }) else {
+      setPersistenceError(PersistenceError.savedConnectionNotFound)
+      return nil
+    }
+
+    do {
+      let config = try Self.connectionConfig(
+        host: host, port: port, database: database, username: username, password: password,
+        tls: tls, tlsCAPath: tlsCAPath, sshTarget: sshTarget)
+      return await persistConnection(
+        name: name,
+        config: config,
+        environment: environment,
+        replacing: existing
+      )
+    } catch {
+      setPersistenceError(error)
+      return nil
+    }
+  }
+
   public func connectSavedConnection(id: SavedConnectionMetadata.ID) async {
     let metadata: SavedConnectionMetadata?
     if let loaded = savedConnections.first(where: { $0.id == id }) {
@@ -534,7 +583,14 @@ public final class AppState {
   }
 
   public func closeSelectedQueryTab() {
-    guard queryTabs.count > 1, let index = selectedQueryTabIndex else { return }
+    guard let selectedQueryTabID else { return }
+    closeQueryTab(id: selectedQueryTabID)
+  }
+
+  public func closeQueryTab(id: QueryTab.ID) {
+    guard queryTabs.count > 1,
+      let index = queryTabs.firstIndex(where: { $0.id == id })
+    else { return }
     let removingSelected = queryTabs[index].id == selectedQueryTabID
     queryTabs.remove(at: index)
     if removingSelected {
@@ -808,11 +864,18 @@ public final class AppState {
   private func persistConnection(
     name: String,
     config: ConnectionConfig,
-    environment: ConnectionEnvironment
+    environment: ConnectionEnvironment,
+    replacing existing: SavedConnectionMetadata? = nil
   ) async -> SavedConnectionMetadata? {
     do {
-      let id = UUID()
-      let secretReference = Self.secretReference(for: id)
+      let id = existing?.id ?? UUID()
+      let secretReference = existing?.secretReference ?? Self.secretReference(for: id)
+      let previousSecret: String?
+      if existing != nil {
+        previousSecret = try await credentialStore.loadSecret(for: secretReference)
+      } else {
+        previousSecret = nil
+      }
       try await credentialStore.saveSecret(config.password, for: secretReference)
 
       let metadata = SavedConnectionMetadata(
@@ -826,9 +889,22 @@ public final class AppState {
         pinnedRootCertificatePath: config.pinnedRootCertificatePath,
         sshTarget: config.sshConfig.map(Self.sshTargetLabel),
         environment: environment,
-        secretReference: secretReference
+        secretReference: secretReference,
+        integrityKeyReference: existing?.integrityKeyReference,
+        integrityTag: existing?.integrityTag,
+        createdAt: existing?.createdAt ?? Date(),
+        updatedAt: Date()
       )
-      try await savedConnectionStore.save(metadata)
+      do {
+        try await savedConnectionStore.save(metadata)
+      } catch {
+        if let previousSecret {
+          try? await credentialStore.saveSecret(previousSecret, for: secretReference)
+        } else {
+          try? await credentialStore.deleteSecret(for: secretReference)
+        }
+        throw error
+      }
       await loadSavedConnections()
       selectedSavedConnectionID = metadata.id
       persistenceError = nil
@@ -1069,12 +1145,15 @@ public final class AppState {
 
   private enum PersistenceError: Error, CustomStringConvertible {
     case missingSecret
+    case savedConnectionNotFound
     case unsupportedTLSMode(String)
 
     var description: String {
       switch self {
       case .missingSecret:
         "Saved connection password is missing from credential storage."
+      case .savedConnectionNotFound:
+        "Saved connection not found."
       case .unsupportedTLSMode(let label):
         "Saved connection has unsupported TLS mode: \(label)"
       }

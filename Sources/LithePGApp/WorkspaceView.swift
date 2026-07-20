@@ -18,13 +18,17 @@ struct WorkspaceView: View {
   @State private var showingAskQuery = false
   @State private var showingSchemaGraph = false
   @State private var showingPlanTree = false
+  @State private var showingConnectionForm = false
   @State private var renamingTabID: QueryTab.ID?
   @State private var renameDraft = ""
 
   var body: some View {
     HSplitView {
       VStack(spacing: 0) {
-        ConnectionNavigator(state: state)
+        ConnectionNavigator(
+          state: state,
+          onAddConnection: { showingConnectionForm = true }
+        )
         Divider()
         SchemaSidebar(state: state)
       }
@@ -179,28 +183,54 @@ struct WorkspaceView: View {
       await state.loadSavedConnections()
       state.refreshNeonCLIAvailability()
     }
+    .sheet(isPresented: $showingConnectionForm) {
+      ConnectSheet(
+        state: state,
+        closeAction: { showingConnectionForm = false },
+        saveByDefault: true
+      )
+    }
   }
 
   private var tabBar: some View {
     HStack(spacing: 6) {
       ForEach(state.queryTabs) { tab in
-        Button {
-          state.selectQueryTab(id: tab.id)
-        } label: {
-          Text(tab.title)
-            .lineLimit(1)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(
-              tab.id == state.selectedQueryTabID
-                ? Color.accentColor.opacity(0.22) : Color.secondary.opacity(0.12), in: Capsule())
+        HStack(spacing: 2) {
+          Button {
+            state.selectQueryTab(id: tab.id)
+          } label: {
+            Text(tab.title)
+              .lineLimit(1)
+          }
+          .buttonStyle(.plain)
+          .simultaneousGesture(
+            TapGesture(count: 2).onEnded { beginRenamingTab(tab) }
+          )
+
+          if state.queryTabs.count > 1 {
+            Button {
+              state.closeQueryTab(id: tab.id)
+            } label: {
+              Label("Close \(tab.title)", systemImage: "xmark")
+                .labelStyle(.iconOnly)
+                .font(.caption2.bold())
+            }
+            .buttonStyle(.borderless)
+            .help("Close \(tab.title)")
+            .accessibilityIdentifier("close-query-tab-\(tab.id.uuidString)")
+          }
         }
-        .buttonStyle(.plain)
-        .simultaneousGesture(
-          TapGesture(count: 2).onEnded { beginRenamingTab(tab) }
-        )
+        .padding(.leading, 9)
+        .padding(.trailing, state.queryTabs.count > 1 ? 5 : 9)
+        .padding(.vertical, 5)
+        .background(
+          tab.id == state.selectedQueryTabID
+            ? Color.accentColor.opacity(0.22) : Color.secondary.opacity(0.12), in: Capsule())
         .contextMenu {
           Button("Rename Tab…") { beginRenamingTab(tab) }
+          if state.queryTabs.count > 1 {
+            Button("Close Tab") { state.closeQueryTab(id: tab.id) }
+          }
         }
         .popover(
           isPresented: Binding(

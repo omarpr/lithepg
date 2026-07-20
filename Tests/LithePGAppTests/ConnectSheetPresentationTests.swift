@@ -66,4 +66,20 @@ struct ConnectSheetPresentationTests {
       ) == "Manual"
     )
   }
+
+  @Test("saved connections paginate in groups of five and clamp stale pages")
+  func savedConnectionPaginationUsesFiveItems() {
+    let connections = Array(0..<12)
+
+    #expect(SavedConnectionPagination.pageSize == 5)
+    #expect(SavedConnectionPagination.pageCount(itemCount: 0) == 0)
+    #expect(SavedConnectionPagination.pageCount(itemCount: 5) == 1)
+    #expect(SavedConnectionPagination.pageCount(itemCount: 6) == 2)
+    #expect(SavedConnectionPagination.pageCount(itemCount: 12) == 3)
+    #expect(SavedConnectionPagination.page(of: connections, index: 0) == [0, 1, 2, 3, 4])
+    #expect(SavedConnectionPagination.page(of: connections, index: 1) == [5, 6, 7, 8, 9])
+    #expect(SavedConnectionPagination.page(of: connections, index: 2) == [10, 11])
+    #expect(SavedConnectionPagination.page(of: connections, index: 99) == [10, 11])
+    #expect(SavedConnectionPagination.normalizedPage(2, itemCount: 5) == 0)
+  }
 }
