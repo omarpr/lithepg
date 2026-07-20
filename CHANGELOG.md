@@ -6,9 +6,39 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ## [Unreleased]
 
+## [v1.0.3] — 2026-07-20
+
+### Added
+
+- Saved connections can be edited in place from the connection sheet or navigator, including their name, environment, endpoint, TLS/SSH options and password.
+- Saved-connection lists are collapsible and paginated in groups of five, keeping the connection sheet and left navigator compact even with many databases.
+- Result-table columns can be resized with the mouse while preserving a usable minimum width.
+- Appearance settings now include a preference for whether the connection window opens automatically at launch. The connection view can always be dismissed or used to quit LithePG without first connecting.
+- Ask in English now uses Apple's lightweight on-device `SystemLanguageModel.default` with bounded schema context, guided output and the existing read-only SQL safety gate.
+
+### Changed
+
+- Enabling “Save this connection” changes the primary action to **Save & Connect** without disabling it. A blank optional connection name receives a deterministic `host · database` name.
+- Required connection fields now carry a visible `*` indicator and legend. Conditional requirements such as the SSH target also participate in submit validation.
+- Ask in English depends exclusively on Apple's local model. If Apple Intelligence is disabled, unsupported, still preparing or temporarily unavailable, drafting stays disabled and an information card explains the relevant recovery step; LithePG no longer substitutes its basic deterministic drafter.
+- The Ask panel can be opened while disconnected so its schema and model requirements are visible instead of hiding the guidance behind a disabled toolbar action.
+- Query tabs expose a clearer close action and the connection navigator keeps Add Connection readily available outside the initial connection window.
+- Release tooling now supports versioned unsigned Homebrew preview casks and validates versioned ZIP artifacts before publication. The website and release copy use the latest cask installation path rather than a version-specific install command.
+
 ### Fixed
 
 - Opening the app and browsing saved connections no longer reads every per-connection Keychain integrity item. Integrity validation is deferred until a connection is used and successful Keychain reads are cached for the current app session, preventing cascades of repeated authorization dialogs while preserving tamper checks before credentials or network access.
+- Passwordless PostgreSQL connections can be saved, reopened and edited without incorrectly reporting a missing credential-store password.
+- PostgreSQL failures now surface useful, credential-redacted server diagnostics instead of the generic `PSQLError` privacy description.
+- Neon CLI scans reject interactive or malformed output with actionable authentication guidance instead of exposing a raw JSON decoding error.
+
+### Security
+
+- Repository publication checks now fail closed, CI security tools are pinned or checksum-verified, CodeQL scanning is configured and release artifacts are rebuilt with source-path privacy checks.
+
+### Verified
+
+- The complete local Swift gate passes 277 tests across 41 suites. Environment-gated Apple-model, Keychain, SSH, UI and live-Postgres integration tests remain opt-in.
 
 ## [v1.0.0] — 2026-07-19 — Source Release
 
@@ -142,6 +172,7 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 - `SELECT 1` succeeded over plain loopback, TLS verify-full, and SSH-tunneled paths.
 - Dependency inspection showed no `libpq` linkage and no LithePG-authored C shims.
 
+[v1.0.3]: https://github.com/omarpr/lithepg/compare/v1.0.0...v1.0.3
 [v1.0.0]: https://github.com/omarpr/lithepg/tree/v1.0.0
 [v0.5]: https://github.com/omarpr/lithepg/tree/v0.5
 [v0.4]: https://github.com/omarpr/lithepg/tree/v0.4
