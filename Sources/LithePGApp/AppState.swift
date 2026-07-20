@@ -103,7 +103,7 @@ public final class AppState {
     savedConnectionStore: any SavedConnectionStore = JSONFileSavedConnectionStore(),
     credentialStore: any CredentialStore = KeychainCredentialStore(),
     queryHistoryStore: any QueryHistoryStore = JSONFileQueryHistoryStore(),
-    aiQueryService: any AIQueryService = DeterministicAIQueryService(),
+    aiQueryService: any AIQueryService = OnDeviceAIQueryService(),
     connectionTester: any ConnectionTesting = PostgresConnectionTester(),
     neonScanner: any NeonCLIScanning = NeonCLIScanner(),
     appearanceDefaults: UserDefaults = .standard
@@ -275,7 +275,7 @@ public final class AppState {
         skipped: skipped
       )
     } catch {
-      neonScanError = ErrorRedaction.redactCredentials(in: error)
+      neonScanError = Self.neonScanErrorMessage(error)
     }
   }
 
@@ -907,6 +907,18 @@ public final class AppState {
       sentences.append("Skipped \(skipped) unavailable resource\(skipped == 1 ? "" : "s").")
     }
     return sentences.joined(separator: " ")
+  }
+
+  private static func neonScanErrorMessage(_ error: Error) -> String {
+    let message: String
+    if let localizedError = error as? any LocalizedError,
+      let description = localizedError.errorDescription
+    {
+      message = description
+    } else {
+      message = String(describing: error)
+    }
+    return ErrorRedaction.redactCredentials(in: message)
   }
 
   private static func connectionConfig(

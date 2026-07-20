@@ -31,10 +31,11 @@ LithePG is a local macOS client that connects to user-owned PostgreSQL databases
 - Test connection uses the entered credentials only for a temporary `SELECT 1` probe. It closes the temporary connection immediately, saves no metadata or password and redacts credentials from reported failures.
 
 ## AI & Privacy
-- **All inference is intended to run on-device.** v0.5's first adapter scaffold uses CoreML because it is provided by the macOS SDK and adds no package dependency; MLX remains a future measured option.
-- The built-in deterministic NL2SQL service supports a documented read-only subset: relation listing, counts, projected columns, ordering, limits and known foreign-key joins. Unsupported requests are labeled as such instead of being presented as model failures.
-- `LocalModelAIQueryService` remains a gated scaffold. The adapter can validate an external CoreML artifact but model-specific NL2SQL inference mapping is not implemented.
-- Model artifacts are separate from the app binary, are expected under LithePG's Application Support model directory by default, and are never downloaded by the app.
+- **All inference runs on-device.** On macOS 26, `OnDeviceAIQueryService` uses Apple's Foundation Models framework when the Apple Intelligence system model is available; otherwise it falls back to the deterministic local drafter.
+- System-model input contains only a redacted user request plus a bounded subset of local schema and foreign-key metadata. Guided output is accepted only when every reported relation exists in the loaded schema.
+- Generated output passes a second local gate that allows one read-only `SELECT`/read-only CTE and rejects mutation, DDL, administrative commands, `SELECT INTO`, row-locking clauses, malformed quoting/comments and multiple statements.
+- The built-in deterministic fallback supports a documented read-only subset: relation listing, counts, projected columns, ordering, limits and known foreign-key joins.
+- LithePG bundles and downloads no model artifact. macOS manages the system model. `LocalModelAIQueryService` remains a non-default, gated CoreML artifact-validation scaffold for user-provided experiments.
 - No prompts, schemas, query text or results are transmitted to any external service.
 - AI context construction is intentionally narrow: it may include the natural-language request and schema metadata, but it excludes raw connection URLs and query result rows and redacts credential-shaped substrings before any model adapter receives context.
 - Generated SQL is a draft for user review. LithePG inserts drafts into the editor but does not execute them automatically.

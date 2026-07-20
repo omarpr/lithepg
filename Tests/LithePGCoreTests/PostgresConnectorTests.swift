@@ -17,7 +17,7 @@ struct PostgresConnectorTests {
     }
 
     /// Format: "user@sshHost:sshPort,pgHost:pgPort"
-    /// e.g., "omar@bastion.example.com:22,pg-internal.example.com:5432"
+    /// e.g., "developer@bastion.example.com:22,pg-internal.example.com:5432"
     static var sshPgTarget: String? {
         ProcessInfo.processInfo.environment["POSTGRES_SSH_TEST_TARGET"]
     }

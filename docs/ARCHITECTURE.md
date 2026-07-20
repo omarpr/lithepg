@@ -57,8 +57,8 @@ High-level module boundaries and data flow for LithePG. Implementation details l
 - Appearance preference is stored in `UserDefaults`.
 
 ### Inference
-- Default SQL drafting is deterministic, read-only and local. It supports schema-aware lists, counts, projections, ordering, limits and known joins; it is not presented as a general model. See `TECH_STACK.md` section 4.
-- A CoreML adapter scaffold exists for user-provided local model artifacts, disabled by default.
+- Default SQL drafting prefers Apple's on-device Foundation Models system model on supported macOS 26 Macs, with guided output, bounded schema retrieval and a read-only SQL safety gate. It makes no network AI calls.
+- The deterministic schema-aware drafter is the fallback when the system model is unavailable or generation fails. A separate CoreML artifact-validation scaffold remains disabled by default for user-provided experiments.
 - Schema awareness uses local metadata/indexing; vector storage remains a future optimization.
 
 ## Key Invariants

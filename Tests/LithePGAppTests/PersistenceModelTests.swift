@@ -13,13 +13,13 @@ struct PersistenceModelTests {
       host: "localhost",
       port: 5432,
       database: "app",
-      username: "omar",
+      username: "dbuser",
       tlsMode: "disable",
       environment: .development,
       secretReference: "lithepg-connection-secret"
     )
 
-    #expect(connection.connectionLabel == "omar@localhost:5432/app")
+    #expect(connection.connectionLabel == "dbuser@localhost:5432/app")
     #expect(connection.environment.displayName == "Development")
     #expect(connection.environment.isProduction == false)
 

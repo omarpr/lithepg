@@ -93,8 +93,27 @@ public struct NeonCLIScanner: NeonCLIScanning, Sendable {
   public func scan() async throws -> NeonCLIScanReport {
     guard let executableURL else { throw NeonCLIScannerError.notInstalled }
 
-    let projectsData = try await runJSON(["projects", "list"], executableURL: executableURL)
-    let projects = try Self.decodeProjects(projectsData)
+    let organizations: [Organization] = try Self.decodeArray(
+      try await runJSON(["orgs", "list"], executableURL: executableURL)
+    )
+    var discoveredProjects: [Project] = []
+    if organizations.isEmpty {
+      discoveredProjects = try Self.decodeProjects(
+        try await runJSON(["projects", "list"], executableURL: executableURL)
+      )
+    } else {
+      for organization in organizations {
+        discoveredProjects += try Self.decodeProjects(
+          try await runJSON(
+            ["projects", "list", "--org-id", organization.id],
+            executableURL: executableURL
+          )
+        )
+      }
+    }
+    let projects = Dictionary(grouping: discoveredProjects, by: \.id)
+      .compactMap { $0.value.first }
+      .sorted { ($0.name, $0.id) < ($1.name, $1.id) }
     var connections: [NeonCLIConnection] = []
     var skippedResources = 0
 
@@ -226,12 +245,24 @@ public struct NeonCLIScanner: NeonCLIScanning, Sendable {
     if let projects = try? decoder.decode([Project].self, from: data) {
       return projects
     }
-    let envelope = try decoder.decode(ProjectEnvelope.self, from: data)
-    return envelope.projects + envelope.sharedWithYou
+    do {
+      let envelope = try decoder.decode(ProjectEnvelope.self, from: data)
+      return envelope.projects + envelope.sharedWithYou
+    } catch {
+      throw NeonCLIScannerError.invalidResponse
+    }
   }
 
   private static func decodeArray<T: Decodable>(_ data: Data) throws -> [T] {
-    try JSONDecoder().decode([T].self, from: data)
+    do {
+      return try JSONDecoder().decode([T].self, from: data)
+    } catch {
+      throw NeonCLIScannerError.invalidResponse
+    }
+  }
+
+  private struct Organization: Decodable {
+    let id: String
   }
 
   private struct ProjectEnvelope: Decodable {
@@ -284,6 +315,7 @@ public struct FoundationNeonCLICommandRunner: NeonCLICommandRunning, Sendable {
       process.standardOutput = standardOutput
       process.standardError = standardError
       var environment = ProcessInfo.processInfo.environment
+      environment["CI"] = "1"
       environment["NO_COLOR"] = "1"
       process.environment = environment
 
@@ -323,7 +355,7 @@ public enum NeonCLIScannerError: Error, Sendable, LocalizedError {
     case .commandFailed(let message):
       message.trimmingCharacters(in: .whitespacesAndNewlines)
     case .invalidResponse:
-      "Neon CLI returned an invalid or unsupported response."
+      "Neon CLI did not return usable JSON. Run `neon auth` in Terminal, confirm your account, then try again."
     case .outputTooLarge:
       "Neon CLI returned more data than LithePG can safely import."
     }

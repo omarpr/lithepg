@@ -15,6 +15,10 @@ final class UnbundledActivationDelegate: NSObject, NSApplicationDelegate {
     static func needsManualActivation(bundleURL: URL) -> Bool {
         bundleURL.pathExtension != "app"
     }
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        true
+    }
 }
 
 public struct LithePGApp: App {
@@ -65,13 +69,26 @@ struct RootView: View {
             .background(WindowStartupSizer())
             .navigationTitle(state.windowTitle)
             .preferredColorScheme(state.appearancePreference.colorScheme)
-            .sheet(isPresented: Binding(
-                get: { startupConfig == nil && state.connectionState == .disconnected },
-                set: { _ in }
-            )) {
-                ConnectSheet(state: state)
-                    .interactiveDismissDisabled(true)
+            .overlay {
+                if startupConfig == nil && state.connectionState == .disconnected {
+                    ZStack {
+                        Color.black.opacity(0.48)
+                            .ignoresSafeArea()
+                            .accessibilityHidden(true)
+
+                        ConnectSheet(state: state)
+                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .strokeBorder(Color.white.opacity(0.10))
+                            }
+                            .shadow(color: .black.opacity(0.35), radius: 24, y: 12)
+                            .padding(24)
+                    }
+                    .transition(.opacity)
+                }
             }
+            .animation(.easeInOut(duration: 0.16), value: state.connectionState)
             .task {
                 guard !didRunStartup else { return }
                 didRunStartup = true

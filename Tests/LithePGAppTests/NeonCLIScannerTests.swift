@@ -6,7 +6,7 @@ import Testing
 
 @Suite("Neon CLI scanner")
 struct NeonCLIScannerTests {
-  @Test("scanner walks projects branches and databases using machine-readable output")
+  @Test("scanner scopes projects to a Neon organization and uses machine-readable output")
   func scannerWalksNeonResources() async throws {
     let runner = FixtureNeonCommandRunner()
     let scanner = NeonCLIScanner(
@@ -30,15 +30,57 @@ struct NeonCLIScannerTests {
     #expect(report.skippedResources == 0)
 
     let invocations = await runner.invocations
-    #expect(invocations.count == 4)
+    #expect(invocations.count == 5)
     #expect(invocations[0].arguments == [
-      "projects", "list", "--output", "json", "--no-color", "--no-analytics",
+      "orgs", "list", "--output", "json", "--no-color", "--no-analytics",
     ])
-    #expect(invocations[1].arguments.contains("branches"))
-    #expect(invocations[2].arguments.contains("databases"))
-    #expect(invocations[3].arguments.contains("connection-string"))
-    #expect(invocations[3].arguments.contains("--role-name"))
-    #expect(invocations[3].arguments.contains("owner"))
+    #expect(invocations[1].arguments == [
+      "projects", "list", "--org-id", "org-one",
+      "--output", "json", "--no-color", "--no-analytics",
+    ])
+    #expect(invocations[2].arguments.contains("branches"))
+    #expect(invocations[3].arguments.contains("databases"))
+    #expect(invocations[4].arguments.contains("connection-string"))
+    #expect(invocations[4].arguments.contains("--role-name"))
+    #expect(invocations[4].arguments.contains("owner"))
+  }
+
+  @Test("scanner maps interactive terminal output to an invalid response")
+  func scannerRejectsInteractiveOutput() async {
+    let scanner = NeonCLIScanner(
+      executableURL: URL(fileURLWithPath: "/opt/homebrew/bin/neon"),
+      commandRunner: InteractivePromptCommandRunner()
+    )
+
+    do {
+      _ = try await scanner.scan()
+      Issue.record("Expected the interactive prompt to be rejected")
+    } catch let error as NeonCLIScannerError {
+      guard case .invalidResponse = error else {
+        Issue.record("Expected invalidResponse, received \(error)")
+        return
+      }
+    } catch {
+      Issue.record("Expected NeonCLIScannerError, received \(error)")
+    }
+  }
+
+  @Test("invalid Neon output becomes a useful scan error")
+  @MainActor
+  func interactiveOutputIsNotShownAsADecoderDump() async {
+    let state = AppState(
+      savedConnectionStore: InMemorySavedConnectionStore(),
+      credentialStore: InMemoryCredentialStore(),
+      neonScanner: FixtureNeonScanner(shouldReturnInvalidResponse: true)
+    )
+
+    await state.scanAndImportNeonConnections()
+
+    #expect(
+      state.neonScanError
+        == "Neon CLI did not return usable JSON. Run `neon auth` in Terminal, confirm your account, then try again."
+    )
+    #expect(state.neonScanError?.contains("DecodingError") == false)
   }
 
   @Test("app state imports only Neon endpoints that are not already saved")
@@ -101,6 +143,12 @@ struct NeonCLIScannerTests {
   }
 }
 
+private struct InteractivePromptCommandRunner: NeonCLICommandRunning {
+  func run(executableURL: URL, arguments: [String]) async throws -> Data {
+    Data("\u{001B}[?25l? What organization would you like to use?".utf8)
+  }
+}
+
 private actor FixtureNeonCommandRunner: NeonCLICommandRunning {
   struct Invocation: Sendable, Equatable {
     let arguments: [String]
@@ -110,8 +158,11 @@ private actor FixtureNeonCommandRunner: NeonCLICommandRunning {
 
   func run(executableURL: URL, arguments: [String]) async throws -> Data {
     invocations.append(.init(arguments: arguments))
+    if arguments.starts(with: ["orgs", "list"]) {
+      return Data(#"[{"id":"org-one","name":"Example"}]"#.utf8)
+    }
     if arguments.starts(with: ["projects", "list"]) {
-      return Data(#"{"projects":[{"id":"project-one","name":"Analytics"}],"shared_with_you":[]}"#.utf8)
+      return Data(#"[{"id":"project-one","name":"Analytics"}]"#.utf8)
     }
     if arguments.starts(with: ["branches", "list"]) {
       return Data(#"[{"id":"br-main","name":"production","default":true}]"#.utf8)
@@ -131,21 +182,27 @@ private actor FixtureNeonCommandRunner: NeonCLICommandRunning {
 private struct FixtureNeonScanner: NeonCLIScanning {
   let availabilityState: NeonCLIAvailability
   let connections: [NeonCLIConnection]
+  let shouldReturnInvalidResponse: Bool
 
   init(
     availability: NeonCLIAvailability = .available(
       executableURL: URL(fileURLWithPath: "/opt/homebrew/bin/neon"),
       version: "2.34.1"
     ),
-    connections: [NeonCLIConnection] = []
+    connections: [NeonCLIConnection] = [],
+    shouldReturnInvalidResponse: Bool = false
   ) {
     availabilityState = availability
     self.connections = connections
+    self.shouldReturnInvalidResponse = shouldReturnInvalidResponse
   }
 
   func availability() -> NeonCLIAvailability { availabilityState }
 
   func scan() async throws -> NeonCLIScanReport {
-    NeonCLIScanReport(connections: connections, skippedResources: 0)
+    if shouldReturnInvalidResponse {
+      throw NeonCLIScannerError.invalidResponse
+    }
+    return NeonCLIScanReport(connections: connections, skippedResources: 0)
   }
 }

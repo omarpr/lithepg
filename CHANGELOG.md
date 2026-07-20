@@ -1,6 +1,6 @@
 # Changelog
 
-All notable release-history entries for LithePG are collected here for public readers. The historical notes below are summarized from the roadmap, milestone specs, and dogfood receipts; detailed verification evidence lives in [`docs/dogfood-log.md`](docs/dogfood-log.md).
+All notable release-history entries for LithePG are collected here for public readers. The historical notes below are summarized from the roadmap and milestone specs.
 
 LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag marks the source release; signed and notarized binary publication is tracked separately because it requires Apple Developer credentials and final distribution approval.
 
@@ -17,7 +17,6 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 - Timestamps, dates, UUIDs and numeric values render readably in the grid instead of a raw byte-count placeholder.
 - Query tabs can be renamed: double-click a tab or use its context menu.
 - Cell clicking is instant: the per-cell editor popover became a single sheet and single-click selection no longer waits out the double-click interval. Grid fonts moved up to 13pt SF Mono with roomier rows.
-- `script/dev_signing_setup.sh` creates a persistent local code-signing identity so Keychain "Always Allow" choices survive rebuilds; the packager picks it up automatically.
 - Readability pass: results grid, sidebar rows, status text and badges moved from 10pt caption sizes to 11 to 12pt.
 - EXPLAIN plan parsing (`QueryPlan`) and headless plan-tree presentation seams, ready for a v1.1 plan view.
 - Schema graph (`⇧⌘G`): an in-app force-directed graph of tables and foreign keys with pan, zoom, drag, selection highlighting and a column inspector with PK/FK badges. Read-only, derived from already-loaded schema metadata; graphs past 300 tables use a static grid layout.
@@ -41,8 +40,8 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 ### Verified
 
 - 252 tests across 40 suites pass locally; live suites were separately verified against seeded Docker Postgres and real Neon endpoints.
-- Full git history (412 commits) scanned for secrets with gitleaks plus manual pattern sweeps: clean, no rewrite needed before open-sourcing.
-- Binary and speed budgets hold: ~21.7 MiB release executable (50 MiB cap, 30 MiB stretch), sub-500 ms connected startup, sub-5 ms query overhead. Receipts in `docs/dogfood-log.md`.
+- Full patch-bearing git history (446 commits) scanned for secrets with gitleaks plus manual pattern sweeps: no credentials or secrets found.
+- Binary and speed budgets hold: ~21.7 MiB release executable (50 MiB cap, 30 MiB stretch), sub-500 ms connected startup, sub-5 ms query overhead.
 
 ### Still blocked before public binary distribution
 
@@ -71,7 +70,7 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 ### Added
 
 - Repeatable measurement harness for release binary size, app startup readiness, and query-path overhead versus `psql` on the local seeded baseline.
-- Dogfood stability gate (`script/dogfood_check.sh`) that runs default tests, live dogfood coverage, and measurement checks.
+- A milestone stability gate that ran default tests, live database coverage and measurement checks.
 - Release app packaging path that creates `dist/LithePG.app` and strips the copied executable for distribution-size measurement.
 - Startup readiness instrumentation and query-overhead receipts for the app's persistent connection path.
 

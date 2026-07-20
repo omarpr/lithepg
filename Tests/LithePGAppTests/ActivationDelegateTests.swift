@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Testing
 
@@ -9,7 +10,7 @@ struct ActivationDelegateTests {
   func manualActivationOnlyOutsideAppBundles() {
     #expect(
       UnbundledActivationDelegate.needsManualActivation(
-        bundleURL: URL(fileURLWithPath: "/Users/dev/lithepg/.build/debug/LithePGApp")
+        bundleURL: URL(fileURLWithPath: "/tmp/lithepg/.build/debug/LithePGApp")
       )
     )
     #expect(
@@ -17,5 +18,13 @@ struct ActivationDelegateTests {
         bundleURL: URL(fileURLWithPath: "/Applications/LithePG.app")
       )
     )
+  }
+
+  @Test("closing the last window terminates LithePG")
+  @MainActor
+  func closingLastWindowTerminatesApplication() {
+    let delegate = UnbundledActivationDelegate()
+
+    #expect(delegate.applicationShouldTerminateAfterLastWindowClosed(NSApplication.shared))
   }
 }

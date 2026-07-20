@@ -52,12 +52,11 @@ Packaging and gates:
 ```sh
 ./script/build_and_run.sh --package   # produce dist/LithePG.app
 ./script/package_verify.sh dist/LithePG.app
-./script/dogfood_check.sh             # full stability gate (needs Docker/Postgres)
 ```
 
 Confirm `swift build` and `swift test` pass before opening a PR (docs- or
 templates-only changes excepted). For release-impacting changes, also run the
-package verifier and dogfood gate when you can.
+package verifier.
 
 ## Coding conventions
 

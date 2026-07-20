@@ -20,9 +20,9 @@ struct AIQueryPrivacyReceiptTests {
     )
 
     let context = try AIQueryContextBuilder.build(
-      prompt: "Show customers password=hunter2 from postgres://omar:supersecret@db.example.com/prod",
+      prompt: "Show customers password=hunter2 from postgres://dbuser:supersecret@db.example.com/prod",
       schemaIndex: schemaIndex,
-      rawConnectionURL: "postgres://omar:supersecret@db.example.com/prod",
+      rawConnectionURL: "postgres://dbuser:supersecret@db.example.com/prod",
       latestResult: result
     )
 
@@ -31,7 +31,7 @@ struct AIQueryPrivacyReceiptTests {
     #expect(serialized.contains("[redacted]"))
     #expect(!serialized.contains("hunter2"))
     #expect(!serialized.contains("supersecret"))
-    #expect(!serialized.contains("postgres://omar:supersecret@db.example.com/prod"))
+    #expect(!serialized.contains("postgres://dbuser:supersecret@db.example.com/prod"))
     #expect(!serialized.contains("alice@example.com"))
     #expect(!serialized.contains("tok_live_sensitive"))
   }
@@ -41,7 +41,7 @@ struct AIQueryPrivacyReceiptTests {
     let context = try AIQueryContextBuilder.build(
       prompt: "show customers",
       schemaIndex: SchemaIndex(schema: privacySchema),
-      rawConnectionURL: "postgres://omar:supersecret@db.example.com/prod",
+      rawConnectionURL: "postgres://dbuser:supersecret@db.example.com/prod",
       latestResult: nil
     )
 

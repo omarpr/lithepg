@@ -18,7 +18,6 @@
 - [ ] `swift test`
 - [ ] `./script/build_and_run.sh --package`
 - [ ] `./script/package_verify.sh dist/LithePG.app`
-- [ ] `./script/dogfood_check.sh` (release-impacting changes; requires Docker/Postgres)
 - [ ] Docs/template checks only (explain below)
 
 Notes / command output summary:

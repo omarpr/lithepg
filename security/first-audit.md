@@ -6,7 +6,7 @@
 > [`../SECURITY.md`](../SECURITY.md) and [`../docs/SECURITY.md`](../docs/SECURITY.md).
 
 **Date:** 2026-05-05
-**Auditor:** Security Engineer agent (Claude Code)
+**Auditor:** Security Engineer agent
 **Commit:** `ab4b49f0f98e31182ce83efb86023a809d3247d3`
 **Scope reviewed:**
 - `Sources/LithePGCore/{ConnectionConfig,PostgresConnector,SSHTunnel,SchemaIntrospector,SchemaMetadata,QueryResult,ErrorRedaction}.swift`
@@ -17,7 +17,7 @@
 - `.github/workflows/ci.yml`
 - `script/{build_and_run,dogfood_postgres,run_dogfood_app}.sh`, `script/dogfood_seed.sql`
 - `dist/LithePG.app/Contents/Info.plist`, `.build/.../*-entitlement.plist`
-- `docs/SECURITY.md`, `CLAUDE.md`, `.gitignore`
+- `docs/SECURITY.md`, `AGENTS.md`, `.gitignore`
 - Test files cross-checked: `Tests/LithePGCoreTests/{ErrorRedactionTests,PostgresConnectorTests,SchemaIntrospectorTests,SSHTunnelTests}.swift`, `Tests/LithePGAppTests/AppStateTests.swift`
 
 ## Executive Summary
@@ -273,9 +273,9 @@
 
 ## Verified Security Claims
 
-The following claims from `docs/SECURITY.md` and `CLAUDE.md` were confirmed in code:
+The following claims from `docs/SECURITY.md` and the repository agent guidance were confirmed in code:
 
-1. **"No `libpq` or other C dependencies."** — `Package.resolved` resolves only Apple/Vapor pure-Swift packages: postgres-nio, swift-{nio,nio-ssl,asn1,async-algorithms,atomics,collections,crypto,log,metrics,system,service-lifecycle}. No `libpq` import anywhere; `grep -i libpq` in `docs/dogfood-log.md:20` corroborates. (BoringSSL is vendored inside swift-nio-ssl, which is the canonical pure-Swift path.)
+1. **"No `libpq` or other C dependencies."** — `Package.resolved` resolves only Apple/Vapor pure-Swift packages: postgres-nio, swift-{nio,nio-ssl,asn1,async-algorithms,atomics,collections,crypto,log,metrics,system,service-lifecycle}. No `libpq` import exists anywhere. (BoringSSL is vendored inside swift-nio-ssl, which is the canonical pure-Swift path.)
 2. **"All secrets live in the macOS Keychain. Never in SwiftData, plist, or on-disk files."** — Verified. `KeychainCredentialStore.saveSecret(_:for:)` (`PersistenceStores.swift:77-85`) is the only path that handles the password. `SavedConnectionMetadata` (`PersistenceModels.swift:23-71`) has no `password` field — only a `secretReference: String?`. The on-disk JSON contains only the reference UUID.
 3. **"Each connection references a Keychain item by identifier; the app never persists the password itself."** — Verified. `AppState.saveConnection` (`AppState.swift:141-178`) generates a per-connection UUID-derived secret reference (`lithepg.connection.<uuid>.password`) and writes only that to disk.
 4. **"AI inference runs locally."** — Verified by absence: no `URLSession`, `URLRequest`, `NWConnection`, no Anthropic/OpenAI/AWS/Google SDK imports, no analytics/crash-reporting libraries in `Package.resolved`. The only outbound network is to the user-configured Postgres host.
@@ -283,8 +283,8 @@ The following claims from `docs/SECURITY.md` and `CLAUDE.md` were confirmed in c
 6. **"Query history is opt-in."** — Verified. `AppState.queryHistoryEnabled` defaults to `false` (`AppState.swift:40`), and `appendQueryHistory` (`AppState.swift:519`) early-returns when disabled. UI banner reinforces this in `QueryHistoryView.swift:18`.
 7. **"History stores SQL, connection metadata, timing, and status — never result rows."** — Verified. `QueryHistoryEntry` (`PersistenceModels.swift:73-105`) has no field for cells/rows.
 8. **"Pure Swift, no C shims authored by LithePG."** — Verified. The only `Darwin.*` calls are POSIX socket calls in `SSHTunnel.allocateLocalPort` for ephemeral port discovery — not "C shim" in the libpq sense.
-9. **CLAUDE.md "Do not store credentials in plaintext."** — Verified for the keychain path. Caveat: see LITHEPG-016 — credentials may pass through env vars at launch, which is not "stored" but is "in plaintext."
-10. **CLAUDE.md "Do not disable TLS defaults."** — Partially verified: TLS is *not disabled in NIOSSL*. NIOSSL's `TLSConfiguration.makeClientConfiguration()` is used unmodified, which preserves hostname verification, certificate validation, and modern cipher suites. BUT — see LITHEPG-001: the *default mode* in `ConnectionConfig` is `.disable` (i.e. plaintext), not `.verifyFull`. Reading the CLAUDE.md rule narrowly ("don't disable NIOSSL defaults"), the code is compliant. Reading it broadly ("connections default to TLS"), it isn't.
+9. **Agent guidance: "Store saved database credentials in Keychain, never plaintext metadata."** — Verified for the keychain path. Caveat: see LITHEPG-016 — credentials may pass through env vars at launch, which is not "stored" but is "in plaintext."
+10. **Agent guidance: "Preserve secure TLS defaults."** — Partially verified: TLS is *not disabled in NIOSSL*. NIOSSL's `TLSConfiguration.makeClientConfiguration()` is used unmodified, which preserves hostname verification, certificate validation, and modern cipher suites. BUT — see LITHEPG-001: the *default mode* in `ConnectionConfig` is `.disable` (i.e. plaintext), not `.verifyFull`. Reading the rule narrowly ("don't disable NIOSSL defaults"), the code is compliant. Reading it broadly ("connections default to TLS"), it isn't.
 11. **"No `.xcodeproj`. SPM only."** — Verified.
 12. **Keychain accessibility class is sensible.** — `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` (`PersistenceStores.swift:82`) means the secret is unavailable while the device is locked and is never synced to other devices via iCloud Keychain. Good choice for desktop credentials.
 
@@ -307,7 +307,7 @@ I read the following files thoroughly and cross-referenced their tests:
 - All Sources/ Swift files in scope (~1.7K lines total of LithePGCore + LithePGApp + lithepg + LithePGBench)
 - All test files for the Core target
 - `Package.swift`, `Package.resolved`, `.github/workflows/ci.yml`, all three `script/*.sh` files, `dist/LithePG.app/Contents/Info.plist`, `.build/.../*-entitlement.plist`
-- `docs/SECURITY.md`, `CLAUDE.md`, `.gitignore`
+- `docs/SECURITY.md`, `AGENTS.md`, `.gitignore`
 
 I did **not** read in full:
 - The `docs/superpowers/` plans and specs (~5K lines of design docs) — these don't affect the security posture of the running code

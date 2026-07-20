@@ -67,7 +67,7 @@ struct AskQueryView: View {
       VStack(alignment: .leading, spacing: 4) {
         Text("Ask in English")
           .font(.headline)
-        Text("Built-in local, read-only drafting for lists, counts, ordering and known joins. Nothing runs automatically.")
+        Text("Apple's on-device model drafts against your schema when available, with a safe local fallback. Nothing runs automatically.")
           .font(.caption)
           .foregroundStyle(.secondary)
       }

@@ -1,0 +1,16 @@
+{
+  "name": "LithePG",
+  "short_name": "LithePG",
+  "description": "A lighter way to work with Postgres on macOS.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#030914",
+  "theme_color": "#07152f",
+  "icons": [
+    {
+      "src": "/assets/lithepg-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

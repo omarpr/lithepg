@@ -3,7 +3,7 @@
 ## 1. Core Philosophy
 - **Measured Lean:** Target app binary size < 50 MiB, with a 30 MiB stretch goal. AI models ship separately.
 - **Mac-First:** Native SwiftUI implementation, no Electron or heavy C-wrappers.
-- **Local-First AI:** Privacy-centric SQL drafting that defaults to deterministic on-device logic, with optional user-provided CoreML model artifacts.
+- **Local-First AI:** Privacy-centric SQL drafting that prefers Apple's on-device system model when available and falls back to deterministic schema-aware logic.
 
 ## 2. Persistence Layer
 - **Local JSON metadata:** Saved connections and opt-in query history are stored under Application Support with restrictive directory/file permissions and file-protection write options.
@@ -21,12 +21,13 @@
 ## 4. AI & Intelligence Layer
 - **Local RAG (Retrieval-Augmented Generation):**
     - Local schema indexing powers lexical retrieval today; vector storage remains a future optimization.
-- **Inference runtime decision:** v0.5 chooses a minimal **CoreML** adapter scaffold first. CoreML is available from the macOS SDK, requires no new Swift package dependency, and keeps model artifacts external. MLX remains a future option after a model candidate justifies the package/runtime cost.
-- **Model adapter:** `LocalModelAIQueryService` sits behind `AIQueryService` and is disabled by default. It is explicitly gated by `LITHEPG_ENABLE_LOCAL_MODEL=1` plus `LITHEPG_LOCAL_MODEL_PATH`; default tests cover unavailable/missing behavior, while real CoreML artifact loading is env-gated so CI stays deterministic.
-- **Model artifacts:** Artifacts are never bundled in the app binary. `LocalModelRegistry` only locates user-provided artifacts under Application Support (or explicit test/config overrides) and reports unavailable/missing states; it does not download models.
-- **v0.5 adapter measurement (2026-05-25):** Baseline release `LithePGApp` before the adapter was 22,352,984 bytes / 21.317 MiB. After the CoreML scaffold it was 22,374,232 bytes / 21.338 MiB, a +21,248 byte / +0.020 MiB delta, with no bundled model and no new package dependency. `./script/v04_measure.sh` stayed under budget: raw binary 21.338 MiB, strip probe 11.959 MiB, shell readiness 121.11 ms, connected cold start 220.51 ms.
+- **Default inference runtime:** `OnDeviceAIQueryService` uses Apple's Foundation Models framework on macOS 26 when the Apple Intelligence system model is available. Guided generation produces a typed SQL draft, compact lexical retrieval supplies relevant schema and foreign-key context, and a local SQL gate rejects mutation, DDL, locking, `SELECT INTO`, malformed and multi-statement output. The framework is supplied by macOS and adds no model artifact to LithePG.
+- **Fallback:** `DeterministicAIQueryService` remains the offline fallback on macOS 14–15 and whenever Apple Intelligence is unsupported, disabled, downloading or temporarily unavailable. It also receives a request if system-model generation fails.
+- **Custom model scaffold:** The earlier `LocalModelAIQueryService` CoreML artifact validator remains available for experiments behind `LITHEPG_ENABLE_LOCAL_MODEL=1` and `LITHEPG_LOCAL_MODEL_PATH`, but it is not the app default and does not implement model-specific NL2SQL inference.
+- **Model artifacts:** LithePG bundles and downloads no model artifact. macOS manages the Apple Intelligence system model; `LocalModelRegistry` only locates explicitly user-provided CoreML artifacts for the legacy experimental scaffold.
+- **v0.5 adapter measurement (2026-05-25):** Baseline release `LithePGApp` before the adapter was 22,352,984 bytes / 21.317 MiB. After the CoreML scaffold it was 22,374,232 bytes / 21.338 MiB, a +21,248 byte / +0.020 MiB delta, with no bundled model and no new package dependency. The milestone measurement stayed under budget: raw binary 21.338 MiB, strip probe 11.959 MiB, shell readiness 121.11 ms, connected cold start 220.51 ms.
 - **Privacy receipts:** AI context construction is test-covered to include only the user request and schema metadata, with credentials/raw connection URLs redacted or omitted and result rows excluded. Drafted SQL is inserted for human review and is never run automatically.
-- **Schema Awareness:** Local schema metadata and foreign-key indexing support deterministic read-only drafts for relation listing, counts, column projection, ordering, limits and known foreign-key joins. The CoreML adapter does not yet implement model-specific inference mapping.
+- **Schema Awareness:** Local schema metadata and foreign-key indexing support both retrieved system-model context and deterministic read-only drafts. Prompts, schema context and generated output remain in process and on device.
 
 ## 5. Build System
 - **Swift Package Manager (SPM):** No `.xcodeproj` bloat.

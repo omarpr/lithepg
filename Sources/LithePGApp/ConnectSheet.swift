@@ -1,5 +1,6 @@
-import SwiftUI
+import AppKit
 import LithePGCore
+import SwiftUI
 import UniformTypeIdentifiers
 
 struct ConnectSheet: View {
@@ -253,6 +254,16 @@ struct ConnectSheet: View {
 
       Section {
         HStack {
+          Button {
+            NSApplication.shared.terminate(nil)
+          } label: {
+            Label("Quit LithePG", systemImage: "power")
+          }
+          .buttonStyle(.bordered)
+          .keyboardShortcut("q", modifiers: .command)
+          .help("Quit LithePG (⌘Q)")
+          .accessibilityIdentifier("quit-application-button")
+
           Spacer()
           Button {
             Task { await testConnection() }

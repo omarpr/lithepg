@@ -160,7 +160,7 @@ The helper defaults to version `1.0.0`; `--version` accepts an explicit SemVer `
 - The public zip artifact: exact `LithePG.app.zip` basename, regular file, correct top-level bundle structure with no stray entries, valid ICNS icon, `CodeResources` present, strict `codesign --verify` pass, signature identifier `dev.omarpr.lithepg`, Hardened Runtime flag and a SHA-256 match against the approved digest.
 - The Homebrew cask: token, version, URL, verified URL, metadata, uninstall quit gate, app stanza, macOS floor, zap paths, Ruby syntax and `sha256` all match the release.
 
-It does **not** run the Swift tests, dogfood, package, signing or notarization gates; those still run separately below.
+It does **not** run the Swift tests, package, signing or notarization gates; those still run separately below.
 
 By default, the placeholder scan checks `docs/releases/v1.0-draft.md`, `packaging/homebrew/lithepg.rb`, root `SECURITY.md`, and `docs/SECURITY.md`. To test alternate release/cask files, set `LITHEPG_RELEASE_COPY_PATH` or `LITHEPG_HOMEBREW_CASK_PATH`; to focus the security-policy scan on one alternate file, set `LITHEPG_SECURITY_DOC_PATH`. Each path may be relative to the repository root or absolute. The helper may print the configured paths, but it does not print secret/contact/tap environment values or SHA-256 digest values.
 
@@ -193,7 +193,7 @@ The source tag and binary release are separate. Do not publish a GitHub Release 
 
 - `script/v10_release_gate.sh` reports the fast preflight is clear.
 - Full `swift test`.
-- Seeded dogfood check when Docker is available.
+- Environment-gated live database tests when their test databases are available.
 - Package verification.
 - Signed/notarized validation when credentials are available.
 - Release notes/README/security/contribution docs reviewed for public users and no secrets.

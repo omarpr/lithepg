@@ -318,7 +318,7 @@ struct AppStateTests {
         "LITHEPG_STARTUP_QUERY": " SELECT 1 ",
         "LITHEPG_STARTUP_TLS": "yes",
         "LITHEPG_STARTUP_TLS_CA_PATH": " /tmp/root.pem ",
-        "LITHEPG_STARTUP_SSH_TARGET": " omar@example.com:22 ",
+        "LITHEPG_STARTUP_SSH_TARGET": " developer@example.com:22 ",
         "LITHEPG_STARTUP_METRICS_PATH": " /tmp/lithepg-startup.json ",
       ]))
 
@@ -326,7 +326,7 @@ struct AppStateTests {
     #expect(config.query == "SELECT 1")
     #expect(config.tls == true)
     #expect(config.tlsCAPath == "/tmp/root.pem")
-    #expect(config.sshTarget == "omar@example.com:22")
+    #expect(config.sshTarget == "developer@example.com:22")
     #expect(config.metricsPath == "/tmp/lithepg-startup.json")
 
     let smokeFallback = try #require(
@@ -347,10 +347,10 @@ struct AppStateTests {
   @Test("connect sheet display redacts prefilled URL credentials")
   func connectSheetRedactsPrefilledCredentials() {
     let displayed = ConnectSheet.redactedURLForDisplay(
-      "postgres://omar:screen-share-secret@db.example.com/postgres")
+      "postgres://dbuser:screen-share-secret@db.example.com/postgres")
 
     #expect(!displayed.contains("screen-share-secret"))
-    #expect(displayed == "postgres://omar:[redacted]@db.example.com/postgres")
+    #expect(displayed == "postgres://dbuser:[redacted]@db.example.com/postgres")
   }
 
   @Test("startup metrics path can be provided without auto-connecting")
@@ -395,7 +395,7 @@ struct AppStateTests {
     let metadata = try #require(
       await s.saveConnection(
         name: " Local dogfood ",
-        url: "postgres://omar:s3cr3t@localhost:55432/postgres?sslmode=disable",
+        url: "postgres://dbuser:s3cr3t@localhost:55432/postgres?sslmode=disable",
         tls: true,
         tlsCAPath: " /tmp/root.pem ",
         sshTarget: nil,
@@ -403,7 +403,7 @@ struct AppStateTests {
       ))
 
     #expect(metadata.name == "Local dogfood")
-    #expect(metadata.connectionLabel == "omar@localhost:55432/postgres")
+    #expect(metadata.connectionLabel == "dbuser@localhost:55432/postgres")
     #expect(metadata.tlsMode == "verify-full")
     #expect(metadata.pinnedRootCertificatePath == "/tmp/root.pem")
     #expect(metadata.environment == .development)
@@ -420,7 +420,7 @@ struct AppStateTests {
 
     let metadata = await s.saveConnection(
       name: "Broken",
-      url: "postgres://omar:super-secret@localhost:70000/postgres",
+      url: "postgres://dbuser:super-secret@localhost:70000/postgres",
       environment: .development
     )
 
@@ -463,7 +463,7 @@ struct AppStateTests {
     let metadata = try #require(
       await s.saveConnection(
         name: "Delete me",
-        url: "postgres://omar:pw@localhost:5432/postgres",
+        url: "postgres://dbuser:pw@localhost:5432/postgres",
         environment: .custom
       ))
     let reference = try #require(metadata.secretReference)
@@ -480,7 +480,7 @@ struct AppStateTests {
   func queryHistoryLoadClearAndReuse() async throws {
     let store = InMemoryQueryHistoryStore(entries: [
       QueryHistoryEntry(
-        connectionLabel: "omar@localhost:5432/postgres",
+        connectionLabel: "dbuser@localhost:5432/postgres",
         sql: "SELECT newest",
         executedAt: Date(timeIntervalSince1970: 2),
         elapsedMilliseconds: 2,
@@ -488,7 +488,7 @@ struct AppStateTests {
         succeeded: true
       ),
       QueryHistoryEntry(
-        connectionLabel: "omar@localhost:5432/postgres",
+        connectionLabel: "dbuser@localhost:5432/postgres",
         sql: "SELECT oldest",
         executedAt: Date(timeIntervalSince1970: 1),
         elapsedMilliseconds: 1,

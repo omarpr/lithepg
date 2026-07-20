@@ -1,0 +1,7 @@
+.DS_Store
+.git
+dist
+node_modules
+npm-debug.log*
+README.md
+test.sh

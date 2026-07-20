@@ -4,7 +4,7 @@ import Foundation
 
 @Suite("SSHTunnel (integration)")
 struct SSHTunnelTests {
-    /// Format: "user@host:port" (e.g., "omar@bastion.example.com:22")
+    /// Format: "user@host:port" (e.g., "developer@bastion.example.com:22")
     static var sshTarget: String? {
         ProcessInfo.processInfo.environment["SSH_TEST_TARGET"]
     }
