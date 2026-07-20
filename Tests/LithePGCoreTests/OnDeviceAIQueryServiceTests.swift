@@ -23,6 +23,24 @@ struct OnDeviceAIQueryServiceTests {
     #expect(draft.explanation.contains("macOS 26"))
   }
 
+  @Test("duplicate known relation references remain valid")
+  func duplicateKnownRelationReferences() {
+    let knownRelations: Set<String> = ["public.customers"]
+
+    #expect(
+      OnDeviceAIQueryService.validatedReferencedObjects(
+        ["public.customers", "\"public\".\"customers\""],
+        knownRelations: knownRelations
+      ) == ["public.customers"]
+    )
+    #expect(
+      OnDeviceAIQueryService.validatedReferencedObjects(
+        ["public.customers", "public.unknown"],
+        knownRelations: knownRelations
+      ) == nil
+    )
+  }
+
   @Test("accepts one read-only SELECT and normalizes its terminator")
   func acceptsReadOnlySelect() {
     let sql = """

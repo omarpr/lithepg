@@ -93,6 +93,27 @@ public struct OnDeviceAIQueryService: AIQueryService {
       confidence: 0
     )
   }
+
+  static func validatedReferencedObjects(
+    _ generatedReferences: [String],
+    knownRelations: Set<String>
+  ) -> [String]? {
+    let normalizedReferences = generatedReferences.map(normalizedRelationName)
+    let knownReferences = normalizedReferences.filter {
+      knownRelations.contains($0.lowercased())
+    }
+    guard !knownReferences.isEmpty,
+      knownReferences.count == normalizedReferences.count
+    else { return nil }
+    return knownReferences.uniqued()
+  }
+
+  private static func normalizedRelationName(_ raw: String) -> String {
+    raw
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+      .replacingOccurrences(of: "\".\"", with: ".")
+      .replacingOccurrences(of: "\"", with: "")
+  }
 }
 
 #if canImport(FoundationModels)
@@ -182,12 +203,11 @@ public struct OnDeviceAIQueryService: AIQueryService {
           .filter { $0.kind == .relation }
           .map { $0.title.lowercased() }
       )
-      let referencedObjects = generated.referencedObjects
-        .map(Self.normalizedRelationName)
-        .filter { knownRelations.contains($0.lowercased()) }
-        .uniqued()
-      guard !referencedObjects.isEmpty,
-        referencedObjects.count == generated.referencedObjects.count
+      guard
+        let referencedObjects = validatedReferencedObjects(
+          generated.referencedObjects,
+          knownRelations: knownRelations
+        )
       else {
         return rejected(
           "The on-device model referenced a relation that is not in the loaded schema.")
@@ -226,13 +246,6 @@ public struct OnDeviceAIQueryService: AIQueryService {
         characterCount += line.count + 1
       }
       return lines.joined(separator: "\n")
-    }
-
-    fileprivate static func normalizedRelationName(_ raw: String) -> String {
-      raw
-        .trimmingCharacters(in: .whitespacesAndNewlines)
-        .replacingOccurrences(of: "\".\"", with: ".")
-        .replacingOccurrences(of: "\"", with: "")
     }
 
     fileprivate static func needsModel(_ explanation: String) -> AIQueryDraft {
