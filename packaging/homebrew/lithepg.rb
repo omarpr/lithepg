@@ -4,7 +4,7 @@
 
 cask "lithepg" do
   version "1.0.2-preview.1"
-  sha256 "17460e9c9e62b76ffed65a39c7cd72bd27d4fdc84adcaa80769844782e3c5d77"
+  sha256 "4a58d760275e52739f69a8108665d9c70a7863a5322675f846b032ec2a26c443"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
       verified: "github.com/omarpr/lithepg/"
