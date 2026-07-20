@@ -111,8 +111,10 @@ struct PersistenceModelTests {
     try await store.save(connection)
     let reloaded = JSONFileSavedConnectionStore(fileURL: fileURL, integrityStore: integrityStore)
     let persisted = try #require(try await reloaded.list().first)
+    let validated = try #require(try await reloaded.validatedConnection(id: connection.id))
 
     #expect(persisted.name == connection.name)
+    #expect(validated == persisted)
     #expect(persisted.connectionLabel == connection.connectionLabel)
     #expect(persisted.integrityKeyReference != nil)
     #expect(persisted.integrityTag != nil)
@@ -124,7 +126,7 @@ struct PersistenceModelTests {
     #expect(try Self.octalPermissions(for: fileURL) == 0o600)
   }
 
-  @Test("JSON file saved connection store rejects tampered metadata")
+  @Test("JSON file saved connection store lists but refuses to use tampered metadata")
   func jsonFileSavedConnectionStoreRejectsTampering() async throws {
     let directory = FileManager.default.temporaryDirectory.appendingPathComponent(
       UUID().uuidString, isDirectory: true)
@@ -150,12 +152,13 @@ struct PersistenceModelTests {
     )
     try json.write(to: fileURL, atomically: true, encoding: .utf8)
 
+    #expect(try await store.list().map(\.id) == [connection.id])
     await #expect(throws: PersistenceIntegrityError.invalidSignature) {
-      _ = try await store.list()
+      _ = try await store.validatedConnection(id: connection.id)
     }
   }
 
-  @Test("JSON file saved connection store rejects unsigned metadata")
+  @Test("JSON file saved connection store lists but refuses to use unsigned metadata")
   func jsonFileSavedConnectionStoreRejectsUnsignedMetadata() async throws {
     let directory = FileManager.default.temporaryDirectory.appendingPathComponent(
       UUID().uuidString, isDirectory: true)
@@ -179,9 +182,50 @@ struct PersistenceModelTests {
       integrityStore: InMemoryCredentialStore()
     )
 
+    #expect(try await store.list().map(\.id) == [connection.id])
     await #expect(throws: PersistenceIntegrityError.missingSignature) {
-      _ = try await store.list()
+      _ = try await store.validatedConnection(id: connection.id)
     }
+  }
+
+  @Test("listing connections does not read Keychain integrity items and validation is cached")
+  func listingDefersAndCachesIntegrityReads() async throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(
+      UUID().uuidString, isDirectory: true)
+    let fileURL = directory.appendingPathComponent("saved-connections.json")
+    let integrityStore = CountingCredentialStore()
+    let store = JSONFileSavedConnectionStore(
+      fileURL: fileURL,
+      integrityStore: integrityStore
+    )
+    let connection = SavedConnectionMetadata(
+      name: "Deferred integrity",
+      host: "localhost",
+      port: 5432,
+      database: "postgres",
+      username: "omar",
+      tlsMode: "disable",
+      environment: .development,
+      secretReference: "password-ref"
+    )
+
+    try await store.save(connection)
+    await integrityStore.resetLoadCount()
+
+    #expect(try await store.list().map(\.id) == [connection.id])
+    #expect(await integrityStore.loadCount() == 0)
+
+    #expect(try await store.validatedConnection(id: connection.id)?.id == connection.id)
+    #expect(try await store.validatedConnection(id: connection.id)?.id == connection.id)
+    #expect(await integrityStore.loadCount() == 0)
+
+    let reloaded = JSONFileSavedConnectionStore(
+      fileURL: fileURL,
+      integrityStore: integrityStore
+    )
+    #expect(try await reloaded.validatedConnection(id: connection.id)?.id == connection.id)
+    #expect(try await reloaded.validatedConnection(id: connection.id)?.id == connection.id)
+    #expect(await integrityStore.loadCount() == 1)
   }
 
   @Test("JSON file query history store persists newest-first entries and clears")
@@ -234,5 +278,31 @@ struct PersistenceModelTests {
   private static func octalPermissions(for url: URL) throws -> Int {
     let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
     return ((attributes[.posixPermissions] as? NSNumber)?.intValue ?? -1) & 0o777
+  }
+}
+
+private actor CountingCredentialStore: CredentialStore {
+  private var secrets: [String: String] = [:]
+  private var loads = 0
+
+  func saveSecret(_ secret: String, for reference: String) async throws {
+    secrets[reference] = secret
+  }
+
+  func loadSecret(for reference: String) async throws -> String? {
+    loads += 1
+    return secrets[reference]
+  }
+
+  func deleteSecret(for reference: String) async throws {
+    secrets[reference] = nil
+  }
+
+  func resetLoadCount() {
+    loads = 0
+  }
+
+  func loadCount() -> Int {
+    loads
   }
 }

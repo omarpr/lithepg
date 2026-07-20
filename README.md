@@ -63,6 +63,15 @@ The installer validates any existing `LithePG.app` before replacing it and uses
 `sudo` only when `/Applications` is not writable. Pass `--no-open` to install
 without launching.
 
+Repeated ad-hoc development builds have a changing code identity, so macOS may
+ask again before releasing an existing LithePG Keychain item. For a stable local
+identity without a paid Apple Developer membership, use Keychain Access's
+**Certificate Assistant → Create a Certificate** to create a self-signed
+**Code Signing** certificate named `LithePG Local Dev`. The package script detects
+that identity automatically. This is only for local development; public builds
+still require Developer ID signing and notarization. See Apple's
+[self-signed certificate guide](https://support.apple.com/guide/keychain-access/kyca8916/mac).
+
 ## Local-first AI in plain language
 
 Ask in English (`⇧⌘K`) drafts SQL from your request plus local schema metadata. On macOS 26, when Apple Intelligence is supported, enabled and ready, LithePG uses Apple's on-device system foundation model with guided structured output. It supplies a compact schema and foreign-key context, then admits only one read-only statement through a local safety gate. Older or unsupported Macs retain the deterministic local drafter for relation listing, counts, column projection, ordering, limits and known foreign-key joins. The draft lands in the editor for review and never runs automatically. LithePG makes no cloud AI call and downloads no model artifact; the system model is managed by macOS.

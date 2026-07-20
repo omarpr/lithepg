@@ -236,7 +236,7 @@ sign_release_bundle() {
     --entitlements "$ENTITLEMENTS"
     --sign "$identity"
   )
-  if [[ "$identity" != "-" ]]; then
+  if [[ "$identity" != "-" && "$identity" != "LithePG Local Dev" ]]; then
     sign_args+=(--timestamp)
   fi
   "$CODESIGN" "${sign_args[@]}" "$APP_BUNDLE"

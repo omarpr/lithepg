@@ -332,12 +332,10 @@ public final class AppState {
   }
 
   func savedConnectionPassword(id: SavedConnectionMetadata.ID) async -> String? {
-    guard let metadata = savedConnections.first(where: { $0.id == id }) else {
-      setPersistenceError(PersistenceError.savedConnectionNotFound)
-      return nil
-    }
-
     do {
+      guard let metadata = try await savedConnectionStore.validatedConnection(id: id) else {
+        throw PersistenceError.savedConnectionNotFound
+      }
       guard let secretReference = metadata.secretReference,
         let password = try await credentialStore.loadSecret(for: secretReference)
       else {
@@ -359,12 +357,10 @@ public final class AppState {
     tls: Bool = false, tlsCAPath: String? = nil, sshTarget: String? = nil,
     environment: ConnectionEnvironment = .development
   ) async -> SavedConnectionMetadata? {
-    guard let existing = savedConnections.first(where: { $0.id == id }) else {
-      setPersistenceError(PersistenceError.savedConnectionNotFound)
-      return nil
-    }
-
     do {
+      guard let existing = try await savedConnectionStore.validatedConnection(id: id) else {
+        throw PersistenceError.savedConnectionNotFound
+      }
       let config = try Self.connectionConfig(
         host: host, port: port, database: database, username: username, password: password,
         tls: tls, tlsCAPath: tlsCAPath, sshTarget: sshTarget)
@@ -381,20 +377,10 @@ public final class AppState {
   }
 
   public func connectSavedConnection(id: SavedConnectionMetadata.ID) async {
-    let metadata: SavedConnectionMetadata?
-    if let loaded = savedConnections.first(where: { $0.id == id }) {
-      metadata = loaded
-    } else {
-      await loadSavedConnections()
-      metadata = savedConnections.first { $0.id == id }
-    }
-
-    guard let metadata else {
-      setError("Saved connection not found.")
-      return
-    }
-
     do {
+      guard let metadata = try await savedConnectionStore.validatedConnection(id: id) else {
+        throw PersistenceError.savedConnectionNotFound
+      }
       guard let secretReference = metadata.secretReference,
         let password = try await credentialStore.loadSecret(for: secretReference)
       else {
@@ -415,9 +401,11 @@ public final class AppState {
 
   public func deleteSavedConnection(id: SavedConnectionMetadata.ID) async {
     do {
-      let metadata = savedConnections.first { $0.id == id }
+      guard let metadata = try await savedConnectionStore.validatedConnection(id: id) else {
+        throw PersistenceError.savedConnectionNotFound
+      }
       try await savedConnectionStore.delete(id: id)
-      if let secretReference = metadata?.secretReference {
+      if let secretReference = metadata.secretReference {
         try await credentialStore.deleteSecret(for: secretReference)
       }
       if activeSavedConnection?.id == id {

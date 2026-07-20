@@ -4,6 +4,7 @@ import Security
 
 public protocol SavedConnectionStore: Sendable {
   func list() async throws -> [SavedConnectionMetadata]
+  func validatedConnection(id: SavedConnectionMetadata.ID) async throws -> SavedConnectionMetadata?
   func save(_ connection: SavedConnectionMetadata) async throws
   func delete(id: SavedConnectionMetadata.ID) async throws
 }
@@ -25,6 +26,7 @@ public actor JSONFileSavedConnectionStore: SavedConnectionStore {
   private let integrityStore: any CredentialStore
   private let encoder: JSONEncoder
   private let decoder: JSONDecoder
+  private var loadedIntegrityKeys: [String: String] = [:]
 
   public init(
     fileURL: URL = PersistenceFileLocations.savedConnectionsURL,
@@ -38,13 +40,26 @@ public actor JSONFileSavedConnectionStore: SavedConnectionStore {
   }
 
   public func list() async throws -> [SavedConnectionMetadata] {
-    try await readAll().sorted { lhs, rhs in
+    try readAll().sorted { lhs, rhs in
       lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
     }
   }
 
+  public func validatedConnection(
+    id: SavedConnectionMetadata.ID
+  ) async throws -> SavedConnectionMetadata? {
+    guard let connection = try readAll().first(where: { $0.id == id }) else {
+      return nil
+    }
+    try await verify(connection)
+    return connection
+  }
+
   public func save(_ connection: SavedConnectionMetadata) async throws {
-    var connections = try await readAll()
+    var connections = try readAll()
+    if let existing = connections.first(where: { $0.id == connection.id }) {
+      try await verify(existing)
+    }
     let signed = try await signedConnection(connection)
     if let index = connections.firstIndex(where: { $0.id == signed.id }) {
       connections[index] = signed
@@ -55,21 +70,23 @@ public actor JSONFileSavedConnectionStore: SavedConnectionStore {
   }
 
   public func delete(id: SavedConnectionMetadata.ID) async throws {
-    var connections = try await readAll()
+    var connections = try readAll()
     let removed = connections.first { $0.id == id }
+    if let removed {
+      try await verify(removed)
+    }
     connections.removeAll { $0.id == id }
     try writeAll(connections)
     if let reference = removed?.integrityKeyReference {
       try await integrityStore.deleteSecret(for: reference)
+      loadedIntegrityKeys[reference] = nil
     }
   }
 
-  private func readAll() async throws -> [SavedConnectionMetadata] {
+  private func readAll() throws -> [SavedConnectionMetadata] {
     guard FileManager.default.fileExists(atPath: fileURL.path) else { return [] }
     let data = try Data(contentsOf: fileURL)
-    let connections = try decoder.decode([SavedConnectionMetadata].self, from: data)
-    try await verify(connections)
-    return connections
+    return try decoder.decode([SavedConnectionMetadata].self, from: data)
   }
 
   private func writeAll(_ connections: [SavedConnectionMetadata]) throws {
@@ -84,30 +101,36 @@ public actor JSONFileSavedConnectionStore: SavedConnectionStore {
     let reference = signed.integrityKeyReference ?? Self.integrityKeyReference(for: signed.id)
     signed.integrityKeyReference = reference
     let keyBase64: String
-    if let existing = try await integrityStore.loadSecret(for: reference) {
+    if let existing = try await loadIntegrityKey(for: reference) {
       keyBase64 = existing
     } else {
       keyBase64 = Self.newIntegrityKeyBase64()
       try await integrityStore.saveSecret(keyBase64, for: reference)
+      loadedIntegrityKeys[reference] = keyBase64
     }
     signed.integrityTag = try Self.integrityTag(for: signed, keyBase64: keyBase64)
     return signed
   }
 
-  private func verify(_ connections: [SavedConnectionMetadata]) async throws {
-    for connection in connections {
-      guard let reference = connection.integrityKeyReference,
-        let tag = connection.integrityTag
-      else {
-        throw PersistenceIntegrityError.missingSignature
-      }
-      guard let keyBase64 = try await integrityStore.loadSecret(for: reference) else {
-        throw PersistenceIntegrityError.missingIntegrityKey
-      }
-      guard try Self.isValidIntegrityTag(tag, for: connection, keyBase64: keyBase64) else {
-        throw PersistenceIntegrityError.invalidSignature
-      }
+  private func verify(_ connection: SavedConnectionMetadata) async throws {
+    guard let reference = connection.integrityKeyReference,
+      let tag = connection.integrityTag
+    else {
+      throw PersistenceIntegrityError.missingSignature
     }
+    guard let keyBase64 = try await loadIntegrityKey(for: reference) else {
+      throw PersistenceIntegrityError.missingIntegrityKey
+    }
+    guard try Self.isValidIntegrityTag(tag, for: connection, keyBase64: keyBase64) else {
+      throw PersistenceIntegrityError.invalidSignature
+    }
+  }
+
+  private func loadIntegrityKey(for reference: String) async throws -> String? {
+    if let loaded = loadedIntegrityKeys[reference] { return loaded }
+    guard let key = try await integrityStore.loadSecret(for: reference) else { return nil }
+    loadedIntegrityKeys[reference] = key
+    return key
   }
 
   private static func integrityKeyReference(for id: SavedConnectionMetadata.ID) -> String {
@@ -176,6 +199,7 @@ public enum PersistenceIntegrityError: Error, Equatable, CustomStringConvertible
 
 public actor KeychainCredentialStore: CredentialStore {
   private let service: String
+  private var loadedSecrets: [String: String] = [:]
 
   public init(service: String = "com.omarpr.lithepg") {
     self.service = service
@@ -197,9 +221,11 @@ public actor KeychainCredentialStore: CredentialStore {
       status = addSecret(data, reference: reference, dataProtection: false)
     }
     guard status == errSecSuccess else { throw KeychainError(status: status) }
+    loadedSecrets[reference] = secret
   }
 
   public func loadSecret(for reference: String) async throws -> String? {
+    if let loaded = loadedSecrets[reference] { return loaded }
     if let secret = try loadSecret(for: reference, dataProtection: true) { return secret }
     // Backward-compatible read path for secrets saved before the data-protection keychain
     // migration and for entitlement-less builds that write to the legacy keychain.
@@ -213,6 +239,7 @@ public actor KeychainCredentialStore: CredentialStore {
     where status != errSecSuccess && status != errSecItemNotFound && status != errSecMissingEntitlement {
       throw KeychainError(status: status)
     }
+    loadedSecrets[reference] = nil
   }
 
   private func addSecret(_ data: Data, reference: String, dataProtection: Bool) -> OSStatus {
@@ -234,7 +261,9 @@ public actor KeychainCredentialStore: CredentialStore {
     if status == errSecMissingEntitlement && dataProtection { return nil }
     guard status == errSecSuccess else { throw KeychainError(status: status) }
     guard let data = result as? Data else { return nil }
-    return String(data: data, encoding: .utf8)
+    guard let secret = String(data: data, encoding: .utf8) else { return nil }
+    loadedSecrets[reference] = secret
+    return secret
   }
 
   private func baseQuery(reference: String, dataProtection: Bool) -> [String: Any] {
@@ -318,6 +347,12 @@ public actor InMemorySavedConnectionStore: SavedConnectionStore {
     connections.sorted { lhs, rhs in
       lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
     }
+  }
+
+  public func validatedConnection(
+    id: SavedConnectionMetadata.ID
+  ) async throws -> SavedConnectionMetadata? {
+    connections.first { $0.id == id }
   }
 
   public func save(_ connection: SavedConnectionMetadata) async throws {

@@ -4,6 +4,12 @@ All notable release-history entries for LithePG are collected here for public re
 
 LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag marks the source release; signed and notarized binary publication is tracked separately because it requires Apple Developer credentials and final distribution approval.
 
+## [Unreleased]
+
+### Fixed
+
+- Opening the app and browsing saved connections no longer reads every per-connection Keychain integrity item. Integrity validation is deferred until a connection is used and successful Keychain reads are cached for the current app session, preventing cascades of repeated authorization dialogs while preserving tamper checks before credentials or network access.
+
 ## [v1.0.0] — 2026-07-19 — Source Release
 
 ### Added
