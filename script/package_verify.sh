@@ -129,6 +129,9 @@ fi
 if ! printf '%s\n' "$app_binary_headers" | /usr/bin/grep -Eq '^[[:space:]]*MH_MAGIC(_64)?[[:space:]].*[[:space:]]EXECUTE[[:space:]]'; then
   fail "app executable format is invalid"
 fi
+if /usr/bin/strings -a "$APP_BINARY" | /usr/bin/grep -Eq '/Users/[^/]+/'; then
+  fail "app executable contains a local user path"
+fi
 [[ -f "$INFO_PLIST" && ! -L "$INFO_PLIST" ]] || fail "Info.plist must be a regular file"
 info_plist_mode="$(/usr/bin/stat -f%p "$INFO_PLIST")"
 if (( (8#$info_plist_mode & 07022) != 0 )); then

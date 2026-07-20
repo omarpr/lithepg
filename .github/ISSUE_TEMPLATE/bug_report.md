@@ -13,7 +13,7 @@ Do NOT paste passwords, tokens, full connection URLs, private schemas, real
 query-result dumps, certificates, or real customer/user data.
 
 If this is a security vulnerability, do not open a public issue. See
-`docs/SECURITY.md` and use GitHub private vulnerability reporting/advisory
+`SECURITY.md` and use GitHub private vulnerability reporting/advisory
 channels if enabled for this repository.
 -->
 

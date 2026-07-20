@@ -3,7 +3,7 @@
 Thanks for your interest in LithePG. This project is **maintainer-led** with a
 deliberately narrow scope. Before opening a pull request, please read this guide,
 [`GOVERNANCE.md`](GOVERNANCE.md), the [Code of Conduct](CODE_OF_CONDUCT.md) and
-the security posture in [`docs/SECURITY.md`](docs/SECURITY.md).
+the security posture in [`SECURITY.md`](SECURITY.md).
 
 ## Before you write code
 
@@ -33,7 +33,7 @@ A change that breaks one of these will not merge:
   `docs/TECH_STACK.md`). Discuss new dependencies first. The app binary has a
   <50 MiB hard cap and a 30 MiB stretch goal.
 - **Secure by default.** Credentials go through the Keychain, never plaintext.
-  Don't weaken TLS defaults (`docs/SECURITY.md`).
+  Don't weaken TLS defaults (`SECURITY.md`).
 - **SPM only.** No `.xcodeproj`.
 
 ## Development setup
@@ -105,7 +105,7 @@ Use clear, conventional commit subjects (for example `feat(app): ...`,
 ## Reporting security issues
 
 Please do **not** open public issues for security vulnerabilities. See
-[`docs/SECURITY.md`](docs/SECURITY.md) for the current posture and reporting
+[`SECURITY.md`](SECURITY.md) for the current posture and reporting
 guidance, and use the repository's private GitHub advisory channel for sensitive
 reports if it is enabled.
 

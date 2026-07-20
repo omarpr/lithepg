@@ -49,6 +49,13 @@ jobs:
       - name: Test
         run: swift test
 
+      - name: Test website
+        working-directory: webapp
+        run: |
+          npm ci
+          npm test
+          npm run build
+
       - name: Release binary size gate
         run: |
           swift build -c release --product LithePGApp
@@ -77,6 +84,9 @@ jobs:
         # actions/checkout v4
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
+      - name: Validate CI supply-chain pins
+        run: ./script/test_ci_security.sh
+
       - name: Install scanners
         # Ubuntu runner images do not ship Homebrew. Binaries are version-pinned
         # and checksum-verified, matching the SHA-pinned actions above.
@@ -89,7 +99,7 @@ jobs:
           echo "15314940c10d26af9c6649f150b8a47c1262e8fc7e17b1d1029b0e479e8ed8a0  osv-scanner" | sha256sum -c -
           chmod +x osv-scanner
           sudo mv osv-scanner /usr/local/bin/osv-scanner
-          pipx install semgrep
+          pipx install semgrep==1.170.0
 
       - name: OSV dependency scan
         run: osv-scanner --lockfile Package.resolved

@@ -4479,12 +4479,11 @@ printf 'Report vulnerabilities using the configured private security advisory fl
 printf 'LithePG v1.0 release copy that cannot be scanned by fake grep.\n' >"$grep_error_release_copy"
 /bin/chmod 000 "$grep_error_release_copy"
 
-mkdir -p "$default_security_docs_repo/script" "$default_security_docs_repo/docs"
+mkdir -p "$default_security_docs_repo/script"
 default_security_docs_helper="$default_security_docs_repo/script/v10_release_gate.sh"
 cp "$HELPER" "$default_security_docs_helper"
 chmod +x "$default_security_docs_helper"
-printf 'Report vulnerabilities using the configured private security advisory flow.\n' >"$default_security_docs_repo/SECURITY.md"
-printf 'Report vulnerabilities to [security contact pending].\n' >"$default_security_docs_repo/docs/SECURITY.md"
+printf 'Report vulnerabilities to [security contact pending].\n' >"$default_security_docs_repo/SECURITY.md"
 
 helper_contents="$(<"$HELPER")"
 assert_occurrences "$helper_contents" '/usr/bin/python3 -I -' 5
@@ -8125,13 +8124,12 @@ if run_specific_gate_capture "$default_security_docs_output" "$default_security_
   LITHEPG_GITHUB_ACTIONS_READY="approved" \
   LITHEPG_RELEASE_COPY_APPROVED="approved" \
   LITHEPG_PUBLICATION_APPROVED="approved"; then
-  fail "gate unexpectedly passed when default docs/SECURITY.md contained a security-contact placeholder"
+  fail "gate unexpectedly passed when the canonical SECURITY.md contained a security-contact placeholder"
 fi
 default_security_docs_text="$(<"$default_security_docs_output")"
 assert_contains "$default_security_docs_text" "Release copy placeholders: none found"
 assert_contains "$default_security_docs_text" "Homebrew cask placeholders: none found"
-assert_contains "$default_security_docs_text" "Security policy placeholders: none found in SECURITY.md"
-assert_contains "$default_security_docs_text" "Security policy placeholders: present in docs/SECURITY.md"
+assert_contains "$default_security_docs_text" "Security policy placeholders: present in SECURITY.md"
 assert_contains "$default_security_docs_text" "v1.0.0 publication blocked"
 assert_not_contains "$default_security_docs_text" "[security contact pending]"
 assert_not_contains "$default_security_docs_text" "fast preflight is clear"

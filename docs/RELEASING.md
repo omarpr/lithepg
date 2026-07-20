@@ -57,6 +57,9 @@ The verifier checks:
 - `Contents/Info.plist` has the expected executable, bundle identifier, bundle name, package type, numeric release/build version fields, minimum system version, and principal class.
 - If `LITHEPG_EXPECTED_MARKETING_VERSION` or `LITHEPG_EXPECTED_BUILD_VERSION` is set, the corresponding bundle metadata exactly matches the expected value.
 - The packaged executable stays below the 50 MiB hard cap.
+- The executable contains no `/Users/<name>/...` build paths. Release packaging
+  uses a fresh SwiftPM scratch directory under `/private/tmp` so dependency
+  diagnostics cannot disclose the maintainer's home or project directory.
 
 An unsigned/ad-hoc-signed local bundle is only a development artifact. Do not publish it as a public v1.0.0 release.
 
@@ -191,7 +194,7 @@ The helper defaults to version `1.0.0`; `--version` accepts an explicit SemVer `
 
 It does **not** run the Swift tests, package, signing or notarization gates; those still run separately below.
 
-By default, the placeholder scan checks `docs/releases/v1.0-draft.md`, `packaging/homebrew/lithepg.rb`, root `SECURITY.md`, and `docs/SECURITY.md`. To test alternate release/cask files, set `LITHEPG_RELEASE_COPY_PATH` or `LITHEPG_HOMEBREW_CASK_PATH`; to focus the security-policy scan on one alternate file, set `LITHEPG_SECURITY_DOC_PATH`. Each path may be relative to the repository root or absolute. The helper may print the configured paths, but it does not print secret/contact/tap environment values or SHA-256 digest values.
+By default, the placeholder scan checks `docs/releases/v1.0-draft.md`, `packaging/homebrew/lithepg.rb`, and the canonical root `SECURITY.md`. To test alternate release/cask files, set `LITHEPG_RELEASE_COPY_PATH` or `LITHEPG_HOMEBREW_CASK_PATH`; to scan an alternate security policy, set `LITHEPG_SECURITY_DOC_PATH`. Each path may be relative to the repository root or absolute. The helper may print the configured paths, but it does not print secret/contact/tap environment values or SHA-256 digest values.
 
 The helper also blocks publication until the final public release zip is present, has the expected bundle structure, and its digest matches the approved value:
 
@@ -214,7 +217,35 @@ The helper also checks these external inputs without printing their values:
 | `LITHEPG_RELEASE_COPY_APPROVED` | Boolean-style approval (`true`, `yes`, `1`, or `approved`). |
 | `LITHEPG_PUBLICATION_APPROVED` | Boolean-style explicit publication approval (`true`, `yes`, `1`, or `approved`). |
 
+All three approval variables default to empty and therefore fail closed. Set
+them explicitly for each release invocation after reviewing the corresponding
+gate; do not store approved defaults in the release script.
+
 Missing or false inputs make the helper exit non-zero with a `v1.0.0 publication blocked` summary. A passing fast preflight only means the quick local/tag facts and external approvals are present; still run the full local gate commands below before tagging or publishing.
+
+## Making the GitHub repository public
+
+The repository ruleset protects the default branch, GitHub Actions requires
+immutable action SHAs, and `.github/workflows/codeql.yml` listens for GitHub's
+`public` event so the first Swift CodeQL analysis starts when visibility
+changes. Immediately after making the repository public, enable private
+vulnerability reporting and verify the setting:
+
+```sh
+gh api --method PUT repos/omarpr/lithepg/private-vulnerability-reporting
+gh api repos/omarpr/lithepg/private-vulnerability-reporting
+```
+
+GitHub does not expose that setting while this repository is private. Do not
+claim that private vulnerability reporting is enabled until the verification
+request returns `enabled: true`. The email address in root `SECURITY.md` remains
+the fallback reporting path.
+
+Then confirm the `CodeQL` workflow completed successfully and that the active
+`main-protection` ruleset still requires pull requests, verified signatures,
+non-fast-forward protection and CodeQL results. Run
+`./script/test_ci_security.sh` locally to reject mutable action refs or an
+unpinned Semgrep install before pushing workflow changes.
 
 ## v1.0.0 binary-publication gate
 

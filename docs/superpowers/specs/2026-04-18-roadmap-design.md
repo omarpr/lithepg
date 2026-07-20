@@ -5,7 +5,7 @@
 
 ## 1. Context
 
-LithePG is a lean, Mac-native PostgreSQL client with local-first AI. The tech stack, architecture, and security posture are already documented in `docs/TECH_STACK.md`, `docs/ARCHITECTURE.md`, and `docs/SECURITY.md`. This spec defines *what we build, in what order, and how we know we're done*.
+LithePG is a lean, Mac-native PostgreSQL client with local-first AI. The tech stack, architecture, and security posture are already documented in `docs/TECH_STACK.md`, `docs/ARCHITECTURE.md`, and `SECURITY.md`. This spec defines *what we build, in what order, and how we know we're done*.
 
 ## 2. Target User
 

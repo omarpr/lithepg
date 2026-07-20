@@ -64,6 +64,7 @@ CODESIGN=/usr/bin/codesign
 CP=/bin/cp
 DITTO=/usr/bin/ditto
 MKDIR=/bin/mkdir
+MKTEMP=/usr/bin/mktemp
 PERL=/usr/bin/perl
 OPEN="${LITHEPG_BUILD_AND_RUN_OPEN:-/usr/bin/open}"
 PGREP="${LITHEPG_BUILD_AND_RUN_PGREP:-/usr/bin/pgrep}"
@@ -123,6 +124,15 @@ INFO_PLIST="$APP_CONTENTS/Info.plist"
 ENTITLEMENTS="$ROOT_DIR/Sources/LithePGApp/LithePGApp.entitlements"
 ICON_SOURCE="$ROOT_DIR/packaging/AppIcon.icns"
 NOTARY_ZIP="$DIST_DIR/$BUNDLE_NAME-notary.zip"
+RELEASE_SCRATCH_DIR=""
+
+cleanup_release_scratch() {
+  if [[ -n "$RELEASE_SCRATCH_DIR" && -d "$RELEASE_SCRATCH_DIR" \
+    && "$RELEASE_SCRATCH_DIR" == /private/tmp/lithepg-release-build.* ]]; then
+    "$RM" -rf -- "$RELEASE_SCRATCH_DIR"
+  fi
+}
+trap cleanup_release_scratch EXIT
 
 if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode.app/Contents/Developer ]]; then
   export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
@@ -167,8 +177,9 @@ case "$MODE" in
 esac
 
 if [[ "$BUILD_CONFIG" == "release" ]]; then
-  run_from_root swift build -c release --product "$APP_NAME"
-  BUILD_BINARY="$(run_from_root swift build -c release --show-bin-path)/$APP_NAME"
+  RELEASE_SCRATCH_DIR="$("$MKTEMP" -d /private/tmp/lithepg-release-build.XXXXXX)"
+  run_from_root swift build --scratch-path "$RELEASE_SCRATCH_DIR" -c release --product "$APP_NAME"
+  BUILD_BINARY="$(run_from_root swift build --scratch-path "$RELEASE_SCRATCH_DIR" -c release --show-bin-path)/$APP_NAME"
 else
   run_from_root swift build --product "$APP_NAME"
   BUILD_BINARY="$(run_from_root swift build --show-bin-path)/$APP_NAME"

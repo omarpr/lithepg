@@ -3,7 +3,7 @@
 > Historical audit receipt from 2026-05-05. This document is preserved as an
 > evidence artifact for the reviewed commit below and is not the current
 > security posture. For current policy and implementation status, see
-> [`../SECURITY.md`](../SECURITY.md) and [`../docs/SECURITY.md`](../docs/SECURITY.md).
+> [`../SECURITY.md`](../SECURITY.md).
 
 **Date:** 2026-05-05
 **Auditor:** Security Engineer agent
@@ -17,13 +17,13 @@
 - `.github/workflows/ci.yml`
 - `script/{build_and_run,dogfood_postgres,run_dogfood_app}.sh`, `script/dogfood_seed.sql`
 - `dist/LithePG.app/Contents/Info.plist`, `.build/.../*-entitlement.plist`
-- `docs/SECURITY.md`, `AGENTS.md`, `.gitignore`
+- `SECURITY.md`, `AGENTS.md`, `.gitignore`
 - Test files cross-checked: `Tests/LithePGCoreTests/{ErrorRedactionTests,PostgresConnectorTests,SchemaIntrospectorTests,SSHTunnelTests}.swift`, `Tests/LithePGAppTests/AppStateTests.swift`
 
 ## Executive Summary
 
 - **Overall posture is reasonable for a pre-1.0 dogfood release.** The "pure Swift, no libpq" claim is fully verified in `Package.resolved`. Passwords for saved connections do reach the macOS Keychain via `SecItemAdd` with `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`. Network egress is limited to the user-configured Postgres host plus an optional `/usr/bin/ssh` subprocess; no telemetry, analytics, crash-reporting, or update-check code paths exist.
-- **The biggest gap between the documented posture and the code is TLS defaulting.** `docs/SECURITY.md` claims "TLS is required by default" and "no fallback to cleartext on handshake failure," but in code TLS defaults to `.disable` everywhere — in `ConnectionConfig.init(...)`, in URL parsing (`?sslmode=...` is silently ignored), in saved connections (anything not literally `"verify-full"` is treated as `.disable`), and in the connect sheet (the toggle is off unless an env var is set). This is the most security-relevant divergence.
+- **The biggest gap between the documented posture and the code is TLS defaulting.** `SECURITY.md` claims "TLS is required by default" and "no fallback to cleartext on handshake failure," but in code TLS defaults to `.disable` everywhere — in `ConnectionConfig.init(...)`, in URL parsing (`?sslmode=...` is silently ignored), in saved connections (anything not literally `"verify-full"` is treated as `.disable`), and in the connect sheet (the toggle is off unless an env var is set). This is the most security-relevant divergence.
 - **The shipped/built `.app` has no entitlements file at all** (`dist/LithePG.app/Contents/` only has `Info.plist` and `MacOS/`). The debug entitlements that SwiftPM generates set `com.apple.security.get-task-allow=true`. There is no App Sandbox, no Hardened Runtime, no code signing, and no notarization in `script/build_and_run.sh`. For a pre-1.0 internal build this is acceptable, but it must change before any public distribution.
 - **SSH tunnel posture is acceptable for v0.1.** The OpenSSH child process is launched with `StrictHostKeyChecking=accept-new` (TOFU) and the local listener is the OpenSSH default of `127.0.0.1` — explicitly noted in code comments and confirmed by SSH semantics. There is no command injection vector in the argument array. Argument values are passed unshelled. The risk is `accept-new` itself, which the author has flagged as deferred to a NIOSSH-based replacement.
 - **Notable strengths:** Pydantic-style strict URL parsing with explicit port range validation; `PostgresQuery(unsafeSQL:)` is only used with user-typed SQL (the user's own machine, the user's own DB — this is intended) and never with concatenated identifiers from external input; `SELECT * FROM …` builder properly double-quotes identifiers and escapes embedded `"`; query history explicitly excludes result rows and labels the boundary in the UI; saved-connection metadata stores only references, never the secret.
@@ -44,7 +44,7 @@
 
 ## Findings
 
-### LITHEPG-001 — TLS defaults to disabled, contradicting `docs/SECURITY.md`
+### LITHEPG-001 — TLS defaults to disabled, contradicting `SECURITY.md`
 - **Severity:** High
 - **CWE:** CWE-319 (Cleartext Transmission of Sensitive Information), CWE-757 (Selection of Less-Secure Algorithm During Negotiation)
 - **Location:**
@@ -62,7 +62,7 @@
   // AppState.swift line 591
   tlsMode: metadata.tlsMode == "verify-full" ? .verifyFull : .disable,
   ```
-  `docs/SECURITY.md:16`: *"**TLS is required by default.** `sslmode=require` minimum; prefer `verify-full` when a root CA is configured."*
+  `SECURITY.md:16`: *"**TLS is required by default.** `sslmode=require` minimum; prefer `verify-full` when a root CA is configured."*
 - **Impact:** A user pasting a `postgres://user:pw@db.prod.example.com/app` URL into the connect sheet without checking the TLS toggle will send the password and every subsequent query in cleartext. The `?sslmode=require` query-string is silently dropped during parsing. Passive eavesdroppers on any network segment between the Mac and the database can read credentials and data. This is the largest gap between the stated security posture and the implementation.
 - **Remediation:**
   1. In `ConnectionConfig.init(url:)`, parse `?sslmode=require|verify-ca|verify-full|prefer|allow|disable` and map at least `require`/`verify-ca`/`verify-full` to `.verifyFull` (and add an intermediate `.require` mode that does encryption without hostname/CA verification, for parity with the Postgres ecosystem). Default the `init(host:...)` overload to `.verifyFull` for non-loopback hosts.
@@ -198,7 +198,7 @@
 - **CWE:** CWE-345 (Insufficient Verification of Data Authenticity)
 - **Location:** `Sources/LithePGApp/PersistenceStores.swift:56-60, 143-147`
 - **Evidence:** `JSONDecoder().decode([SavedConnectionMetadata].self, from: data)` reads the file with no integrity check.
-- **Impact:** An attacker with write access to `~/Library/Application Support/LithePG/saved-connections.json` could change `host` to a hostname they control, then wait for the user to click "Connect" — the password is fetched from the keychain (correctly tied by the immutable `secretReference` UUID) and sent to the attacker's host. This is essentially a connection-redirect attack, requiring local file write. Out of scope per `docs/SECURITY.md:40` ("Protection against a compromised macOS host"). Documented for completeness.
+- **Impact:** An attacker with write access to `~/Library/Application Support/LithePG/saved-connections.json` could change `host` to a hostname they control, then wait for the user to click "Connect" — the password is fetched from the keychain (correctly tied by the immutable `secretReference` UUID) and sent to the attacker's host. This is essentially a connection-redirect attack, requiring local file write. Out of scope per `SECURITY.md:40` ("Protection against a compromised macOS host"). Documented for completeness.
 - **Remediation:** Once App Sandbox lands, this risk drops further (the file is in the sandboxed container). Optionally: HMAC the JSON with a key stored alongside the password keychain item, and refuse to load saved connections whose HMAC doesn't validate. Surface a clear UI message if validation fails.
 
 ### LITHEPG-010 — `unsafeSQL:` initializer is the only path; no parameterized API exposed
@@ -267,13 +267,13 @@
 - **Location:** `Sources/LithePGApp/ConnectSheet.swift:6-11`, `Sources/LithePGApp/LithePGApp.swift:80-90`
 - **Evidence:** The connect sheet pre-fills the URL field from `POSTGRES_URL`, and the app autoconnects from `LITHEPG_STARTUP_URL`. URLs typically embed credentials.
 - **Impact:** A user who set `POSTGRES_URL` for testing and then opens the LithePG UI sees their URL pre-populated — this includes any embedded password. If the user takes a screenshot or screen-shares, the password appears in the URL field. The autoconnect path (`runStartupConnection`) bypasses the connect sheet entirely, which is correct, but means CI/scripted launches put the password in `ps`-visible env vars.
-- **Remediation:** Two improvements: (1) when pre-filling from env, mask the password portion in the displayed text field (use a separate password field, or replace `:password@` with `:••••@` in the visible string while keeping the real value in state); (2) document in `docs/SECURITY.md` that environment variables are visible to other processes on macOS via `ps -E` and recommend the keychain path for non-CI use.
+- **Remediation:** Two improvements: (1) when pre-filling from env, mask the password portion in the displayed text field (use a separate password field, or replace `:password@` with `:••••@` in the visible string while keeping the real value in state); (2) document in `SECURITY.md` that environment variables are visible to other processes on macOS via `ps -E` and recommend the keychain path for non-CI use.
 
 ---
 
 ## Verified Security Claims
 
-The following claims from `docs/SECURITY.md` and the repository agent guidance were confirmed in code:
+The following claims from `SECURITY.md` and the repository agent guidance were confirmed in code:
 
 1. **"No `libpq` or other C dependencies."** — `Package.resolved` resolves only Apple/Vapor pure-Swift packages: postgres-nio, swift-{nio,nio-ssl,asn1,async-algorithms,atomics,collections,crypto,log,metrics,system,service-lifecycle}. No `libpq` import exists anywhere. (BoringSSL is vendored inside swift-nio-ssl, which is the canonical pure-Swift path.)
 2. **"All secrets live in the macOS Keychain. Never in SwiftData, plist, or on-disk files."** — Verified. `KeychainCredentialStore.saveSecret(_:for:)` (`PersistenceStores.swift:77-85`) is the only path that handles the password. `SavedConnectionMetadata` (`PersistenceModels.swift:23-71`) has no `password` field — only a `secretReference: String?`. The on-disk JSON contains only the reference UUID.
@@ -292,12 +292,12 @@ The following claims from `docs/SECURITY.md` and the repository agent guidance w
 
 ## Unverified or Partially Verified Claims
 
-1. **`docs/SECURITY.md:16` — "TLS is required by default. `sslmode=require` minimum; prefer `verify-full` when a root CA is configured."** — Partially verified. `verify-full` is correctly implemented when chosen (`PostgresConnector.swift:207-227`), but it is *not the default*. See LITHEPG-001.
-2. **`docs/SECURITY.md:18` — "No fallback to cleartext on handshake failure."** — Cannot fully verify in code; depends on PostgresNIO's TLS-required mode behavior. The code uses `.require(sslContext)` in `makeTLS(for:)` which in PostgresNIO means "REQUIRE TLS" (does not fall back to cleartext if the server doesn't support TLS). This is correct, but the broader claim implies the *default* is TLS, which is not the case.
-3. **`docs/SECURITY.md:11` — "Client certificates and SSH keys are referenced by path or Keychain handle, never copied."** — Client certificates are not implemented in current code (`PostgresConnection.Configuration` is built without `certificateVerification` overrides for client auth). SSH keys are not handled by LithePG at all — `/usr/bin/ssh` reads `~/.ssh/` directly. Claim is technically true (because the feature doesn't yet exist) but should be revised once mTLS/client-cert support lands.
-4. **`docs/SECURITY.md:21` — "SwiftData store lives under the app's sandbox container."** — Not currently true. The app is not sandboxed (LITHEPG-002), and the persistence store is JSON, not SwiftData. The doc appears aspirational. Update either the doc or the code.
-5. **`docs/SECURITY.md:32` — "Minimize third-party dependencies (app binary target <50 MiB)."** — Verified by CI gate (`.github/workflows/ci.yml:46-61`).
-6. **`docs/SECURITY.md:34` — "Dependencies are pinned via `Package.resolved`."** — Verified literally — `Package.resolved` records exact revisions. `Package.swift` uses `from: "1.21.0"` (semver lower bound); the resolved file pins `1.33.0` of postgres-nio. This is normal Swift Package Manager semantics, not a security issue.
+1. **`SECURITY.md:16` — "TLS is required by default. `sslmode=require` minimum; prefer `verify-full` when a root CA is configured."** — Partially verified. `verify-full` is correctly implemented when chosen (`PostgresConnector.swift:207-227`), but it is *not* the default. See LITHEPG-001.
+2. **`SECURITY.md:18` — "No fallback to cleartext on handshake failure."** — Cannot fully verify in code; depends on PostgresNIO's TLS-required mode behavior. The code uses `.require(sslContext)` in `makeTLS(for:)` which in PostgresNIO means "REQUIRE TLS" (does not fall back to cleartext if the server doesn't support TLS). This is correct, but the broader claim implies the *default* is TLS, which is not the case.
+3. **`SECURITY.md:11` — "Client certificates and SSH keys are referenced by path or Keychain handle, never copied."** — Client certificates are not implemented in current code (`PostgresConnection.Configuration` is built without `certificateVerification` overrides for client auth). SSH keys are not handled by LithePG at all — `/usr/bin/ssh` reads `~/.ssh/` directly. Claim is technically true (because the feature doesn't yet exist) but should be revised once mTLS/client-cert support lands.
+4. **`SECURITY.md:21` — "SwiftData store lives under the app's sandbox container."** — Not currently true. The app is not sandboxed (LITHEPG-002), and the persistence store is JSON, not SwiftData. The doc appears aspirational. Update either the doc or the code.
+5. **`SECURITY.md:32` — "Minimize third-party dependencies (app binary target <50 MiB)."** — Verified by CI gate (`.github/workflows/ci.yml:46-61`).
+6. **`SECURITY.md:34` — "Dependencies are pinned via `Package.resolved`."** — Verified literally — `Package.resolved` records exact revisions. `Package.swift` uses `from: "1.21.0"` (semver lower bound); the resolved file pins `1.33.0` of postgres-nio. This is normal Swift Package Manager semantics, not a security issue.
 
 ---
 
@@ -307,7 +307,7 @@ I read the following files thoroughly and cross-referenced their tests:
 - All Sources/ Swift files in scope (~1.7K lines total of LithePGCore + LithePGApp + lithepg + LithePGBench)
 - All test files for the Core target
 - `Package.swift`, `Package.resolved`, `.github/workflows/ci.yml`, all three `script/*.sh` files, `dist/LithePG.app/Contents/Info.plist`, `.build/.../*-entitlement.plist`
-- `docs/SECURITY.md`, `AGENTS.md`, `.gitignore`
+- `SECURITY.md`, `AGENTS.md`, `.gitignore`
 
 I did **not** read in full:
 - The `docs/superpowers/` plans and specs (~5K lines of design docs) — these don't affect the security posture of the running code
@@ -331,7 +331,7 @@ In priority order:
 4. **Migrate keychain queries to `kSecUseDataProtectionKeychain` (LITHEPG-004).** Trivial change, large benefit once signing is in place.
 5. **Plan the NIOSSH migration (LITHEPG-005).** This is a v0.5+ effort but it solves multiple findings (LITHEPG-002 sandbox interaction, LITHEPG-005 host-key TOFU, LITHEPG-012 FD inheritance) at once.
 6. **Re-enable CI with security jobs (LITHEPG-013).** OSV-scanner + Gitleaks + Semgrep on every PR. Pin the one third-party action to a SHA (LITHEPG-014).
-7. **Reconcile `docs/SECURITY.md` with the code.** Either update the docs to say "TLS required by default — *coming in v0.5*" or fix the code first. The current divergence is the kind of thing that gets cited in incident reports.
+7. **Reconcile `SECURITY.md` with the code.** Either update the docs to say "TLS required by default — *coming in v0.5*" or fix the code first. The current divergence is the kind of thing that gets cited in incident reports.
 8. **Add explicit POSIX-permission setting on the persistence directory (LITHEPG-006)** as a stopgap until App Sandbox lands.
 9. **Mask credentials in env-var-prefilled URL fields (LITHEPG-016).** Small UI fix, large screenshot/screenshare safety improvement.
 10. **Threat-model the upcoming local-AI feature.** Once CoreML/MLX inference lands, re-audit specifically for: model file integrity (signed vs. downloaded?), prompt-template injection from query results, and any temporary file paths that touch user data.

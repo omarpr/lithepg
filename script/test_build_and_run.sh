@@ -52,6 +52,9 @@ run_package_capture() {
 
 [[ -f "$HELPER" ]] || fail "helper script missing: $HELPER"
 [[ -f "$VERIFY_HELPER" ]] || fail "package verifier missing: $VERIFY_HELPER"
+helper_contents="$(<"$HELPER")"
+assert_contains "$helper_contents" '--scratch-path "$RELEASE_SCRATCH_DIR"'
+assert_contains "$helper_contents" '/private/tmp/lithepg-release-build.XXXXXX'
 
 output_file="$(/usr/bin/mktemp)"
 verify_output_file="$(/usr/bin/mktemp)"
@@ -682,12 +685,12 @@ done
 set -euo pipefail
 /usr/bin/printf 'fake swift used\n' >"${FAKE_SWIFT_MARKER:?}"
 case "$*" in
-  "build -c release --product LithePGApp")
+  build\ --scratch-path\ /private/tmp/lithepg-release-build.*\ -c\ release\ --product\ LithePGApp)
     /bin/mkdir -p "${FAKE_SWIFT_BIN_DIR:?}"
     /bin/cp /usr/bin/true "$FAKE_SWIFT_BIN_DIR/LithePGApp"
     /bin/chmod 755 "$FAKE_SWIFT_BIN_DIR/LithePGApp"
     ;;
-  "build -c release --show-bin-path")
+  build\ --scratch-path\ /private/tmp/lithepg-release-build.*\ -c\ release\ --show-bin-path)
     /usr/bin/printf '%s\n' "${FAKE_SWIFT_BIN_DIR:?}"
     ;;
   *)

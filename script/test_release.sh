@@ -15,6 +15,12 @@ assert_contains() {
   [[ "$haystack" == *"$needle"* ]] || fail "expected output to contain: $needle"
 }
 
+assert_not_contains() {
+  local haystack="$1"
+  local needle="$2"
+  [[ "$haystack" != *"$needle"* ]] || fail "output unexpectedly contained: $needle"
+}
+
 [[ -x "$HELPER" ]] || fail "release helper is missing or not executable"
 
 help_output="$($HELPER --help)"
@@ -48,7 +54,23 @@ set -e
 assert_contains "$config_output" "configure LITHEPG_CODESIGN_IDENTITY"
 assert_contains "$config_output" "Release version:"
 
+set +e
+approval_output="$(printf '1.0.3\n' | /usr/bin/env \
+  -u LITHEPG_GITHUB_ACTIONS_READY \
+  -u LITHEPG_RELEASE_COPY_APPROVED \
+  -u LITHEPG_PUBLICATION_APPROVED \
+  LITHEPG_CODESIGN_IDENTITY=configured \
+  LITHEPG_NOTARY_PROFILE=configured \
+  "$HELPER" 2>&1)"
+approval_status=$?
+set -e
+[[ "$approval_status" -ne 0 ]] || fail "unset release approvals unexpectedly passed"
+assert_contains "$approval_output" "set LITHEPG_GITHUB_ACTIONS_READY=approved"
+
 script_contents="$(<"$HELPER")"
+assert_not_contains "$script_contents" 'LITHEPG_GITHUB_ACTIONS_READY:-true'
+assert_not_contains "$script_contents" 'LITHEPG_RELEASE_COPY_APPROVED:-true'
+assert_not_contains "$script_contents" 'LITHEPG_PUBLICATION_APPROVED:-true'
 assert_contains "$script_contents" 'LITHEPG_MARKETING_VERSION="$VERSION"'
 assert_contains "$script_contents" 'LITHEPG_EXPECTED_MARKETING_VERSION="$VERSION"'
 assert_contains "$script_contents" 'ASSET_NAME="LithePG-$VERSION.zip"'

@@ -1542,6 +1542,24 @@ assert_contains "$helper_output" "Package verified: LithePG.app"
 assert_contains "$helper_output" "Bundle ID: dev.omarpr.lithepg"
 assert_contains "$helper_output" "Version: 1.0.0 (100)"
 
+local_user_path_sentinel="/Users/example/lithepg-private-build/source.swift"
+local_user_path_bundle="$fixture_root/local-user-path/LithePG.app"
+make_minimal_app_bundle "$local_user_path_bundle"
+/usr/bin/xcrun clang -x c -o "$local_user_path_bundle/Contents/MacOS/LithePGApp" - <<'C'
+static const char local_user_path[] = "/Users/example/lithepg-private-build/source.swift";
+int main(void) { return local_user_path[0] == '\0'; }
+C
+/bin/chmod 755 "$local_user_path_bundle/Contents/MacOS/LithePGApp"
+if run_helper_capture "$output_file" "$local_user_path_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier unexpectedly accepted a local user path in the executable"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: app executable contains a local user path"
+assert_not_contains "$helper_output" "$local_user_path_sentinel"
+assert_not_contains "$helper_output" "Package verified:"
+
 resources_symlink_sentinel="RESOURCES_SYMLINK_SENTINEL_SHOULD_NOT_LEAK"
 resources_symlink_bundle="$fixture_root/resources-symlink-$resources_symlink_sentinel/LithePG.app"
 resources_symlink_target="$fixture_root/resources-symlink-target-$resources_symlink_sentinel"

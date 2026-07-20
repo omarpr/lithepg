@@ -2,7 +2,7 @@ blank_issues_enabled: false
 contact_links:
   - name: Security vulnerability report
     url: https://github.com/omarpr/lithepg/security/advisories/new
-    about: Do not open public issues for vulnerabilities. Use private GitHub vulnerability reporting/advisory channels if enabled, and see docs/SECURITY.md for current guidance.
+    about: Do not open public issues for vulnerabilities. Use private GitHub vulnerability reporting/advisory channels if enabled, and see SECURITY.md for current guidance.
   - name: Contribution guide
     url: https://github.com/omarpr/lithepg/blob/main/CONTRIBUTING.md
     about: Read the scope, verification, no-secrets, and DCO sign-off expectations before opening issues or PRs.

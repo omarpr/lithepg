@@ -15,7 +15,7 @@ Use redacted, seeded, or synthetic examples only. Do NOT paste passwords, tokens
 full connection URLs, private schemas, real query-result dumps, certificates, or
 real customer/user data.
 
-Security vulnerabilities should not be opened publicly; see `docs/SECURITY.md`
+Security vulnerabilities should not be opened publicly; see `SECURITY.md`
 and use GitHub private vulnerability reporting/advisory channels if enabled for
 this repository.
 -->

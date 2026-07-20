@@ -93,7 +93,7 @@ only the final public zip artifact validation. Set LITHEPG_RELEASE_COPY_PATH or
 LITHEPG_HOMEBREW_CASK_PATH to scan non-default release copy or Homebrew cask
 files. Set
 LITHEPG_SECURITY_DOC_PATH to scan one alternate security policy file instead of
-the default SECURITY.md and docs/SECURITY.md files (paths may be relative to the
+the default SECURITY.md file (paths may be relative to the
 repository root or absolute). Set LITHEPG_RELEASE_ZIP_PATH to the final public
 release zip artifact path (default: dist/LithePG.app.zip; basename must be
 LithePG.app.zip or LithePG-<version>.zip; path itself must be a regular file,
@@ -143,7 +143,7 @@ git_in_repo() {
 if [[ -n "$SECURITY_DOC_PATH" ]]; then
   SECURITY_DOC_PATHS=("$SECURITY_DOC_PATH")
 else
-  SECURITY_DOC_PATHS=("SECURITY.md" "docs/SECURITY.md")
+  SECURITY_DOC_PATHS=("SECURITY.md")
 fi
 TAG="v$VERSION"
 BLOCKERS=0
