@@ -5,7 +5,18 @@ public struct DeterministicAIQueryService: AIQueryService {
 
     public func draftSQL(for request: AIQueryRequest) async throws -> AIQueryDraft {
         let catalog = SchemaDocumentCatalog(index: request.schemaIndex)
-        let promptTokens = Set(Self.tokens(in: request.prompt))
+        let orderedPromptTokens = Self.tokens(in: request.prompt)
+        let promptTokens = Set(orderedPromptTokens)
+
+        if !promptTokens.isDisjoint(with: Self.mutationTokens) {
+            return AIQueryDraft(
+                sql: "",
+                explanation: "The built-in English-to-SQL drafter is read-only and will not draft mutation or DDL statements.",
+                referencedObjects: [],
+                status: .rejected,
+                confidence: 1
+            )
+        }
 
         if let draft = revenueDraft(catalog: catalog, promptTokens: promptTokens) {
             return draft
@@ -16,21 +27,72 @@ public struct DeterministicAIQueryService: AIQueryService {
         }
 
         if let relation = catalog.relations.first(where: { Self.matches($0, promptTokens: promptTokens) }) {
-            return AIQueryDraft(
-                sql: "SELECT * FROM \(Self.quotedQualified(schema: relation.schema, name: relation.name)) LIMIT 100;",
-                explanation: "Drafted a read-only SELECT for \(relation.qualifiedName).",
-                referencedObjects: [relation.qualifiedName],
-                status: .ready,
-                confidence: 0.75
+            return genericDraft(
+                relation: relation,
+                catalog: catalog,
+                orderedPromptTokens: orderedPromptTokens,
+                promptTokens: promptTokens
             )
         }
 
         return AIQueryDraft(
             sql: "",
-            explanation: "No deterministic SQL rule matched this prompt. A local model is needed to draft it safely.",
+            explanation: "The built-in local drafter could not map this request to a schema relation. Try naming a table and asking to list, count, or order its rows; broader language requires a reviewed local model.",
             referencedObjects: [],
             status: .needsModel,
             confidence: 0
+        )
+    }
+
+    private func genericDraft(
+        relation: RelationRef,
+        catalog: SchemaDocumentCatalog,
+        orderedPromptTokens: [String],
+        promptTokens: Set<String>
+    ) -> AIQueryDraft {
+        let qualified = Self.quotedQualified(schema: relation.schema, name: relation.name)
+        if !promptTokens.isDisjoint(with: ["filter", "having", "where", "whose"]) {
+            return AIQueryDraft(
+                sql: "",
+                explanation: "The built-in local drafter will not guess filter values or operators. Write the WHERE clause in SQL or use a reviewed local model.",
+                referencedObjects: [relation.qualifiedName],
+                status: .needsModel,
+                confidence: 0
+            )
+        }
+        if promptTokens.contains("count")
+            || promptTokens.contains("number")
+            || (promptTokens.contains("how") && promptTokens.contains("many"))
+        {
+            return AIQueryDraft(
+                sql: "SELECT COUNT(*) AS \"count\" FROM \(qualified);",
+                explanation: "Counted rows in \(relation.qualifiedName) with a read-only aggregate.",
+                referencedObjects: [relation.qualifiedName],
+                status: .ready,
+                confidence: 0.82
+            )
+        }
+
+        let columns = catalog.columns(in: relation)
+        let projectedColumns = Self.mentionedColumns(
+            in: orderedPromptTokens,
+            availableColumns: columns
+        )
+        let projection = projectedColumns.isEmpty
+            ? "*"
+            : projectedColumns.map(Self.quoted).joined(separator: ", ")
+        let ordering = Self.orderingClause(
+            promptTokens: orderedPromptTokens,
+            availableColumns: columns
+        )
+        let limit = Self.requestedLimit(in: orderedPromptTokens) ?? 100
+        let sql = "SELECT \(projection) FROM \(qualified)\(ordering) LIMIT \(limit);"
+        return AIQueryDraft(
+            sql: sql,
+            explanation: "Drafted a read-only SELECT for \(relation.qualifiedName).",
+            referencedObjects: [relation.qualifiedName],
+            status: .ready,
+            confidence: projectedColumns.isEmpty && ordering.isEmpty ? 0.75 : 0.8
         )
     }
 
@@ -99,6 +161,57 @@ public struct DeterministicAIQueryService: AIQueryService {
         return relationTokens.contains { promptTokens.contains($0) }
     }
 
+    private static let mutationTokens: Set<String> = [
+        "alter", "create", "delete", "drop", "grant", "insert", "revoke", "truncate", "update",
+    ]
+
+    private static func mentionedColumns(
+        in promptTokens: [String],
+        availableColumns: [String]
+    ) -> [String] {
+        let projectionTokens = Array(promptTokens.prefix {
+            !["order", "ordered", "sort", "sorted"].contains($0)
+        })
+        var selected: [String] = []
+        for token in projectionTokens {
+            guard let column = availableColumns.first(where: {
+                tokens(in: $0).contains(token)
+            }), !selected.contains(column) else { continue }
+            selected.append(column)
+        }
+        return selected
+    }
+
+    private static func orderingClause(
+        promptTokens: [String],
+        availableColumns: [String]
+    ) -> String {
+        guard promptTokens.contains(where: { ["order", "ordered", "sort", "sorted"].contains($0) })
+        else { return "" }
+
+        let searchStart = promptTokens.firstIndex(of: "by").map { $0 + 1 } ?? 0
+        guard searchStart < promptTokens.count,
+            let column = promptTokens[searchStart...].compactMap({ token in
+                availableColumns.first { tokens(in: $0).contains(token) }
+            }).first
+        else { return "" }
+
+        let descending = promptTokens.contains(where: {
+            ["desc", "descending", "latest", "newest", "top"].contains($0)
+        })
+        return " ORDER BY \(quoted(column)) \(descending ? "DESC" : "ASC")"
+    }
+
+    private static func requestedLimit(in promptTokens: [String]) -> Int? {
+        for (index, token) in promptTokens.enumerated()
+            where ["first", "limit", "top"].contains(token) && index + 1 < promptTokens.count
+        {
+            guard let value = Int(promptTokens[index + 1]) else { continue }
+            return min(max(value, 1), 1_000)
+        }
+        return nil
+    }
+
     private static func quotedQualified(schema: String, name: String) -> String {
         "\(quoted(schema)).\(quoted(name))"
     }
@@ -128,6 +241,7 @@ private struct SchemaDocumentCatalog {
     let relations: [RelationRef]
     let relationships: [RelationshipRef]
     let columnsByRelation: [String: Set<String>]
+    let orderedColumnsByRelation: [String: [String]]
 
     init(index: SchemaIndex) {
         self.relations = index.documents.compactMap { document in
@@ -140,11 +254,16 @@ private struct SchemaDocumentCatalog {
         }
 
         var columns: [String: Set<String>] = [:]
+        var orderedColumns: [String: [String]] = [:]
         for document in index.documents where document.kind == .column {
             guard let column = ColumnRef(qualifiedName: document.title) else { continue }
             columns[column.relation.qualifiedName, default: []].insert(column.name)
+            if !orderedColumns[column.relation.qualifiedName, default: []].contains(column.name) {
+                orderedColumns[column.relation.qualifiedName, default: []].append(column.name)
+            }
         }
         self.columnsByRelation = columns
+        self.orderedColumnsByRelation = orderedColumns
     }
 
     func relation(schema: String, name: String) -> RelationRef? {
@@ -153,6 +272,10 @@ private struct SchemaDocumentCatalog {
 
     func hasColumn(_ column: String, in relation: RelationRef) -> Bool {
         columnsByRelation[relation.qualifiedName, default: []].contains(column)
+    }
+
+    func columns(in relation: RelationRef) -> [String] {
+        orderedColumnsByRelation[relation.qualifiedName, default: []]
     }
 
     func relationship(child: String, parent: String) -> RelationshipRef? {

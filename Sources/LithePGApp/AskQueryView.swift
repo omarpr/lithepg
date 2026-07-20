@@ -67,12 +67,12 @@ struct AskQueryView: View {
       VStack(alignment: .leading, spacing: 4) {
         Text("Ask in English")
           .font(.headline)
-        Text("Draft SQL from the loaded schema. Nothing runs automatically.")
+        Text("Built-in local, read-only drafting for lists, counts, ordering and known joins. Nothing runs automatically.")
           .font(.caption)
           .foregroundStyle(.secondary)
       }
 
-      TextField("Show customers ordered by revenue", text: $prompt, axis: .vertical)
+      TextField("List bookings ordered by scheduled_at descending", text: $prompt, axis: .vertical)
         .lineLimit(2...4)
         .textFieldStyle(.roundedBorder)
         .accessibilityIdentifier("ask-query-prompt")

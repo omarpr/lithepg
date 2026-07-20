@@ -57,10 +57,46 @@ struct DeterministicAIQueryServiceTests {
         let draft = try await draftSQL(for: "predict churn next quarter")
 
         #expect(draft.sql.isEmpty)
-        #expect(draft.explanation == "No deterministic SQL rule matched this prompt. A local model is needed to draft it safely.")
+        #expect(draft.explanation.contains("built-in local drafter"))
         #expect(draft.referencedObjects.isEmpty)
         #expect(draft.status == .needsModel)
         #expect(draft.confidence == 0)
+    }
+
+    @Test("generic count prompt uses the matched schema relation")
+    func genericCountPrompt() async throws {
+        let draft = try await draftSQL(for: "how many customers are there?")
+
+        #expect(draft.sql == "SELECT COUNT(*) AS \"count\" FROM \"lithepg_demo\".\"customers\";")
+        #expect(draft.referencedObjects == ["lithepg_demo.customers"])
+        #expect(draft.status == .ready)
+    }
+
+    @Test("generic list prompt understands projected columns ordering and limit")
+    func genericOrderedProjection() async throws {
+        let draft = try await draftSQL(for: "list customer names and plans ordered by name descending limit 25")
+
+        #expect(draft.sql == "SELECT \"name\", \"plan\" FROM \"lithepg_demo\".\"customers\" ORDER BY \"name\" DESC LIMIT 25;")
+        #expect(draft.referencedObjects == ["lithepg_demo.customers"])
+        #expect(draft.status == .ready)
+    }
+
+    @Test("mutation prompts are rejected instead of drafted")
+    func mutationPromptsAreRejected() async throws {
+        let draft = try await draftSQL(for: "delete all customers")
+
+        #expect(draft.sql.isEmpty)
+        #expect(draft.status == .rejected)
+        #expect(draft.explanation.contains("read-only"))
+    }
+
+    @Test("unsupported filters are not silently omitted")
+    func unsupportedFiltersNeedModel() async throws {
+        let draft = try await draftSQL(for: "show customers where plan is pro")
+
+        #expect(draft.sql.isEmpty)
+        #expect(draft.status == .needsModel)
+        #expect(draft.explanation.contains("filter"))
     }
 
     private func draftSQL(for prompt: String) async throws -> AIQueryDraft {
