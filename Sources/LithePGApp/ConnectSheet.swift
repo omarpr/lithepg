@@ -216,20 +216,20 @@ struct ConnectSheet: View {
 
         if inputMode == .url {
           TextField(
-            "",
+            ConnectSheetPresentation.requiredFieldLabel("Connection string"),
             text: $url,
             // The example vanishes on click (focus), not just on first keystroke.
             prompt: urlFieldFocused ? nil : Text("postgres://user:***@host:5432/database")
           )
-            .focused($urlFieldFocused)
-            .accessibilityIdentifier("postgres-url-field")
-            .onChange(of: url) { _, newValue in
-              if newValue != Self.redactedURLForDisplay(sensitivePrefilledURL) {
-                sensitivePrefilledURL = nil
-              }
-              tls = Self.defaultTLSPreference(for: effectiveURL)
-              applyNeonConnectionNameSuggestion()
+          .focused($urlFieldFocused)
+          .accessibilityIdentifier("postgres-url-field")
+          .onChange(of: url) { _, newValue in
+            if newValue != Self.redactedURLForDisplay(sensitivePrefilledURL) {
+              sensitivePrefilledURL = nil
             }
+            tls = Self.defaultTLSPreference(for: effectiveURL)
+            applyNeonConnectionNameSuggestion()
+          }
           if let neonHint {
             Label {
               VStack(alignment: .leading, spacing: 2) {
@@ -246,17 +246,22 @@ struct ConnectSheet: View {
             .accessibilityIdentifier("neon-connection-hint")
           }
         } else {
-          TextField("Host", text: $fieldHost)
+          TextField(ConnectSheetPresentation.requiredFieldLabel("Host"), text: $fieldHost)
             .accessibilityIdentifier("field-host")
           TextField("Port", text: $fieldPort)
             .accessibilityIdentifier("field-port")
-          TextField("Database", text: $fieldDatabase)
+          TextField(ConnectSheetPresentation.requiredFieldLabel("Database"), text: $fieldDatabase)
             .accessibilityIdentifier("field-database")
-          TextField("Username", text: $fieldUsername)
+          TextField(ConnectSheetPresentation.requiredFieldLabel("Username"), text: $fieldUsername)
             .accessibilityIdentifier("field-username")
           SecureField("Password", text: $fieldPassword)
             .accessibilityIdentifier("field-password")
         }
+
+        Text("* Required")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .accessibilityIdentifier("required-fields-legend")
       }
 
       Section {
@@ -284,7 +289,11 @@ struct ConnectSheet: View {
             if enabled { tls = false }
           }
         if useSSH && !tls {
-          TextField("user@host[:port]", text: $sshTarget)
+          TextField(
+            ConnectSheetPresentation.requiredFieldLabel("SSH target"),
+            text: $sshTarget,
+            prompt: Text("user@host[:port]")
+          )
         }
       }
 
@@ -294,7 +303,11 @@ struct ConnectSheet: View {
             if enabled { applyNeonConnectionNameSuggestion() }
           }
         if saveConnection {
-          TextField("Connection name", text: $connectionName)
+          TextField(
+            "Connection name",
+            text: $connectionName,
+            prompt: Text(defaultConnectionName)
+          )
           Picker("Environment", selection: $environment) {
             ForEach(ConnectionEnvironment.allCases) { environment in
               Text(environment.displayName).tag(environment)
@@ -367,7 +380,7 @@ struct ConnectSheet: View {
               ProgressView()
                 .controlSize(.small)
             } else {
-              Text("Connect")
+              Text(ConnectSheetPresentation.primaryActionTitle(saveConnection: saveConnection))
             }
           }
           .accessibilityIdentifier("connect-button")
@@ -429,10 +442,13 @@ struct ConnectSheet: View {
   }
 
   private var connectDisabled: Bool {
-    connectionInputEmpty
-      || state.connectionState == .connecting
-      || state.isTestingConnection
-      || (saveConnection && connectionName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    ConnectSheetPresentation.primaryActionDisabled(
+      connectionInputEmpty: connectionInputEmpty,
+      requiredSupplementalInputEmpty: useSSH
+        && sshTarget.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+      isConnecting: state.connectionState == .connecting,
+      isTestingConnection: state.isTestingConnection
+    )
   }
 
   private var testConnectionDisabled: Bool {
@@ -446,7 +462,8 @@ struct ConnectSheet: View {
     if inputMode == .url {
       inputEmpty = effectiveURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     } else {
-      inputEmpty = fieldHost.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+      inputEmpty =
+        fieldHost.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         || fieldDatabase.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         || fieldUsername.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
@@ -467,6 +484,29 @@ struct ConnectSheet: View {
     // Pasted strings arrive wrapped in quotes, psql commands, env assignments
     // or trailing newlines; sanitize before parsing so console copies just work.
     return ConnectionStringSanitizer.sanitize(url)
+  }
+
+  private var defaultConnectionName: String {
+    if let suggestedName = neonProfile?.suggestedName {
+      return suggestedName
+    }
+    return ConnectSheetPresentation.savedConnectionName(
+      enteredName: "",
+      inputMode: inputMode,
+      url: effectiveURL,
+      fieldHost: fieldHost,
+      fieldDatabase: fieldDatabase
+    )
+  }
+
+  private var savedConnectionName: String {
+    return ConnectSheetPresentation.savedConnectionName(
+      enteredName: connectionName,
+      inputMode: inputMode,
+      url: effectiveURL,
+      fieldHost: fieldHost,
+      fieldDatabase: fieldDatabase
+    )
   }
 
   private func applyNeonConnectionNameSuggestion() {
@@ -506,12 +546,12 @@ struct ConnectSheet: View {
     let metadata: SavedConnectionMetadata?
     if inputMode == .url {
       metadata = await state.saveConnection(
-        name: connectionName, url: effectiveURL, tls: tls, tlsCAPath: tlsCA,
+        name: savedConnectionName, url: effectiveURL, tls: tls, tlsCAPath: tlsCA,
         sshTarget: ssh, environment: environment)
     } else {
       let port = Int(fieldPort) ?? 5432
       metadata = await state.saveConnection(
-        name: connectionName,
+        name: savedConnectionName,
         host: fieldHost, port: port, database: fieldDatabase,
         username: fieldUsername, password: fieldPassword,
         tls: tls, tlsCAPath: tlsCA, sshTarget: ssh, environment: environment)
@@ -640,5 +680,68 @@ enum ConnectSheetPresentation {
       return nextSuggestion
     }
     return current
+  }
+
+  static func primaryActionTitle(saveConnection: Bool) -> String {
+    saveConnection ? "Save & Connect" : "Connect"
+  }
+
+  static func primaryActionDisabled(
+    connectionInputEmpty: Bool,
+    requiredSupplementalInputEmpty: Bool = false,
+    isConnecting: Bool,
+    isTestingConnection: Bool
+  ) -> Bool {
+    connectionInputEmpty || requiredSupplementalInputEmpty || isConnecting || isTestingConnection
+  }
+
+  static func requiredFieldLabel(_ label: String) -> String {
+    "\(label) *"
+  }
+
+  static func savedConnectionName(
+    enteredName: String,
+    host: String,
+    database: String
+  ) -> String {
+    let enteredName = enteredName.trimmingCharacters(in: .whitespacesAndNewlines)
+    if !enteredName.isEmpty { return enteredName }
+
+    let host = host.trimmingCharacters(in: .whitespacesAndNewlines)
+    let database = database.trimmingCharacters(in: .whitespacesAndNewlines)
+    switch (host.isEmpty, database.isEmpty) {
+    case (false, false):
+      return "\(host) · \(database)"
+    case (false, true):
+      return host
+    case (true, false):
+      return database
+    case (true, true):
+      return "Postgres connection"
+    }
+  }
+
+  static func savedConnectionName(
+    enteredName: String,
+    inputMode: ConnectSheet.InputMode,
+    url: String,
+    fieldHost: String,
+    fieldDatabase: String
+  ) -> String {
+    switch inputMode {
+    case .url:
+      let config = try? ConnectionConfig(url: url)
+      return savedConnectionName(
+        enteredName: enteredName,
+        host: config?.host ?? "",
+        database: config?.database ?? ""
+      )
+    case .fields:
+      return savedConnectionName(
+        enteredName: enteredName,
+        host: fieldHost,
+        database: fieldDatabase
+      )
+    }
   }
 }

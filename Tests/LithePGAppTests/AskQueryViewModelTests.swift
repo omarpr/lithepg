@@ -9,7 +9,8 @@ struct AskQueryViewModelTests {
   func draftButtonAvailability() {
     #expect(AskQueryViewModel(prompt: "show customers", hasSchema: true).canDraft)
     #expect(!AskQueryViewModel(prompt: "   ", hasSchema: true).canDraft)
-    #expect(!AskQueryViewModel(prompt: "show customers", isDrafting: true, hasSchema: true).canDraft)
+    #expect(
+      !AskQueryViewModel(prompt: "show customers", isDrafting: true, hasSchema: true).canDraft)
     #expect(!AskQueryViewModel(prompt: "show customers", hasSchema: false).canDraft)
   }
 
@@ -41,7 +42,8 @@ struct AskQueryViewModelTests {
       confidence: 0
     )
 
-    let errorModel = AskQueryViewModel(prompt: "predict churn", error: "No schema", hasSchema: false)
+    let errorModel = AskQueryViewModel(
+      prompt: "predict churn", error: "No schema", hasSchema: false)
     #expect(errorModel.statusMessage == "No schema")
     #expect(!errorModel.canInsert)
 
@@ -49,5 +51,33 @@ struct AskQueryViewModelTests {
     #expect(needsModel.statusMessage == "A local model is needed.")
     #expect(needsModel.sqlPreview.isEmpty)
     #expect(!needsModel.canInsert)
+  }
+
+  @Test("disabled AI states explain how to restore the advanced local model")
+  func disabledAIGuidance() {
+    let missingSchema = AskQueryViewModel(
+      prompt: "show customers",
+      hasSchema: false,
+      modelAvailability: .appleIntelligenceNotEnabled
+    )
+    #expect(missingSchema.guidance?.title == "Database schema required")
+    #expect(missingSchema.guidance?.message.contains("Connect to a database") == true)
+
+    let disabled = AskQueryViewModel(
+      prompt: "show customers",
+      hasSchema: true,
+      modelAvailability: .appleIntelligenceNotEnabled
+    )
+    #expect(disabled.guidance?.title == "Apple Intelligence is turned off")
+    #expect(disabled.guidance?.message.contains("System Settings") == true)
+    #expect(disabled.guidance?.message.contains("stays disabled") == true)
+    #expect(!disabled.canDraft)
+
+    let ready = AskQueryViewModel(
+      prompt: "show customers",
+      hasSchema: true,
+      modelAvailability: .available
+    )
+    #expect(ready.guidance == nil)
   }
 }

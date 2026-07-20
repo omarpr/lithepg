@@ -1,4 +1,5 @@
 import Testing
+
 @testable import LithePGAppUI
 @testable import LithePGCore
 
@@ -8,7 +9,8 @@ struct ConnectSheetPresentationTests {
   func neonHintSummarizesProfile() throws {
     let profile = try #require(
       NeonConnectionProfile.detect(
-        url: "postgres://writer:***@ep-small-moon-a1b2c3-pooler.us-east-1.aws.neon.tech/appdb?sslmode=require"
+        url:
+          "postgres://writer:***@ep-small-moon-a1b2c3-pooler.us-east-1.aws.neon.tech/appdb?sslmode=require"
       )
     )
 
@@ -22,7 +24,8 @@ struct ConnectSheetPresentationTests {
   func neonHintMarksDirectHosts() throws {
     let profile = try #require(
       NeonConnectionProfile.detect(
-        url: "postgres://writer:***@ep-small-moon-a1b2c3.us-east-1.aws.neon.tech/appdb?sslmode=require"
+        url:
+          "postgres://writer:***@ep-small-moon-a1b2c3.us-east-1.aws.neon.tech/appdb?sslmode=require"
       )
     )
 
@@ -64,6 +67,68 @@ struct ConnectSheetPresentationTests {
         previousSuggestion: "Neon - appdb",
         nextSuggestion: nil
       ) == "Manual"
+    )
+  }
+
+  @Test("save mode uses an enabled Save & Connect action with an automatic name")
+  func saveAndConnectPresentation() {
+    #expect(ConnectSheetPresentation.primaryActionTitle(saveConnection: true) == "Save & Connect")
+    #expect(ConnectSheetPresentation.primaryActionTitle(saveConnection: false) == "Connect")
+    #expect(
+      !ConnectSheetPresentation.primaryActionDisabled(
+        connectionInputEmpty: false,
+        isConnecting: false,
+        isTestingConnection: false
+      )
+    )
+    #expect(
+      ConnectSheetPresentation.savedConnectionName(
+        enteredName: "",
+        host: "localhost",
+        database: "postgres"
+      ) == "localhost · postgres"
+    )
+    #expect(
+      ConnectSheetPresentation.savedConnectionName(
+        enteredName: "  Local dev  ",
+        host: "localhost",
+        database: "postgres"
+      ) == "Local dev"
+    )
+  }
+
+  @Test("URL naming never leaks values from the manual-fields mode")
+  func urlNamingIsModeIsolated() {
+    #expect(
+      ConnectSheetPresentation.savedConnectionName(
+        enteredName: "",
+        inputMode: .url,
+        url: "postgres://incomplete",
+        fieldHost: "hidden-host",
+        fieldDatabase: "hidden-database"
+      ) == "Postgres connection"
+    )
+    #expect(
+      ConnectSheetPresentation.savedConnectionName(
+        enteredName: "",
+        inputMode: .url,
+        url: "postgres://user@url-host:5432/url-database",
+        fieldHost: "hidden-host",
+        fieldDatabase: "hidden-database"
+      ) == "url-host · url-database"
+    )
+  }
+
+  @Test("required fields use a consistent indicator and conditional requirements disable submit")
+  func requiredFieldPresentation() {
+    #expect(ConnectSheetPresentation.requiredFieldLabel("Host") == "Host *")
+    #expect(
+      ConnectSheetPresentation.primaryActionDisabled(
+        connectionInputEmpty: false,
+        requiredSupplementalInputEmpty: true,
+        isConnecting: false,
+        isTestingConnection: false
+      )
     )
   }
 
