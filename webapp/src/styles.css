@@ -320,24 +320,29 @@ button {
 }
 
 .button-primary {
+  color: #ffffff;
   background: linear-gradient(135deg, #3a89ff, #2d62e9);
   box-shadow: 0 14px 38px rgba(26, 86, 226, 0.34);
 }
 
 .button-primary:hover {
+  color: #ffffff;
   background: linear-gradient(135deg, #55a0ff, #3970f2);
 }
 
 .button-primary svg {
   width: 18px;
+  color: #ffffff;
 }
 
 .button-secondary {
+  color: #cfe0ff;
   border-color: rgba(174, 199, 236, 0.22);
   background: rgba(255, 255, 255, 0.045);
 }
 
 .button-secondary:hover {
+  color: #eaf3ff;
   border-color: rgba(174, 199, 236, 0.4);
   background: rgba(255, 255, 255, 0.075);
 }

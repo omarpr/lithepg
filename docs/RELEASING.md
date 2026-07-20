@@ -77,7 +77,7 @@ An Apple Developer Program membership is not required for local source builds or
 Check the configuration without signing or submitting anything:
 
 ```sh
-LITHEPG_CODESIGN_IDENTITY="Developer ID Application: Example" \
+LITHEPG_CODESIGN_IDENTITY="Developer ID Application: Omar Gerardo SF (LithePG)" \
 LITHEPG_NOTARY_PROFILE="lithepg-notary" \
 ./script/sign_and_notarize.sh --dry-run dist/LithePG.app
 ```
