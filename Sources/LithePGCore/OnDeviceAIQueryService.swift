@@ -1,177 +1,91 @@
 import Foundation
+
 #if canImport(FoundationModels)
-import FoundationModels
+  import FoundationModels
 #endif
 
-/// Uses Apple's on-device system language model when it is available and falls
-/// back to LithePG's deterministic read-only drafter everywhere else.
-public struct OnDeviceAIQueryService: AIQueryService {
-  private let fallback: any AIQueryService
-  private let usesSystemModelWhenAvailable: Bool
+/// Describes whether Apple's lightweight on-device system language model can
+/// accept a query-drafting request.
+public enum OnDeviceAIModelAvailability: Sendable, Equatable {
+  case available
+  case appleIntelligenceNotEnabled
+  case modelNotReady
+  case deviceNotEligible
+  case unsupportedSystem
+  case temporarilyUnavailable
+}
 
-  public init(
-    fallback: any AIQueryService = DeterministicAIQueryService(),
-    usesSystemModelWhenAvailable: Bool = true
-  ) {
-    self.fallback = fallback
-    self.usesSystemModelWhenAvailable = usesSystemModelWhenAvailable
+public struct OnDeviceAIQueryService: AIQueryService {
+  private let availabilityOverride: OnDeviceAIModelAvailability?
+
+  public init() {
+    availabilityOverride = nil
+  }
+
+  init(modelAvailability: OnDeviceAIModelAvailability) {
+    availabilityOverride = modelAvailability
+  }
+
+  public static func modelAvailability() -> OnDeviceAIModelAvailability {
+    #if canImport(FoundationModels)
+      if #available(macOS 26.0, *) {
+        switch SystemLanguageModel.default.availability {
+        case .available:
+          return .available
+        case .unavailable(let reason):
+          switch reason {
+          case .appleIntelligenceNotEnabled:
+            return .appleIntelligenceNotEnabled
+          case .modelNotReady:
+            return .modelNotReady
+          case .deviceNotEligible:
+            return .deviceNotEligible
+          @unknown default:
+            return .temporarilyUnavailable
+          }
+        }
+      }
+    #endif
+    return .unsupportedSystem
   }
 
   public func draftSQL(for request: AIQueryRequest) async throws -> AIQueryDraft {
-#if canImport(FoundationModels)
-    if usesSystemModelWhenAvailable, #available(macOS 26.0, *) {
-      let model = SystemLanguageModel.default
-      if model.isAvailable {
-        do {
-          let draft = try await Self.systemModelDraft(for: request, model: model)
-          if draft.status == .ready {
-            return draft
-          }
+    let availability = availabilityOverride ?? Self.modelAvailability()
+    guard availability == .available else {
+      return Self.unavailableDraft(for: availability)
+    }
 
-          let fallbackDraft = try await fallback.draftSQL(for: request)
-          return fallbackDraft.status == .ready ? fallbackDraft : draft
-        } catch {
-          // Generation can fail because the model is temporarily unavailable,
-          // guarded content is rejected, or its context window is exceeded.
-          // A deterministic fallback keeps Ask in English useful and offline.
-        }
+    #if canImport(FoundationModels)
+      if #available(macOS 26.0, *) {
+        return try await Self.systemModelDraft(
+          for: request,
+          model: SystemLanguageModel.default
+        )
       }
-    }
-#endif
-    return try await fallback.draftSQL(for: request)
+    #endif
+    return Self.unavailableDraft(for: .unsupportedSystem)
   }
-}
 
-#if canImport(FoundationModels)
-@available(macOS 26.0, *)
-@Generable(description: "A safe PostgreSQL query draft based only on the supplied schema")
-private struct GeneratedSQLDraft {
-  @Guide(description: "Whether the request can be answered using only the supplied schema")
-  var canAnswer: Bool
-
-  @Guide(description: "Exactly one read-only PostgreSQL SELECT statement, without Markdown fences; empty when canAnswer is false")
-  var sql: String
-
-  @Guide(description: "One short explanation of what the query does or why it cannot be produced")
-  var explanation: String
-
-  @Guide(description: "Every schema.table relation used by the query, written exactly as it appears in the supplied schema")
-  var referencedObjects: [String]
-}
-
-@available(macOS 26.0, *)
-private extension OnDeviceAIQueryService {
-  static func systemModelDraft(
-    for request: AIQueryRequest,
-    model: SystemLanguageModel
-  ) async throws -> AIQueryDraft {
-    let context = try AIQueryContextBuilder.build(
-      prompt: request.prompt,
-      schemaIndex: request.schemaIndex
-    )
-    guard context.privacyReceipt.localOnly,
-      !context.privacyReceipt.networkCallsAllowed,
-      !context.privacyReceipt.includesCredentials,
-      !context.privacyReceipt.includesRawConnectionURLs,
-      !context.privacyReceipt.includesResultRows
-    else {
-      return rejected("LithePG blocked model context that did not satisfy its local-only privacy rules.")
-    }
-
-    let session = LanguageModelSession(
-      model: model,
-      instructions: """
-        You are LithePG's PostgreSQL query planner. Convert a user's request into one accurate, read-only query.
-
-        Rules:
-        - Use only schemas, relations, columns, and foreign-key relationships present in the supplied schema.
-        - Produce exactly one SELECT statement. A WITH clause is allowed only when every CTE is read-only.
-        - Never produce INSERT, UPDATE, DELETE, MERGE, COPY, DDL, administrative commands, or SELECT INTO.
-        - Fully qualify base relations as "schema"."relation" and quote PostgreSQL identifiers.
-        - Preserve requested filters, joins, aggregates, grouping, ordering, and limits.
-        - Prefer explicit projected columns over SELECT * when the request names columns or concepts.
-        - Do not invent identifiers. If the schema is insufficient or the request is ambiguous, set canAnswer to false and leave sql empty.
-        - Return SQL as plain text without Markdown fences or commentary inside the SQL.
-        """
-    )
-    let response = try await session.respond(
-      to: """
-        User request:
-        \(context.prompt)
-
-        Available PostgreSQL schema:
-        \(compactSchemaContext(for: request))
-        """,
-      generating: GeneratedSQLDraft.self,
-      options: GenerationOptions(sampling: .greedy, maximumResponseTokens: 800)
-    )
-    let generated = response.content
-    guard generated.canAnswer else {
-      return needsModel(
-        generated.explanation.trimmingCharacters(in: .whitespacesAndNewlines).nilIfBlank
-          ?? "The on-device model could not answer this request from the available schema."
-      )
-    }
-    guard let sql = AIQuerySQLSafety.normalizedReadOnlyStatement(generated.sql) else {
-      return rejected("The on-device model produced SQL that failed LithePG's read-only safety checks.")
-    }
-
-    let knownRelations = Set(
-      request.schemaIndex.documents
-        .filter { $0.kind == .relation }
-        .map { $0.title.lowercased() }
-    )
-    let referencedObjects = generated.referencedObjects
-      .map(Self.normalizedRelationName)
-      .filter { knownRelations.contains($0.lowercased()) }
-      .uniqued()
-    guard !referencedObjects.isEmpty,
-      referencedObjects.count == generated.referencedObjects.count
-    else {
-      return rejected("The on-device model referenced a relation that is not in the loaded schema.")
-    }
+  private static func unavailableDraft(
+    for availability: OnDeviceAIModelAvailability
+  ) -> AIQueryDraft {
+    let explanation =
+      switch availability {
+      case .available:
+        "Apple's on-device model could not start. Try again."
+      case .appleIntelligenceNotEnabled:
+        "Enable Apple Intelligence in System Settings to draft SQL."
+      case .modelNotReady:
+        "Apple's on-device model is still being prepared. Try again after setup finishes."
+      case .deviceNotEligible:
+        "Apple's on-device model is not available on this Mac."
+      case .unsupportedSystem:
+        "Apple's on-device model requires macOS 26 or later."
+      case .temporarilyUnavailable:
+        "Apple's on-device model is temporarily unavailable. Try again later."
+      }
 
     return AIQueryDraft(
-      sql: sql,
-      explanation: generated.explanation.trimmingCharacters(in: .whitespacesAndNewlines).nilIfBlank
-        ?? "Drafted locally with Apple's on-device language model.",
-      referencedObjects: referencedObjects,
-      status: .ready,
-      confidence: 0.85
-    )
-  }
-
-  static func compactSchemaContext(for request: AIQueryRequest) -> String {
-    let rankedIDs = request.schemaIndex.search(request.prompt, limit: 24).map(\.id)
-    let usefulDocuments = request.schemaIndex.documents.filter {
-      $0.kind == .relation || $0.kind == .relationship
-    }
-    let rankedDocuments = rankedIDs.compactMap { id in
-      usefulDocuments.first { $0.id == id }
-    }
-    let orderedDocuments = (rankedDocuments + usefulDocuments).uniqued(by: \.id)
-
-    let maximumCharacters = 9_000
-    var lines: [String] = []
-    var characterCount = 0
-    for document in orderedDocuments {
-      let line = "- \(document.title): \(document.body)"
-      guard characterCount + line.count <= maximumCharacters else { continue }
-      lines.append(line)
-      characterCount += line.count + 1
-    }
-    return lines.joined(separator: "\n")
-  }
-
-  static func normalizedRelationName(_ raw: String) -> String {
-    raw
-      .trimmingCharacters(in: .whitespacesAndNewlines)
-      .replacingOccurrences(of: "\".\"", with: ".")
-      .replacingOccurrences(of: "\"", with: "")
-  }
-
-  static func needsModel(_ explanation: String) -> AIQueryDraft {
-    AIQueryDraft(
       sql: "",
       explanation: explanation,
       referencedObjects: [],
@@ -179,17 +93,168 @@ private extension OnDeviceAIQueryService {
       confidence: 0
     )
   }
-
-  static func rejected(_ explanation: String) -> AIQueryDraft {
-    AIQueryDraft(
-      sql: "",
-      explanation: explanation,
-      referencedObjects: [],
-      status: .rejected,
-      confidence: 0
-    )
-  }
 }
+
+#if canImport(FoundationModels)
+  @available(macOS 26.0, *)
+  @Generable(description: "A safe PostgreSQL query draft based only on the supplied schema")
+  private struct GeneratedSQLDraft {
+    @Guide(description: "Whether the request can be answered using only the supplied schema")
+    var canAnswer: Bool
+
+    @Guide(
+      description:
+        "Exactly one read-only PostgreSQL SELECT statement, without Markdown fences; empty when canAnswer is false"
+    )
+    var sql: String
+
+    @Guide(description: "One short explanation of what the query does or why it cannot be produced")
+    var explanation: String
+
+    @Guide(
+      description:
+        "Every schema.table relation used by the query, written exactly as it appears in the supplied schema"
+    )
+    var referencedObjects: [String]
+  }
+
+  @available(macOS 26.0, *)
+  extension OnDeviceAIQueryService {
+    fileprivate static func systemModelDraft(
+      for request: AIQueryRequest,
+      model: SystemLanguageModel
+    ) async throws -> AIQueryDraft {
+      let context = try AIQueryContextBuilder.build(
+        prompt: request.prompt,
+        schemaIndex: request.schemaIndex
+      )
+      guard context.privacyReceipt.localOnly,
+        !context.privacyReceipt.networkCallsAllowed,
+        !context.privacyReceipt.includesCredentials,
+        !context.privacyReceipt.includesRawConnectionURLs,
+        !context.privacyReceipt.includesResultRows
+      else {
+        return rejected(
+          "LithePG blocked model context that did not satisfy its local-only privacy rules.")
+      }
+
+      let session = LanguageModelSession(
+        model: model,
+        instructions: """
+          You are LithePG's PostgreSQL query planner. Convert a user's request into one accurate, read-only query.
+
+          Rules:
+          - Use only schemas, relations, columns, and foreign-key relationships present in the supplied schema.
+          - Produce exactly one SELECT statement. A WITH clause is allowed only when every CTE is read-only.
+          - Never produce INSERT, UPDATE, DELETE, MERGE, COPY, DDL, administrative commands, or SELECT INTO.
+          - Fully qualify base relations as "schema"."relation" and quote PostgreSQL identifiers.
+          - Preserve requested filters, joins, aggregates, grouping, ordering, and limits.
+          - Prefer explicit projected columns over SELECT * when the request names columns or concepts.
+          - Do not invent identifiers. If the schema is insufficient or the request is ambiguous, set canAnswer to false and leave sql empty.
+          - Return SQL as plain text without Markdown fences or commentary inside the SQL.
+          """
+      )
+      let response = try await session.respond(
+        to: """
+          User request:
+          \(context.prompt)
+
+          Available PostgreSQL schema:
+          \(compactSchemaContext(for: request))
+          """,
+        generating: GeneratedSQLDraft.self,
+        options: GenerationOptions(sampling: .greedy, maximumResponseTokens: 800)
+      )
+      let generated = response.content
+      guard generated.canAnswer else {
+        return needsModel(
+          generated.explanation.trimmingCharacters(in: .whitespacesAndNewlines).nilIfBlank
+            ?? "The on-device model could not answer this request from the available schema."
+        )
+      }
+      guard let sql = AIQuerySQLSafety.normalizedReadOnlyStatement(generated.sql) else {
+        return rejected(
+          "The on-device model produced SQL that failed LithePG's read-only safety checks.")
+      }
+
+      let knownRelations = Set(
+        request.schemaIndex.documents
+          .filter { $0.kind == .relation }
+          .map { $0.title.lowercased() }
+      )
+      let referencedObjects = generated.referencedObjects
+        .map(Self.normalizedRelationName)
+        .filter { knownRelations.contains($0.lowercased()) }
+        .uniqued()
+      guard !referencedObjects.isEmpty,
+        referencedObjects.count == generated.referencedObjects.count
+      else {
+        return rejected(
+          "The on-device model referenced a relation that is not in the loaded schema.")
+      }
+
+      let explanation =
+        generated.explanation
+        .trimmingCharacters(in: .whitespacesAndNewlines).nilIfBlank
+        ?? "Query drafted from the loaded schema."
+      return AIQueryDraft(
+        sql: sql,
+        explanation: "Apple on-device model: \(explanation)",
+        referencedObjects: referencedObjects,
+        status: .ready,
+        confidence: 0.85
+      )
+    }
+
+    fileprivate static func compactSchemaContext(for request: AIQueryRequest) -> String {
+      let rankedIDs = request.schemaIndex.search(request.prompt, limit: 24).map(\.id)
+      let usefulDocuments = request.schemaIndex.documents.filter {
+        $0.kind == .relation || $0.kind == .relationship
+      }
+      let rankedDocuments = rankedIDs.compactMap { id in
+        usefulDocuments.first { $0.id == id }
+      }
+      let orderedDocuments = (rankedDocuments + usefulDocuments).uniqued(by: \.id)
+
+      let maximumCharacters = 9_000
+      var lines: [String] = []
+      var characterCount = 0
+      for document in orderedDocuments {
+        let line = "- \(document.title): \(document.body)"
+        guard characterCount + line.count <= maximumCharacters else { continue }
+        lines.append(line)
+        characterCount += line.count + 1
+      }
+      return lines.joined(separator: "\n")
+    }
+
+    fileprivate static func normalizedRelationName(_ raw: String) -> String {
+      raw
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+        .replacingOccurrences(of: "\".\"", with: ".")
+        .replacingOccurrences(of: "\"", with: "")
+    }
+
+    fileprivate static func needsModel(_ explanation: String) -> AIQueryDraft {
+      AIQueryDraft(
+        sql: "",
+        explanation: explanation,
+        referencedObjects: [],
+        status: .needsModel,
+        confidence: 0
+      )
+    }
+
+    fileprivate static func rejected(_ explanation: String) -> AIQueryDraft {
+      AIQueryDraft(
+        sql: "",
+        explanation: explanation,
+        referencedObjects: [],
+        status: .rejected,
+        confidence: 0
+      )
+    }
+  }
 #endif
 
 enum AIQuerySQLSafety {
@@ -236,8 +301,8 @@ enum AIQuerySQLSafety {
         return true
       }
       if index + 2 < tokens.count,
-        (tokens[index + 1] == "no" || tokens[index + 1] == "key"),
-        (tokens[index + 2] == "key" || tokens[index + 2] == "share")
+        tokens[index + 1] == "no" || tokens[index + 1] == "key",
+        tokens[index + 2] == "key" || tokens[index + 2] == "share"
       {
         return true
       }
@@ -286,7 +351,9 @@ enum AIQuerySQLSafety {
         continue
       }
       if byte == 0x24, let delimiter = dollarQuoteDelimiter(bytes, at: index) {
-        guard let end = consumeDollarQuote(bytes, from: index, delimiter: delimiter) else { return nil }
+        guard let end = consumeDollarQuote(bytes, from: index, delimiter: delimiter) else {
+          return nil
+        }
         index = end
         continue
       }
@@ -361,21 +428,21 @@ enum AIQuerySQLSafety {
   }
 }
 
-private extension String {
-  var nilIfBlank: String? {
+extension String {
+  fileprivate var nilIfBlank: String? {
     isEmpty ? nil : self
   }
 }
 
-private extension Array where Element: Hashable {
-  func uniqued() -> [Element] {
+extension Array where Element: Hashable {
+  fileprivate func uniqued() -> [Element] {
     var seen: Set<Element> = []
     return filter { seen.insert($0).inserted }
   }
 }
 
-private extension Array {
-  func uniqued<Key: Hashable>(by keyPath: KeyPath<Element, Key>) -> [Element] {
+extension Array {
+  fileprivate func uniqued<Key: Hashable>(by keyPath: KeyPath<Element, Key>) -> [Element] {
     var seen: Set<Key> = []
     return filter { seen.insert($0[keyPath: keyPath]).inserted }
   }

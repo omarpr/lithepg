@@ -42,7 +42,7 @@ High-level module boundaries and data flow for LithePG. Implementation details l
 
 ### Core Services
 - `PostgresConnector` owns the live Postgres connection lifecycle, query execution, TLS configuration, SSH tunnel handoff and result materialization.
-- `SchemaIntrospector`, `SchemaIndex` and `AIQueryService` implementations provide local schema awareness and deterministic/local SQL drafting.
+- `SchemaIntrospector`, `SchemaIndex` and the production `OnDeviceAIQueryService` provide local schema awareness and Apple on-device SQL drafting.
 - `ResultExporter` serializes already-fetched results to CSV, JSON or Markdown without network calls or SQL execution.
 - All public I/O APIs are `async`; shared mutable services are `actor`s where needed.
 
@@ -57,8 +57,8 @@ High-level module boundaries and data flow for LithePG. Implementation details l
 - Appearance preference is stored in `UserDefaults`.
 
 ### Inference
-- Default SQL drafting prefers Apple's on-device Foundation Models system model on supported macOS 26 Macs, with guided output, bounded schema retrieval and a read-only SQL safety gate. It makes no network AI calls.
-- The deterministic schema-aware drafter is the fallback when the system model is unavailable or generation fails. A separate CoreML artifact-validation scaffold remains disabled by default for user-provided experiments.
+- Default SQL drafting exclusively uses Apple's lightweight `SystemLanguageModel.default` on supported macOS 26 Macs, with guided output, bounded schema retrieval and a read-only SQL safety gate. It makes no network AI calls.
+- Ask in English is disabled with recovery guidance when Apple's model is unavailable; no alternate drafter is substituted. The deterministic service remains test/reference code only. A separate CoreML artifact-validation scaffold remains disabled by default for user-provided experiments.
 - Schema awareness uses local metadata/indexing; vector storage remains a future optimization.
 
 ## Key Invariants

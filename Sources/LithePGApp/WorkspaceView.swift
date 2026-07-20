@@ -111,7 +111,12 @@ struct WorkspaceView: View {
           Label("Ask", systemImage: "wand.and.stars")
         }
         .keyboardShortcut("k", modifiers: [.command, .shift])
-        .disabled(state.schema == nil || state.isDraftingSQL)
+        .disabled(state.isDraftingSQL)
+        .help(
+          state.schema == nil
+            ? "Connect and refresh the schema to enable AI drafting"
+            : "Ask in English"
+        )
         .accessibilityIdentifier("ask-query-button")
         .popover(isPresented: $showingAskQuery) {
           AskQueryView(state: state)
