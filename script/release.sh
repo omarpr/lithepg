@@ -159,7 +159,19 @@ fi
 TAP_DIR="$(brew --repository "$LITHEPG_HOMEBREW_TAP" 2>/dev/null)" || \
   fail "Homebrew tap is unavailable; run: brew tap $LITHEPG_HOMEBREW_TAP"
 [[ -d "$TAP_DIR/.git" ]] || fail "Homebrew tap is not a Git repository"
-[[ -z "$(git -C "$TAP_DIR" status --short)" ]] || fail "Homebrew tap must be clean before releasing"
+TAP_STATUS="$(git -C "$TAP_DIR" status --short --untracked-files=all)"
+if [[ -n "$TAP_STATUS" ]]; then
+  tap_has_only_matching_cask=1
+  while IFS= read -r status_line; do
+    [[ "${status_line:3}" == "Casks/lithepg.rb" ]] || tap_has_only_matching_cask=0
+  done <<<"$TAP_STATUS"
+
+  if [[ "$tap_has_only_matching_cask" -ne 1 || ! -f "$TAP_DIR/Casks/lithepg.rb" ]] || \
+    ! /usr/bin/cmp -s "$CASK_PATH" "$TAP_DIR/Casks/lithepg.rb"; then
+    fail "Homebrew tap has changes other than the matching draft Casks/lithepg.rb"
+  fi
+  /usr/bin/printf 'Homebrew tap contains the matching draft cask; it will be finalized during this release.\n'
+fi
 git -C "$TAP_DIR" remote get-url origin >/dev/null 2>&1 || fail "Homebrew tap has no origin remote"
 
 TEMP_DIR="$(/usr/bin/mktemp -d "${TMPDIR:-/tmp}/lithepg-release.XXXXXX")"

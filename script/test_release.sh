@@ -23,11 +23,11 @@ assert_contains "$help_output" "The script intentionally has no unsigned public-
 
 set +e
 invalid_output="$(printf '1.0\n' | /usr/bin/env \
-  -u LITHEPG_CODESIGN_IDENTITY \
-  -u LITHEPG_NOTARY_PROFILE \
-  -u LITHEPG_GITHUB_ACTIONS_READY \
-  -u LITHEPG_RELEASE_COPY_APPROVED \
-  -u LITHEPG_PUBLICATION_APPROVED \
+  LITHEPG_CODESIGN_IDENTITY=CHANGE_ME \
+  LITHEPG_NOTARY_PROFILE=CHANGE_ME \
+  LITHEPG_GITHUB_ACTIONS_READY=CHANGE_ME \
+  LITHEPG_RELEASE_COPY_APPROVED=CHANGE_ME \
+  LITHEPG_PUBLICATION_APPROVED=CHANGE_ME \
   "$HELPER" 2>&1)"
 invalid_status=$?
 set -e
@@ -36,11 +36,11 @@ assert_contains "$invalid_output" "version must use stable SemVer major.minor.pa
 
 set +e
 config_output="$(printf '\n' | /usr/bin/env \
-  -u LITHEPG_CODESIGN_IDENTITY \
-  -u LITHEPG_NOTARY_PROFILE \
-  -u LITHEPG_GITHUB_ACTIONS_READY \
-  -u LITHEPG_RELEASE_COPY_APPROVED \
-  -u LITHEPG_PUBLICATION_APPROVED \
+  LITHEPG_CODESIGN_IDENTITY=CHANGE_ME \
+  LITHEPG_NOTARY_PROFILE=CHANGE_ME \
+  LITHEPG_GITHUB_ACTIONS_READY=CHANGE_ME \
+  LITHEPG_RELEASE_COPY_APPROVED=CHANGE_ME \
+  LITHEPG_PUBLICATION_APPROVED=CHANGE_ME \
   "$HELPER" 2>&1)"
 config_status=$?
 set -e
@@ -54,6 +54,8 @@ assert_contains "$script_contents" './script/sign_and_notarize.sh "$APP_PATH"'
 assert_contains "$script_contents" './script/v10_release_gate.sh --version "$VERSION" --check-remote'
 assert_contains "$script_contents" 'git -C "$ROOT_DIR" push --atomic origin'
 assert_contains "$script_contents" 'gh release create "$TAG"'
+assert_contains "$script_contents" 'Homebrew tap contains the matching draft cask; it will be finalized during this release.'
+assert_contains "$script_contents" '! /usr/bin/cmp -s "$CASK_PATH" "$TAP_DIR/Casks/lithepg.rb"'
 assert_contains "$script_contents" '/bin/mkdir -p "$TAP_DIR/Casks"'
 assert_contains "$script_contents" 'brew audit --new --strict --cask Casks/lithepg.rb'
 
