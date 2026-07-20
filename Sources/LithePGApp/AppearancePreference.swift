@@ -42,3 +42,15 @@ public enum AppearancePreference: String, CaseIterable, Identifiable, Sendable {
     self = preference
   }
 }
+
+public enum LaunchBehaviorPreference {
+  public static let showConnectionWindowStorageKey =
+    "com.lithepg.showConnectionWindowOnLaunch"
+
+  public static func showsConnectionWindow(defaults: UserDefaults) -> Bool {
+    guard defaults.object(forKey: showConnectionWindowStorageKey) != nil else {
+      return true
+    }
+    return defaults.bool(forKey: showConnectionWindowStorageKey)
+  }
+}

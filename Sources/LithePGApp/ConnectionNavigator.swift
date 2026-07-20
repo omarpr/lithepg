@@ -14,22 +14,27 @@ struct ConnectionNavigator: View {
       if connectionsExpanded {
         Divider()
         connectionList
-        SavedConnectionPager(
-          page: $connectionsPage,
-          itemCount: state.savedConnections.count,
-          accessibilityPrefix: "navigator-connections"
-        )
-        .padding(.horizontal, 10)
-        .padding(.bottom, 6)
+        if SavedConnectionPagination.pageCount(itemCount: state.savedConnections.count) > 1 {
+          SavedConnectionPager(
+            page: $connectionsPage,
+            itemCount: state.savedConnections.count,
+            accessibilityPrefix: "navigator-connections"
+          )
+          .padding(.horizontal, 10)
+          .padding(.bottom, 14)
+        }
       }
       Divider()
       NeonScannerButton(state: state)
-        .padding(10)
+        .padding(.horizontal, 10)
+        .padding(.top, 14)
+        .padding(.bottom, 10)
     }
     .frame(
       minHeight: connectionsExpanded ? 150 : 90,
       idealHeight: connectionsExpanded ? 300 : 110,
-      maxHeight: connectionsExpanded ? 390 : 130
+      maxHeight: connectionsExpanded ? 390 : 130,
+      alignment: .top
     )
     .accessibilityIdentifier("connection-navigator")
     .onChange(of: state.savedConnections.count) { _, count in

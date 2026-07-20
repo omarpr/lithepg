@@ -56,6 +56,15 @@ public final class AppState {
       appearanceDefaults.set(appearancePreference.rawValue, forKey: AppearancePreference.storageKey)
     }
   }
+  public var showConnectionWindowOnLaunch = true {
+    didSet {
+      guard !isRestoringLaunchBehaviorPreference else { return }
+      appearanceDefaults.set(
+        showConnectionWindowOnLaunch,
+        forKey: LaunchBehaviorPreference.showConnectionWindowStorageKey
+      )
+    }
+  }
 
   public var connectionLabel: String? {
     guard case .connected(let label) = connectionState else { return nil }
@@ -98,6 +107,7 @@ public final class AppState {
   @ObservationIgnored private let neonScanner: any NeonCLIScanning
   @ObservationIgnored private let appearanceDefaults: UserDefaults
   @ObservationIgnored private var isRestoringAppearancePreference = false
+  @ObservationIgnored private var isRestoringLaunchBehaviorPreference = false
 
   public init(
     savedConnectionStore: any SavedConnectionStore = JSONFileSavedConnectionStore(),
@@ -119,6 +129,11 @@ public final class AppState {
     isRestoringAppearancePreference = true
     appearancePreference = AppearancePreference(defaults: appearanceDefaults)
     isRestoringAppearancePreference = false
+    isRestoringLaunchBehaviorPreference = true
+    showConnectionWindowOnLaunch = LaunchBehaviorPreference.showsConnectionWindow(
+      defaults: appearanceDefaults
+    )
+    isRestoringLaunchBehaviorPreference = false
     selectedQueryTabID = queryTabs.first?.id
   }
 

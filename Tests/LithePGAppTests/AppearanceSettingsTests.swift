@@ -45,6 +45,37 @@ struct AppearanceSettingsTests {
     #expect(state.appearancePreference.colorScheme == .dark)
   }
 
+  @Test("connection window opens on launch by default without writing test defaults")
+  func connectionWindowDefaultsToVisible() {
+    let scopedDefaults = ScopedDefaults.make()
+    defer { scopedDefaults.destroy() }
+
+    let state = AppState(appearanceDefaults: scopedDefaults.defaults)
+
+    #expect(state.showConnectionWindowOnLaunch)
+    #expect(
+      scopedDefaults.defaults.object(
+        forKey: LaunchBehaviorPreference.showConnectionWindowStorageKey
+      ) == nil
+    )
+  }
+
+  @Test("connection window launch preference persists")
+  func connectionWindowLaunchPreferencePersists() {
+    let scopedDefaults = ScopedDefaults.make()
+    defer { scopedDefaults.destroy() }
+    let defaults = scopedDefaults.defaults
+
+    let state = AppState(appearanceDefaults: defaults)
+    state.showConnectionWindowOnLaunch = false
+
+    #expect(!AppState(appearanceDefaults: defaults).showConnectionWindowOnLaunch)
+
+    state.showConnectionWindowOnLaunch = true
+
+    #expect(AppState(appearanceDefaults: defaults).showConnectionWindowOnLaunch)
+  }
+
   private struct ScopedDefaults {
     let suiteName: String
     let defaults: UserDefaults

@@ -94,6 +94,29 @@ struct ResultsTablePresentationTests {
         #expect(ResultsTablePresentation.columnWidths(availableWidth: 900, columnCount: 0) == [])
     }
 
+    @Test("column width overrides support mouse resizing and enforce a usable minimum")
+    func columnWidthOverrides() {
+        #expect(
+            ResultsTablePresentation.columnWidths(
+                availableWidth: 900,
+                columnCount: 2,
+                overrides: [0: 260]
+            ) == [260, 418]
+        )
+        #expect(
+            ResultsTablePresentation.resizedColumnWidth(
+                startingWidth: 260,
+                translation: 40
+            ) == 300
+        )
+        #expect(
+            ResultsTablePresentation.resizedColumnWidth(
+                startingWidth: 126,
+                translation: -500
+            ) == ResultsTablePresentation.minimumResizableColumnWidth
+        )
+    }
+
     @Test("filler rows keep sparse result sets visually full height")
     func fillerRowsFillSparseViewport() {
         let viewport: CGFloat = 320

@@ -51,6 +51,11 @@ public struct LithePGApp: App {
             AboutView()
         }
         .windowResizability(.contentSize)
+
+        Settings {
+            LithePGSettingsView(state: state)
+                .preferredColorScheme(state.appearancePreference.colorScheme)
+        }
     }
 }
 
@@ -58,6 +63,7 @@ struct RootView: View {
     @Bindable var state: AppState
     @State private var didRunStartup = false
     @State private var launchStartedAt = Date()
+    @State private var showingLaunchConnectionForm = false
 
     private var startupConfig: StartupConnectionConfig? {
         StartupConnectionConfig(environment: ProcessInfo.processInfo.environment)
@@ -70,13 +76,16 @@ struct RootView: View {
             .navigationTitle(state.windowTitle)
             .preferredColorScheme(state.appearancePreference.colorScheme)
             .overlay {
-                if startupConfig == nil && state.connectionState == .disconnected {
+                if showingLaunchConnectionForm {
                     ZStack {
                         Color.black.opacity(0.48)
                             .ignoresSafeArea()
                             .accessibilityHidden(true)
 
-                        ConnectSheet(state: state)
+                        ConnectSheet(
+                            state: state,
+                            closeAction: { showingLaunchConnectionForm = false }
+                        )
                             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                             .overlay {
                                 RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -88,25 +97,59 @@ struct RootView: View {
                     .transition(.opacity)
                 }
             }
-            .animation(.easeInOut(duration: 0.16), value: state.connectionState)
+            .animation(.easeInOut(duration: 0.16), value: showingLaunchConnectionForm)
             .task {
                 guard !didRunStartup else { return }
                 didRunStartup = true
                 if let startupConfig {
                     await state.runStartupConnection(startupConfig)
                     writeStartupMetricsIfRequested(startupConfig, startedAt: launchStartedAt, state: state)
-                } else if let metricsPath = StartupMetricsConfig.metricsPath(environment: ProcessInfo.processInfo.environment) {
-                    writeStartupMetrics(
-                        metricsPath: metricsPath,
-                        startedAt: launchStartedAt,
-                        state: state,
-                        queryRequested: false
-                    )
+                } else {
+                    showingLaunchConnectionForm = state.showConnectionWindowOnLaunch
+                    if let metricsPath = StartupMetricsConfig.metricsPath(environment: ProcessInfo.processInfo.environment) {
+                        writeStartupMetrics(
+                            metricsPath: metricsPath,
+                            startedAt: launchStartedAt,
+                            state: state,
+                            queryRequested: false
+                        )
+                    }
                 }
             }
             .onDisappear {
                 Task { await state.disconnect() }
             }
+    }
+}
+
+struct LithePGSettingsView: View {
+    @Bindable var state: AppState
+
+    var body: some View {
+        Form {
+            Section("Appearance") {
+                Picker("Theme", selection: $state.appearancePreference) {
+                    ForEach(AppearancePreference.allCases) { preference in
+                        Text(preference.displayName).tag(preference)
+                    }
+                }
+                .pickerStyle(.segmented)
+
+                Text("LithePG starts in Dark mode. System follows your Mac appearance.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Startup") {
+                Toggle(
+                    "Show the connection window when LithePG opens",
+                    isOn: $state.showConnectionWindowOnLaunch
+                )
+            }
+        }
+        .formStyle(.grouped)
+        .frame(width: 460)
+        .padding(.vertical, 10)
     }
 }
 

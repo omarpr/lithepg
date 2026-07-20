@@ -10,6 +10,13 @@ struct ResultsTable: View {
     @State private var selectedCell: ResultsTablePresentation.CellAddress?
     @State private var editingSession: ResultsTablePresentation.CellEditorSession?
     @State private var localCellEdits: [ResultsTablePresentation.CellAddress: String] = [:]
+    @State private var columnWidthOverrides: [Int: CGFloat] = [:]
+    @State private var columnResizeStart: ColumnResizeStart?
+
+    private struct ColumnResizeStart {
+        let columnIndex: Int
+        let width: CGFloat
+    }
 
     var body: some View {
         let renderedResult = renderedResult
@@ -31,6 +38,8 @@ struct ResultsTable: View {
             selectedCell = nil
             editingSession = nil
             localCellEdits.removeAll()
+            columnWidthOverrides.removeAll()
+            columnResizeStart = nil
         }
         // Cmd-C copies the selected cell; falls back to the menu copy actions.
         .copyable(selectedCellCopyItems)
@@ -88,7 +97,8 @@ struct ResultsTable: View {
                 GeometryReader { proxy in
                     let columnWidths = ResultsTablePresentation.columnWidths(
                         availableWidth: proxy.size.width,
-                        columnCount: result.columns.count
+                        columnCount: result.columns.count,
+                        overrides: columnWidthOverrides
                     )
                     let tableBodyWidth = ResultsTablePresentation.tableBodyWidth(for: columnWidths)
                     let visibleRows = Array(ResultsTablePresentation.rows(for: result, page: page).enumerated())
@@ -323,6 +333,57 @@ struct ResultsTable: View {
             Rectangle()
                 .fill(Color.secondary.opacity(0.35))
                 .frame(height: 1)
+        }
+        .overlay(alignment: .trailing) {
+            Rectangle()
+                .fill(
+                    columnResizeStart?.columnIndex == columnIndex
+                        ? Color.accentColor.opacity(0.75)
+                        : Color.secondary.opacity(0.22)
+                )
+                .frame(width: 1)
+                .padding(.vertical, 3)
+                .frame(width: 9)
+                .contentShape(Rectangle())
+                .onHover { isHovering in
+                    if isHovering {
+                        NSCursor.resizeLeftRight.set()
+                    } else if columnResizeStart == nil {
+                        NSCursor.arrow.set()
+                    }
+                }
+                .highPriorityGesture(
+                    DragGesture(minimumDistance: 1)
+                        .onChanged { value in
+                            if columnResizeStart?.columnIndex != columnIndex {
+                                columnResizeStart = .init(columnIndex: columnIndex, width: width)
+                            }
+                            guard let start = columnResizeStart,
+                                  start.columnIndex == columnIndex
+                            else { return }
+                            columnWidthOverrides[columnIndex] =
+                                ResultsTablePresentation.resizedColumnWidth(
+                                    startingWidth: start.width,
+                                    translation: value.translation.width
+                                )
+                        }
+                        .onEnded { _ in
+                            columnResizeStart = nil
+                            NSCursor.arrow.set()
+                        }
+                )
+                .help("Drag to resize " + ResultsTablePresentation.headerName(for: column))
+                .accessibilityLabel(
+                    "Resize " + ResultsTablePresentation.headerName(for: column) + " column"
+                )
+                .accessibilityAdjustableAction { direction in
+                    let delta: CGFloat = direction == .increment ? 20 : -20
+                    columnWidthOverrides[columnIndex] =
+                        ResultsTablePresentation.resizedColumnWidth(
+                            startingWidth: width,
+                            translation: delta
+                        )
+                }
         }
     }
 
@@ -563,22 +624,44 @@ enum ResultsTablePresentation {
     static let pageSize = 100
     static let indexColumnWidth: CGFloat = 44
     static let minimumColumnWidth: CGFloat = 126
+    static let minimumResizableColumnWidth: CGFloat = 72
     static let tablePadding: CGFloat = 10
     static let headerRowHeight: CGFloat = 32
     static let bodyRowHeight: CGFloat = 30
 
-    static func columnWidths(availableWidth: CGFloat, columnCount: Int) -> [CGFloat] {
+    static func columnWidths(
+        availableWidth: CGFloat,
+        columnCount: Int,
+        overrides: [Int: CGFloat] = [:]
+    ) -> [CGFloat] {
         guard columnCount > 0 else { return [] }
         let usableWidth = max(0, availableWidth - indexColumnWidth - (tablePadding * 2))
         let minimumContentWidth = minimumColumnWidth * CGFloat(columnCount)
+        let defaultWidths: [CGFloat]
         guard usableWidth > minimumContentWidth else {
-            return Array(repeating: minimumColumnWidth, count: columnCount)
+            defaultWidths = Array(repeating: minimumColumnWidth, count: columnCount)
+            return applying(overrides: overrides, to: defaultWidths)
         }
 
         let baseWidth = floor(usableWidth / CGFloat(columnCount))
         let remainder = usableWidth - (baseWidth * CGFloat(columnCount))
-        return (0..<columnCount).map { columnIndex in
+        defaultWidths = (0..<columnCount).map { columnIndex in
             columnIndex == columnCount - 1 ? baseWidth + remainder : baseWidth
+        }
+        return applying(overrides: overrides, to: defaultWidths)
+    }
+
+    static func resizedColumnWidth(startingWidth: CGFloat, translation: CGFloat) -> CGFloat {
+        max(minimumResizableColumnWidth, startingWidth + translation)
+    }
+
+    private static func applying(
+        overrides: [Int: CGFloat],
+        to defaultWidths: [CGFloat]
+    ) -> [CGFloat] {
+        defaultWidths.enumerated().map { columnIndex, defaultWidth in
+            guard let override = overrides[columnIndex] else { return defaultWidth }
+            return max(minimumResizableColumnWidth, override)
         }
     }
 

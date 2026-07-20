@@ -89,6 +89,18 @@ struct ConnectSheet: View {
             Text("Save metadata locally; passwords go through the credential store.")
               .foregroundStyle(.secondary)
           }
+          Spacer()
+          if let closeAction {
+            Button(action: closeAction) {
+              Label("Close connection window", systemImage: "xmark.circle.fill")
+                .labelStyle(.iconOnly)
+            }
+            .buttonStyle(.borderless)
+            .font(.title3)
+            .foregroundStyle(.secondary)
+            .help("Close connection window")
+            .accessibilityIdentifier("close-connection-form-header-button")
+          }
         }
       }
 
