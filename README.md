@@ -7,7 +7,7 @@ Website: [www.lithepg.app](https://www.lithepg.app)
 
 LithePG is a lean, Mac-native PostgreSQL client with local-first AI. It is pure Swift on `postgres-nio` (no `libpq`), has a ~12.5 MiB stripped release executable and never sends prompts or database contents to an AI service.
 
-![LithePG app window showing a seeded dogfood schema, query editor, and results grid](docs/assets/lithepg-app-snapshot.png)
+![LithePG app window showing the connection navigator, seeded demo schema, query editor, and results grid](docs/assets/lithepg-app-snapshot.png)
 
 *Screenshot shows the seeded demo database, not real data.*
 

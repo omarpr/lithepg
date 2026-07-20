@@ -75,49 +75,13 @@ function InstallCommand({ hero = false }) {
 
 function ProductPreview() {
   return (
-    <div
-      className="product-stage"
-      role="img"
-      aria-label="A stylized preview of the LithePG query workspace with connections, SQL editor, results and local SQL drafting"
-    >
+    <div className="product-stage">
       <div className="app-window">
-        <div className="window-chrome">
-          <div className="traffic-lights" aria-hidden="true"><i /><i /><i /></div>
-          <div className="window-title">
-            <img src="/assets/lithepg-icon.png" alt="" width="22" height="22" />
-            <div><strong>LithePG</strong><small>Local · PostgreSQL 17</small></div>
-          </div>
-          <span className="version-pill">Latest</span>
-        </div>
-        <div className="workspace-demo">
-          <aside className="demo-sidebar">
-            <span className="demo-label">Connections</span>
-            <div className="connection active"><b /><span>Local dev<small>postgres</small></span></div>
-            <div className="connection"><b /><span>Neon production<small>pooled</small></span></div>
-            <span className="demo-label schema-label">Schema</span>
-            <div className="table-row">▦&nbsp;&nbsp;customers <em>5</em></div>
-            <div className="table-row">▦&nbsp;&nbsp;orders <em>8</em></div>
-            <div className="table-row">▦&nbsp;&nbsp;invoices <em>7</em></div>
-          </aside>
-          <div className="demo-main">
-            <div className="query-tabs"><span>Query 1</span><i>+</i><button type="button" tabIndex="-1">▶ Run</button></div>
-            <pre className="sql"><code><span>SELECT</span>{` c.name, `}<span>SUM</span>{`(o.total) `}<span>AS</span>{` revenue\n`}<span>FROM</span>{` customers c\n`}<span>JOIN</span>{` orders o `}<span>ON</span>{` o.customer_id = c.id\n`}<span>GROUP BY</span>{` c.name\n`}<span>ORDER BY</span>{` revenue `}<span>DESC</span>;</code></pre>
-            <div className="result-heading"><strong>Results</strong><span>3 rows · 21 ms</span></div>
-            <div className="result-table" role="presentation">
-              <div className="result-row result-header"><span>name</span><span>revenue</span></div>
-              <div className="result-row"><span>Acme Corp</span><span>12,842.25</span></div>
-              <div className="result-row"><span>Globex</span><span>9,120.00</span></div>
-              <div className="result-row"><span>Initech</span><span>5,410.50</span></div>
-            </div>
-          </div>
-          <aside className="ask-panel">
-            <span className="demo-label">Ask in English</span>
-            <p>Show customers ordered by revenue</p>
-            <button type="button" tabIndex="-1">Draft SQL</button>
-            <div className="draft-ready"><b>✓</b> Drafted locally. Review before running.</div>
-            <pre><code>{`SELECT c.name,\nSUM(o.total) AS revenue\nFROM customers c\nJOIN orders o ...`}</code></pre>
-          </aside>
-        </div>
+        <img
+          className="product-screenshot"
+          src="/assets/lithepg-app-snapshot.png"
+          alt="LithePG showing its connection navigator, schema browser, SQL editor and query results"
+        />
       </div>
       <div className="stage-shadow" aria-hidden="true" />
     </div>
@@ -133,9 +97,7 @@ const features = [
     className: "feature-card-large connection-card",
     visual: (
       <div className="connection-visual" aria-hidden="true">
-        <div><i className="status-green" /><span><b>Local dev</b><small>localhost:5432</small></span><em>DEV</em></div>
-        <div><i className="status-blue" /><span><b>Neon production</b><small>pooled · PostgreSQL 17</small></span><em>PROD</em></div>
-        <div><i className="status-violet" /><span><b>Analytics</b><small>read replica</small></span><em>STAGE</em></div>
+        <img src="/assets/lithepg-app-snapshot.png" alt="" />
       </div>
     ),
   },

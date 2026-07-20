@@ -21,6 +21,7 @@ required = [
     dist / "sitemap.xml",
     dist / "site.webmanifest",
     dist / "assets" / "lithepg-icon.png",
+    dist / "assets" / "lithepg-app-snapshot.png",
 ]
 for path in required:
     if not path.is_file() or path.stat().st_size == 0:
