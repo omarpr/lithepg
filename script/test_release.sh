@@ -35,7 +35,7 @@ set -e
 assert_contains "$invalid_output" "version must use stable SemVer major.minor.patch"
 
 set +e
-config_output="$(printf '\n' | /usr/bin/env \
+config_output="$(printf '1.0.3\n' | /usr/bin/env \
   LITHEPG_CODESIGN_IDENTITY=CHANGE_ME \
   LITHEPG_NOTARY_PROFILE=CHANGE_ME \
   LITHEPG_GITHUB_ACTIONS_READY=CHANGE_ME \
@@ -46,11 +46,21 @@ config_status=$?
 set -e
 [[ "$config_status" -ne 0 ]] || fail "placeholder configuration unexpectedly passed"
 assert_contains "$config_output" "configure LITHEPG_CODESIGN_IDENTITY"
-assert_contains "$config_output" "Release version [1.0.1]:"
+assert_contains "$config_output" "Release version:"
 
 script_contents="$(<"$HELPER")"
 assert_contains "$script_contents" 'LITHEPG_MARKETING_VERSION="$VERSION"'
 assert_contains "$script_contents" 'LITHEPG_EXPECTED_MARKETING_VERSION="$VERSION"'
+assert_contains "$script_contents" 'ASSET_NAME="LithePG-$VERSION.zip"'
+assert_contains "$script_contents" 'CHECKSUM_NAME="$ASSET_NAME.sha256"'
+assert_contains "$script_contents" './script/update_release_readme.sh "$VERSION" stable'
+assert_contains "$script_contents" 'git -C "$ROOT_DIR" add -- README.md packaging/homebrew/lithepg.rb'
+assert_contains "$script_contents" 'CHANGELOG.md must contain a ## [v$VERSION] release entry before releasing'
+assert_contains "$script_contents" 'LithePG-#{version}.zip'
+assert_contains "$script_contents" '/usr/bin/shasum -a 256 -c "$CHECKSUM_NAME"'
+assert_contains "$script_contents" 'README release metadata helper is missing or not executable'
+assert_contains "$script_contents" '--notes-file "$RELEASE_COPY"'
+assert_contains "$script_contents" 'git -C "$ROOT_DIR" commit -s -m'
 assert_contains "$script_contents" './script/sign_and_notarize.sh "$APP_PATH"'
 assert_contains "$script_contents" './script/v10_release_gate.sh --version "$VERSION" --check-remote'
 assert_contains "$script_contents" 'git -C "$ROOT_DIR" push --atomic origin'

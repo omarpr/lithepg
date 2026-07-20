@@ -4489,6 +4489,7 @@ printf 'Report vulnerabilities to [security contact pending].\n' >"$default_secu
 helper_contents="$(<"$HELPER")"
 assert_occurrences "$helper_contents" '/usr/bin/python3 -I -' 5
 assert_not_contains "$helper_contents" '/usr/bin/python3 - "'
+assert_contains "$helper_contents" 'LithePG-#{version}.zip'
 
 # Executable startup must not route through PATH-selected bash before helper code runs.
 initial_bash_path_shadow_sentinel="V10_RELEASE_GATE_INITIAL_BASH_PATH_SHADOW_SENTINEL_DO_NOT_PRINT"

@@ -1,7 +1,12 @@
 # LithePG
 
 [![CI](https://github.com/omarpr/lithepg/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/omarpr/lithepg/actions/workflows/ci.yml?query=branch%3Amain)
-&nbsp;**Release:** [`v1.0.0`](https://github.com/omarpr/lithepg/tree/v1.0.0)
+
+<!-- release-download:start -->
+**Cask release:** [`v1.0.2-preview.1`](https://github.com/omarpr/lithepg/releases/tag/v1.0.2-preview.1) · [Download `LithePG.app.zip`](https://github.com/omarpr/lithepg/releases/download/v1.0.2-preview.1/LithePG.app.zip) · Unnotarized preview
+
+Install: `brew install --cask omarpr/tap/lithepg`
+<!-- release-download:end -->
 
 Website: [www.lithepg.app](https://www.lithepg.app)
 
@@ -29,17 +34,21 @@ LithePG is a lean, Mac-native PostgreSQL client with local-first AI. It is pure 
 
 ## Status
 
-The `v1.0.0` source release is complete. The local suite passes with 252 tests across 40 suites, connectivity is proven live against local Docker Postgres and real Neon endpoints (direct and pooled), the full git history has been scanned for secrets, and the release executable remains under the 50 MiB cap. Public binary distribution remains separate: Apple Developer ID signing and notarization, a final security contact, a Homebrew target and publication approval are still required. Release history lives in [`CHANGELOG.md`](CHANGELOG.md).
+The source is released under MIT and the project-owned Homebrew tap currently carries an explicitly unnotarized preview. The preview is ad-hoc signed, so macOS requires manual approval in **System Settings → Privacy & Security** after the first blocked launch. A stable public binary still requires Apple Developer ID signing and notarization. Release history lives in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Install
 
-### GitHub Release zip
+### GitHub release archive
 
-When a signed release exists: download `LithePG.app.zip` from [Releases](https://github.com/omarpr/lithepg/releases), verify the checksum if provided, unzip and move `LithePG.app` to `/Applications`. Until then, build from source.
+Starting with the next release, each release publishes a versioned `LithePG-<version>.zip` plus a matching `.zip.sha256` file. Download both from [Releases](https://github.com/omarpr/lithepg/releases), run `shasum -a 256 -c LithePG-<version>.zip.sha256`, unzip, and move `LithePG.app` to `/Applications`. Earlier previews use the generic `LithePG.app.zip` asset shown in the managed release block above.
 
-### Homebrew cask (planned)
+### Homebrew cask
 
-`brew install --cask lithepg` will work once the v1.0.0 signed artifact and tap are approved.
+```sh
+brew install --cask omarpr/tap/lithepg
+```
+
+The cask pins an exact tag, release archive and SHA-256. New releases use versioned archive names. Running `brew upgrade --cask lithepg` moves to a newer version only after the tap is updated.
 
 ### Build from source
 

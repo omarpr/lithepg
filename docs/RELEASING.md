@@ -74,9 +74,10 @@ The helper prompts once for a stable base version such as `1.0.1` and publishes
 `v1.0.1-preview.1`. Set `LITHEPG_CASK_PREVIEW_NUMBER` to a positive integer to
 publish a later preview of the same base version. It runs the Swift tests,
 forces and verifies ad-hoc signing, creates and verifies the GitHub prerelease
-artifact, and updates `omarpr/tap`. The external tap cask includes a visible
-warning directing users to manually approve the first launch in **System
-Settings → Privacy & Security**.
+artifact, publishes a matching checksum sidecar, updates the managed release
+block in `README.md`, and updates `omarpr/tap`. The external tap cask includes
+a visible warning directing users to manually approve the first launch in
+**System Settings → Privacy & Security**.
 
 This preview path intentionally skips Developer ID signing, notarization, and
 the official Homebrew new-cask audit. It cannot be submitted to
@@ -121,15 +122,15 @@ The notary-submission zip is a credential-gated intermediate artifact, not the p
 
 ## GitHub Release artifact and Homebrew cask metadata
 
-The draft GitHub Release copy lives at [`docs/releases/v1.0-draft.md`](releases/v1.0-draft.md). Treat it as review material only until Omar approves the release text, all `REPLACE_WITH_*` placeholders are resolved, and the signed/notarized artifact is ready to attach.
+The historical v1.0 draft copy lives at [`docs/releases/v1.0-draft.md`](releases/v1.0-draft.md). Current stable release notes contain the versioned artifact, checksum and verification command, followed by GitHub's generated commit notes. The stable release helper refuses to proceed until `CHANGELOG.md` contains `## [v<VERSION>]`, so curated release history cannot be skipped.
 
 The public Homebrew cask must point at the final signed/notarized GitHub Release artifact, not an unsigned local development bundle. The intended artifact shape is:
 
 ```text
-https://github.com/omarpr/lithepg/releases/download/v<VERSION>/LithePG.app.zip
+https://github.com/omarpr/lithepg/releases/download/v<VERSION>/LithePG-<VERSION>.zip
 ```
 
-Use `LithePG.app.zip` as the public zip name for the release attachment. If the notarization wrapper produced an intermediate zip before stapling, rebuild the public zip from the signed, notarized, stapled, and validated `dist/LithePG.app` before upload with the safe local helper:
+The release helpers use `LithePG.app.zip` only as a local staging name, then publish `LithePG-<VERSION>.zip` plus `LithePG-<VERSION>.zip.sha256`. The archive still contains `LithePG.app` at its top level. If the notarization wrapper produced an intermediate zip before stapling, rebuild the public zip from the signed, notarized, stapled, and validated `dist/LithePG.app` before upload with the safe local helper:
 
 ```sh
 LITHEPG_EXPECTED_MARKETING_VERSION=<version> \
@@ -138,10 +139,11 @@ LITHEPG_EXPECTED_MARKETING_VERSION=<version> \
 
 The helper re-runs `script/package_verify.sh`, uses `ditto --keepParent` so the `.app` wrapper is preserved, and omits resource forks, extended attributes, quarantine data and ACLs so AppleDouble `._*` entries cannot invalidate the sealed app when a standard ZIP extractor is used. It rejects output paths inside the `.app` bundle, refuses to overwrite an existing zip unless `LITHEPG_RELEASE_ZIP_OVERWRITE=1` (or `true`/`yes`/`approved`) is set, and prints the local SHA-256 plus byte size for review. It does not upload, tag, sign, notarize, push, or contact the network.
 
-Before upload, compute and approve the SHA-256 from the local final `LithePG.app.zip` that will be attached to the GitHub Release:
+Before upload, compute and approve the SHA-256 from the versioned archive that will be attached to the GitHub Release:
 
 ```sh
-shasum -a 256 dist/LithePG.app.zip
+VERSION=1.0.3
+shasum -a 256 "dist/LithePG-${VERSION}.zip"
 ```
 
 Use that approved local digest for `LITHEPG_RELEASE_ZIP_SHA256`, the final GitHub Release copy, and the repository-local draft cask template at `packaging/homebrew/lithepg.rb`:
@@ -159,13 +161,15 @@ Use that approved local digest for `LITHEPG_RELEASE_ZIP_SHA256`, the final GitHu
 
 Stop before pushing to or creating any external Homebrew tap. Omar must explicitly provide the tap target and publication instructions; do not infer them from the main repository or from the cask token.
 
-After the final `LithePG.app.zip` is uploaded, hash a fresh download from GitHub as a separate final confirmation that the public URL serves the approved bytes:
+After the final versioned archive and checksum are uploaded, verify a fresh download from GitHub as a separate final confirmation that the public URL serves the approved bytes:
 
 ```sh
 VERSION=1.0.0
-curl -L -o /tmp/LithePG.app.zip \
-  "https://github.com/omarpr/lithepg/releases/download/v${VERSION}/LithePG.app.zip"
-shasum -a 256 /tmp/LithePG.app.zip
+curl -L -o "/tmp/LithePG-${VERSION}.zip" \
+  "https://github.com/omarpr/lithepg/releases/download/v${VERSION}/LithePG-${VERSION}.zip"
+curl -L -o "/tmp/LithePG-${VERSION}.zip.sha256" \
+  "https://github.com/omarpr/lithepg/releases/download/v${VERSION}/LithePG-${VERSION}.zip.sha256"
+cd /tmp && shasum -a 256 -c "LithePG-${VERSION}.zip.sha256"
 ```
 
 If the fresh-download hash differs from the approved local digest already used by `LITHEPG_RELEASE_ZIP_SHA256` and the cask, stop and resolve the uploaded artifact before publishing the tap update.
@@ -182,7 +186,7 @@ The helper defaults to version `1.0.0`; `--version` accepts an explicit SemVer `
 
 - Git state: clean working tree, `v0.5` tag present locally and an existing `v<version>` tag pointing at `HEAD` (or no release tag yet). Remote tag checks are opt-in via `--check-remote` or `LITHEPG_CHECK_REMOTE_TAGS=1`; network failures report as unknown without blocking, but a confirmed missing `origin` `v0.5` blocks.
 - Release copy: no unresolved `REPLACE_WITH_*` placeholders and the approved SHA-256 present as an exact digest token.
-- The public zip artifact: exact `LithePG.app.zip` basename, regular file, correct top-level bundle structure with no stray entries, valid ICNS icon, `CodeResources` present, strict `codesign --verify` pass, signature identifier `dev.omarpr.lithepg`, Hardened Runtime flag and a SHA-256 match against the approved digest.
+- The public zip artifact: a versioned `LithePG-<version>.zip` basename (the legacy local staging name remains accepted), regular file, correct top-level bundle structure with no stray entries, valid ICNS icon, `CodeResources` present, strict `codesign --verify` pass, signature identifier `dev.omarpr.lithepg`, Hardened Runtime flag and a SHA-256 match against the approved digest.
 - The Homebrew cask: token, version, URL, verified URL, metadata, uninstall quit gate, app stanza, macOS floor, zap paths, Ruby syntax and `sha256` all match the release.
 
 It does **not** run the Swift tests, package, signing or notarization gates; those still run separately below.
@@ -193,7 +197,7 @@ The helper also blocks publication until the final public release zip is present
 
 | Variable | Expected state |
 | --- | --- |
-| `LITHEPG_RELEASE_ZIP_PATH` | Path to the final public `LithePG.app.zip` artifact; defaults to `dist/LithePG.app.zip`, must have basename exactly `LithePG.app.zip`, and must be a regular file rather than a symlink. |
+| `LITHEPG_RELEASE_ZIP_PATH` | Path to the final public artifact; release scripts use `dist/LithePG-<version>.zip`, while `dist/LithePG.app.zip` remains the accepted local staging default. It must be a regular file rather than a symlink. |
 | `LITHEPG_RELEASE_ZIP_SHA256` | Approved expected 64-hex SHA-256 digest for the exact public zip artifact. |
 
 Any failed artifact, release-copy or cask check above makes the preflight exit non-zero. Failure output is redacted: it never prints expected or actual digests, cask values, signing identifiers, symlink targets or archive contents.

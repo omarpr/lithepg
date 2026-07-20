@@ -96,7 +96,8 @@ LITHEPG_SECURITY_DOC_PATH to scan one alternate security policy file instead of
 the default SECURITY.md and docs/SECURITY.md files (paths may be relative to the
 repository root or absolute). Set LITHEPG_RELEASE_ZIP_PATH to the final public
 release zip artifact path (default: dist/LithePG.app.zip; basename must be
-LithePG.app.zip; path itself must be a regular file, not a symlink) and
+LithePG.app.zip or LithePG-<version>.zip; path itself must be a regular file,
+not a symlink) and
 LITHEPG_RELEASE_ZIP_SHA256 to the approved expected
 64-hex SHA-256 digest.
 USAGE
@@ -1917,9 +1918,12 @@ fi
 
 if [[ "$homebrew_cask_check_ready" -eq 1 ]]; then
   if cask_url="$(extract_homebrew_cask_url "$homebrew_cask_file")"; then
-    expected_cask_url_template='https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip'
-    expected_cask_url_concrete="https://github.com/omarpr/lithepg/releases/download/v${VERSION}/LithePG.app.zip"
-    if [[ "$cask_url" == "$expected_cask_url_template" || "$cask_url" == "$expected_cask_url_concrete" ]]; then
+    expected_cask_url_template='https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG-#{version}.zip'
+    expected_cask_url_concrete="https://github.com/omarpr/lithepg/releases/download/v${VERSION}/LithePG-${VERSION}.zip"
+    legacy_cask_url_template='https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip'
+    legacy_cask_url_concrete="https://github.com/omarpr/lithepg/releases/download/v${VERSION}/LithePG.app.zip"
+    if [[ "$cask_url" == "$expected_cask_url_template" || "$cask_url" == "$expected_cask_url_concrete" \
+      || "$cask_url" == "$legacy_cask_url_template" || "$cask_url" == "$legacy_cask_url_concrete" ]]; then
       printf 'Homebrew cask URL: matches\n'
     else
       printf 'Homebrew cask URL: mismatch\n'
@@ -2095,7 +2099,8 @@ case "$RELEASE_ZIP_PATH" in
     mark_blocker
     ;;
   *)
-    if [[ "${RELEASE_ZIP_PATH##*/}" == "LithePG.app.zip" ]]; then
+    if [[ "${RELEASE_ZIP_PATH##*/}" == "LithePG.app.zip" \
+      || "${RELEASE_ZIP_PATH##*/}" == "LithePG-$VERSION.zip" ]]; then
       printf 'Release artifact filename: matches\n'
     else
       printf 'Release artifact filename: mismatch\n'

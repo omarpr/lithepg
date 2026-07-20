@@ -68,12 +68,12 @@ source = "\n".join(
     for path in [root / "index.html", root / "src" / "App.jsx", root / "src" / "styles.css"]
 )
 required_copy = [
-    "brew install --cask lithepg",
+    "brew install --cask omarpr/tap/lithepg",
     "https://github.com/omarpr/lithepg",
     "Latest source tag",
     "Install the latest release",
     "Build the latest tagged source",
-    "Cask coming soon",
+    "Live on the tap",
 ]
 for value in required_copy:
     if value not in source:

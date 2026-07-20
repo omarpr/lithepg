@@ -64,7 +64,7 @@ function InstallCommand({ hero = false }) {
       </div>
       {hero && (
         <p className="hero-install-note">
-          Homebrew tracks the latest published build automatically.
+          The tap pins every published build by version and SHA-256.
         </p>
       )}
     </div>
