@@ -27,6 +27,17 @@ jobs:
         # actions/checkout v4
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
+      # Match the tested CI toolchain. The runner's default Xcode can lag the
+      # Swift 6.2 tools version required by Package.swift.
+      - name: Select Xcode
+        # maxim-lobanov/setup-xcode v1.6.0
+        uses: maxim-lobanov/setup-xcode@60606e260d2fc5762a71e64e74b2174e8ea3c8bd
+        with:
+          xcode-version: latest-stable
+
+      - name: Swift version
+        run: swift --version
+
       - name: Initialize CodeQL
         # github/codeql-action v4
         uses: github/codeql-action/init@7188fc363630916deb702c7fdcf4e481b751f97a
@@ -34,9 +45,13 @@ jobs:
           languages: swift
           queries: security-extended
 
+      - name: Resolve dependencies
+        run: swift package resolve
+
       - name: Build
-        # github/codeql-action v4
-        uses: github/codeql-action/autobuild@7188fc363630916deb702c7fdcf4e481b751f97a
+        # CodeQL autobuild cannot reliably infer this multi-product SwiftPM
+        # package, so compile it explicitly while CodeQL tracing is active.
+        run: swift build
 
       - name: Analyze
         # github/codeql-action v4

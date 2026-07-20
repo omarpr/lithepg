@@ -36,10 +36,27 @@ if "pipx install semgrep==1.170.0" not in ci:
 
 codeql = (root / ".github" / "workflows" / "codeql.yml").read_text()
 codeql_sha = "7188fc363630916deb702c7fdcf4e481b751f97a"
-for action in ("init", "autobuild", "analyze"):
+for action in ("init", "analyze"):
     expected = f"github/codeql-action/{action}@{codeql_sha}"
     if expected not in codeql:
         raise SystemExit(f"test_ci_security failed: missing pinned {expected}")
+
+if "github/codeql-action/autobuild@" in codeql:
+    raise SystemExit(
+        "test_ci_security failed: Swift CodeQL must use the explicit SwiftPM build, not autobuild"
+    )
+
+setup_xcode = (
+    "maxim-lobanov/setup-xcode@60606e260d2fc5762a71e64e74b2174e8ea3c8bd"
+)
+if setup_xcode not in codeql:
+    raise SystemExit("test_ci_security failed: CodeQL must select the pinned Xcode toolchain")
+if codeql.index(setup_xcode) > codeql.index(f"github/codeql-action/init@{codeql_sha}"):
+    raise SystemExit("test_ci_security failed: CodeQL must select Xcode before initialization")
+
+for command in ("run: swift package resolve", "run: swift build"):
+    if command not in codeql:
+        raise SystemExit(f"test_ci_security failed: CodeQL is missing `{command}`")
 
 print("test_ci_security passed")
 PY
