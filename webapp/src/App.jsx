@@ -90,16 +90,8 @@ const features = [
   {
     number: "01",
     title: "Connections that stay organized",
-    copy: "Test before saving, move between databases from the left navigator and keep every password in the macOS Keychain.",
+    copy: "Move between databases from the left navigator and keep every password in the macOS Keychain.",
     icon: <StorageRoundedIcon />,
-    className: "feature-card-large connection-card",
-    visual: (
-      <div className="connection-visual" aria-hidden="true">
-        <div className="conn-row is-active"><i /><span>production</span><em>db.internal</em></div>
-        <div className="conn-row"><i /><span>staging</span><em>Keychain</em></div>
-        <div className="conn-row"><i /><span>analytics</span><em>read-only</em></div>
-      </div>
-    ),
   },
   {
     number: "02",
@@ -112,8 +104,6 @@ const features = [
     title: "Ask locally, review always",
     copy: "Draft schema-aware SQL with Apple's on-device model when available and a safe local fallback. The draft never runs automatically.",
     icon: <AutoAwesomeRoundedIcon />,
-    className: "ai-card",
-    visual: <span className="local-chip"><i /> On-device only</span>,
   },
   {
     number: "04",
@@ -132,15 +122,6 @@ const features = [
     title: "Understand the plan",
     copy: "Run EXPLAIN or EXPLAIN ANALYZE and scan a readable plan tree with cost shares, timings and the costliest node highlighted.",
     icon: <QueryStatsRoundedIcon />,
-    className: "feature-card-large explain-card",
-    visual: (
-      <div className="plan-visual" aria-hidden="true">
-        <div className="plan-root"><span>Aggregate</span><em>100%</em></div>
-        <div className="plan-node hot"><span>Hash Join</span><em>72%</em></div>
-        <div className="plan-node"><span>Seq Scan · orders</span><em>18%</em></div>
-        <div className="plan-node"><span>Index Scan · customers</span><em>10%</em></div>
-      </div>
-    ),
   },
 ];
 
@@ -213,12 +194,11 @@ function App() {
           </div>
           <div className="feature-grid">
             {features.map((feature) => (
-              <article className={`feature-card ${feature.className ?? ""}`} key={feature.number}>
+              <article className="feature-card" key={feature.number}>
                 <div className="feature-icon">{feature.icon}</div>
                 <span className="feature-number">{feature.number}</span>
                 <h3>{feature.title}</h3>
                 <p>{feature.copy}</p>
-                {feature.visual}
               </article>
             ))}
           </div>
