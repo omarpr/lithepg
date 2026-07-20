@@ -3,10 +3,10 @@
 # visible unsigned-build warning to the copy published in the external tap.
 
 cask "lithepg" do
-  version "1.0.2-preview.1"
-  sha256 "4a58d760275e52739f69a8108665d9c70a7863a5322675f846b032ec2a26c443"
+  version "1.0.3-preview.1"
+  sha256 "b496011b2184a2d5e17c6fb94b24aa3bc7a008c87984bac1cfe03a53cd917e94"
 
-  url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG.app.zip",
+  url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG-#{version}.zip",
       verified: "github.com/omarpr/lithepg/"
   name "LithePG"
   desc "Lean PostgreSQL client with local-first AI"
