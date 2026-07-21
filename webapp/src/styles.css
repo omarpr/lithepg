@@ -215,16 +215,22 @@ button {
 
 .hero h1 {
   margin: 0;
+  padding-bottom: 0.12em;
   font-size: clamp(55px, 6vw, 91px);
   font-weight: 760;
-  letter-spacing: -0.069em;
-  line-height: 0.92;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
 }
 
-.hero h1 span {
+.hero-title-line {
+  display: block;
+}
+
+.hero-title-accent {
   color: #79aaff;
   background: linear-gradient(110deg, #8bcaff 3%, #5d86ff 52%, #a082ff 100%);
   background-clip: text;
+  -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -866,8 +872,8 @@ footer a:hover { color: #c5d3e7; }
 }
 
 @media (min-width: 481px) and (max-width: 800px) {
-  .hero h1 { font-size: clamp(46px, 9.6vw, 64px); }
-  .hero h1 span { white-space: nowrap; }
+  .hero h1 { font-size: clamp(44px, 9vw, 62px); }
+  .hero-title-accent { white-space: nowrap; }
 }
 
 @media (max-width: 520px) {

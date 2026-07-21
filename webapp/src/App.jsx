@@ -156,7 +156,10 @@ function App() {
           <div className="hero-glow" aria-hidden="true" />
           <div className="hero-copy">
             <div className="eyebrow"><span className="eyebrow-dot" />Native for macOS · Open source</div>
-            <h1>Postgres,<br /><span>without the weight.</span></h1>
+            <h1>
+              <span className="hero-title-line">Postgres,</span>
+              <span className="hero-title-line hero-title-accent">without the weight.</span>
+            </h1>
             <p className="hero-lede">
               A fast, focused PostgreSQL client with a thoughtful query workflow,
               secure saved connections and local-first SQL drafting.
