@@ -865,6 +865,11 @@ footer a:hover { color: #c5d3e7; }
   footer > div { justify-self: center; flex-wrap: wrap; justify-content: center; }
 }
 
+@media (min-width: 481px) and (max-width: 800px) {
+  .hero h1 { font-size: clamp(46px, 9.6vw, 64px); }
+  .hero h1 span { white-space: nowrap; }
+}
+
 @media (max-width: 520px) {
   .hero-actions { flex-direction: column; }
   .button { width: 100%; }
