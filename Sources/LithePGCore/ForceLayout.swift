@@ -4,9 +4,12 @@ import Foundation
 ///
 /// Nodes seed onto a golden-angle spiral in sorted-id order, so the same graph
 /// always produces the same positions with no randomness. `step()` applies
-/// edge springs, pair repulsion, centering pull and damping with a fixed
-/// timestep. Graphs above `physicsNodeLimit` skip physics entirely and use a
-/// deterministic grid so the canvas stays responsive.
+/// edge springs, pair repulsion, centering pull and damping, scaled by a
+/// cooling `alpha` that decays every step so the simulation always winds down
+/// and stops. Repulsion distance is floored and per-step velocity is capped so
+/// dense graphs converge instead of diverging. Graphs above `physicsNodeLimit`
+/// skip physics entirely and use a deterministic grid so the canvas stays
+/// responsive.
 public struct ForceLayout: Sendable {
   public struct Point: Sendable, Equatable {
     public var x: Double
@@ -34,14 +37,26 @@ public struct ForceLayout: Sendable {
   private var velocities: [String: Point]
   private var pinned: Set<String> = []
   private var hasStepped = false
+  private var alpha = 1.0
 
   private static let repulsion = 12_000.0
   private static let springStiffness = 0.02
   private static let springRestLength = 140.0
   private static let centering = 0.005
   private static let damping = 0.85
-  private static let settledSpeed = 0.05
   private static let minSeparation = 0.1
+  /// Repulsion distance floor: caps the `1/d²` impulse two close nodes exchange,
+  /// so a single near-collision can no longer inject enough energy to diverge.
+  private static let repulsionMinDistance = 20.0
+  /// Hard per-step displacement cap. Bounds how far any node can travel per step
+  /// regardless of accumulated force, the backstop against runaway positions.
+  private static let maxVelocity = 100.0
+  /// Cooling schedule. `alpha` scales every force and decays each step; once it
+  /// falls below `alphaMin` the layout is settled and stops moving. Reheating
+  /// (drag, re-run) raises it back to `reheatAlpha` so the graph responds.
+  private static let alphaDecay = 0.98
+  private static let alphaMin = 0.001
+  private static let reheatAlpha = 0.5
 
   public init(graph: SchemaGraph) {
     let ids = graph.nodes.map(\.id).sorted()
@@ -75,12 +90,14 @@ public struct ForceLayout: Sendable {
   public var isSettled: Bool {
     if usesGridFallback { return true }
     guard hasStepped else { return orderedIDs.isEmpty }
-    let peak = velocities.values.map { ($0.x * $0.x + $0.y * $0.y).squareRoot() }.max() ?? 0
-    return peak < Self.settledSpeed
+    // Cooling drives settling: once alpha decays past the floor, all forces are
+    // effectively zero and the layout has stopped. This always terminates, even
+    // for dense graphs whose spring constraints can never be fully satisfied.
+    return alpha < Self.alphaMin
   }
 
   public mutating func step() {
-    guard !usesGridFallback, !orderedIDs.isEmpty else { return }
+    guard !usesGridFallback, !orderedIDs.isEmpty, alpha >= Self.alphaMin else { return }
     hasStepped = true
     var forces = Dictionary(uniqueKeysWithValues: orderedIDs.map { ($0, Point(x: 0, y: 0)) })
 
@@ -97,7 +114,10 @@ public struct ForceLayout: Sendable {
           dy = 0
           d = Self.minSeparation
         }
-        let magnitude = Self.repulsion / (d * d)
+        // Floor the distance used for magnitude so the `1/d²` term stays bounded
+        // for close pairs; keep the true `d` for the direction so pushes aim right.
+        let clamped = Swift.max(d, Self.repulsionMinDistance)
+        let magnitude = Self.repulsion / (clamped * clamped)
         forces[a]!.x += dx / d * magnitude
         forces[a]!.y += dy / d * magnitude
         forces[b]!.x -= dx / d * magnitude
@@ -118,15 +138,38 @@ public struct ForceLayout: Sendable {
       forces[edge.target]!.y -= dy / d * magnitude
     }
 
-    // Centering pull, integration and damping.
+    // Centering pull, integration and damping. Every force term is scaled by the
+    // cooling `alpha`, and the resulting velocity is capped so no node can travel
+    // more than `maxVelocity` in a single step. Together these keep dense graphs
+    // convergent instead of pumping energy until positions blow up.
     for id in orderedIDs where !pinned.contains(id) {
       let position = positions[id]!
       var velocity = velocities[id]!
-      velocity.x = (velocity.x + forces[id]!.x - position.x * Self.centering) * Self.damping
-      velocity.y = (velocity.y + forces[id]!.y - position.y * Self.centering) * Self.damping
+      let accelX = (forces[id]!.x - position.x * Self.centering) * alpha
+      let accelY = (forces[id]!.y - position.y * Self.centering) * alpha
+      velocity.x = (velocity.x + accelX) * Self.damping
+      velocity.y = (velocity.y + accelY) * Self.damping
+
+      let speed = (velocity.x * velocity.x + velocity.y * velocity.y).squareRoot()
+      if speed > Self.maxVelocity {
+        let scale = Self.maxVelocity / speed
+        velocity.x *= scale
+        velocity.y *= scale
+      }
+
       velocities[id] = velocity
       positions[id] = Point(x: position.x + velocity.x, y: position.y + velocity.y)
     }
+
+    alpha *= Self.alphaDecay
+  }
+
+  /// Reheats the simulation so it responds to interaction. A settled layout has
+  /// `alpha ≈ 0` and ignores forces; call this when the user starts dragging or
+  /// re-runs the layout so nodes move again, then let cooling re-settle it.
+  public mutating func reheat() {
+    guard !usesGridFallback else { return }
+    alpha = Swift.max(alpha, Self.reheatAlpha)
   }
 
   /// Runs steps until the layout settles or the budget runs out.

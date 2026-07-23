@@ -207,6 +207,8 @@ struct SchemaGraphView: View {
         if draggingNodeID == nil && panStartOffset == nil {
           if let hit = hitTest(value.startLocation, canvasSize: canvasSize) {
             draggingNodeID = hit
+            // Wake a settled layout so neighbours follow the dragged node.
+            layout.reheat()
           } else {
             panStartOffset = cameraOffset
           }

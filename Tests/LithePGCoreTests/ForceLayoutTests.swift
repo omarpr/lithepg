@@ -82,6 +82,57 @@ struct ForceLayoutTests {
     #expect(layout.positions["public.t0"] == pinned)
   }
 
+  /// Dense graph: `nodes` tables, each with up to `fanout` FKs to earlier tables.
+  private func denseGraph(nodes: Int, fanout: Int) -> SchemaGraph {
+    let relations = (0..<nodes).map { index in
+      DatabaseSchema.Relation(
+        schema: "public", name: "t\(index)", kind: .table,
+        columns: [.init(name: "id", typeName: "int4", isNullable: false, ordinalPosition: 1, isPrimaryKey: true)]
+      )
+    }
+    var fks: [DatabaseSchema.ForeignKey] = []
+    for index in 0..<nodes {
+      for k in 1...fanout where index - k >= 0 {
+        fks.append(.init(
+          name: "fk\(index)_\(k)",
+          childSchema: "public", childRelation: "t\(index)", childColumns: ["id"],
+          parentSchema: "public", parentRelation: "t\(index - k)", parentColumns: ["id"]
+        ))
+      }
+    }
+    return SchemaGraph.build(from: DatabaseSchema(
+      schemas: [.init(name: "public", relations: relations)],
+      foreignKeys: fks
+    ))
+  }
+
+  @Test("dense graph near the physics limit settles and stays bounded")
+  func denseGraphSettles() {
+    // Regression: this graph used to diverge (positions ran off to ±30000 and
+    // isSettled never became true, so the view span forever).
+    let g = denseGraph(nodes: 250, fanout: 4)
+    var layout = ForceLayout(graph: g)
+    #expect(!layout.usesGridFallback)
+    layout.settle()
+    #expect(layout.isSettled)
+    for point in layout.positions.values {
+      #expect(point.x.isFinite && point.y.isFinite)
+      #expect(abs(point.x) < 20_000 && abs(point.y) < 20_000)
+    }
+  }
+
+  @Test("reheat wakes a settled layout, which then settles again")
+  func reheatResumesThenSettles() {
+    let g = graph(nodes: 8, chained: true)
+    var layout = ForceLayout(graph: g)
+    layout.settle()
+    #expect(layout.isSettled)
+    layout.reheat()
+    #expect(!layout.isSettled)
+    layout.settle()
+    #expect(layout.isSettled)
+  }
+
   @Test("large graphs fall back to a deterministic grid without physics")
   func gridFallbackForLargeGraphs() {
     let g = graph(nodes: ForceLayout.physicsNodeLimit + 1, chained: false)
