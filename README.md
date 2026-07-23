@@ -3,7 +3,7 @@
 [![CI](https://github.com/omarpr/lithepg/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/omarpr/lithepg/actions/workflows/ci.yml?query=branch%3Amain)
 
 <!-- release-download:start -->
-**Cask release:** [`v1.0.3-preview.1`](https://github.com/omarpr/lithepg/releases/tag/v1.0.3-preview.1) · [Download `LithePG-1.0.3-preview.1.zip`](https://github.com/omarpr/lithepg/releases/download/v1.0.3-preview.1/LithePG-1.0.3-preview.1.zip) · Unnotarized preview
+**Cask release:** [`v1.0.4-preview.1`](https://github.com/omarpr/lithepg/releases/tag/v1.0.4-preview.1) · [Download `LithePG-1.0.4-preview.1.zip`](https://github.com/omarpr/lithepg/releases/download/v1.0.4-preview.1/LithePG-1.0.4-preview.1.zip) · Unnotarized preview
 
 Install: `brew install --cask omarpr/tap/lithepg`
 <!-- release-download:end -->
