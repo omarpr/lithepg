@@ -19,6 +19,7 @@ struct AboutView: View {
       }
 
       Link("www.lithepg.app", destination: AboutPresentation.websiteURL)
+        .controlAffordance("Open the LithePG website")
         .accessibilityIdentifier("about-website")
 
       Divider()
@@ -31,6 +32,7 @@ struct AboutView: View {
           "OmaRPR <omarpr@gmail.com>",
           destination: AboutPresentation.developerEmailURL
         )
+        .controlAffordance("Compose an email to the developer")
         .accessibilityIdentifier("about-developer")
       }
     }

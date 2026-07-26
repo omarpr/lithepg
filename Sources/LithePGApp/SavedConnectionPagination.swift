@@ -43,6 +43,7 @@ struct SavedConnectionPager: View {
             .labelStyle(.iconOnly)
         }
         .buttonStyle(.borderless)
+        .buttonAffordance("Previous connections page")
         .disabled(currentPage == 0)
         .accessibilityIdentifier("\(accessibilityPrefix)-previous-page")
 
@@ -58,6 +59,7 @@ struct SavedConnectionPager: View {
             .labelStyle(.iconOnly)
         }
         .buttonStyle(.borderless)
+        .buttonAffordance("Next connections page")
         .disabled(currentPage >= pageCount - 1)
         .accessibilityIdentifier("\(accessibilityPrefix)-next-page")
       }

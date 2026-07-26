@@ -55,6 +55,7 @@ struct SavedConnectionEditor: View {
           }
         }
         .pickerStyle(.segmented)
+        .controlAffordance("Classify the connection so its environment is visible in the workspace")
 
         TextField("Host", text: $host)
           .accessibilityIdentifier("edit-connection-host")
@@ -76,7 +77,8 @@ struct SavedConnectionEditor: View {
       }
 
       Section("Security") {
-        Toggle("TLS verify-full", isOn: $tls)
+        Toggle("Verify TLS certificate", isOn: $tls)
+          .controlAffordance("Verify the server certificate and hostname; disables SSH tunneling")
           .onChange(of: tls) { _, enabled in
             if enabled { useSSH = false }
           }
@@ -84,7 +86,12 @@ struct SavedConnectionEditor: View {
           TextField("CA certificate path", text: $tlsCAPath)
         }
 
-        Toggle("SSH tunnel", isOn: $useSSH)
+        Toggle("Use an SSH tunnel", isOn: $useSSH)
+          .controlAffordance(
+            tls
+              ? "Turn off TLS verification before enabling an SSH tunnel"
+              : "Connect through an SSH tunnel; disables TLS verification"
+          )
           .disabled(tls)
           .onChange(of: useSSH) { _, enabled in
             if enabled { tls = false }
@@ -109,10 +116,12 @@ struct SavedConnectionEditor: View {
         HStack {
           Button("Cancel") { dismiss() }
             .keyboardShortcut(.cancelAction)
+            .buttonAffordance("Discard changes and close")
           Spacer()
           Button("Test connection") {
             Task { await testConnection() }
           }
+          .buttonAffordance("Test this connection without opening the workspace")
           .disabled(saveDisabled)
 
           Button {
@@ -126,6 +135,8 @@ struct SavedConnectionEditor: View {
             }
           }
           .keyboardShortcut(.defaultAction)
+          .accessibilityLabel(isSaving ? "Saving changes" : "Save changes")
+          .buttonAffordance("Save changes to this connection")
           .disabled(saveDisabled)
           .accessibilityIdentifier("save-connection-changes-button")
         }

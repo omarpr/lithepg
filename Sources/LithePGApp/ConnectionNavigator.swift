@@ -85,7 +85,7 @@ struct ConnectionNavigator: View {
           .labelStyle(.iconOnly)
       }
       .buttonStyle(.borderless)
-      .help("Add connection")
+      .buttonAffordance("Add connection")
       .accessibilityIdentifier("add-connection-button")
       Button {
         withAnimation(.easeInOut(duration: 0.15)) {
@@ -99,7 +99,7 @@ struct ConnectionNavigator: View {
         .labelStyle(.iconOnly)
       }
       .buttonStyle(.borderless)
-      .help(connectionsExpanded ? "Collapse connections" : "Expand connections")
+      .buttonAffordance(connectionsExpanded ? "Collapse connections" : "Expand connections")
       .accessibilityIdentifier("toggle-connections-list-button")
     }
     .padding(.horizontal, 14)
@@ -109,11 +109,24 @@ struct ConnectionNavigator: View {
   @ViewBuilder
   private var connectionList: some View {
     if state.savedConnections.isEmpty {
-      Text("Saved connections and imported Neon databases appear here.")
+      VStack(spacing: 10) {
+        ContentUnavailableView(
+          "No saved connections",
+          systemImage: "cable.connector",
+          description: Text("Add a database connection or import one from Neon.")
+        )
         .font(.caption)
-        .foregroundStyle(.secondary)
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
+
+        Button(action: onAddConnection) {
+          Label("Add connection", systemImage: "plus")
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.small)
+        .buttonAffordance("Add your first database connection")
+        .accessibilityIdentifier("add-first-connection-button")
+      }
+      .padding(12)
+      .frame(maxWidth: .infinity, alignment: .leading)
     } else {
       LazyVStack(alignment: .leading, spacing: 4) {
         ForEach(
@@ -155,6 +168,7 @@ struct ConnectionNavigator: View {
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
+      .buttonAffordance("Connect to \(connection.name)")
       .disabled(
         state.connectionState == .connecting
           || state.activeSavedConnection?.id == connection.id
@@ -167,7 +181,7 @@ struct ConnectionNavigator: View {
           .labelStyle(.iconOnly)
       }
       .buttonStyle(.borderless)
-      .help("Edit saved connection")
+      .buttonAffordance("Edit saved connection \(connection.name)")
       .accessibilityIdentifier("edit-saved-connection-\(connection.id.uuidString)")
     }
     .contextMenu {
@@ -198,10 +212,10 @@ struct NeonScannerButton: View {
         )
       }
       .buttonStyle(.borderless)
-      .disabled(!state.canScanNeon)
-      .help(ConnectionNavigatorPresentation.neonButtonHelp(
+      .buttonAffordance(ConnectionNavigatorPresentation.neonButtonHelp(
         availability: state.neonCLIAvailability
       ))
+      .disabled(!state.canScanNeon)
       .accessibilityIdentifier("scan-neon-cli-button")
 
       if let message = state.neonScanMessage {

@@ -61,22 +61,26 @@ struct SchemaGraphView: View {
       Button {
         withAnimation { cameraScale = min(3, cameraScale * 1.25) }
       } label: {
-        Image(systemName: "plus.magnifyingglass")
+        Label("Zoom in", systemImage: "plus.magnifyingglass")
+          .labelStyle(.iconOnly)
       }
-      .help("Zoom in")
+      .buttonAffordance("Zoom in")
       Button {
         withAnimation { cameraScale = max(0.3, cameraScale / 1.25) }
       } label: {
-        Image(systemName: "minus.magnifyingglass")
+        Label("Zoom out", systemImage: "minus.magnifyingglass")
+          .labelStyle(.iconOnly)
       }
-      .help("Zoom out")
+      .buttonAffordance("Zoom out")
       Button("Re-run layout") {
         layout = ForceLayout(graph: graph)
         cameraOffset = .zero
         cameraScale = 1
       }
+      .buttonAffordance("Recalculate the graph layout")
       Button("Done") { dismiss() }
         .keyboardShortcut(.defaultAction)
+        .buttonAffordance("Close the schema graph")
     }
     .padding(12)
   }
@@ -105,6 +109,10 @@ struct SchemaGraphView: View {
       .accessibilityIdentifier("schema-graph-canvas")
       .accessibilityLabel(
         "Schema graph with \(nodes.count) tables and \(edges.count) relationships")
+      .accessibilityHint(
+        "Click a table to inspect it, drag a table to rearrange it, or drag the background to pan")
+      .dragAffordance(
+        "Click a table to inspect it; drag a table to rearrange or drag the background to pan")
       .gesture(dragGesture(canvasSize: proxy.size))
       .simultaneousGesture(
         MagnifyGesture().onChanged { value in

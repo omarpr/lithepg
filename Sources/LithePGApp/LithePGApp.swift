@@ -134,6 +134,7 @@ struct LithePGSettingsView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .controlAffordance("Choose the app appearance")
 
                 Text("LithePG starts in Dark mode. System follows your Mac appearance.")
                     .font(.caption)
@@ -145,6 +146,7 @@ struct LithePGSettingsView: View {
                     "Show the connection window when LithePG opens",
                     isOn: $state.showConnectionWindowOnLaunch
                 )
+                .controlAffordance("Show connection options automatically at launch")
             }
         }
         .formStyle(.grouped)

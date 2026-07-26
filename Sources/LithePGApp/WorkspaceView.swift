@@ -66,12 +66,14 @@ struct WorkspaceView: View {
         }
         .accessibilityIdentifier("run-query-button")
         .keyboardShortcut(.return, modifiers: [.command])
+        .buttonAffordance(runQueryHelp)
         .disabled(!state.canRunQuery)
 
         Button("Cancel") {
           state.cancelQuery()
         }
         .keyboardShortcut(".", modifiers: [.command])
+        .buttonAffordance("Cancel the running query")
         .disabled(!state.isRunning)
 
         Button {
@@ -80,6 +82,7 @@ struct WorkspaceView: View {
           Label("New Query Tab", systemImage: "plus")
         }
         .keyboardShortcut("t", modifiers: [.command])
+        .buttonAffordance("Open a new query tab")
 
         Button {
           state.closeSelectedQueryTab()
@@ -87,6 +90,11 @@ struct WorkspaceView: View {
           Label("Close Query Tab", systemImage: "xmark")
         }
         .keyboardShortcut("w", modifiers: [.command])
+        .buttonAffordance(
+          state.queryTabs.count <= 1
+            ? "At least one query tab must remain open"
+            : "Close the current query tab"
+        )
         .disabled(state.queryTabs.count <= 1)
 
         Button {
@@ -95,6 +103,11 @@ struct WorkspaceView: View {
           Label("Previous Query Tab", systemImage: "chevron.left")
         }
         .keyboardShortcut("[", modifiers: [.command, .shift])
+        .buttonAffordance(
+          state.queryTabs.count <= 1
+            ? "Open another query tab to navigate between tabs"
+            : "Select the previous query tab"
+        )
         .disabled(state.queryTabs.count <= 1)
 
         Button {
@@ -103,6 +116,11 @@ struct WorkspaceView: View {
           Label("Next Query Tab", systemImage: "chevron.right")
         }
         .keyboardShortcut("]", modifiers: [.command, .shift])
+        .buttonAffordance(
+          state.queryTabs.count <= 1
+            ? "Open another query tab to navigate between tabs"
+            : "Select the next query tab"
+        )
         .disabled(state.queryTabs.count <= 1)
 
         Button {
@@ -111,12 +129,14 @@ struct WorkspaceView: View {
           Label("Ask", systemImage: "wand.and.stars")
         }
         .keyboardShortcut("k", modifiers: [.command, .shift])
-        .disabled(state.isDraftingSQL)
-        .help(
-          state.schema == nil
+        .buttonAffordance(
+          state.isDraftingSQL
+            ? "A local SQL draft is already in progress"
+            : state.schema == nil
             ? "Connect and refresh the schema to enable AI drafting"
             : "Ask in English"
         )
+        .disabled(state.isDraftingSQL)
         .accessibilityIdentifier("ask-query-button")
         .popover(isPresented: $showingAskQuery) {
           AskQueryView(state: state)
@@ -140,9 +160,9 @@ struct WorkspaceView: View {
         } label: {
           Label("Explain", systemImage: "list.bullet.indent")
         }
+        .buttonAffordance(explainHelp)
         .disabled(!state.canRunQuery || state.isExplaining)
         .accessibilityIdentifier("explain-menu")
-        .help("Show the query plan; Explain Analyze executes the query for real timings")
         .sheet(isPresented: $showingPlanTree, onDismiss: { state.clearQueryPlan() }) {
           if let plan = state.lastQueryPlan {
             PlanTreeView(plan: plan, isAnalyze: state.lastQueryPlanIsAnalyze)
@@ -155,9 +175,13 @@ struct WorkspaceView: View {
           Label("Graph", systemImage: "point.3.connected.trianglepath.dotted")
         }
         .keyboardShortcut("g", modifiers: [.command, .shift])
+        .buttonAffordance(
+          state.schema == nil
+            ? "Connect and refresh the schema to enable the schema graph"
+            : "Show the schema as a graph of tables and foreign keys"
+        )
         .disabled(state.schema == nil)
         .accessibilityIdentifier("schema-graph-button")
-        .help("Show the schema as a graph of tables and foreign keys")
         .sheet(isPresented: $showingSchemaGraph) {
           if let schema = state.schema {
             SchemaGraphView(schema: schema)
@@ -172,10 +196,18 @@ struct WorkspaceView: View {
         .popover(isPresented: $showingQueryHistory) {
           QueryHistoryView(state: state)
         }
+        .buttonAffordance("Show recent query history")
 
         Button("Disconnect") {
           Task { await state.disconnect() }
         }
+        .buttonAffordance(
+          state.connectionState == .connecting
+            ? "Wait for the connection attempt to finish"
+            : state.connectionState == .disconnected
+              ? "No database is connected"
+              : "Disconnect from the current database"
+        )
         .disabled(state.connectionState == .disconnected || state.connectionState == .connecting)
       }
     }
@@ -208,6 +240,10 @@ struct WorkspaceView: View {
               .lineLimit(1)
           }
           .buttonStyle(.plain)
+          .accessibilityLabel("Query tab \(tab.title)")
+          .accessibilityHint("Double-click to rename")
+          .accessibilityAddTraits(tab.id == state.selectedQueryTabID ? .isSelected : [])
+          .buttonAffordance("Select query tab \(tab.title)")
           .simultaneousGesture(
             TapGesture(count: 2).onEnded { beginRenamingTab(tab) }
           )
@@ -221,7 +257,7 @@ struct WorkspaceView: View {
                 .font(.caption2.bold())
             }
             .buttonStyle(.borderless)
-            .help("Close \(tab.title)")
+            .buttonAffordance("Close \(tab.title)")
             .accessibilityIdentifier("close-query-tab-\(tab.id.uuidString)")
           }
         }
@@ -230,7 +266,9 @@ struct WorkspaceView: View {
         .padding(.vertical, 5)
         .background(
           tab.id == state.selectedQueryTabID
-            ? Color.accentColor.opacity(0.22) : Color.secondary.opacity(0.12), in: Capsule())
+            ? Color.accentColor.opacity(0.22) : Color.secondary.opacity(0.08),
+          in: RoundedRectangle(cornerRadius: 7, style: .continuous)
+        )
         .contextMenu {
           Button("Rename Tab…") { beginRenamingTab(tab) }
           if state.queryTabs.count > 1 {
@@ -250,6 +288,7 @@ struct WorkspaceView: View {
               .onSubmit { commitTabRename(tab) }
             Button("Rename") { commitTabRename(tab) }
               .keyboardShortcut(.defaultAction)
+              .buttonAffordance("Rename this query tab")
           }
           .padding(10)
         }
@@ -264,7 +303,7 @@ struct WorkspaceView: View {
           .labelStyle(.iconOnly)
       }
       .buttonStyle(.borderless)
-      .help("New query tab")
+      .buttonAffordance("New query tab")
       .accessibilityIdentifier("new-query-tab-button")
 
       Spacer()
@@ -297,6 +336,16 @@ struct WorkspaceView: View {
           .accessibilityIdentifier("connection-status")
       }
       Spacer()
+      if state.connectionState == .disconnected {
+        Button {
+          showingConnectionForm = true
+        } label: {
+          Label("Connect", systemImage: "cable.connector")
+        }
+        .buttonStyle(.borderedProminent)
+        .buttonAffordance("Add a connection or connect to a saved database")
+        .accessibilityIdentifier("connect-from-workspace-button")
+      }
       Text(state.activeConnectionEnvironment?.displayName ?? Self.versionBadgeLabel())
         .font(.callout.bold())
         .foregroundStyle(environmentColor)
@@ -336,6 +385,33 @@ struct WorkspaceView: View {
         label
       }
     }
+  }
+
+  private var runQueryHelp: String {
+    if state.isRunning {
+      return "Query is running"
+    }
+    if state.editorText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      return "Enter SQL before running a query"
+    }
+    switch state.connectionState {
+    case .disconnected:
+      return "Connect to a database before running a query"
+    case .connecting:
+      return "Wait for the connection attempt to finish"
+    case .connected:
+      return "Run the current query"
+    }
+  }
+
+  private var explainHelp: String {
+    if state.isExplaining {
+      return "A query plan is already being generated"
+    }
+    if !state.canRunQuery {
+      return runQueryHelp
+    }
+    return "Show the query plan; Explain Analyze executes the query for real timings"
   }
 
   private var environmentColor: Color {

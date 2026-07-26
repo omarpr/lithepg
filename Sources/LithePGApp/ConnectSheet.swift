@@ -84,9 +84,9 @@ struct ConnectSheet: View {
             .font(.title)
             .foregroundStyle(.tint)
           VStack(alignment: .leading) {
-            Text("Connect to Postgres")
+            Text("Connect to PostgreSQL")
               .font(.title2.bold())
-            Text("Save metadata locally; passwords go through the credential store.")
+            Text("Connection details stay on this Mac; passwords remain in Keychain.")
               .foregroundStyle(.secondary)
           }
           Spacer()
@@ -98,7 +98,7 @@ struct ConnectSheet: View {
             .buttonStyle(.borderless)
             .font(.title3)
             .foregroundStyle(.secondary)
-            .help("Close connection window")
+            .buttonAffordance("Close connection window")
             .accessibilityIdentifier("close-connection-form-header-button")
           }
         }
@@ -135,6 +135,7 @@ struct ConnectSheet: View {
                   }
                 }
                 .buttonStyle(.bordered)
+                .buttonAffordance("Connect to \(connection.name)")
 
                 Button {
                   editingConnection = connection
@@ -143,7 +144,7 @@ struct ConnectSheet: View {
                     .labelStyle(.iconOnly)
                 }
                 .buttonStyle(.borderless)
-                .help("Edit saved connection")
+                .buttonAffordance("Edit saved connection \(connection.name)")
                 .accessibilityIdentifier("edit-saved-connection-\(connection.id.uuidString)")
 
                 Button(role: .destructive) {
@@ -153,7 +154,7 @@ struct ConnectSheet: View {
                     .labelStyle(.iconOnly)
                 }
                 .buttonStyle(.borderless)
-                .help("Delete saved connection")
+                .buttonAffordance("Delete saved connection \(connection.name)")
               }
             }
 
@@ -179,7 +180,7 @@ struct ConnectSheet: View {
               .labelStyle(.iconOnly)
             }
             .buttonStyle(.borderless)
-            .help(savedConnectionsExpanded ? "Collapse connections" : "Expand connections")
+            .buttonAffordance(savedConnectionsExpanded ? "Collapse connections" : "Expand connections")
             .accessibilityIdentifier("toggle-saved-connections-section-button")
           }
         }
@@ -199,6 +200,7 @@ struct ConnectSheet: View {
                 Task { await connectDiscovered(instance) }
               }
               .buttonStyle(.bordered)
+              .buttonAffordance("Connect to \(instance.label)")
               .disabled(state.connectionState == .connecting)
             }
           }
@@ -213,6 +215,7 @@ struct ConnectSheet: View {
         }
         .pickerStyle(.segmented)
         .labelsHidden()
+        .controlAffordance("Choose how to enter the PostgreSQL connection details")
 
         if inputMode == .url {
           TextField(
@@ -265,7 +268,15 @@ struct ConnectSheet: View {
       }
 
       Section {
-        Toggle("TLS verify-full", isOn: $tls)
+        Toggle(isOn: $tls) {
+          VStack(alignment: .leading, spacing: 2) {
+            Text("Verify TLS certificate")
+            Text("Uses PostgreSQL verify-full.")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+          }
+        }
+          .controlAffordance("Verify the server certificate and hostname; disables SSH tunneling")
           .onChange(of: tls) { _, enabled in
             if enabled { useSSH = false }
           }
@@ -280,10 +291,16 @@ struct ConnectSheet: View {
             Button("Choose…") {
               showingCAImporter = true
             }
+            .buttonAffordance("Choose a CA certificate file")
           }
         }
 
-        Toggle("SSH tunnel", isOn: $useSSH)
+        Toggle("Use an SSH tunnel", isOn: $useSSH)
+          .controlAffordance(
+            tls
+              ? "Turn off TLS verification before enabling an SSH tunnel"
+              : "Connect through an SSH tunnel; disables TLS verification"
+          )
           .disabled(tls)
           .onChange(of: useSSH) { _, enabled in
             if enabled { tls = false }
@@ -299,6 +316,7 @@ struct ConnectSheet: View {
 
       Section {
         Toggle("Save this connection", isOn: $saveConnection)
+          .controlAffordance("Store connection metadata locally and keep its password in Keychain")
           .onChange(of: saveConnection) { _, enabled in
             if enabled { applyNeonConnectionNameSuggestion() }
           }
@@ -314,6 +332,7 @@ struct ConnectSheet: View {
             }
           }
           .pickerStyle(.segmented)
+          .controlAffordance("Classify the connection so its environment is visible in the workspace")
         }
       }
 
@@ -342,6 +361,7 @@ struct ConnectSheet: View {
             Button("Cancel", action: closeAction)
               .buttonStyle(.bordered)
               .keyboardShortcut(.cancelAction)
+              .buttonAffordance("Close without connecting")
               .accessibilityIdentifier("close-connection-form-button")
           } else {
             Button {
@@ -351,7 +371,7 @@ struct ConnectSheet: View {
             }
             .buttonStyle(.bordered)
             .keyboardShortcut("q", modifiers: .command)
-            .help("Quit LithePG (⌘Q)")
+            .buttonAffordance("Quit LithePG (⌘Q)")
             .accessibilityIdentifier("quit-application-button")
           }
 
@@ -370,6 +390,7 @@ struct ConnectSheet: View {
             }
           }
           .buttonStyle(.bordered)
+          .buttonAffordance("Test this connection without opening the workspace")
           .accessibilityIdentifier("test-connection-button")
           .disabled(testConnectionDisabled)
 
@@ -384,6 +405,13 @@ struct ConnectSheet: View {
             }
           }
           .accessibilityIdentifier("connect-button")
+          .accessibilityLabel(
+            state.connectionState == .connecting
+              ? "Connecting"
+              : ConnectSheetPresentation.primaryActionTitle(saveConnection: saveConnection)
+          )
+          .buttonStyle(.borderedProminent)
+          .buttonAffordance(saveConnection ? "Save this connection locally, then connect" : "Connect without saving")
           .keyboardShortcut(.defaultAction)
           .disabled(connectDisabled)
         }

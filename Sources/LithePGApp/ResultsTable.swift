@@ -235,9 +235,10 @@ struct ResultsTable: View {
                 .foregroundStyle(.secondary)
 
             Button {} label: {
-                Image(systemName: "line.3.horizontal.decrease")
+                Label("Filter results", systemImage: "line.3.horizontal.decrease")
+                    .labelStyle(.iconOnly)
             }
-            .help("Filter results")
+            .buttonAffordance("Filtering results is not available yet")
             .disabled(true)
 
             Menu {
@@ -249,12 +250,16 @@ struct ResultsTable: View {
                 Button("Copy as SQL inserts") { copyAs(result, format: .sqlInsert) }
                     .disabled(!ResultsTablePresentation.canExport(result))
             } label: {
-                Image(systemName: copiedAtLeastOnce ? "checkmark" : "doc.on.doc")
+                Label(
+                    copiedAtLeastOnce ? "Results copied" : "Copy results",
+                    systemImage: copiedAtLeastOnce ? "checkmark" : "doc.on.doc"
+                )
+                .labelStyle(.iconOnly)
             } primaryAction: {
                 copy(result)
             }
             .menuIndicator(.hidden)
-            .help("Copy results. Click to copy TSV or pick CSV, JSON or Markdown")
+            .buttonAffordance("Copy results. Click to copy TSV or pick CSV, JSON or Markdown")
             .disabled(result == nil)
 
             Menu {
@@ -264,10 +269,11 @@ struct ResultsTable: View {
                 Button("Markdown (.md)") { export(result, as: .markdown) }
                 Button("SQL inserts (.sql)") { export(result, as: .sqlInsert) }
             } label: {
-                Image(systemName: "arrow.down.to.line")
+                Label("Export results", systemImage: "arrow.down.to.line")
+                    .labelStyle(.iconOnly)
             }
             .menuIndicator(.hidden)
-            .help("Export results to CSV, TSV, JSON, Markdown or SQL inserts")
+            .buttonAffordance("Export results to CSV, TSV, JSON, Markdown or SQL inserts")
             .disabled(!ResultsTablePresentation.canExport(result))
         }
         .buttonStyle(.borderless)
@@ -290,7 +296,7 @@ struct ResultsTable: View {
                 Label("Previous Page", systemImage: "chevron.left")
             }
             .labelStyle(.iconOnly)
-            .help("Previous page")
+            .buttonAffordance("Previous page")
             .disabled(!ResultsTablePresentation.canGoPrevious(page: page))
 
             Button {
@@ -299,7 +305,7 @@ struct ResultsTable: View {
                 Label("Next Page", systemImage: "chevron.right")
             }
             .labelStyle(.iconOnly)
-            .help("Next page")
+            .buttonAffordance("Next page")
             .disabled(!ResultsTablePresentation.canGoNext(result, page: page))
         }
         .buttonStyle(.borderless)
@@ -422,6 +428,7 @@ struct ResultsTable: View {
             .simultaneousGesture(
                 TapGesture().onEnded { selectedCell = address }
             )
+            .controlAffordance("Select this cell; double-click to view and edit")
             .contextMenu {
                 Button("Copy cell") { copyCell(address, in: result) }
                 Button("Copy row") { copyRow(address.row, in: result) }
@@ -584,7 +591,7 @@ private struct ResultCellEditorSheet: View {
                     Image(systemName: "xmark")
                 }
                 .buttonStyle(.plain)
-                .help("Close without saving")
+                .buttonAffordance("Close without saving")
                 .accessibilityLabel("Close cell editor")
                 .accessibilityIdentifier("close-cell-editor")
             }
@@ -603,13 +610,17 @@ private struct ResultCellEditorSheet: View {
 
             HStack {
                 Button("Reset") { text = session.initialText }
+                    .buttonAffordance("Restore the original cell value")
                     .disabled(!hasChanges)
                 Button("Copy") { onCopy(text) }
+                    .buttonAffordance("Copy this cell value")
                 Spacer()
                 Button("Cancel", action: onCancel)
                     .keyboardShortcut(.cancelAction)
+                    .buttonAffordance("Close without saving")
                 Button("Save") { onSave(text) }
                     .keyboardShortcut(.defaultAction)
+                    .buttonAffordance("Save the edited cell value")
                     .disabled(!hasChanges)
                     .accessibilityIdentifier("save-cell-edit")
             }

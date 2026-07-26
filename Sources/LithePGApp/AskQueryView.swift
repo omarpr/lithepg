@@ -161,6 +161,7 @@ struct AskQueryView: View {
           Label(model.isDrafting ? "Drafting" : "Draft SQL", systemImage: "wand.and.stars")
         }
         .keyboardShortcut(.return, modifiers: [.command])
+        .buttonAffordance("Draft SQL locally from this request")
         .disabled(!model.canDraft)
         .accessibilityIdentifier("ask-query-draft-button")
 
@@ -169,6 +170,7 @@ struct AskQueryView: View {
         } label: {
           Label("Insert into editor", systemImage: "text.insert")
         }
+        .buttonAffordance("Insert the generated SQL into the editor without running it")
         .disabled(!model.canInsert)
         .accessibilityIdentifier("ask-query-insert-button")
 

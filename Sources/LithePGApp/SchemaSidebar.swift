@@ -45,7 +45,7 @@ struct SchemaSidebar: View {
                     .labelStyle(.iconOnly)
             }
             .buttonStyle(.borderless)
-            .help("Refresh schema")
+            .buttonAffordance("Refresh schema")
             .disabled(!presentation.canRefresh)
             .accessibilityIdentifier("refresh-schema-button")
         }
@@ -94,6 +94,11 @@ struct SchemaSidebar: View {
             Label(schema.name, systemImage: "folder")
                 .font(.subheadline.weight(.semibold))
                 .lineLimit(1)
+                .controlAffordance(
+                    expandedSchemas.contains(schema.id)
+                        ? "Collapse schema \(schema.name)"
+                        : "Expand schema \(schema.name)"
+                )
         }
         .disclosureGroupStyle(.automatic)
         .onAppear {
@@ -113,22 +118,34 @@ struct SchemaSidebar: View {
             .padding(.top, 3)
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: relation.kind.systemImage)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 14)
-                Text(relation.name)
-                    .lineLimit(1)
-                Spacer(minLength: 4)
-                Text("\(relation.columns.count)")
-                    .font(.caption2.monospacedDigit())
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    Image(systemName: relation.kind.systemImage)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 14)
+                    Text(relation.name)
+                        .lineLimit(1)
+                    Spacer(minLength: 4)
+                    Text("\(relation.columns.count)")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+                .contentShape(Rectangle())
+                .controlAffordance(
+                    expandedRelations.contains(relation.id)
+                        ? "Collapse \(relation.schema).\(relation.name)"
+                        : "Expand \(relation.schema).\(relation.name)"
+                )
                 Button {
                     Task { await state.insertAndRunSelect(for: relation) }
                 } label: {
-                    Image(systemName: "text.insert")
+                    Label(
+                        "Insert and run SELECT for \(relation.schema).\(relation.name)",
+                        systemImage: "text.insert"
+                    )
+                    .labelStyle(.iconOnly)
                 }
                 .buttonStyle(.borderless)
-                .help("Insert and run SELECT for \(relation.schema).\(relation.name)")
+                .buttonAffordance("Insert and run SELECT for \(relation.schema).\(relation.name)")
                 .accessibilityIdentifier("insert-select-\(relation.id)")
             }
             .font(.callout)

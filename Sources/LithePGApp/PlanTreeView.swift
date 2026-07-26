@@ -26,6 +26,7 @@ struct PlanTreeView: View {
         Spacer()
         Button("Done") { dismiss() }
           .keyboardShortcut(.defaultAction)
+          .buttonAffordance("Close the query plan")
       }
       .padding(12)
       Divider()

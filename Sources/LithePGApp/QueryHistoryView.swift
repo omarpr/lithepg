@@ -8,10 +8,12 @@ struct QueryHistoryView: View {
       HStack {
         Toggle("Record query history", isOn: $state.queryHistoryEnabled)
           .toggleStyle(.switch)
+          .controlAffordance("Store query text and metadata locally; result rows are never saved")
         Spacer()
         Button("Clear") {
           Task { await state.clearQueryHistory() }
         }
+        .buttonAffordance("Clear locally stored query history")
         .disabled(state.queryHistory.isEmpty)
       }
 
@@ -88,6 +90,7 @@ struct QueryHistoryView: View {
         }
         .buttonStyle(.bordered)
         .controlSize(.small)
+        .buttonAffordance("Replace the editor with this query")
       }
     }
     .padding(10)
