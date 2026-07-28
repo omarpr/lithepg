@@ -340,7 +340,12 @@ struct ConnectSheet: View {
 
       if let error = state.lastError ?? state.persistenceError {
         Section {
-          ErrorBanner(message: error)
+          ErrorBanner(
+            message: error,
+            stepDown: state.tlsStepDownAvailable
+              ? { Task { await state.retryWithEncryptionOnly() } }
+              : nil
+          )
         }
       }
 

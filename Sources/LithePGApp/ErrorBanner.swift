@@ -3,6 +3,9 @@ import SwiftUI
 struct ErrorBanner: View {
     let message: String?
     var reconnect: (() -> Void)? = nil
+    /// Offered only for a positively identified certificate verification failure. Retrying
+    /// encrypts without checking the server certificate, so it is always an explicit choice.
+    var stepDown: (() -> Void)? = nil
 
     var body: some View {
         if let message {
@@ -13,6 +16,14 @@ struct ErrorBanner: View {
                     .textSelection(.enabled)
                     .accessibilityLabel("Error: \(message)")
                 Spacer()
+                if let stepDown {
+                    Button("Retry with encryption only", action: stepDown)
+                        .buttonStyle(.bordered)
+                        .buttonAffordance(
+                            "Reconnect encrypting the connection without checking the server certificate"
+                        )
+                        .accessibilityIdentifier("tls-step-down-button")
+                }
                 if let reconnect {
                     Button("Reconnect", action: reconnect)
                         .buttonStyle(.bordered)

@@ -48,6 +48,10 @@ struct WorkspaceView: View {
             reconnect: state.canReconnectFromLastError
               ? {
                 Task { await state.reconnect() }
+              } : nil,
+            stepDown: state.tlsStepDownAvailable
+              ? {
+                Task { await state.retryWithEncryptionOnly() }
               } : nil)
           ResultsTable(result: state.lastResult)
             .frame(minHeight: 320, maxHeight: .infinity)
