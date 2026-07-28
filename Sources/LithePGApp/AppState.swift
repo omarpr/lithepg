@@ -1079,16 +1079,23 @@ public final class AppState {
     "lithepg.connection.\(id.uuidString.lowercased()).password"
   }
 
-  private static func tlsModeLabel(for mode: ConnectionConfig.TLSMode) -> String {
+  // Internal rather than private so the saved-label round trip is directly testable.
+  // The "disable" and "verify-full" labels predate the prefer/require modes and must keep
+  // their spelling, so connections saved by earlier builds still load.
+  static func tlsModeLabel(for mode: ConnectionConfig.TLSMode) -> String {
     switch mode {
     case .disable: "disable"
+    case .prefer: "prefer"
+    case .require: "require"
     case .verifyFull: "verify-full"
     }
   }
 
-  private static func tlsMode(fromSavedLabel label: String) throws -> ConnectionConfig.TLSMode {
+  static func tlsMode(fromSavedLabel label: String) throws -> ConnectionConfig.TLSMode {
     switch label {
     case "disable": .disable
+    case "prefer": .prefer
+    case "require": .require
     case "verify-full": .verifyFull
     default: throw PersistenceError.unsupportedTLSMode(label)
     }

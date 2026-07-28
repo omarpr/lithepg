@@ -71,12 +71,58 @@ struct ConnectionConfigTests {
         #expect(c.tlsMode == .disable)
     }
 
-    @Test("parses encrypted sslmode values as verifyFull")
-    func parsesEncryptedSSLModes() throws {
-        for mode in ["require", "verify-ca", "verify-full"] {
+    @Test("maps sslmode=require to encrypted without verification")
+    func mapsRequireToRequire() throws {
+        let c = try ConnectionConfig(url: "postgres://u:p@db.example.com/appdb?sslmode=require")
+        #expect(c.tlsMode == .require)
+    }
+
+    @Test("maps sslmode=prefer to prefer instead of silently dropping TLS")
+    func mapsPreferToPrefer() throws {
+        let c = try ConnectionConfig(url: "postgres://u:p@db.example.com/appdb?sslmode=prefer")
+        #expect(c.tlsMode == .prefer)
+    }
+
+    @Test("maps sslmode=allow to prefer")
+    func mapsAllowToPrefer() throws {
+        let c = try ConnectionConfig(url: "postgres://u:p@db.example.com/appdb?sslmode=allow")
+        #expect(c.tlsMode == .prefer)
+    }
+
+    @Test("maps verify-ca and verify-full to full verification")
+    func mapsVerifyModes() throws {
+        for mode in ["verify-ca", "verify-full"] {
             let c = try ConnectionConfig(url: "postgres://alice:secret@db/shop?sslmode=\(mode)")
             #expect(c.tlsMode == .verifyFull)
         }
+    }
+
+    @Test("drops a pinned root certificate for every mode except verify-full")
+    func dropsPinnedRootOutsideVerifyFull() {
+        for mode in [ConnectionConfig.TLSMode.disable, .prefer, .require] {
+            let c = ConnectionConfig(
+                host: "db.example.com",
+                database: "appdb",
+                username: "u",
+                password: "p",
+                tlsMode: mode,
+                pinnedRootCertificatePath: "/tmp/ca.pem"
+            )
+            #expect(c.pinnedRootCertificatePath == nil)
+        }
+    }
+
+    @Test("keeps a pinned root certificate for verify-full")
+    func keepsPinnedRootForVerifyFull() {
+        let c = ConnectionConfig(
+            host: "db.example.com",
+            database: "appdb",
+            username: "u",
+            password: "p",
+            tlsMode: .verifyFull,
+            pinnedRootCertificatePath: "/tmp/ca.pem"
+        )
+        #expect(c.pinnedRootCertificatePath == "/tmp/ca.pem")
     }
 
     @Test("rejects unsupported sslmode values")

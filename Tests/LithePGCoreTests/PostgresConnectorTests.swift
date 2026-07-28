@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import PostgresNIO
 @testable import LithePGCore
 
 @Suite("PostgresConnector")
@@ -226,5 +227,68 @@ struct PostgresConnectorTests {
         let parts = s.split(separator: ":", maxSplits: 2).map(String.init)
         guard parts.count == 3 else { throw TargetParseError.malformed }
         return (parts[0], parts[1], parts[2])
+    }
+
+    // MARK: - TLS mode mapping
+
+    private func tlsConfig(
+        _ mode: ConnectionConfig.TLSMode,
+        pinnedRoot: String? = nil
+    ) -> ConnectionConfig {
+        ConnectionConfig(
+            host: "db.example.com",
+            database: "appdb",
+            username: "u",
+            password: "p",
+            tlsMode: mode,
+            pinnedRootCertificatePath: pinnedRoot
+        )
+    }
+
+    @Test("disable produces a TLS setting that never attempts encryption")
+    func makeTLSDisable() throws {
+        let tls = try PostgresConnector.makeTLS(for: tlsConfig(.disable))
+        #expect(tls.isAllowed == false)
+    }
+
+    @Test("prefer attempts encryption but does not enforce it")
+    func makeTLSPrefer() throws {
+        let tls = try PostgresConnector.makeTLS(for: tlsConfig(.prefer))
+        #expect(tls.isAllowed == true)
+        #expect(tls.isEnforced == false)
+    }
+
+    @Test("require enforces encryption")
+    func makeTLSRequire() throws {
+        let tls = try PostgresConnector.makeTLS(for: tlsConfig(.require))
+        #expect(tls.isAllowed == true)
+        #expect(tls.isEnforced == true)
+    }
+
+    @Test("verify-full enforces encryption")
+    func makeTLSVerifyFull() throws {
+        let tls = try PostgresConnector.makeTLS(for: tlsConfig(.verifyFull))
+        #expect(tls.isAllowed == true)
+        #expect(tls.isEnforced == true)
+    }
+
+    @Test("verify-full still rejects an unreadable pinned root certificate")
+    func makeTLSRejectsUnreadablePinnedRoot() {
+        let config = tlsConfig(.verifyFull, pinnedRoot: "/nonexistent/path/ca.pem")
+        #expect(
+            throws: PostgresConnectorError.pinnedRootCertificateUnreadable(
+                path: "/nonexistent/path/ca.pem")
+        ) {
+            try PostgresConnector.makeTLS(for: config)
+        }
+    }
+
+    @Test("require ignores a pinned root instead of failing on an unreadable one")
+    func makeTLSRequireIgnoresPinnedRoot() throws {
+        // ConnectionConfig normalizes the pinned root away outside verifyFull, so the
+        // unreadable-path preflight must not fire here.
+        let tls = try PostgresConnector.makeTLS(
+            for: tlsConfig(.require, pinnedRoot: "/nonexistent/path/ca.pem"))
+        #expect(tls.isEnforced == true)
     }
 }

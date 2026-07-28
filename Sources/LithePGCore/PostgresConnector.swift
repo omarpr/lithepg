@@ -39,7 +39,7 @@ public actor PostgresConnector {
             username: config.username,
             password: config.password,
             database: config.database,
-            tls: try makeTLS(for: config)
+            tls: try Self.makeTLS(for: config)
         )
 
         do {
@@ -124,7 +124,7 @@ public actor PostgresConnector {
             username: config.username,
             password: config.password,
             database: config.database,
-            tls: try makeTLS(for: config)
+            tls: try Self.makeTLS(for: config)
         )
 
         let connection: PostgresConnection
@@ -234,13 +234,35 @@ public actor PostgresConnector {
         return ("127.0.0.1", tunnel.localPort, tunnel)
     }
 
-    private func makeTLS(for config: ConnectionConfig) throws -> PostgresConnection.Configuration.TLS {
+    // Internal and static rather than private so the mode mapping is directly testable.
+    // It reads only its argument, so it needs no actor isolation.
+    static func makeTLS(for config: ConnectionConfig) throws -> PostgresConnection.Configuration.TLS {
         switch config.tlsMode {
         case .disable:
             return .disable
+        case .prefer:
+            // PostgresNIO's `.prefer` already implements libpq's fallback: attempt TLS, and
+            // drop to an insecure connection if the server refuses. No retry logic of our own.
+            return .prefer(try makeSSLContext(verifying: false, pinnedRootCertificatePath: nil))
+        case .require:
+            return .require(try makeSSLContext(verifying: false, pinnedRootCertificatePath: nil))
         case .verifyFull:
-            var tls = TLSConfiguration.makeClientConfiguration()
-            if let path = config.pinnedRootCertificatePath {
+            return .require(
+                try makeSSLContext(
+                    verifying: true,
+                    pinnedRootCertificatePath: config.pinnedRootCertificatePath
+                )
+            )
+        }
+    }
+
+    private static func makeSSLContext(
+        verifying: Bool,
+        pinnedRootCertificatePath: String?
+    ) throws -> NIOSSLContext {
+        var tls = TLSConfiguration.makeClientConfiguration()
+        if verifying {
+            if let path = pinnedRootCertificatePath {
                 // Preflight: surface a clear error early rather than an opaque NIOSSL IOError later.
                 guard !path.isEmpty, FileManager.default.isReadableFile(atPath: path) else {
                     throw PostgresConnectorError.pinnedRootCertificateUnreadable(path: path)
@@ -251,9 +273,12 @@ public actor PostgresConnector {
                 // the BoringSSL verification path and accepts the pinned CA.
                 tls.trustRoots = .file(path)
             }
-            let sslContext = try NIOSSLContext(configuration: tls)
-            return .require(sslContext)
+        } else {
+            // prefer and require encrypt without authenticating the server, so they cannot
+            // detect an active machine in the middle. Only ever reached by an explicit choice.
+            tls.certificateVerification = .none
         }
+        return try NIOSSLContext(configuration: tls)
     }
 }
 

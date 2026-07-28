@@ -1,8 +1,14 @@
 import Foundation
 
 public struct ConnectionConfig: Sendable, Equatable {
-    public enum TLSMode: Sendable, Equatable {
+    public enum TLSMode: Sendable, Equatable, Hashable, CaseIterable {
+        /// No encryption.
         case disable
+        /// Encrypt if the server offers TLS, otherwise fall back to cleartext.
+        case prefer
+        /// Always encrypt, but do not verify the server certificate.
+        case require
+        /// Always encrypt, and verify the certificate chain and hostname.
         case verifyFull
     }
 
@@ -37,6 +43,9 @@ public struct ConnectionConfig: Sendable, Equatable {
     /// goes through SecTrust, which rejects self-signed server certs even when added as an
     /// extra anchor. Providing a specific root here routes verification through BoringSSL,
     /// which accepts the pinned CA. System-default verification (public CAs) is used when nil.
+    ///
+    /// Ignored, and normalized to nil by `init`, unless `tlsMode` is `.verifyFull`. The other
+    /// modes do no certificate verification, so a pinned root would have nothing to feed.
     public let pinnedRootCertificatePath: String?
     public let sshConfig: SSHConfig?
 
@@ -55,8 +64,13 @@ public struct ConnectionConfig: Sendable, Equatable {
         self.database = database
         self.username = username
         self.password = password
-        self.tlsMode = tlsMode ?? Self.defaultTLSMode(forHost: host)
-        self.pinnedRootCertificatePath = pinnedRootCertificatePath
+        let resolvedTLSMode = tlsMode ?? Self.defaultTLSMode(forHost: host)
+        self.tlsMode = resolvedTLSMode
+        // Certificate verification is off in every mode except verifyFull, so a pinned root
+        // would be silently ignored. Normalize it away instead, so the stored value always
+        // reflects what verification will actually use.
+        self.pinnedRootCertificatePath =
+            resolvedTLSMode == .verifyFull ? pinnedRootCertificatePath : nil
         self.sshConfig = sshConfig
     }
 
@@ -122,11 +136,18 @@ public struct ConnectionConfig: Sendable, Equatable {
             return defaultTLSMode(forHost: host)
         }
         switch raw {
-        case "disable", "allow", "prefer":
+        case "disable":
             return .disable
-        case "require", "verify-ca", "verify-full":
-            // LithePG currently exposes one encrypted mode. Prefer verification over silently
-            // weakening `sslmode=require` to opportunistic/no-verify TLS.
+        case "allow", "prefer":
+            // libpq's `allow` tries cleartext first and TLS second. PostgresNIO offers no such
+            // ordering, so both land on `prefer`, which tries TLS first. Both end up encrypted
+            // whenever the server supports TLS.
+            return .prefer
+        case "require":
+            return .require
+        case "verify-ca", "verify-full":
+            // verify-ca skips hostname verification. LithePG does not expose that distinction
+            // yet, so it is held to the stricter bar.
             return .verifyFull
         default:
             throw ParseError.unsupportedSSLMode(raw)
