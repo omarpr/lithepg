@@ -93,11 +93,14 @@ When `neon` or `neonctl` is installed, the connection navigator can explicitly s
 
 ```sh
 .build/debug/lithepg --url postgres://user:***@host:5432/db
-.build/debug/lithepg --url postgres://user:***@host:5432/db --tls --tls-ca /path/to/ca.pem
+.build/debug/lithepg --url postgres://user:***@host:5432/db --tls-mode verify-full --tls-ca /path/to/ca.pem
+.build/debug/lithepg --url postgres://user:***@host:5432/db --tls-mode require
 .build/debug/lithepg --url postgres://user:@127.0.0.1:5432/db --ssh user@bastion.example.com:22
 ```
 
-Plain TCP, TLS verify-full with an optional pinned CA, or an SSH tunnel through `/usr/bin/ssh -L`. `--tls` with `--ssh` is rejected (tunneled TLS needs later SNI work). Set `LITHEPG_DEBUG_ERROR=1` to print the redacted underlying error on failures.
+Plain TCP, TLS, or an SSH tunnel through `/usr/bin/ssh -L`. Pick a TLS mode with `--tls-mode <disable|prefer|require|verify-full>`, matching the PostgreSQL `sslmode` values of the same name. Without the flag the mode comes from the URL `sslmode`, defaulting to `verify-full` for remote hosts and `disable` for loopback.
+
+`require` and `prefer` encrypt without checking the server certificate, which suits a self-signed or internal-CA server but gives no protection against an active machine in the middle. `verify-full` checks the certificate chain and hostname, and accepts an optional pinned CA through `--tls-ca`. That flag requires `--tls-mode verify-full`, since nothing else verifies certificates. `--tls-mode verify-full` with `--ssh` is rejected (tunneled TLS needs later SNI work). Set `LITHEPG_DEBUG_ERROR=1` to print the redacted underlying error on failures.
 
 ## App shortcuts
 

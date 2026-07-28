@@ -30,7 +30,7 @@ struct LithePGMain {
             database: base.database,
             username: base.username,
             password: base.password,
-            tlsMode: args.tls ? .verifyFull : base.tlsMode,
+            tlsMode: args.tlsMode ?? base.tlsMode,
             pinnedRootCertificatePath: args.tlsCA,
             sshConfig: args.ssh
         )
@@ -56,7 +56,7 @@ struct LithePGMain {
 
 private struct Args {
     let base: ConnectionConfig?
-    let tls: Bool
+    let tlsMode: ConnectionConfig.TLSMode?
     let tlsCA: String?
     let ssh: ConnectionConfig.SSHConfig?
 
@@ -67,7 +67,7 @@ private struct Args {
 
     static func parse(_ argv: [String]) throws -> Args {
         var url: String?
-        var tls = false
+        var tlsMode: ConnectionConfig.TLSMode?
         var tlsCA: String?
         var sshRaw: String?
 
@@ -79,9 +79,19 @@ private struct Args {
                 guard i + 1 < argv.count else { throw ParseError.usage("--url needs a value") }
                 url = argv[i + 1]
                 i += 2
-            case "--tls":
-                tls = true
-                i += 1
+            case "--tls-mode":
+                guard i + 1 < argv.count else { throw ParseError.usage("--tls-mode needs a value") }
+                switch argv[i + 1] {
+                case "disable": tlsMode = .disable
+                case "prefer": tlsMode = .prefer
+                case "require": tlsMode = .require
+                case "verify-full": tlsMode = .verifyFull
+                default:
+                    throw ParseError.usage(
+                        "--tls-mode must be disable, prefer, require, or verify-full"
+                    )
+                }
+                i += 2
             case "--tls-ca":
                 guard i + 1 < argv.count else { throw ParseError.usage("--tls-ca needs a value") }
                 let value = argv[i + 1]
@@ -94,7 +104,13 @@ private struct Args {
                 i += 2
             case "--help", "-h":
                 throw ParseError.help(
-                    "usage: lithepg --url <postgres://...> [--tls] [--tls-ca <path>] [--ssh user@host[:port]]"
+                    """
+                    usage: lithepg --url <postgres://...> [--tls-mode <disable|prefer|require|verify-full>] \
+                    [--tls-ca <path>] [--ssh user@host[:port]]
+
+                    Without --tls-mode the mode comes from the URL sslmode, or defaults to \
+                    verify-full for remote hosts and disable for loopback.
+                    """
                 )
             default:
                 throw ParseError.usage("unknown argument: \(arg)")
@@ -102,19 +118,21 @@ private struct Args {
         }
 
         guard let url else {
-            return Args(base: nil, tls: tls, tlsCA: tlsCA, ssh: nil)
+            return Args(base: nil, tlsMode: tlsMode, tlsCA: tlsCA, ssh: nil)
         }
-        if tlsCA != nil && !tls {
-            throw ParseError.usage("--tls-ca requires --tls")
+        if tlsCA != nil && tlsMode != .verifyFull {
+            // Outside verify-full nothing verifies certificates, so a pinned root would be
+            // accepted and then silently ignored.
+            throw ParseError.usage("--tls-ca requires --tls-mode verify-full")
         }
-        if tls && sshRaw != nil {
-            throw ParseError.usage("--tls and --ssh together are not supported in v0.1")
+        if tlsMode == .verifyFull && sshRaw != nil {
+            throw ParseError.usage("--tls-mode verify-full and --ssh together are not supported")
         }
 
         let base = try ConnectionConfig(url: url)
         let ssh = try sshRaw.map(Self.parseSSH)
 
-        return Args(base: base, tls: tls, tlsCA: tlsCA, ssh: ssh)
+        return Args(base: base, tlsMode: tlsMode, tlsCA: tlsCA, ssh: ssh)
     }
 
     private static func parseSSH(_ raw: String) throws -> ConnectionConfig.SSHConfig {
