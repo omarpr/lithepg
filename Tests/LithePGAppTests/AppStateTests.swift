@@ -1,5 +1,6 @@
 import Foundation
 import LithePGCore
+import NIOSSL
 import Testing
 
 @testable import LithePGAppUI
@@ -1025,6 +1026,56 @@ struct AppStateConnectionTestingTests {
 
     let config = try #require(await tester.lastConfig)
     #expect(config.tlsMode == .prefer)
+  }
+
+  // MARK: - TLS step down
+
+  @Test("offers a step down after a verify-full certificate failure")
+  func offersStepDownForCertificateFailure() {
+    #expect(
+      AppState.shouldOfferTLSStepDown(
+        mode: .verifyFull,
+        error: NIOSSLExtraError.failedToValidateHostname
+      )
+    )
+  }
+
+  @Test("does not offer a step down for a non certificate failure")
+  func noStepDownForOtherFailures() {
+    struct Boom: Error {}
+    #expect(AppState.shouldOfferTLSStepDown(mode: .verifyFull, error: Boom()) == false)
+  }
+
+  @Test("does not offer a step down when the mode was already weaker than verify-full")
+  func noStepDownBelowVerifyFull() {
+    for mode in [ConnectionConfig.TLSMode.disable, .prefer, .require] {
+      #expect(
+        AppState.shouldOfferTLSStepDown(
+          mode: mode,
+          error: NIOSSLExtraError.failedToValidateHostname
+        ) == false
+      )
+    }
+  }
+
+  @Test("a new state offers no step down")
+  func stepDownStartsUnavailable() {
+    #expect(AppState().tlsStepDownAvailable == false)
+  }
+
+  @Test("retrying with encryption only does nothing when no offer is outstanding")
+  func retryIsInertWithoutAnOffer() async {
+    let state = AppState()
+    await state.retryWithEncryptionOnly()
+    #expect(state.connectionState == .disconnected)
+    #expect(state.tlsStepDownAvailable == false)
+  }
+
+  @Test("clearing the offer withdraws it")
+  func clearingWithdrawsTheOffer() {
+    let state = AppState()
+    state.clearTLSStepDownOffer()
+    #expect(state.tlsStepDownAvailable == false)
   }
 }
 

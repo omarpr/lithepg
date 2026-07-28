@@ -30,6 +30,9 @@ public final class AppState {
     }
   }
   public var lastError: String?
+  /// True only after a verify-full attempt failed certificate verification. Drives the
+  /// "Retry with encryption only" action, which is never taken without an explicit click.
+  public var tlsStepDownAvailable: Bool = false
   public var schema: DatabaseSchema?
   public var schemaError: String?
   public var isLoadingSchema: Bool = false
@@ -508,12 +511,48 @@ public final class AppState {
       self.connector = connector
       lastConnectionRequest = lastRequest
       activeSavedConnection = savedConnection
+      tlsStepDownAvailable = false
       markConnected(label: label)
       await refreshSchema()
     } catch {
       connectionState = .disconnected
       activeSavedConnection = nil
+      if let lastRequest, Self.shouldOfferTLSStepDown(mode: config.tlsMode, error: error) {
+        // Keep the request so the retry can replay it. It is only retained here because a
+        // step down is on offer; an ordinary failure leaves any earlier request untouched.
+        lastConnectionRequest = lastRequest
+        tlsStepDownAvailable = true
+      }
       setError(ErrorRedaction.redactCredentials(in: error))
+    }
+  }
+
+  /// A step down is offered only when full verification was requested and the failure was
+  /// positively identified as certificate verification. Anything else leaves the offer off, so
+  /// a transient failure never presents a security downgrade as the obvious next click.
+  static func shouldOfferTLSStepDown(mode: ConnectionConfig.TLSMode, error: any Error) -> Bool {
+    mode == .verifyFull && TLSFailureClassifier.isCertificateVerificationFailure(error)
+  }
+
+  public func clearTLSStepDownOffer() {
+    tlsStepDownAvailable = false
+  }
+
+  /// Re-runs the last connection attempt with certificate verification off. Only ever reached
+  /// through an explicit user action on a positively identified certificate failure.
+  ///
+  /// The pinned CA is dropped: it only feeds verification, which is off in `.require`, and
+  /// `ConnectionConfig` would normalize it away regardless.
+  public func retryWithEncryptionOnly() async {
+    guard tlsStepDownAvailable, let request = lastConnectionRequest else { return }
+    tlsStepDownAvailable = false
+    switch request.source {
+    case .url(let url):
+      await connect(url: url, tlsMode: .require, tlsCAPath: nil, sshTarget: request.sshTarget)
+    case .fields(let host, let port, let database, let username, let password):
+      await connect(
+        host: host, port: port, database: database, username: username, password: password,
+        tlsMode: .require, tlsCAPath: nil, sshTarget: request.sshTarget)
     }
   }
 
