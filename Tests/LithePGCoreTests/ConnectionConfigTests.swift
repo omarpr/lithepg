@@ -153,6 +153,122 @@ struct ConnectionConfigTests {
         }
     }
 
+    // MARK: - Credential characters
+    //
+    // RFC 3986 makes `#` start a fragment, so a raw `#` in the credentials breaks strict URL
+    // parsing. Real usernames and generated passwords contain it, and people paste them
+    // unencoded, so the userinfo region is percent-encoded before parsing.
+
+    @Test("accepts a raw hash in the username")
+    func acceptsRawHashInUsername() throws {
+        let c = try ConnectionConfig(url: "postgres://a#b:pw@db.example.com/shop")
+        #expect(c.username == "a#b")
+        #expect(c.password == "pw")
+        #expect(c.host == "db.example.com")
+        #expect(c.database == "shop")
+    }
+
+    @Test("accepts a raw hash in the password")
+    func acceptsRawHashInPassword() throws {
+        let c = try ConnectionConfig(url: "postgres://alice:p#ss@db.example.com/shop")
+        #expect(c.username == "alice")
+        #expect(c.password == "p#ss")
+    }
+
+    @Test("accepts a raw hash in both credentials at once")
+    func acceptsRawHashInBoth() throws {
+        let c = try ConnectionConfig(url: "postgres://a#b:p#ss#@db.example.com:6432/shop")
+        #expect(c.username == "a#b")
+        #expect(c.password == "p#ss#")
+        #expect(c.port == 6432)
+    }
+
+    @Test("accepts hyphen, underscore and dot in the username")
+    func acceptsCommonUsernamePunctuation() throws {
+        for user in ["a-b", "a_b", "a.b", "read_only-user.v2"] {
+            let c = try ConnectionConfig(url: "postgres://\(user):pw@db.example.com/shop")
+            #expect(c.username == user)
+        }
+    }
+
+    @Test("accepts other punctuation people put in generated passwords")
+    func acceptsGeneratedPasswordPunctuation() throws {
+        for password in ["p@ss", "p!ss", "p$ss", "p&ss", "p=ss", "p,ss", "p;ss", "p+ss", "p ss"] {
+            let c = try ConnectionConfig(url: "postgres://alice:\(password)@db.example.com/shop")
+            #expect(c.password == password)
+        }
+    }
+
+    @Test("does not double-encode credentials that already carry escapes")
+    func preservesExistingPercentEscapes() throws {
+        let c = try ConnectionConfig(url: "postgres://a%23b:p%40ss@db/shop")
+        #expect(c.username == "a#b")
+        #expect(c.password == "p@ss")
+    }
+
+    @Test("accepts a bare percent sign that is not a valid escape")
+    func acceptsBarePercentSign() throws {
+        // `%ss` is not a valid escape, so strict decoding used to fail the whole URL.
+        let c = try ConnectionConfig(url: "postgres://alice:p%ss@db/shop")
+        #expect(c.password == "p%ss")
+    }
+
+    @Test("accepts a percent followed by hex that was never meant as an escape")
+    func acceptsPercentFollowedByHex() throws {
+        // `%bc` reads as a valid escape for byte 0xBC, which is not valid UTF-8 on its own.
+        // Treating it as a literal percent is the only reading that yields a usable credential.
+        let user = try ConnectionConfig(url: "postgres://a%bc:pw@db/shop")
+        #expect(user.username == "a%bc")
+        #expect(user.password == "pw")
+
+        let password = try ConnectionConfig(url: "postgres://alice:p%bcss@db/shop")
+        #expect(password.username == "alice")
+        #expect(password.password == "p%bcss")
+    }
+
+    @Test("round trips a credential whose literal text contains a percent escape")
+    func roundTripsLiteralPercentEscape() throws {
+        // Hand-encoded `%23` meaning the three characters `%`, `2`, `3`.
+        let c = try ConnectionConfig(url: "postgres://a%2523b:pw@db/shop")
+        #expect(c.username == "a%23b")
+    }
+
+    @Test("an empty password stays distinct from a missing one")
+    func emptyPasswordParses() throws {
+        #expect(try ConnectionConfig(url: "postgres://alice:@db/shop").password == "")
+        #expect(try ConnectionConfig(url: "postgres://alice@db/shop").password == "")
+    }
+
+    @Test("keeps a hash after the authority out of the credentials")
+    func hashAfterAuthorityIsNotCredentials() throws {
+        let c = try ConnectionConfig(url: "postgres://alice:pw@db.example.com/shop?sslmode=require")
+        #expect(c.username == "alice")
+        #expect(c.password == "pw")
+        #expect(c.database == "shop")
+        #expect(c.tlsMode == .require)
+    }
+
+    @Test("uses the last at-sign so an at-sign in the password still parses")
+    func lastAtSignDelimitsCredentials() throws {
+        let c = try ConnectionConfig(url: "postgres://alice:p@ss@db.example.com/shop")
+        #expect(c.username == "alice")
+        #expect(c.password == "p@ss")
+        #expect(c.host == "db.example.com")
+    }
+
+    @Test("accepts a non-ASCII username")
+    func acceptsNonASCIIUsername() throws {
+        let c = try ConnectionConfig(url: "postgres://señor:pw@db.example.com/shop")
+        #expect(c.username == "señor")
+    }
+
+    @Test("leaves a URL with no credentials alone")
+    func urlWithoutCredentialsStillRejected() {
+        #expect(throws: ConnectionConfig.ParseError.missingComponent("user")) {
+            try ConnectionConfig(url: "postgres://db.example.com/shop")
+        }
+    }
+
     @Test("percent-decodes user and password")
     func percentDecodesCredentials() throws {
         // p%40ss → p@ss, a%23b → a#b
