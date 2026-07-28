@@ -17,7 +17,7 @@ struct NeonConnectionProfileTests {
     #expect(profile.username == "omar")
     #expect(profile.isPooled == false)
     #expect(profile.suggestedName == "Neon - appdb")
-    #expect(profile.tlsMode == .verifyFull)
+    #expect(profile.tlsMode == .require)
   }
 
   @Test("detects pooled Neon hosts")
@@ -65,7 +65,7 @@ struct NeonConnectionProfileTests {
     #expect(profile.host == "ep-odd-paper-a1fxw3hg.c-4.us-east-1.aws.neon.tech")
     #expect(profile.endpointID == "ep-odd-paper-a1fxw3hg")
     #expect(profile.isPooled == false)
-    #expect(profile.tlsMode == .verifyFull)
+    #expect(profile.tlsMode == .require)
   }
 
   @Test("detects modern pooled Neon hosts with a proxy cell segment")
@@ -78,7 +78,7 @@ struct NeonConnectionProfileTests {
 
     #expect(profile.endpointID == "ep-odd-paper-a1fxw3hg")
     #expect(profile.isPooled == true)
-    #expect(profile.tlsMode == .verifyFull)
+    #expect(profile.tlsMode == .require)
   }
 
   @Test("profile output excludes password values")

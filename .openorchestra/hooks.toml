@@ -1,0 +1,5 @@
+[setup]
+scripts = ["scripts/setup.sh"]
+
+[teardown]
+scripts = []

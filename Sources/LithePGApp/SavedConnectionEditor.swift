@@ -1,3 +1,4 @@
+import LithePGCore
 import SwiftUI
 
 struct SavedConnectionEditor: View {
@@ -12,7 +13,7 @@ struct SavedConnectionEditor: View {
   @State private var username: String
   @State private var password = ""
   @State private var passwordIsAvailable = false
-  @State private var tls: Bool
+  @State private var tlsMode: ConnectionConfig.TLSMode
   @State private var tlsCAPath: String
   @State private var useSSH: Bool
   @State private var sshTarget: String
@@ -28,7 +29,9 @@ struct SavedConnectionEditor: View {
     _port = State(initialValue: String(connection.port))
     _database = State(initialValue: connection.database)
     _username = State(initialValue: connection.username)
-    _tls = State(initialValue: connection.tlsMode == "verify-full")
+    // An unreadable label is held to the strongest mode rather than quietly weakened.
+    _tlsMode = State(
+      initialValue: (try? AppState.tlsMode(fromSavedLabel: connection.tlsMode)) ?? .verifyFull)
     _tlsCAPath = State(initialValue: connection.pinnedRootCertificatePath ?? "")
     _useSSH = State(initialValue: connection.sshTarget != nil)
     _sshTarget = State(initialValue: connection.sshTarget ?? "")
@@ -77,26 +80,43 @@ struct SavedConnectionEditor: View {
       }
 
       Section("Security") {
-        Toggle("Verify TLS certificate", isOn: $tls)
-          .controlAffordance("Verify the server certificate and hostname; disables SSH tunneling")
-          .onChange(of: tls) { _, enabled in
-            if enabled { useSSH = false }
+        Picker("Encryption", selection: $tlsMode) {
+          ForEach(ConnectSheetPresentation.tlsModeOrder, id: \.self) { mode in
+            Text(ConnectSheetPresentation.tlsModeTitle(mode)).tag(mode)
           }
-        if tls {
+        }
+        .pickerStyle(.inline)
+        .accessibilityIdentifier("editor-picker-tls-mode")
+        .controlAffordance("Choose how much the connection to the server is protected")
+        .onChange(of: tlsMode) { _, mode in
+          if mode != .disable { useSSH = false }
+        }
+
+        Text(ConnectSheetPresentation.tlsModeCaption(tlsMode))
+          .font(.caption)
+          .foregroundStyle(.secondary)
+
+        if let warning = ConnectSheetPresentation.encryptionWarning(mode: tlsMode, host: host) {
+          Label(warning, systemImage: "exclamationmark.triangle.fill")
+            .font(.caption)
+            .foregroundStyle(.orange)
+        }
+
+        if ConnectSheetPresentation.showsCACertificateField(mode: tlsMode) {
           TextField("CA certificate path", text: $tlsCAPath)
         }
 
         Toggle("Use an SSH tunnel", isOn: $useSSH)
           .controlAffordance(
-            tls
-              ? "Turn off TLS verification before enabling an SSH tunnel"
-              : "Connect through an SSH tunnel; disables TLS verification"
+            tlsMode == .disable
+              ? "Connect through an SSH tunnel"
+              : "Set encryption to Off before enabling an SSH tunnel"
           )
-          .disabled(tls)
+          .disabled(tlsMode != .disable)
           .onChange(of: useSSH) { _, enabled in
-            if enabled { tls = false }
+            if enabled { tlsMode = .disable }
           }
-        if useSSH && !tls {
+        if useSSH && tlsMode == .disable {
           TextField("user@host[:port]", text: $sshTarget)
         }
       }
@@ -179,7 +199,7 @@ struct SavedConnectionEditor: View {
 
   private var inputSignature: String {
     [
-      name, host, port, database, username, password, String(tls), tlsCAPath,
+      name, host, port, database, username, password, String(describing: tlsMode), tlsCAPath,
       String(useSSH), sshTarget, environment.rawValue,
     ].joined(separator: "\u{1F}")
   }
@@ -192,9 +212,9 @@ struct SavedConnectionEditor: View {
       database: database,
       username: username,
       password: password,
-      tls: tls,
-      tlsCAPath: tls ? tlsCAPath : nil,
-      sshTarget: useSSH && !tls ? sshTarget : nil
+      tlsMode: tlsMode,
+      tlsCAPath: tlsMode == .verifyFull ? tlsCAPath : nil,
+      sshTarget: useSSH && tlsMode == .disable ? sshTarget : nil
     )
   }
 
@@ -211,9 +231,9 @@ struct SavedConnectionEditor: View {
       database: database,
       username: username,
       password: password,
-      tls: tls,
-      tlsCAPath: tls ? tlsCAPath : nil,
-      sshTarget: useSSH && !tls ? sshTarget : nil,
+      tlsMode: tlsMode,
+      tlsCAPath: tlsMode == .verifyFull ? tlsCAPath : nil,
+      sshTarget: useSSH && tlsMode == .disable ? sshTarget : nil,
       environment: environment
     )
     if updated != nil { dismiss() }

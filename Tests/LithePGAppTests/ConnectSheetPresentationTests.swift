@@ -147,4 +147,68 @@ struct ConnectSheetPresentationTests {
     #expect(SavedConnectionPagination.page(of: connections, index: 99) == [10, 11])
     #expect(SavedConnectionPagination.normalizedPage(2, itemCount: 5) == 0)
   }
+
+  // MARK: - TLS mode picker
+
+  @Test("titles every TLS mode")
+  func titlesEveryMode() {
+    #expect(ConnectSheetPresentation.tlsModeTitle(.disable) == "Off")
+    #expect(ConnectSheetPresentation.tlsModeTitle(.prefer) == "Prefer")
+    #expect(ConnectSheetPresentation.tlsModeTitle(.require) == "Encrypt only")
+    #expect(ConnectSheetPresentation.tlsModeTitle(.verifyFull) == "Verify")
+  }
+
+  @Test("orders the picker from weakest to strongest")
+  func ordersPickerWeakestFirst() {
+    #expect(ConnectSheetPresentation.tlsModeOrder == [.disable, .prefer, .require, .verifyFull])
+  }
+
+  @Test("captions every TLS mode")
+  func captionsEveryMode() {
+    for mode in ConnectionConfig.TLSMode.allCases {
+      #expect(ConnectSheetPresentation.tlsModeCaption(mode).isEmpty == false)
+    }
+  }
+
+  @Test("shows the CA certificate field only for verify")
+  func showsCAFieldOnlyForVerify() {
+    #expect(ConnectSheetPresentation.showsCACertificateField(mode: .verifyFull))
+    #expect(ConnectSheetPresentation.showsCACertificateField(mode: .require) == false)
+    #expect(ConnectSheetPresentation.showsCACertificateField(mode: .prefer) == false)
+    #expect(ConnectSheetPresentation.showsCACertificateField(mode: .disable) == false)
+  }
+
+  @Test("warns about cleartext for a remote host with encryption off")
+  func warnsForRemoteCleartext() throws {
+    let warning = try #require(
+      ConnectSheetPresentation.encryptionWarning(mode: .disable, host: "db.example.com"))
+    #expect(warning.contains("Cleartext"))
+  }
+
+  @Test("warns that prefer may fall back for a remote host")
+  func warnsForRemotePrefer() throws {
+    let warning = try #require(
+      ConnectSheetPresentation.encryptionWarning(mode: .prefer, host: "db.example.com"))
+    #expect(warning.contains("fall back"))
+  }
+
+  @Test("does not warn for a loopback host")
+  func doesNotWarnForLoopback() {
+    #expect(ConnectSheetPresentation.encryptionWarning(mode: .disable, host: "localhost") == nil)
+    #expect(ConnectSheetPresentation.encryptionWarning(mode: .prefer, host: "127.0.0.1") == nil)
+  }
+
+  @Test("does not warn for modes that always encrypt")
+  func doesNotWarnForEncryptedModes() {
+    #expect(
+      ConnectSheetPresentation.encryptionWarning(mode: .require, host: "db.example.com") == nil)
+    #expect(
+      ConnectSheetPresentation.encryptionWarning(mode: .verifyFull, host: "db.example.com") == nil)
+  }
+
+  @Test("does not warn when the host is not yet known")
+  func doesNotWarnWithoutHost() {
+    #expect(ConnectSheetPresentation.encryptionWarning(mode: .disable, host: "") == nil)
+    #expect(ConnectSheetPresentation.encryptionWarning(mode: .disable, host: "   ") == nil)
+  }
 }

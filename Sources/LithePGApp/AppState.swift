@@ -152,15 +152,15 @@ public final class AppState {
   }
 
   public func connect(
-    url: String, tls: Bool = false, tlsCAPath: String? = nil, sshTarget: String? = nil
+    url: String, tlsMode: ConnectionConfig.TLSMode? = nil, tlsCAPath: String? = nil, sshTarget: String? = nil
   ) async {
     do {
       let config = try Self.connectionConfig(
-        url: url, tls: tls, tlsCAPath: tlsCAPath, sshTarget: sshTarget)
+        url: url, tlsMode: tlsMode, tlsCAPath: tlsCAPath, sshTarget: sshTarget)
       await open(
         config: config,
         label: Self.connectionLabel(for: config),
-        lastRequest: .init(source: .url(url), tls: tls, tlsCAPath: tlsCAPath, sshTarget: sshTarget),
+        lastRequest: .init(source: .url(url), tlsMode: tlsMode, tlsCAPath: tlsCAPath, sshTarget: sshTarget),
         savedConnection: nil
       )
     } catch {
@@ -170,11 +170,11 @@ public final class AppState {
   }
 
   public func testConnection(
-    url: String, tls: Bool = false, tlsCAPath: String? = nil, sshTarget: String? = nil
+    url: String, tlsMode: ConnectionConfig.TLSMode? = nil, tlsCAPath: String? = nil, sshTarget: String? = nil
   ) async {
     await testConnection {
       try Self.connectionConfig(
-        url: url, tls: tls, tlsCAPath: tlsCAPath, sshTarget: sshTarget)
+        url: url, tlsMode: tlsMode, tlsCAPath: tlsCAPath, sshTarget: sshTarget)
     }
   }
 
@@ -186,29 +186,29 @@ public final class AppState {
 
   public func testConnection(
     host: String, port: Int, database: String, username: String, password: String,
-    tls: Bool = false, tlsCAPath: String? = nil, sshTarget: String? = nil
+    tlsMode: ConnectionConfig.TLSMode? = nil, tlsCAPath: String? = nil, sshTarget: String? = nil
   ) async {
     await testConnection {
       try Self.connectionConfig(
         host: host, port: port, database: database, username: username, password: password,
-        tls: tls, tlsCAPath: tlsCAPath, sshTarget: sshTarget)
+        tlsMode: tlsMode, tlsCAPath: tlsCAPath, sshTarget: sshTarget)
     }
   }
 
   public func connect(
     host: String, port: Int, database: String, username: String, password: String,
-    tls: Bool = false, tlsCAPath: String? = nil, sshTarget: String? = nil
+    tlsMode: ConnectionConfig.TLSMode? = nil, tlsCAPath: String? = nil, sshTarget: String? = nil
   ) async {
     do {
       let config = try Self.connectionConfig(
         host: host, port: port, database: database, username: username, password: password,
-        tls: tls, tlsCAPath: tlsCAPath, sshTarget: sshTarget)
+        tlsMode: tlsMode, tlsCAPath: tlsCAPath, sshTarget: sshTarget)
       await open(
         config: config,
         label: Self.connectionLabel(for: config),
         lastRequest: .init(
           source: .fields(host: host, port: port, database: database, username: username, password: password),
-          tls: tls, tlsCAPath: tlsCAPath, sshTarget: sshTarget),
+          tlsMode: tlsMode, tlsCAPath: tlsCAPath, sshTarget: sshTarget),
         savedConnection: nil
       )
     } catch {
@@ -298,13 +298,13 @@ public final class AppState {
   public func saveConnection(
     name: String,
     host: String, port: Int, database: String, username: String, password: String,
-    tls: Bool = false, tlsCAPath: String? = nil, sshTarget: String? = nil,
+    tlsMode: ConnectionConfig.TLSMode? = nil, tlsCAPath: String? = nil, sshTarget: String? = nil,
     environment: ConnectionEnvironment = .development
   ) async -> SavedConnectionMetadata? {
     do {
       let config = try Self.connectionConfig(
         host: host, port: port, database: database, username: username, password: password,
-        tls: tls, tlsCAPath: tlsCAPath, sshTarget: sshTarget)
+        tlsMode: tlsMode, tlsCAPath: tlsCAPath, sshTarget: sshTarget)
       return await persistConnection(name: name, config: config, environment: environment)
     } catch {
       setPersistenceError(error)
@@ -316,14 +316,14 @@ public final class AppState {
   public func saveConnection(
     name: String,
     url: String,
-    tls: Bool = false,
+    tlsMode: ConnectionConfig.TLSMode? = nil,
     tlsCAPath: String? = nil,
     sshTarget: String? = nil,
     environment: ConnectionEnvironment = .development
   ) async -> SavedConnectionMetadata? {
     do {
       let config = try Self.connectionConfig(
-        url: url, tls: tls, tlsCAPath: tlsCAPath, sshTarget: sshTarget)
+        url: url, tlsMode: tlsMode, tlsCAPath: tlsCAPath, sshTarget: sshTarget)
       return await persistConnection(name: name, config: config, environment: environment)
     } catch {
       setPersistenceError(error)
@@ -350,7 +350,7 @@ public final class AppState {
     id: SavedConnectionMetadata.ID,
     name: String,
     host: String, port: Int, database: String, username: String, password: String,
-    tls: Bool = false, tlsCAPath: String? = nil, sshTarget: String? = nil,
+    tlsMode: ConnectionConfig.TLSMode? = nil, tlsCAPath: String? = nil, sshTarget: String? = nil,
     environment: ConnectionEnvironment = .development
   ) async -> SavedConnectionMetadata? {
     do {
@@ -359,7 +359,7 @@ public final class AppState {
       }
       let config = try Self.connectionConfig(
         host: host, port: port, database: database, username: username, password: password,
-        tls: tls, tlsCAPath: tlsCAPath, sshTarget: sshTarget)
+        tlsMode: tlsMode, tlsCAPath: tlsCAPath, sshTarget: sshTarget)
       return await persistConnection(
         name: name,
         config: config,
@@ -768,11 +768,12 @@ public final class AppState {
     switch request.source {
     case .url(let url):
       await connect(
-        url: url, tls: request.tls, tlsCAPath: request.tlsCAPath, sshTarget: request.sshTarget)
+        url: url, tlsMode: request.tlsMode, tlsCAPath: request.tlsCAPath,
+        sshTarget: request.sshTarget)
     case .fields(let host, let port, let database, let username, let password):
       await connect(
         host: host, port: port, database: database, username: username, password: password,
-        tls: request.tls, tlsCAPath: request.tlsCAPath, sshTarget: request.sshTarget)
+        tlsMode: request.tlsMode, tlsCAPath: request.tlsCAPath, sshTarget: request.sshTarget)
     }
   }
 
@@ -1010,7 +1011,7 @@ public final class AppState {
 
   private static func connectionConfig(
     url: String,
-    tls: Bool,
+    tlsMode: ConnectionConfig.TLSMode?,
     tlsCAPath: String?,
     sshTarget: String?
   ) throws -> ConnectionConfig {
@@ -1021,7 +1022,7 @@ public final class AppState {
       database: parsed.database,
       username: parsed.username,
       password: parsed.password,
-      tlsMode: tls ? .verifyFull : parsed.tlsMode,
+      tlsMode: tlsMode ?? parsed.tlsMode,
       pinnedRootCertificatePath: tlsCAPath?.nilIfBlank,
       sshConfig: try sshTarget?.nilIfBlank.map(Self.parseSSH)
     )
@@ -1033,7 +1034,7 @@ public final class AppState {
     database: String,
     username: String,
     password: String,
-    tls: Bool,
+    tlsMode: ConnectionConfig.TLSMode?,
     tlsCAPath: String?,
     sshTarget: String?
   ) throws -> ConnectionConfig {
@@ -1043,7 +1044,7 @@ public final class AppState {
       database: database,
       username: username,
       password: password,
-      tlsMode: tls ? .verifyFull : nil,
+      tlsMode: tlsMode,
       pinnedRootCertificatePath: tlsCAPath?.nilIfBlank,
       sshConfig: try sshTarget?.nilIfBlank.map(Self.parseSSH)
     )
@@ -1162,7 +1163,7 @@ public final class AppState {
 
   private struct ConnectionRequest {
     let source: ConnectionSource
-    let tls: Bool
+    let tlsMode: ConnectionConfig.TLSMode?
     let tlsCAPath: String?
     let sshTarget: String?
   }

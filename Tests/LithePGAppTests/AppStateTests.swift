@@ -337,7 +337,7 @@ struct AppStateTests {
 
     #expect(config.url == "postgres://user:secret@localhost:5432/app?sslmode=disable")
     #expect(config.query == "SELECT 1")
-    #expect(config.tls == true)
+    #expect(config.tlsMode == .verifyFull)
     #expect(config.tlsCAPath == "/tmp/root.pem")
     #expect(config.sshTarget == "developer@example.com:22")
     #expect(config.metricsPath == "/tmp/lithepg-startup.json")
@@ -409,7 +409,7 @@ struct AppStateTests {
       await s.saveConnection(
         name: " Local dogfood ",
         url: "postgres://dbuser:s3cr3t@localhost:55432/postgres?sslmode=disable",
-        tls: true,
+        tlsMode: .verifyFull,
         tlsCAPath: " /tmp/root.pem ",
         sshTarget: nil,
         environment: .development
@@ -558,7 +558,7 @@ struct AppStateTests {
         database: "app",
         username: "app_user",
         password: "new-password",
-        tls: true,
+        tlsMode: .verifyFull,
         tlsCAPath: " /tmp/root.pem ",
         environment: .production
       )
@@ -589,7 +589,7 @@ struct AppStateTests {
       port: 5432,
       database: "postgres",
       username: "omar",
-      tlsMode: "prefer",
+      tlsMode: "not-a-tls-mode",
       environment: .development,
       secretReference: "ref"
     )
@@ -948,7 +948,7 @@ struct AppStateConnectionTestingTests {
     let config = try #require(await tester.lastConfig)
     #expect(config.host == "ep-blue.neon.tech")
     #expect(config.database == "app")
-    #expect(config.tlsMode == .verifyFull)
+    #expect(config.tlsMode == .require)
   }
 
   @Test("failed test redacts credentials and leaves workspace disconnected")
@@ -977,6 +977,54 @@ struct AppStateConnectionTestingTests {
     #expect(state.connectionTestMessage == nil)
     #expect(state.connectionTestError != nil)
     #expect(await tester.callCount == 0)
+  }
+
+  // MARK: - TLS mode labels
+
+  @Test("round trips every TLS mode through its saved label")
+  func roundTripsTLSModeLabels() throws {
+    for mode in ConnectionConfig.TLSMode.allCases {
+      let label = AppState.tlsModeLabel(for: mode)
+      #expect(try AppState.tlsMode(fromSavedLabel: label) == mode)
+    }
+  }
+
+  @Test("keeps the labels earlier builds already wrote")
+  func usesStableLabels() {
+    #expect(AppState.tlsModeLabel(for: .disable) == "disable")
+    #expect(AppState.tlsModeLabel(for: .verifyFull) == "verify-full")
+    #expect(AppState.tlsModeLabel(for: .prefer) == "prefer")
+    #expect(AppState.tlsModeLabel(for: .require) == "require")
+  }
+
+  @Test("rejects an unknown saved TLS label")
+  func rejectsUnknownSavedLabel() {
+    #expect(throws: (any Error).self) {
+      try AppState.tlsMode(fromSavedLabel: "not-a-tls-mode")
+    }
+  }
+
+  @Test("an explicit TLS mode overrides the mode in the URL")
+  func explicitModeOverridesURL() async throws {
+    let tester = FixtureConnectionTester()
+    let state = AppState(connectionTester: tester)
+
+    await state.testConnection(
+      url: "postgres://u:p@db.example.com/app?sslmode=require", tlsMode: .verifyFull)
+
+    let config = try #require(await tester.lastConfig)
+    #expect(config.tlsMode == .verifyFull)
+  }
+
+  @Test("without an explicit mode the URL sslmode wins")
+  func urlModeUsedWhenUnspecified() async throws {
+    let tester = FixtureConnectionTester()
+    let state = AppState(connectionTester: tester)
+
+    await state.testConnection(url: "postgres://u:p@db.example.com/app?sslmode=prefer")
+
+    let config = try #require(await tester.lastConfig)
+    #expect(config.tlsMode == .prefer)
   }
 }
 

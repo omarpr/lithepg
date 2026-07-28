@@ -1,4 +1,5 @@
 import AppKit
+import LithePGCore
 import SwiftUI
 
 /// AppKit bridge (unavoidable): a bare SPM executable (`swift run`, Xcode
@@ -182,7 +183,7 @@ struct WindowStartupSizer: NSViewRepresentable {
 struct StartupConnectionConfig: Equatable {
     let url: String
     let query: String?
-    let tls: Bool
+    let tlsMode: ConnectionConfig.TLSMode?
     let tlsCAPath: String?
     let sshTarget: String?
     let metricsPath: String?
@@ -193,10 +194,30 @@ struct StartupConnectionConfig: Equatable {
         }
         self.url = url
         query = (environment["LITHEPG_STARTUP_QUERY"] ?? environment["LITHEPG_UI_SMOKE_QUERY"])?.nilIfBlank
-        tls = Self.truthy(environment["LITHEPG_STARTUP_TLS"] ?? environment["LITHEPG_UI_SMOKE_TLS"])
+        tlsMode = Self.tlsMode(
+            explicit: environment["LITHEPG_STARTUP_TLS_MODE"] ?? environment["LITHEPG_UI_SMOKE_TLS_MODE"],
+            legacyToggle: environment["LITHEPG_STARTUP_TLS"] ?? environment["LITHEPG_UI_SMOKE_TLS"]
+        )
         tlsCAPath = (environment["LITHEPG_STARTUP_TLS_CA_PATH"] ?? environment["LITHEPG_UI_SMOKE_TLS_CA_PATH"])?.nilIfBlank
         sshTarget = (environment["LITHEPG_STARTUP_SSH_TARGET"] ?? environment["LITHEPG_UI_SMOKE_SSH_TARGET"])?.nilIfBlank
         metricsPath = (environment["LITHEPG_STARTUP_METRICS_PATH"] ?? environment["LITHEPG_UI_SMOKE_METRICS_PATH"])?.nilIfBlank
+    }
+
+    /// `LITHEPG_STARTUP_TLS_MODE` names a mode directly. The older boolean
+    /// `LITHEPG_STARTUP_TLS` is still honored, and means verify-full, so existing smoke
+    /// harnesses keep working. Returns nil when neither is set, letting the URL decide.
+    private static func tlsMode(
+        explicit: String?,
+        legacyToggle: String?
+    ) -> ConnectionConfig.TLSMode? {
+        switch explicit?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "disable": return .disable
+        case "prefer": return .prefer
+        case "require": return .require
+        case "verify-full": return .verifyFull
+        default: break
+        }
+        return Self.truthy(legacyToggle) ? .verifyFull : nil
     }
 
     private static func truthy(_ raw: String?) -> Bool {
@@ -270,7 +291,9 @@ private extension AppState {
         if let query = config.query {
             editorText = query
         }
-        await connect(url: config.url, tls: config.tls, tlsCAPath: config.tlsCAPath, sshTarget: config.sshTarget)
+        await connect(
+            url: config.url, tlsMode: config.tlsMode, tlsCAPath: config.tlsCAPath,
+            sshTarget: config.sshTarget)
         guard isConnected, config.query != nil else { return }
         await runCurrentQuery()
     }

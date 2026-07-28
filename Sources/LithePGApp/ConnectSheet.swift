@@ -26,7 +26,7 @@ struct ConnectSheet: View {
   @State private var fieldUsername: String = ""
   @State private var fieldPassword: String = ""
   @State private var discoveredInstances: [DiscoveredInstance] = []
-  @State private var tls = Self.initialTLSPreference()
+  @State private var tlsMode: ConnectionConfig.TLSMode = Self.initialTLSMode()
   @State private var tlsCAPath: String =
     ProcessInfo.processInfo.environment["POSTGRES_TLS_CA"] ?? ""
   @State private var useSSH = ProcessInfo.processInfo.environment["POSTGRES_SSH"] != nil
@@ -61,19 +61,16 @@ struct ConnectSheet: View {
     ConnectSheetPresentation.neonHint(for: neonProfile)
   }
 
-  private var cleartextWarning: String? {
-    guard !tls, !useSSH else { return nil }
+  private var encryptionWarning: String? {
+    guard !useSSH else { return nil }
     let host: String
     if inputMode == .url {
-      guard let config = try? ConnectionConfig(url: effectiveURL), config.tlsMode == .disable else {
-        return nil
-      }
+      guard let config = try? ConnectionConfig(url: effectiveURL) else { return nil }
       host = config.host
     } else {
       host = fieldHost
     }
-    guard !host.isEmpty, !Self.isLoopback(host: host) else { return nil }
-    return "Cleartext remote connection. Enable TLS before connecting outside localhost."
+    return ConnectSheetPresentation.encryptionWarning(mode: tlsMode, host: host)
   }
 
   var body: some View {
@@ -230,7 +227,7 @@ struct ConnectSheet: View {
             if newValue != Self.redactedURLForDisplay(sensitivePrefilledURL) {
               sensitivePrefilledURL = nil
             }
-            tls = Self.defaultTLSPreference(for: effectiveURL)
+            tlsMode = Self.defaultTLSMode(for: effectiveURL)
             applyNeonConnectionNameSuggestion()
           }
           if let neonHint {
@@ -268,24 +265,29 @@ struct ConnectSheet: View {
       }
 
       Section {
-        Toggle(isOn: $tls) {
-          VStack(alignment: .leading, spacing: 2) {
-            Text("Verify TLS certificate")
-            Text("Uses PostgreSQL verify-full.")
-              .font(.caption)
-              .foregroundStyle(.secondary)
+        Picker("Encryption", selection: $tlsMode) {
+          ForEach(ConnectSheetPresentation.tlsModeOrder, id: \.self) { mode in
+            Text(ConnectSheetPresentation.tlsModeTitle(mode)).tag(mode)
           }
         }
-          .controlAffordance("Verify the server certificate and hostname; disables SSH tunneling")
-          .onChange(of: tls) { _, enabled in
-            if enabled { useSSH = false }
-          }
-        if let cleartextWarning {
-          Label(cleartextWarning, systemImage: "exclamationmark.triangle.fill")
+        .pickerStyle(.inline)
+        .accessibilityIdentifier("picker-tls-mode")
+        .controlAffordance("Choose how much the connection to the server is protected")
+        .onChange(of: tlsMode) { _, mode in
+          if mode != .disable { useSSH = false }
+        }
+
+        Text(ConnectSheetPresentation.tlsModeCaption(tlsMode))
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .accessibilityIdentifier("tls-mode-caption")
+
+        if let encryptionWarning {
+          Label(encryptionWarning, systemImage: "exclamationmark.triangle.fill")
             .font(.caption)
             .foregroundStyle(.orange)
         }
-        if tls {
+        if ConnectSheetPresentation.showsCACertificateField(mode: tlsMode) {
           HStack {
             TextField("CA certificate path", text: $tlsCAPath)
             Button("Choose…") {
@@ -297,15 +299,15 @@ struct ConnectSheet: View {
 
         Toggle("Use an SSH tunnel", isOn: $useSSH)
           .controlAffordance(
-            tls
-              ? "Turn off TLS verification before enabling an SSH tunnel"
-              : "Connect through an SSH tunnel; disables TLS verification"
+            tlsMode == .disable
+              ? "Connect through an SSH tunnel"
+              : "Set encryption to Off before enabling an SSH tunnel"
           )
-          .disabled(tls)
+          .disabled(tlsMode != .disable)
           .onChange(of: useSSH) { _, enabled in
-            if enabled { tls = false }
+            if enabled { tlsMode = .disable }
           }
-        if useSSH && !tls {
+        if useSSH && tlsMode == .disable {
           TextField(
             ConnectSheetPresentation.requiredFieldLabel("SSH target"),
             text: $sshTarget,
@@ -501,7 +503,7 @@ struct ConnectSheet: View {
   private var testInputSignature: String {
     [
       inputMode.rawValue, effectiveURL, fieldHost, fieldPort, fieldDatabase,
-      fieldUsername, fieldPassword, String(tls), tlsCAPath, String(useSSH), sshTarget,
+      fieldUsername, fieldPassword, String(describing: tlsMode), tlsCAPath, String(useSSH), sshTarget,
     ].joined(separator: "\u{1F}")
   }
 
@@ -552,17 +554,17 @@ struct ConnectSheet: View {
 
   private func connectAndMaybeSave() async {
     state.clearConnectionTestResult()
-    let tlsCA = tls ? tlsCAPath : nil
-    let ssh = useSSH && !tls ? sshTarget : nil
+    let tlsCA = tlsMode == .verifyFull ? tlsCAPath : nil
+    let ssh = useSSH && tlsMode == .disable ? sshTarget : nil
 
     if inputMode == .url {
-      await state.connect(url: effectiveURL, tls: tls, tlsCAPath: tlsCA, sshTarget: ssh)
+      await state.connect(url: effectiveURL, tlsMode: tlsMode, tlsCAPath: tlsCA, sshTarget: ssh)
     } else {
       let port = Int(fieldPort) ?? 5432
       await state.connect(
         host: fieldHost, port: port, database: fieldDatabase,
         username: fieldUsername, password: fieldPassword,
-        tls: tls, tlsCAPath: tlsCA, sshTarget: ssh)
+        tlsMode: tlsMode, tlsCAPath: tlsCA, sshTarget: ssh)
     }
 
     guard state.isConnected else { return }
@@ -574,7 +576,7 @@ struct ConnectSheet: View {
     let metadata: SavedConnectionMetadata?
     if inputMode == .url {
       metadata = await state.saveConnection(
-        name: savedConnectionName, url: effectiveURL, tls: tls, tlsCAPath: tlsCA,
+        name: savedConnectionName, url: effectiveURL, tlsMode: tlsMode, tlsCAPath: tlsCA,
         sshTarget: ssh, environment: environment)
     } else {
       let port = Int(fieldPort) ?? 5432
@@ -582,7 +584,7 @@ struct ConnectSheet: View {
         name: savedConnectionName,
         host: fieldHost, port: port, database: fieldDatabase,
         username: fieldUsername, password: fieldPassword,
-        tls: tls, tlsCAPath: tlsCA, sshTarget: ssh, environment: environment)
+        tlsMode: tlsMode, tlsCAPath: tlsCA, sshTarget: ssh, environment: environment)
     }
 
     if let metadata {
@@ -592,17 +594,17 @@ struct ConnectSheet: View {
   }
 
   private func testConnection() async {
-    let tlsCA = tls ? tlsCAPath : nil
-    let ssh = useSSH && !tls ? sshTarget : nil
+    let tlsCA = tlsMode == .verifyFull ? tlsCAPath : nil
+    let ssh = useSSH && tlsMode == .disable ? sshTarget : nil
 
     if inputMode == .url {
       await state.testConnection(
-        url: effectiveURL, tls: tls, tlsCAPath: tlsCA, sshTarget: ssh)
+        url: effectiveURL, tlsMode: tlsMode, tlsCAPath: tlsCA, sshTarget: ssh)
     } else {
       await state.testConnection(
         host: fieldHost, port: Int(fieldPort) ?? 5432, database: fieldDatabase,
         username: fieldUsername, password: fieldPassword,
-        tls: tls, tlsCAPath: tlsCA, sshTarget: ssh)
+        tlsMode: tlsMode, tlsCAPath: tlsCA, sshTarget: ssh)
     }
   }
 
@@ -644,9 +646,9 @@ struct ConnectSheet: View {
     }
   }
 
-  private static func initialTLSPreference() -> Bool {
-    if ProcessInfo.processInfo.environment["POSTGRES_TLS_CA"] != nil { return true }
-    return defaultTLSPreference(for: ProcessInfo.processInfo.environment["POSTGRES_URL"] ?? "")
+  private static func initialTLSMode() -> ConnectionConfig.TLSMode {
+    if ProcessInfo.processInfo.environment["POSTGRES_TLS_CA"] != nil { return .verifyFull }
+    return defaultTLSMode(for: ProcessInfo.processInfo.environment["POSTGRES_URL"] ?? "")
   }
 
   private static func initialSensitiveURL() -> String? {
@@ -664,9 +666,10 @@ struct ConnectSheet: View {
     return ErrorRedaction.redactCredentials(in: raw)
   }
 
-  private static func defaultTLSPreference(for url: String) -> Bool {
-    guard let config = try? ConnectionConfig(url: url) else { return false }
-    return config.tlsMode == .verifyFull
+  /// Falls back to verify-full for an unparseable URL, so a typo never silently lands the
+  /// user on a weaker mode than the remote-host default.
+  private static func defaultTLSMode(for url: String) -> ConnectionConfig.TLSMode {
+    (try? ConnectionConfig(url: url))?.tlsMode ?? .verifyFull
   }
 
   private static func isLoopback(host: String) -> Bool {
@@ -686,6 +689,47 @@ enum ConnectSheetPresentation {
   struct ProviderHint: Equatable {
     let title: String
     let detail: String
+  }
+
+  /// Weakest to strongest, so the picker reads as an escalating scale.
+  static let tlsModeOrder: [ConnectionConfig.TLSMode] = [.disable, .prefer, .require, .verifyFull]
+
+  static func tlsModeTitle(_ mode: ConnectionConfig.TLSMode) -> String {
+    switch mode {
+    case .disable: "Off"
+    case .prefer: "Prefer"
+    case .require: "Encrypt only"
+    case .verifyFull: "Verify"
+    }
+  }
+
+  static func tlsModeCaption(_ mode: ConnectionConfig.TLSMode) -> String {
+    switch mode {
+    case .disable: "No encryption."
+    case .prefer: "Encrypt if the server supports it."
+    case .require: "Encrypts, but does not check the server certificate."
+    case .verifyFull: "Checks the server certificate and hostname. Uses PostgreSQL verify-full."
+    }
+  }
+
+  /// A pinned CA only feeds certificate verification, which no other mode performs.
+  static func showsCACertificateField(mode: ConnectionConfig.TLSMode) -> Bool {
+    mode == .verifyFull
+  }
+
+  /// Warns when a remote connection may travel in cleartext. Returns nil for loopback hosts,
+  /// for a host that is not yet known, and for modes that always encrypt.
+  static func encryptionWarning(mode: ConnectionConfig.TLSMode, host: String) -> String? {
+    let host = host.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !host.isEmpty, !ConnectionConfig.isLoopbackHost(host) else { return nil }
+    switch mode {
+    case .disable:
+      return "Cleartext remote connection. Turn on encryption before connecting outside localhost."
+    case .prefer:
+      return "May fall back to cleartext if the server refuses TLS."
+    case .require, .verifyFull:
+      return nil
+    }
   }
 
   static func neonHint(for profile: NeonConnectionProfile?) -> ProviderHint? {
