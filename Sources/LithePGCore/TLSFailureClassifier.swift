@@ -1,5 +1,6 @@
 import Foundation
 import NIOSSL
+import PostgresNIO
 
 /// Decides whether a connection failure was caused by server certificate verification, and so
 /// whether stepping down from `.verifyFull` to `.require` could plausibly succeed.
@@ -10,6 +11,21 @@ import NIOSSL
 /// click through to weaker encryption whenever anything goes wrong. The second is worse.
 public enum TLSFailureClassifier {
     public static func isCertificateVerificationFailure(_ error: any Error) -> Bool {
+        // PostgresNIO never surfaces a bare NIOSSLError: a failed handshake arrives as a
+        // PSQLError wrapping it. Unwrap before the typed checks, or this never fires in
+        // practice. The depth bound guards against a cyclic chain.
+        if let underlying = (error as? PSQLError)?.underlying {
+            return isCertificateVerificationFailure(underlying)
+        }
+
+        if matchesTypedCertificateFailure(error) { return true }
+
+        // Last resort for wrappings this does not know about. BoringSSL's reason constants
+        // are distinctive enough that finding one in the rendered chain is a real signal.
+        return describesCertificateVerification(String(reflecting: error))
+    }
+
+    private static func matchesTypedCertificateFailure(_ error: any Error) -> Bool {
         if let extra = error as? NIOSSLExtraError {
             switch extra {
             case .failedToValidateHostname, .serverHostnameImpossibleToMatch:

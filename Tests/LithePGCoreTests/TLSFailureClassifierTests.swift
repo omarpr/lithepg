@@ -137,4 +137,48 @@ struct TLSFailureClassifierTests {
     func ignoresEmptyReason() {
         #expect(TLSFailureClassifier.describesCertificateVerification("") == false)
     }
+
+    // MARK: - Wrapped errors
+    //
+    // PostgresNIO does not surface a bare NIOSSLError. It wraps the handshake failure in a
+    // PSQLError, so a classifier that only checks the top-level type never fires in practice.
+    // PSQLError has no public initializer, so these use the exact text observed from a real
+    // verify-full connection against a self-signed server.
+
+    private struct WrappingError: Error, CustomDebugStringConvertible {
+        let debugDescription: String
+    }
+
+    @Test("classifies a certificate failure wrapped in a PostgresNIO connection error")
+    func classifiesWrappedCertificateFailure() {
+        let observed = """
+            PSQLError(code: connectionError, underlying: \
+            NIOSSL.NIOSSLError.handshakeFailed(NIOSSL.BoringSSLError.sslError([Error: 268435581 \
+            error:1000007d:SSL routines:OPENSSL_internal:CERTIFICATE_VERIFY_FAILED at \
+            handshake.cc:288])))
+            """
+        #expect(
+            TLSFailureClassifier.isCertificateVerificationFailure(
+                WrappingError(debugDescription: observed)))
+    }
+
+    @Test("does not classify a wrapped failure with no certificate signal")
+    func ignoresWrappedNonCertificateFailure() {
+        let observed =
+            "PSQLError(code: connectionError, underlying: NIOCore.IOError(errnoCode: 61, reason: connect))"
+        #expect(
+            TLSFailureClassifier.isCertificateVerificationFailure(
+                WrappingError(debugDescription: observed)) == false)
+    }
+
+    @Test("does not classify a wrapped authentication failure")
+    func ignoresWrappedAuthFailure() {
+        let observed = """
+            PSQLError(code: server, serverInfo: no pg_hba.conf entry for host "::1", \
+            user "testuser", database "postgres", SSL encryption)
+            """
+        #expect(
+            TLSFailureClassifier.isCertificateVerificationFailure(
+                WrappingError(debugDescription: observed)) == false)
+    }
 }

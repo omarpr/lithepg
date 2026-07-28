@@ -283,6 +283,61 @@ struct PostgresConnectorTests {
         }
     }
 
+    /// A Postgres URL for a server presenting a self-signed certificate, e.g.
+    /// `postgres://user:pass@localhost:55433/postgres`.
+    static var selfSignedTLSURL: String? {
+        ProcessInfo.processInfo.environment["POSTGRES_SELF_SIGNED_TLS_URL"]
+    }
+
+    @Test(
+        "verify-full fails on a self-signed server and the failure is classified as a certificate problem",
+        .enabled(if: selfSignedTLSURL != nil)
+    )
+    func verifyFullFailureIsClassifiable() async throws {
+        // Guards the whole step-down feature. PostgresNIO wraps the NIOSSL handshake failure in
+        // a PSQLError, so a classifier that only inspects the top-level error silently never
+        // fires, and the retry action never appears.
+        let parsed = try ConnectionConfig(url: Self.selfSignedTLSURL!)
+        let config = ConnectionConfig(
+            host: parsed.host,
+            port: parsed.port,
+            database: parsed.database,
+            username: parsed.username,
+            password: parsed.password,
+            tlsMode: .verifyFull
+        )
+        let connector = PostgresConnector()
+        defer { Task { try? await connector.shutdown() } }
+
+        do {
+            _ = try await connector.runSelect1(config: config)
+            Issue.record("expected verify-full to fail against a self-signed certificate")
+        } catch {
+            #expect(TLSFailureClassifier.isCertificateVerificationFailure(error))
+        }
+    }
+
+    @Test(
+        "require succeeds against the same self-signed server that verify-full rejects",
+        .enabled(if: selfSignedTLSURL != nil)
+    )
+    func requireSucceedsOnSelfSignedServer() async throws {
+        let parsed = try ConnectionConfig(url: Self.selfSignedTLSURL!)
+        let config = ConnectionConfig(
+            host: parsed.host,
+            port: parsed.port,
+            database: parsed.database,
+            username: parsed.username,
+            password: parsed.password,
+            tlsMode: .require
+        )
+        let connector = PostgresConnector()
+        defer { Task { try? await connector.shutdown() } }
+
+        let value = try await connector.runSelect1(config: config)
+        #expect(value == 1)
+    }
+
     @Test("require ignores a pinned root instead of failing on an unreadable one")
     func makeTLSRequireIgnoresPinnedRoot() throws {
         // ConnectionConfig normalizes the pinned root away outside verifyFull, so the
