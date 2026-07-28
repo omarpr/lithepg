@@ -18,6 +18,34 @@ struct ConnectSheetPresentationTests {
 
     #expect(hint?.title == "Neon connection detected")
     #expect(hint?.detail == "Database appdb · User writer · Pooled")
+    #expect(
+      hint?.note
+        == "Neon certificates are publicly trusted, so Verify is selected even though the URL asks for require."
+    )
+  }
+
+  @Test("Neon hint explains nothing extra when the URL already asks to verify")
+  func neonHintOmitsNoteWhenURLAlreadyVerifies() throws {
+    let profile = try #require(
+      NeonConnectionProfile.detect(
+        url:
+          "postgres://writer:***@ep-small-moon-a1b2c3.us-east-1.aws.neon.tech/appdb?sslmode=verify-full"
+      )
+    )
+
+    #expect(ConnectSheetPresentation.neonHint(for: profile)?.note == nil)
+  }
+
+  @Test("Neon hint explains nothing extra when the URL opts out of encryption")
+  func neonHintOmitsNoteWhenURLDisablesTLS() throws {
+    let profile = try #require(
+      NeonConnectionProfile.detect(
+        url:
+          "postgres://writer:***@ep-small-moon-a1b2c3.us-east-1.aws.neon.tech/appdb?sslmode=disable"
+      )
+    )
+
+    #expect(ConnectSheetPresentation.neonHint(for: profile)?.note == nil)
   }
 
   @Test("Neon hint marks direct compute hosts")
@@ -210,5 +238,46 @@ struct ConnectSheetPresentationTests {
   func doesNotWarnWithoutHost() {
     #expect(ConnectSheetPresentation.encryptionWarning(mode: .disable, host: "") == nil)
     #expect(ConnectSheetPresentation.encryptionWarning(mode: .disable, host: "   ") == nil)
+  }
+
+  // MARK: - Picker preselection
+
+  @Test("preselects Verify for a Neon URL that asks for require")
+  func preselectsVerifyForNeon() {
+    #expect(
+      ConnectSheetPresentation.preselectedTLSMode(
+        forURL: "postgres://u:p@ep-small-moon-a1b2c3.us-east-1.aws.neon.tech/appdb?sslmode=require")
+        == .verifyFull)
+  }
+
+  @Test("preselects the literal mode for a non Neon host")
+  func preselectsLiteralModeElsewhere() {
+    #expect(
+      ConnectSheetPresentation.preselectedTLSMode(
+        forURL: "postgres://u:p@db.example.com/appdb?sslmode=require") == .require)
+    #expect(
+      ConnectSheetPresentation.preselectedTLSMode(
+        forURL: "postgres://u:p@db.example.com/appdb?sslmode=prefer") == .prefer)
+  }
+
+  @Test("preselects Off for a loopback URL with no sslmode")
+  func preselectsOffForLoopback() {
+    #expect(
+      ConnectSheetPresentation.preselectedTLSMode(forURL: "postgres://u:p@localhost/appdb")
+        == .disable)
+  }
+
+  @Test("falls back to Verify for an unparseable URL")
+  func preselectsVerifyForGarbage() {
+    #expect(ConnectSheetPresentation.preselectedTLSMode(forURL: "not a url") == .verifyFull)
+    #expect(ConnectSheetPresentation.preselectedTLSMode(forURL: "") == .verifyFull)
+  }
+
+  @Test("respects an explicit opt out of encryption on a Neon URL")
+  func preselectsOffWhenNeonURLDisablesTLS() {
+    #expect(
+      ConnectSheetPresentation.preselectedTLSMode(
+        forURL: "postgres://u:p@ep-small-moon-a1b2c3.us-east-1.aws.neon.tech/appdb?sslmode=disable")
+        == .disable)
   }
 }

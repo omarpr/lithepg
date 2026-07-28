@@ -94,4 +94,68 @@ struct NeonConnectionProfileTests {
     #expect(!mirrorDump.contains(password))
     #expect(!profile.suggestedName.contains(password))
   }
+
+  // MARK: - Recommended TLS mode
+  //
+  // Neon serves publicly rooted certificates, so verify-full always works there. Neon hands
+  // out `?sslmode=require` URLs, which parse literally to `.require`. Recommending verify-full
+  // keeps pasted Neon URLs authenticated instead of merely encrypted.
+
+  @Test("recommends verify-full for a Neon URL that asks for require")
+  func recommendsVerifyFullForRequire() throws {
+    let profile = try #require(
+      NeonConnectionProfile.detect(
+        url: "postgres://u:p@ep-lively-sun-a1b2c3.us-east-2.aws.neon.tech/appdb?sslmode=require"))
+    #expect(profile.tlsMode == .require)
+    #expect(profile.recommendedTLSMode == .verifyFull)
+  }
+
+  @Test("recommends verify-full for a Neon URL that asks for prefer")
+  func recommendsVerifyFullForPrefer() throws {
+    let profile = try #require(
+      NeonConnectionProfile.detect(
+        url: "postgres://u:p@ep-lively-sun-a1b2c3.us-east-2.aws.neon.tech/appdb?sslmode=prefer"))
+    #expect(profile.recommendedTLSMode == .verifyFull)
+  }
+
+  @Test("leaves an already verified Neon URL alone")
+  func leavesVerifyFullAlone() throws {
+    let profile = try #require(
+      NeonConnectionProfile.detect(
+        url: "postgres://u:p@ep-lively-sun-a1b2c3.us-east-2.aws.neon.tech/appdb?sslmode=verify-full"
+      ))
+    #expect(profile.recommendedTLSMode == .verifyFull)
+  }
+
+  @Test("respects an explicit request for no encryption")
+  func respectsExplicitDisable() throws {
+    // Upgrading here would override an explicit choice rather than fill in a default.
+    let profile = try #require(
+      NeonConnectionProfile.detect(
+        url: "postgres://u:p@ep-lively-sun-a1b2c3.us-east-2.aws.neon.tech/appdb?sslmode=disable"))
+    #expect(profile.recommendedTLSMode == .disable)
+  }
+
+  @Test("recommends verify-full for a Neon URL with no sslmode at all")
+  func recommendsVerifyFullWithoutSSLMode() throws {
+    let profile = try #require(
+      NeonConnectionProfile.detect(
+        url: "postgres://u:p@ep-lively-sun-a1b2c3.us-east-2.aws.neon.tech/appdb"))
+    #expect(profile.recommendedTLSMode == .verifyFull)
+  }
+
+  @Test("recommends nothing for a host that is not Neon")
+  func recommendsNothingForNonNeonHost() {
+    #expect(
+      NeonConnectionProfile.recommendedTLSMode(
+        forURL: "postgres://u:p@db.example.com/appdb?sslmode=require") == nil)
+  }
+
+  @Test("recommends verify-full through the URL convenience for a Neon host")
+  func recommendsThroughURLConvenience() {
+    #expect(
+      NeonConnectionProfile.recommendedTLSMode(
+        forURL: "postgres://u:p@ep-lively-sun-a1b2c3.us-east-2.aws.neon.tech/appdb?sslmode=require")
+        == .verifyFull)
+  }
 }

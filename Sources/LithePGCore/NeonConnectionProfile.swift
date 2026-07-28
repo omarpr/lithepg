@@ -13,6 +13,28 @@ public struct NeonConnectionProfile: Sendable, Equatable, CustomStringConvertibl
   public let suggestedName: String
   public let tlsMode: ConnectionConfig.TLSMode
 
+  /// The TLS mode LithePG should preselect for this connection.
+  ///
+  /// Neon serves publicly rooted certificates, so `verifyFull` always succeeds against it, but
+  /// Neon hands out `?sslmode=require` URLs. Parsed literally that yields `.require`, which
+  /// encrypts without authenticating the server. Since verification is known to work here,
+  /// recommend it rather than leaving pasted Neon URLs merely encrypted.
+  ///
+  /// An explicit `sslmode=disable` is left alone: that is a stated choice, not a default to
+  /// fill in. `tlsMode` continues to report what the URL literally said.
+  public var recommendedTLSMode: ConnectionConfig.TLSMode {
+    switch tlsMode {
+    case .prefer, .require, .verifyFull: .verifyFull
+    case .disable: .disable
+    }
+  }
+
+  /// Convenience for callers holding only a URL. Returns nil when the host is not Neon, so
+  /// they can fall back to the mode the URL itself specifies.
+  public static func recommendedTLSMode(forURL url: String) -> ConnectionConfig.TLSMode? {
+    detect(url: url)?.recommendedTLSMode
+  }
+
   public var description: String {
     "NeonConnectionProfile(host: \(host), endpointID: \(endpointID ?? "nil"), database: \(database), username: \(username), isPooled: \(isPooled), suggestedName: \(suggestedName), tlsMode: \(tlsMode))"
   }

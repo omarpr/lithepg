@@ -227,7 +227,7 @@ struct ConnectSheet: View {
             if newValue != Self.redactedURLForDisplay(sensitivePrefilledURL) {
               sensitivePrefilledURL = nil
             }
-            tlsMode = Self.defaultTLSMode(for: effectiveURL)
+            tlsMode = ConnectSheetPresentation.preselectedTLSMode(forURL: effectiveURL)
             applyNeonConnectionNameSuggestion()
           }
           if let neonHint {
@@ -238,6 +238,12 @@ struct ConnectSheet: View {
                 Text(neonHint.detail)
                   .font(.caption)
                   .foregroundStyle(.secondary)
+                if let note = neonHint.note {
+                  Text(note)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("neon-hint-note")
+                }
               }
             } icon: {
               Image(systemName: "sparkle.magnifyingglass")
@@ -653,7 +659,8 @@ struct ConnectSheet: View {
 
   private static func initialTLSMode() -> ConnectionConfig.TLSMode {
     if ProcessInfo.processInfo.environment["POSTGRES_TLS_CA"] != nil { return .verifyFull }
-    return defaultTLSMode(for: ProcessInfo.processInfo.environment["POSTGRES_URL"] ?? "")
+    return ConnectSheetPresentation.preselectedTLSMode(
+      forURL: ProcessInfo.processInfo.environment["POSTGRES_URL"] ?? "")
   }
 
   private static func initialSensitiveURL() -> String? {
@@ -669,12 +676,6 @@ struct ConnectSheet: View {
   static func redactedURLForDisplay(_ raw: String?) -> String {
     guard let raw else { return "" }
     return ErrorRedaction.redactCredentials(in: raw)
-  }
-
-  /// Falls back to verify-full for an unparseable URL, so a typo never silently lands the
-  /// user on a weaker mode than the remote-host default.
-  private static func defaultTLSMode(for url: String) -> ConnectionConfig.TLSMode {
-    (try? ConnectionConfig(url: url))?.tlsMode ?? .verifyFull
   }
 
   private static func isLoopback(host: String) -> Bool {
@@ -694,6 +695,9 @@ enum ConnectSheetPresentation {
   struct ProviderHint: Equatable {
     let title: String
     let detail: String
+    /// Explains a preselection that differs from what the URL literally asked for. Nil when
+    /// nothing was overridden, so the hint stays quiet in the ordinary case.
+    var note: String? = nil
   }
 
   /// Weakest to strongest, so the picker reads as an escalating scale.
@@ -740,10 +744,43 @@ enum ConnectSheetPresentation {
   static func neonHint(for profile: NeonConnectionProfile?) -> ProviderHint? {
     guard let profile else { return nil }
     let path = profile.isPooled ? "Pooled" : "Direct"
+    let note: String?
+    if profile.recommendedTLSMode != profile.tlsMode {
+      note = """
+        Neon certificates are publicly trusted, so Verify is selected even though the URL asks \
+        for \(sslModeName(profile.tlsMode)).
+        """
+    } else {
+      note = nil
+    }
     return ProviderHint(
       title: "Neon connection detected",
-      detail: "Database \(profile.database) · User \(profile.username) · \(path)"
+      detail: "Database \(profile.database) · User \(profile.username) · \(path)",
+      note: note
     )
+  }
+
+  /// Preselects the encryption picker for a pasted URL.
+  ///
+  /// A recognized provider whose certificates are known to verify takes precedence over the
+  /// literal `sslmode`, so a Neon URL saying `require` still preselects Verify. Falls back to
+  /// verify-full for an unparseable URL, so a typo never silently lands the user on a weaker
+  /// mode than the remote-host default.
+  static func preselectedTLSMode(forURL url: String) -> ConnectionConfig.TLSMode {
+    if let recommended = NeonConnectionProfile.recommendedTLSMode(forURL: url) {
+      return recommended
+    }
+    return (try? ConnectionConfig(url: url))?.tlsMode ?? .verifyFull
+  }
+
+  /// The PostgreSQL `sslmode` spelling, for quoting back what a pasted URL actually said.
+  private static func sslModeName(_ mode: ConnectionConfig.TLSMode) -> String {
+    switch mode {
+    case .disable: "disable"
+    case .prefer: "prefer"
+    case .require: "require"
+    case .verifyFull: "verify-full"
+    }
   }
 
   static func connectionName(

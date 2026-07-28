@@ -129,6 +129,31 @@ struct NeonCLIScannerTests {
     #expect(try await credentialStore.loadSecret(for: imported.secretReference!) == "secret")
   }
 
+  @Test("imported Neon connections are saved as verify-full despite the URL asking for require")
+  @MainActor
+  func importedNeonConnectionsVerifyCertificates() async throws {
+    // The scanner never shows the mode picker, so it has to apply the same recommendation the
+    // connect sheet would preselect. Saving the URL's literal `require` here would leave every
+    // scanned Neon connection encrypted but unauthenticated.
+    let scanner = FixtureNeonScanner(connections: [
+      NeonCLIConnection(
+        projectID: "project-one", projectName: "App", branchID: "br-main",
+        branchName: "production", databaseName: "app",
+        connectionURL: "postgresql://owner:secret@ep-fresh.neon.tech/app?sslmode=require"
+      )
+    ])
+    let state = AppState(
+      savedConnectionStore: InMemorySavedConnectionStore(),
+      credentialStore: InMemoryCredentialStore(),
+      neonScanner: scanner
+    )
+
+    await state.scanAndImportNeonConnections()
+
+    let imported = try #require(state.savedConnections.first { $0.host == "ep-fresh.neon.tech" })
+    #expect(imported.tlsMode == "verify-full")
+  }
+
   @Test("missing CLI is represented as an unavailable disabled action")
   @MainActor
   func missingCLIAvailability() {

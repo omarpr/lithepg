@@ -110,6 +110,30 @@ Dependent UI:
 Picker state derives from the parsed URL in URL input mode and from the host default in fields
 mode, matching how the toggle initializes today.
 
+### Provider preselection
+
+Honoring `require` literally has a cost for Neon specifically. Neon hands out
+`?sslmode=require` URLs, and Neon's certificates are publicly rooted, so `verifyFull` succeeds
+against it. Parsing literally would move every pasted Neon URL from verified to merely
+encrypted, which is a real loss of guarantee for no gain.
+
+`NeonConnectionProfile` gains `recommendedTLSMode`, which upgrades `prefer` and `require` to
+`verifyFull` for detected Neon hosts and leaves an explicit `disable` alone, since that is a
+stated choice rather than a default to fill in. `tlsMode` continues to report what the URL
+literally said.
+
+Two callers apply it:
+
+- The connect sheet, through `ConnectSheetPresentation.preselectedTLSMode(forURL:)`, so a pasted
+  Neon URL preselects **Verify**. The Neon hint gains a note explaining the override, so the
+  preselection is visible rather than magic.
+- The Neon CLI scanner import, which builds configs directly and never shows the picker. Without
+  this, every scanned Neon connection would be saved as `require`.
+
+Core URL parsing stays literal, and so does the CLI: `lithepg --url <neon url>` honors the
+`sslmode` in the string. The recommendation is a UI default that the user can see and change,
+not a rewrite of what the URL means.
+
 ### Step down affordance
 
 New `TLSFailureClassifier` in `LithePGCore`:
@@ -182,6 +206,12 @@ deliberate omission, not an oversight.
   cleartext warning text per mode and host, SSH mutual exclusion in both directions.
 - `AppStateTests`: label round tripping for all four modes, and that existing `"disable"` and
   `"verify-full"` labels still load.
+- `NeonConnectionProfileTests`: `recommendedTLSMode` upgrades `require` and `prefer`, leaves
+  `verifyFull` and `disable` alone, and returns nil for a non Neon host.
+- `ConnectSheetPresentationTests`: preselection yields Verify for Neon, the literal mode
+  elsewhere, Off for loopback, and Verify for an unparseable URL. The Neon hint note appears
+  only when the preselection differs from the URL.
+- `NeonCLIScannerTests`: a scanned Neon connection is saved as `verify-full`.
 - CLI parse tests for each validation rule above.
 
 ## Security posture

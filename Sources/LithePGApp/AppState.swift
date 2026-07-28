@@ -266,10 +266,24 @@ public final class AppState {
       var skipped = report.skippedResources
 
       for discovered in report.connections {
-        guard let config = try? ConnectionConfig(url: discovered.connectionURL) else {
+        guard let parsed = try? ConnectionConfig(url: discovered.connectionURL) else {
           skipped += 1
           continue
         }
+        // These are Neon connections by construction, and Neon's certificates verify. The
+        // scanner never shows the picker, so apply the same recommendation the connect sheet
+        // would have preselected rather than saving the URL's weaker literal mode.
+        let config = ConnectionConfig(
+          host: parsed.host,
+          port: parsed.port,
+          database: parsed.database,
+          username: parsed.username,
+          password: parsed.password,
+          tlsMode: NeonConnectionProfile.recommendedTLSMode(forURL: discovered.connectionURL)
+            ?? parsed.tlsMode,
+          pinnedRootCertificatePath: parsed.pinnedRootCertificatePath,
+          sshConfig: parsed.sshConfig
+        )
         let identity = Self.connectionIdentity(config)
         guard !known.contains(identity) else {
           alreadySaved += 1
