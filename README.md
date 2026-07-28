@@ -100,7 +100,9 @@ When `neon` or `neonctl` is installed, the connection navigator can explicitly s
 
 Plain TCP, TLS, or an SSH tunnel through `/usr/bin/ssh -L`. Pick a TLS mode with `--tls-mode <disable|prefer|require|verify-full>`, matching the PostgreSQL `sslmode` values of the same name. Without the flag the mode comes from the URL `sslmode`, defaulting to `verify-full` for remote hosts and `disable` for loopback.
 
-`require` and `prefer` encrypt without checking the server certificate, which suits a self-signed or internal-CA server but gives no protection against an active machine in the middle. `verify-full` checks the certificate chain and hostname, and accepts an optional pinned CA through `--tls-ca`. That flag requires `--tls-mode verify-full`, since nothing else verifies certificates. `--tls-mode verify-full` with `--ssh` is rejected (tunneled TLS needs later SNI work). Set `LITHEPG_DEBUG_ERROR=1` to print the redacted underlying error on failures.
+`require` and `prefer` encrypt without checking the server certificate, which suits a self-signed or internal-CA server but gives no protection against an active machine in the middle. `verify-full` checks the certificate chain and hostname, and accepts an optional pinned CA through `--tls-ca`. That flag requires `--tls-mode verify-full`, since nothing else verifies certificates. `--tls-mode verify-full` with `--ssh` is rejected (tunneled TLS needs later SNI work).
+
+A connection attempt is abandoned after 15 seconds, adjustable with `--timeout <seconds>`. PostgreSQL's own connect timeout only bounds the TCP connect, so without this a server that accepts the socket and then stalls would wait forever. Set `LITHEPG_DEBUG_ERROR=1` to print the redacted underlying error on failures.
 
 ## App shortcuts
 

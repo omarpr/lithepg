@@ -37,9 +37,21 @@ struct LithePGMain {
 
         let connector = PostgresConnector()
         do {
-            let value = try await connector.runSelect1(config: config)
+            // Without a deadline a server that accepts TCP and then stalls hangs the smoke
+            // utility indefinitely, which is exactly when it is being used to diagnose things.
+            let value = try await withDeadline(
+                args.timeout,
+                onExpiry: { try? await connector.shutdown() }
+            ) {
+                try await connector.runSelect1(config: config)
+            }
             try await connector.shutdown()
             print("SELECT 1 → \(value)")
+        } catch let expired as DeadlineExceededError {
+            FileHandle.standardError.write(
+                Data("error: no response within \(expired.seconds)s; the server accepted the connection but never completed the PostgreSQL handshake\n".utf8)
+            )
+            exit(1)
         } catch {
             try? await connector.shutdown()
             FileHandle.standardError.write(Data("error: \(ErrorRedaction.redactCredentials(in: error))\n".utf8))
@@ -59,6 +71,7 @@ private struct Args {
     let tlsMode: ConnectionConfig.TLSMode?
     let tlsCA: String?
     let ssh: ConnectionConfig.SSHConfig?
+    let timeout: Duration
 
     enum ParseError: Error {
         case usage(String)
@@ -69,6 +82,7 @@ private struct Args {
         var url: String?
         var tlsMode: ConnectionConfig.TLSMode?
         var tlsCA: String?
+        var timeoutSeconds = 15
         var sshRaw: String?
 
         var i = 1
@@ -92,6 +106,13 @@ private struct Args {
                     )
                 }
                 i += 2
+            case "--timeout":
+                guard i + 1 < argv.count else { throw ParseError.usage("--timeout needs a value") }
+                guard let parsed = Int(argv[i + 1]), parsed > 0 else {
+                    throw ParseError.usage("--timeout must be a positive whole number of seconds")
+                }
+                timeoutSeconds = parsed
+                i += 2
             case "--tls-ca":
                 guard i + 1 < argv.count else { throw ParseError.usage("--tls-ca needs a value") }
                 let value = argv[i + 1]
@@ -106,7 +127,7 @@ private struct Args {
                 throw ParseError.help(
                     """
                     usage: lithepg --url <postgres://...> [--tls-mode <disable|prefer|require|verify-full>] \
-                    [--tls-ca <path>] [--ssh user@host[:port]]
+                    [--tls-ca <path>] [--ssh user@host[:port]] [--timeout <seconds>]
 
                     Without --tls-mode the mode comes from the URL sslmode, or defaults to \
                     verify-full for remote hosts and disable for loopback.
@@ -118,7 +139,7 @@ private struct Args {
         }
 
         guard let url else {
-            return Args(base: nil, tlsMode: tlsMode, tlsCA: tlsCA, ssh: nil)
+            return Args(base: nil, tlsMode: tlsMode, tlsCA: tlsCA, ssh: nil, timeout: .seconds(timeoutSeconds))
         }
         if tlsCA != nil && tlsMode != .verifyFull {
             // Outside verify-full nothing verifies certificates, so a pinned root would be
@@ -132,7 +153,7 @@ private struct Args {
         let base = try ConnectionConfig(url: url)
         let ssh = try sshRaw.map(Self.parseSSH)
 
-        return Args(base: base, tlsMode: tlsMode, tlsCA: tlsCA, ssh: ssh)
+        return Args(base: base, tlsMode: tlsMode, tlsCA: tlsCA, ssh: ssh, timeout: .seconds(timeoutSeconds))
     }
 
     private static func parseSSH(_ raw: String) throws -> ConnectionConfig.SSHConfig {

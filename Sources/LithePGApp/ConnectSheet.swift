@@ -370,63 +370,13 @@ struct ConnectSheet: View {
 
       Section {
         HStack {
-          if let closeAction {
-            Button("Cancel", action: closeAction)
-              .buttonStyle(.bordered)
-              .keyboardShortcut(.cancelAction)
-              .buttonAffordance("Close without connecting")
-              .accessibilityIdentifier("close-connection-form-button")
-          } else {
-            Button {
-              NSApplication.shared.terminate(nil)
-            } label: {
-              Label("Quit LithePG", systemImage: "power")
-            }
-            .buttonStyle(.bordered)
-            .keyboardShortcut("q", modifiers: .command)
-            .buttonAffordance("Quit LithePG (⌘Q)")
-            .accessibilityIdentifier("quit-application-button")
-          }
-
+          dismissButton
           Spacer()
-          Button {
-            Task { await testConnection() }
-          } label: {
-            if state.isTestingConnection {
-              HStack(spacing: 6) {
-                ProgressView()
-                  .controlSize(.small)
-                Text("Testing")
-              }
-            } else {
-              Text("Test connection")
-            }
+          testConnectionButton
+          if state.isTestingConnection {
+            cancelTestButton
           }
-          .buttonStyle(.bordered)
-          .buttonAffordance("Test this connection without opening the workspace")
-          .accessibilityIdentifier("test-connection-button")
-          .disabled(testConnectionDisabled)
-
-          Button {
-            Task { await connectAndMaybeSave() }
-          } label: {
-            if state.connectionState == .connecting {
-              ProgressView()
-                .controlSize(.small)
-            } else {
-              Text(ConnectSheetPresentation.primaryActionTitle(saveConnection: saveConnection))
-            }
-          }
-          .accessibilityIdentifier("connect-button")
-          .accessibilityLabel(
-            state.connectionState == .connecting
-              ? "Connecting"
-              : ConnectSheetPresentation.primaryActionTitle(saveConnection: saveConnection)
-          )
-          .buttonStyle(.borderedProminent)
-          .buttonAffordance(saveConnection ? "Save this connection locally, then connect" : "Connect without saving")
-          .keyboardShortcut(.defaultAction)
-          .disabled(connectDisabled)
+          primaryActionButton
         }
       }
     }
@@ -480,6 +430,83 @@ struct ConnectSheet: View {
         tlsCAPath = selected.path(percentEncoded: false)
       }
     }
+  }
+
+
+  // Extracted from `body`: with every button inline, adding one more view pushed this Form
+  // past what the SwiftUI type-checker will solve in reasonable time.
+
+  @ViewBuilder private var dismissButton: some View {
+    if let closeAction {
+      Button("Cancel", action: closeAction)
+        .buttonStyle(.bordered)
+        .keyboardShortcut(.cancelAction)
+        .buttonAffordance("Close without connecting")
+        .accessibilityIdentifier("close-connection-form-button")
+    } else {
+      Button {
+        NSApplication.shared.terminate(nil)
+      } label: {
+        Label("Quit LithePG", systemImage: "power")
+      }
+      .buttonStyle(.bordered)
+      .keyboardShortcut("q", modifiers: .command)
+      .buttonAffordance("Quit LithePG (⌘Q)")
+      .accessibilityIdentifier("quit-application-button")
+    }
+
+  }
+
+  private var testConnectionButton: some View {
+    Button {
+      Task { await testConnection() }
+    } label: {
+      if state.isTestingConnection {
+        HStack(spacing: 6) {
+          ProgressView()
+            .controlSize(.small)
+          Text("Testing")
+        }
+      } else {
+        Text("Test connection")
+      }
+    }
+    .buttonStyle(.bordered)
+    .buttonAffordance("Test this connection without opening the workspace")
+    .accessibilityIdentifier("test-connection-button")
+    .disabled(testConnectionDisabled)
+  }
+
+  private var cancelTestButton: some View {
+    Button("Cancel") {
+      state.cancelConnectionTest()
+    }
+    .buttonStyle(.borderless)
+    .buttonAffordance("Stop waiting for the server to respond")
+    .accessibilityIdentifier("cancel-connection-test-button")
+  }
+
+  private var primaryActionButton: some View {
+    Button {
+      Task { await connectAndMaybeSave() }
+    } label: {
+      if state.connectionState == .connecting {
+        ProgressView()
+          .controlSize(.small)
+      } else {
+        Text(ConnectSheetPresentation.primaryActionTitle(saveConnection: saveConnection))
+      }
+    }
+    .accessibilityIdentifier("connect-button")
+    .accessibilityLabel(
+      state.connectionState == .connecting
+        ? "Connecting"
+        : ConnectSheetPresentation.primaryActionTitle(saveConnection: saveConnection)
+    )
+    .buttonStyle(.borderedProminent)
+    .buttonAffordance(saveConnection ? "Save this connection locally, then connect" : "Connect without saving")
+    .keyboardShortcut(.defaultAction)
+    .disabled(connectDisabled)
   }
 
   private var connectDisabled: Bool {

@@ -102,6 +102,7 @@ public final class AppState {
   @ObservationIgnored private var queryTask: Task<Void, Never>?
   @ObservationIgnored private var activeQueryRunID: UUID?
   @ObservationIgnored private var lastConnectionRequest: ConnectionRequest?
+  @ObservationIgnored private var connectionTestTask: Task<Void, any Error>?
   @ObservationIgnored private let savedConnectionStore: any SavedConnectionStore
   @ObservationIgnored private let credentialStore: any CredentialStore
   @ObservationIgnored private let queryHistoryStore: any QueryHistoryStore
@@ -521,13 +522,24 @@ public final class AppState {
     markConnecting()
     do {
       let connector = PostgresConnector()
-      try await connector.open(config: config)
+      // Same unbounded wait the connection test had: PostgresNIO only bounds the TCP connect,
+      // so a server that accepts and then stalls would pin this on .connecting forever.
+      try await withDeadline(
+        Self.connectTimeout,
+        onExpiry: { try? await connector.shutdown() }
+      ) {
+        try await connector.open(config: config)
+      }
       self.connector = connector
       lastConnectionRequest = lastRequest
       activeSavedConnection = savedConnection
       tlsStepDownAvailable = false
       markConnected(label: label)
       await refreshSchema()
+    } catch let expired as DeadlineExceededError {
+      connectionState = .disconnected
+      activeSavedConnection = nil
+      setError(Self.connectTimeoutMessage(seconds: expired.seconds))
     } catch {
       connectionState = .disconnected
       activeSavedConnection = nil
@@ -990,15 +1002,40 @@ public final class AppState {
     connectionTestMessage = nil
     connectionTestError = nil
     lastError = nil
-    defer { isTestingConnection = false }
+    defer {
+      isTestingConnection = false
+      connectionTestTask = nil
+    }
 
     do {
       let config = try makeConfig()
-      try await connectionTester.test(config: config)
+      // Held so the user can cancel a test that is waiting on an unresponsive server.
+      let tester = connectionTester
+      let task = Task { try await tester.test(config: config) }
+      connectionTestTask = task
+      try await task.value
       connectionTestMessage = "Connection successful. SELECT 1 completed."
+    } catch is CancellationError {
+      connectionTestError = "Connection test cancelled."
     } catch {
       connectionTestError = ErrorRedaction.redactCredentials(in: error)
     }
+  }
+
+  public func cancelConnectionTest() {
+    connectionTestTask?.cancel()
+  }
+
+  /// How long a connection attempt may run before it is abandoned. Matches the connection
+  /// test, so both paths give up at the same point.
+  static let connectTimeout: Duration = PostgresConnectionTester.defaultTimeout
+
+  static func connectTimeoutMessage(seconds: Int) -> String {
+    """
+    Could not connect within \(seconds) seconds. The server accepted the connection but never \
+    completed the PostgreSQL handshake, so check that the host and port point at a PostgreSQL \
+    server.
+    """
   }
 
   private static func connectionIdentity(_ metadata: SavedConnectionMetadata) -> String {
