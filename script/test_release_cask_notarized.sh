@@ -58,9 +58,25 @@ assert_not_contains "$invalid_team_output" "$team_id_sentinel"
 assert_not_contains "$invalid_team_output" "$profile_sentinel"
 assert_not_contains "$invalid_team_output" "$identity_sentinel"
 
+parser_team_id="ZXCVBN1234"
+matching_fingerprint="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+other_fingerprint="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+parser_output="$(
+  # Source the real parser without running the release entry point.
+  # shellcheck disable=SC1090
+  source "$HELPER"
+  /usr/bin/printf '  1) %s "Developer ID Application: Synthetic Organization (%s)"\n  2) %s "Developer ID Application: Other Organization (QWERTY9876)"\n' \
+    "$matching_fingerprint" "$parser_team_id" "$other_fingerprint" | \
+    filter_team_identities "$parser_team_id"
+)"
+[[ "$parser_output" == "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" ]] || \
+  fail "identity parser did not return exactly the matching uppercase fingerprint"
+
 script_contents="$(<"$HELPER")"
 assert_contains "$script_contents" '/usr/bin/security find-identity -v -p codesigning'
 assert_contains "$script_contents" '"Developer ID Application:'
+assert_contains "$script_contents" 'while (my $line = <STDIN>)'
+assert_not_contains "$script_contents" '/usr/bin/perl -ne'
 assert_contains "$script_contents" '/usr/bin/xcrun notarytool history'
 assert_contains "$script_contents" '--keychain-profile "$LITHEPG_NOTARY_PROFILE"'
 assert_contains "$script_contents" 'export LITHEPG_CODESIGN_IDENTITY="$SELECTED_IDENTITY"'

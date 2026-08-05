@@ -45,19 +45,27 @@ require_value() {
   [[ -n "$value" && "$value" != *CHANGE_ME* ]] || fail "missing required $name"
 }
 
-find_team_identities() {
+filter_team_identities() {
   local team_id="$1"
-  /usr/bin/security find-identity -v -p codesigning 2>/dev/null | \
-    /usr/bin/perl -ne '
+  /usr/bin/perl -e '
       use strict;
       use warnings;
       my $team_id = shift @ARGV;
-      if (/^\s*\d+\)\s+([0-9A-Fa-f]{40})\s+"Developer ID Application:.*\(\Q$team_id\E\)"\s*$/) {
-        print uc($1), "\n";
+      while (my $line = <STDIN>) {
+        if ($line =~ /^\s*\d+\)\s+([0-9A-Fa-f]{40})\s+"Developer ID Application:.*\(\Q$team_id\E\)"\s*$/) {
+          print uc($1), "\n";
+        }
       }
     ' "$team_id"
 }
 
+find_team_identities() {
+  local team_id="$1"
+  /usr/bin/security find-identity -v -p codesigning 2>/dev/null | \
+    filter_team_identities "$team_id"
+}
+
+main() {
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   usage
   exit 0
@@ -112,3 +120,8 @@ fi
 export LITHEPG_CODESIGN_IDENTITY="$SELECTED_IDENTITY"
 export LITHEPG_NOTARY_PROFILE
 exec "$RELEASE_HELPER"
+}
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi
