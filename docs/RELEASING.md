@@ -1,6 +1,6 @@
 # Releasing LithePG
 
-LithePG release artifacts are local-first macOS app bundles. Signing and notarization require Omar-controlled Apple Developer credentials; those credentials must stay in the local keychain or environment and must never be committed.
+LithePG release artifacts are local-first macOS app bundles. Signing and notarization require organization-controlled Apple Developer credentials; those credentials must stay in the local keychain or environment and must never be committed.
 
 ## Version policy
 
@@ -85,8 +85,53 @@ a visible warning directing users to manually approve the first launch in
 This preview path intentionally skips Developer ID signing, notarization, and
 the official Homebrew new-cask audit. It cannot be submitted to
 `homebrew/cask`, must never be described as Gatekeeper-trusted, and does not
-replace the production `script/release.sh` workflow. Publish the eventual
+replace the production signed/notarized workflow. Publish the eventual
 notarized build under the stable tag rather than replacing preview bytes.
+
+## Organization signed + notarized Homebrew release
+
+Use `script/release_cask_notarized.sh` as the stable counterpart to the cask
+preview helper. It keeps organization details out of the repository: the Apple
+Team ID and optional certificate fingerprint come from the process environment,
+while notarization credentials remain in a named Keychain profile. The helper
+never prints those identifiers or credential values.
+
+Before the first release, install a **Developer ID Application** certificate
+owned by the organization, including its private key, in the login keychain.
+Create a local notary profile interactively so the Apple Account, Team ID, and
+app-specific password are entered through `notarytool` prompts rather than
+stored in shell history:
+
+```sh
+export LITHEPG_NOTARY_PROFILE="lithepg-organization-notary"
+xcrun notarytool store-credentials "$LITHEPG_NOTARY_PROFILE"
+```
+
+For a release, supply the organization Team ID locally and set the same
+publication approvals required by `script/release.sh`:
+
+```sh
+export LITHEPG_APPLE_TEAM_ID="<10-character-team-id>"
+export LITHEPG_NOTARY_PROFILE="lithepg-organization-notary"
+export LITHEPG_GITHUB_ACTIONS_READY=approved
+export LITHEPG_RELEASE_COPY_APPROVED=approved
+export LITHEPG_PUBLICATION_APPROVED=approved
+./script/release_cask_notarized.sh
+```
+
+The helper discovers the organization certificate by Team ID and passes only
+its SHA-1 fingerprint to `codesign`. If more than one valid Developer ID
+Application identity exists for the team, select one locally with
+`LITHEPG_CODESIGN_IDENTITY=<40-hex-certificate-fingerprint>`. Do not use a
+certificate display name, because it can contain a person or organization name.
+
+Before prompting for the release version, the helper verifies that the selected
+identity belongs to the configured Team ID and that the Keychain notary profile
+can authenticate. It then delegates to `script/release.sh`, retaining all clean
+worktree, changelog, publication-approval, GitHub, checksum, and Homebrew gates.
+The package build is deliberately ad-hoc signed without a notary profile; the
+dedicated signing step applies the organization certificate and submits exactly
+once to Apple before stapling and constructing the public ZIP.
 
 ## Signed + notarized release path
 
@@ -96,7 +141,7 @@ An Apple Developer Program membership is not required for local source builds or
 
 | Variable | Purpose |
 | --- | --- |
-| `LITHEPG_CODESIGN_IDENTITY` | Apple Developer Application signing identity for `codesign`. |
+| `LITHEPG_CODESIGN_IDENTITY` | Developer ID Application signing identity for `codesign`. |
 | `LITHEPG_NOTARY_PROFILE` | `xcrun notarytool` keychain profile name. |
 | `LITHEPG_ENTITLEMENTS` | Optional entitlements override; defaults to `Sources/LithePGApp/LithePGApp.entitlements`. |
 | `LITHEPG_NOTARY_ZIP` | Optional zip output path; defaults to `dist/LithePG-notary.zip`. |
@@ -105,7 +150,7 @@ An Apple Developer Program membership is not required for local source builds or
 Check the configuration without signing or submitting anything:
 
 ```sh
-LITHEPG_CODESIGN_IDENTITY="Developer ID Application: Omar Gerardo SF (LithePG)" \
+LITHEPG_CODESIGN_IDENTITY="<40-hex-certificate-fingerprint>" \
 LITHEPG_NOTARY_PROFILE="lithepg-notary" \
 ./script/sign_and_notarize.sh --dry-run dist/LithePG.app
 ```
@@ -209,7 +254,7 @@ The helper also checks these external inputs without printing their values:
 
 | Variable | Expected state |
 | --- | --- |
-| `LITHEPG_CODESIGN_IDENTITY` | Set to the Apple Developer Application signing identity. |
+| `LITHEPG_CODESIGN_IDENTITY` | Set to the Developer ID Application signing identity. |
 | `LITHEPG_NOTARY_PROFILE` | Set to the `notarytool` keychain profile name. |
 | `LITHEPG_SECURITY_CONTACT` | Set to the approved public security-contact destination. |
 | `LITHEPG_HOMEBREW_TAP` | Set to the approved external Homebrew tap target. |

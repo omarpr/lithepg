@@ -68,11 +68,19 @@ set -e
 assert_contains "$approval_output" "set LITHEPG_GITHUB_ACTIONS_READY=approved"
 
 script_contents="$(<"$HELPER")"
+assert_contains "$script_contents" 'LITHEPG_CODESIGN_IDENTITY="${LITHEPG_CODESIGN_IDENTITY:-}"'
+assert_contains "$script_contents" 'LITHEPG_NOTARY_PROFILE="${LITHEPG_NOTARY_PROFILE:-}"'
+if /usr/bin/grep -Eq 'LITHEPG_CODESIGN_IDENTITY=.*:-[0-9A-Fa-f]{40}' "$HELPER"; then
+  fail "release helper contains a repository-default certificate fingerprint"
+fi
 assert_not_contains "$script_contents" 'LITHEPG_GITHUB_ACTIONS_READY:-true'
 assert_not_contains "$script_contents" 'LITHEPG_RELEASE_COPY_APPROVED:-true'
 assert_not_contains "$script_contents" 'LITHEPG_PUBLICATION_APPROVED:-true'
 assert_contains "$script_contents" 'LITHEPG_MARKETING_VERSION="$VERSION"'
 assert_contains "$script_contents" 'LITHEPG_EXPECTED_MARKETING_VERSION="$VERSION"'
+assert_contains "$script_contents" '-u LITHEPG_NOTARY_PROFILE'
+assert_contains "$script_contents" 'LITHEPG_CODESIGN_IDENTITY=-'
+assert_contains "$script_contents" 'LITHEPG_FORCE_ADHOC_CODESIGN=1'
 assert_contains "$script_contents" 'ASSET_NAME="LithePG-$VERSION.zip"'
 assert_contains "$script_contents" 'CHECKSUM_NAME="$ASSET_NAME.sha256"'
 assert_contains "$script_contents" './script/update_release_readme.sh "$VERSION" stable'

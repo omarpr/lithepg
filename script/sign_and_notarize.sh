@@ -65,7 +65,7 @@ Options:
   -h, --help   Show this help.
 
 Environment:
-  LITHEPG_CODESIGN_IDENTITY     Apple Developer Application signing identity.
+  LITHEPG_CODESIGN_IDENTITY     Developer ID Application signing identity.
   LITHEPG_NOTARY_PROFILE        xcrun notarytool keychain profile name.
   LITHEPG_ENTITLEMENTS          Entitlements path.
   LITHEPG_NOTARY_ZIP            Intermediate notary zip path.
@@ -215,7 +215,7 @@ print "/" . join("/", @parts) . "\n";
 }
 
 require_config() {
-  [[ -n "$CODESIGN_IDENTITY" ]] || fail "missing LITHEPG_CODESIGN_IDENTITY (Apple Developer Application signing identity)"
+  [[ -n "$CODESIGN_IDENTITY" ]] || fail "missing LITHEPG_CODESIGN_IDENTITY (Developer ID Application signing identity)"
   [[ -n "$NOTARY_PROFILE" ]] || fail "missing LITHEPG_NOTARY_PROFILE (xcrun notarytool keychain profile name)"
   [[ -f "$ENTITLEMENTS" ]] || fail "missing entitlements file"
 }

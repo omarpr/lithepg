@@ -41,3 +41,7 @@ yarn.lock
 
 !webapp/package.json
 !webapp/package-lock.json
+
+# Local release launcher may contain Apple organization identifiers. It must
+# remain on the release operator's machine and must never be committed.
+/script/release_local.sh

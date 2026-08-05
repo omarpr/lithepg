@@ -3,15 +3,15 @@
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
-# EDIT THIS BLOCK ONCE BEFORE RUNNING A PUBLIC RELEASE.
+# CONFIGURE THESE VALUES IN THE ENVIRONMENT BEFORE A PUBLIC RELEASE.
 #
 # These values are identifiers and release approvals, not passwords. Keep Apple
 # credentials in Keychain via `xcrun notarytool store-credentials`; never put an
 # Apple password, app-specific password, private key, or GitHub token here.
-# Existing environment variables override these defaults.
+# Apple signing identifiers intentionally have no repository defaults.
 # ---------------------------------------------------------------------------
-export LITHEPG_CODESIGN_IDENTITY="${LITHEPG_CODESIGN_IDENTITY:-D15E093978846F53B92A40E54F2E3D24F3D94430}"
-export LITHEPG_NOTARY_PROFILE="${LITHEPG_NOTARY_PROFILE:-lithepg-notary}"
+export LITHEPG_CODESIGN_IDENTITY="${LITHEPG_CODESIGN_IDENTITY:-}"
+export LITHEPG_NOTARY_PROFILE="${LITHEPG_NOTARY_PROFILE:-}"
 export LITHEPG_SECURITY_CONTACT="${LITHEPG_SECURITY_CONTACT:-https://github.com/omarpr/lithepg/security/advisories/new}"
 export LITHEPG_HOMEBREW_TAP="${LITHEPG_HOMEBREW_TAP:-omarpr/tap}"
 export LITHEPG_GITHUB_REPOSITORY="${LITHEPG_GITHUB_REPOSITORY:-omarpr/lithepg}"
@@ -34,7 +34,7 @@ Prompt once for a stable SemVer version, then run the complete LithePG public
 release workflow: test, package, sign, notarize, zip, validate, commit, tag,
 publish a GitHub release, and update the configured Homebrew tap.
 
-Edit the configuration block at the top of this script before the first run.
+Configure the environment described in docs/RELEASING.md before the first run.
 The script intentionally has no unsigned public-release mode.
 USAGE
 }
@@ -216,7 +216,10 @@ run_at_root /usr/bin/env DEVELOPER_DIR="$DEVELOPER_DIR" swift test
 
 /usr/bin/printf '\n[2/9] Building and verifying LithePG %s…\n' "$VERSION"
 run_at_root /usr/bin/env \
+  -u LITHEPG_NOTARY_PROFILE \
   DEVELOPER_DIR="$DEVELOPER_DIR" \
+  LITHEPG_CODESIGN_IDENTITY=- \
+  LITHEPG_FORCE_ADHOC_CODESIGN=1 \
   LITHEPG_MARKETING_VERSION="$VERSION" \
   ./script/build_and_run.sh --package
 run_at_root /usr/bin/env \
