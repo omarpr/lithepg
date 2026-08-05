@@ -154,8 +154,8 @@ done
 [[ -f "$CASK_PATH" ]] || fail "Homebrew cask template is missing"
 [[ -x "$ROOT_DIR/script/update_release_readme.sh" ]] || \
   fail "README release metadata helper is missing or not executable"
-/usr/bin/grep -Fq "## [v$VERSION]" "$ROOT_DIR/CHANGELOG.md" || \
-  fail "CHANGELOG.md must contain a ## [v$VERSION] release entry before releasing"
+[[ -x "$ROOT_DIR/script/prepare_release_changelog.sh" ]] || \
+  fail "release changelog helper is missing or not executable"
 
 CURRENT_BRANCH="$(git -C "$ROOT_DIR" branch --show-current)"
 [[ "$CURRENT_BRANCH" == "$LITHEPG_RELEASE_BRANCH" ]] || fail "switch to $LITHEPG_RELEASE_BRANCH before releasing"
@@ -207,9 +207,14 @@ cleanup() {
 }
 trap cleanup EXIT
 PREPARED_CASK="$TEMP_DIR/lithepg.rb"
+PREPARED_CHANGELOG="$TEMP_DIR/CHANGELOG.md"
 RELEASE_COPY="$TEMP_DIR/release-notes.md"
 DOWNLOADED_ZIP="$TEMP_DIR/download/$ASSET_NAME"
 DOWNLOADED_CHECKSUM="$TEMP_DIR/download/$CHECKSUM_NAME"
+
+run_at_root /usr/bin/env \
+  LITHEPG_GITHUB_REPOSITORY="$LITHEPG_GITHUB_REPOSITORY" \
+  ./script/prepare_release_changelog.sh "$VERSION" "$PREPARED_CHANGELOG"
 
 /usr/bin/printf '\n[1/9] Running Swift tests…\n'
 run_at_root /usr/bin/env DEVELOPER_DIR="$DEVELOPER_DIR" swift test
@@ -267,8 +272,9 @@ run_at_root /usr/bin/env \
 /usr/bin/printf '\n[6/9] Creating the release commit and tag…\n'
 run_at_root ./script/update_release_readme.sh "$VERSION" stable
 /bin/cp "$PREPARED_CASK" "$CASK_PATH"
-git -C "$ROOT_DIR" add -- README.md packaging/homebrew/lithepg.rb
-git -C "$ROOT_DIR" diff --cached --quiet && fail "the prepared cask did not change"
+/bin/cp "$PREPARED_CHANGELOG" "$ROOT_DIR/CHANGELOG.md"
+git -C "$ROOT_DIR" add -- CHANGELOG.md README.md packaging/homebrew/lithepg.rb
+git -C "$ROOT_DIR" diff --cached --quiet && fail "the prepared release metadata did not change"
 git -C "$ROOT_DIR" commit -s -m "chore(release): prepare $TAG"
 git -C "$ROOT_DIR" tag -a "$TAG" -m "LithePG $TAG"
 

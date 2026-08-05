@@ -170,7 +170,7 @@ The notary-submission zip is a credential-gated intermediate artifact, not the p
 
 ## GitHub Release artifact and Homebrew cask metadata
 
-The historical v1.0 draft copy lives at [`docs/releases/v1.0-draft.md`](releases/v1.0-draft.md). Current stable release notes contain the versioned artifact, checksum and verification command, followed by GitHub's generated commit notes. The stable release helper refuses to proceed until `CHANGELOG.md` contains `## [v<VERSION>]`, so curated release history cannot be skipped.
+The historical v1.0 draft copy lives at [`docs/releases/v1.0-draft.md`](releases/v1.0-draft.md). Current stable release notes contain the versioned artifact, checksum and verification command, followed by GitHub's generated commit notes. Before tests begin, the stable release helper prepares `CHANGELOG.md` without modifying the working tree. If a curated `## [v<VERSION>]` section already exists, it is preserved. Otherwise, the helper creates a dated section from the non-merge commit subjects in the exact range between the latest reachable release tag (including a preview tag) and `HEAD`, and adds the matching GitHub compare link. The prepared changelog is copied into place and staged only when the release commit is created.
 
 The public Homebrew cask must point at the final signed/notarized GitHub Release artifact, not an unsigned local development bundle. The intended artifact shape is:
 
