@@ -6,6 +6,17 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ## [Unreleased]
 
+## [v1.0.8] — 2026-08-05
+
+### Changes since `v1.0.7-preview.1`
+
+- fix: bound connection attempts so a stalled server cannot hang the app (`05f569b`)
+- chore(webapp): pin the Fly deploy to a single machine (`5a276c6`)
+- Preparing to release signed+notarized LithePG. (`a66d6dd`)
+- fix parser (`820a8b6`)
+- more fixes for notarized release (`a89a67b`)
+- Add prepare_release_changelog.sh (`0bd0668`)
+
 ## [v1.0.3] — 2026-07-20
 
 ### Added
@@ -172,6 +183,7 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 - `SELECT 1` succeeded over plain loopback, TLS verify-full, and SSH-tunneled paths.
 - Dependency inspection showed no `libpq` linkage and no LithePG-authored C shims.
 
+[v1.0.8]: https://github.com/omarpr/lithepg/compare/v1.0.7-preview.1...v1.0.8
 [v1.0.3]: https://github.com/omarpr/lithepg/compare/v1.0.0...v1.0.3
 [v1.0.0]: https://github.com/omarpr/lithepg/tree/v1.0.0
 [v0.5]: https://github.com/omarpr/lithepg/tree/v0.5
