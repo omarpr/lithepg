@@ -1,3 +1,6 @@
+# Single machine by design. This is a static site behind Fly's proxy and needs no
+# load balancing. Machine count has no key here, so it is pinned by the
+# `FLY_HA=false` in the webapp `npm run deploy` script. Deploy through that.
 app = "lithepg-web"
 primary_region = "iad"
 

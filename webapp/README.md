@@ -33,8 +33,17 @@ nginx on port 8080. Fly terminates HTTPS and the Machine may stop when idle.
    ```sh
    cd webapp
    fly apps create lithepg-web
-   fly deploy
+   npm run deploy
    ```
+
+   Always deploy through `npm run deploy`, which is `FLY_HA=false fly deploy`.
+   Fly has no fly.toml key for Machine count, but flyctl reads any flag from a
+   matching `FLY_` environment variable, so this pins the app to one Machine.
+   Without it Fly provisions two Machines for high availability, which this
+   static site does not need. The extra Machine only appears on the first deploy,
+   after a scale to zero, or when a process group with services is added, so a
+   routine redeploy is safe either way. If a second Machine ever shows up in
+   `fly status`, remove it with `fly scale count 1`.
 
 3. Confirm the temporary site at `https://lithepg-web.fly.dev`.
 4. Add the purchased hostname and inspect Fly's exact DNS instructions:

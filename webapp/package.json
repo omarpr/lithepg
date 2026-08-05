@@ -7,7 +7,8 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "bash test.sh"
+    "test": "bash test.sh",
+    "deploy": "FLY_HA=false fly deploy"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
