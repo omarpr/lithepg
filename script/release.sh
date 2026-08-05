@@ -318,7 +318,7 @@ gh release edit "$TAG" --repo "$LITHEPG_GITHUB_REPOSITORY" --draft=false --lates
 (
   cd "$TAP_DIR"
   brew style --cask Casks/lithepg.rb
-  brew audit --new --strict --cask Casks/lithepg.rb
+  brew audit --new --strict --cask "$LITHEPG_HOMEBREW_TAP/lithepg"
 )
 git -C "$TAP_DIR" add -- Casks/lithepg.rb
 git -C "$TAP_DIR" diff --cached --quiet && fail "the Homebrew tap cask did not change"

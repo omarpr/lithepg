@@ -38,7 +38,7 @@ Required inputs before publication:
 
    ```sh
    brew style --cask Casks/lithepg.rb
-   brew audit --cask --new --strict Casks/lithepg.rb
+   brew audit --cask --new --strict omarpr/tap/lithepg
    ```
 
 6. For previews, confirm the tap copy retains the unnotarized-build caveat. Stable releases must be Developer ID signed and notarized.
