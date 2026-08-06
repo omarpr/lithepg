@@ -47,7 +47,7 @@ public func withDeadline<T: Sendable>(
 
             Task {
                 do {
-                    try await Task.sleep(for: duration)
+                    try await Task.sleep(nanoseconds: nanosecondsClamped(duration))
                 } catch {
                     return  // the deadline itself was cancelled
                 }
@@ -64,6 +64,27 @@ public func withDeadline<T: Sendable>(
         guard gate.finish(.failure(CancellationError())) else { return }
         Task { await onExpiry() }
     }
+}
+
+/// Converts a duration for `Task.sleep(nanoseconds:)`, which the deadline sleeper uses in place
+/// of `Task.sleep(for:)`.
+///
+/// Swift 6.3.3 miscompiles the clock based `Task.sleep(for:)` in that sleeper: its async frame
+/// comes off the task allocator out of order, and the runtime aborts the process with "freed
+/// pointer was not the last allocation" once the sleep returns. That shipped in 1.0.8 and took
+/// the app down roughly `duration` after every connection attempt, whatever the outcome, because
+/// the sleeper keeps running even when the operation already won. Swift 6.4 compiles it
+/// correctly, and `script/build_and_run.sh` now refuses to build a release on anything older,
+/// but the nanosecond overload is unaffected on both so it stays as the belt to that braces.
+///
+/// Sub-second deadlines keep their precision here. Anything at or below zero sleeps not at all,
+/// and an absurd duration saturates rather than wrapping.
+private func nanosecondsClamped(_ duration: Duration) -> UInt64 {
+    guard duration > .zero else { return 0 }
+    let (seconds, attoseconds) = duration.components
+    let wholeSeconds = UInt64(clamping: seconds)
+    guard wholeSeconds < UInt64.max / 1_000_000_000 else { return .max }
+    return wholeSeconds * 1_000_000_000 + UInt64(clamping: attoseconds) / 1_000_000_000
 }
 
 /// Resumes a continuation exactly once, whichever racer gets there first.
