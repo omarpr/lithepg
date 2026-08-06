@@ -6,6 +6,15 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ## [Unreleased]
 
+## [v1.0.9] — 2026-08-06
+
+### Changes since `v1.0.8`
+
+- fix(release): audit Homebrew cask by name (`77b0675`)
+- fix(release): scope audit to tap checks (`e85dcd5`)
+- fix(core): stop the deadline sleeper aborting the app (`98651a9`)
+- fix(release): require Swift 6.4 for release builds (`0b5f78c`)
+
 ## [v1.0.8] — 2026-08-05
 
 ### Changes since `v1.0.7-preview.1`
@@ -183,6 +192,7 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 - `SELECT 1` succeeded over plain loopback, TLS verify-full, and SSH-tunneled paths.
 - Dependency inspection showed no `libpq` linkage and no LithePG-authored C shims.
 
+[v1.0.9]: https://github.com/omarpr/lithepg/compare/v1.0.8...v1.0.9
 [v1.0.8]: https://github.com/omarpr/lithepg/compare/v1.0.7-preview.1...v1.0.8
 [v1.0.3]: https://github.com/omarpr/lithepg/compare/v1.0.0...v1.0.3
 [v1.0.0]: https://github.com/omarpr/lithepg/tree/v1.0.0
