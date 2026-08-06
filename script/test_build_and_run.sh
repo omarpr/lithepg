@@ -40,6 +40,7 @@ run_package_capture() {
     PATH="$fake_bin:$PATH" \
       FAKE_SWIFT_BIN_DIR="$fake_swift_bin_dir" \
       FAKE_SWIFT_MARKER="$fake_swift_marker" \
+      FAKE_SWIFT_VERSION="${FAKE_SWIFT_VERSION:-6.4}" \
       LITHEPG_CODESIGN_IDENTITY="-" \
       LITHEPG_MARKETING_VERSION="1.0.0" \
       LITHEPG_BUILD_VERSION="100" \
@@ -685,6 +686,10 @@ done
 set -euo pipefail
 /usr/bin/printf 'fake swift used\n' >"${FAKE_SWIFT_MARKER:?}"
 case "$*" in
+  --version)
+    /usr/bin/printf 'Apple Swift version %s (swiftlang-0.0.0)\n' "${FAKE_SWIFT_VERSION:-6.4}"
+    /usr/bin/printf 'Target: arm64-apple-macosx26.0.0\n'
+    ;;
   build\ --scratch-path\ /private/tmp/lithepg-release-build.*\ -c\ release\ --product\ LithePGApp)
     /bin/mkdir -p "${FAKE_SWIFT_BIN_DIR:?}"
     /bin/cp /usr/bin/true "$FAKE_SWIFT_BIN_DIR/LithePGApp"
@@ -725,5 +730,29 @@ verify_output="$(<"$verify_output_file")"
 assert_contains "$verify_output" "Package verified: LithePG.app"
 assert_not_contains "$verify_output" "$sentinel"
 assert_not_contains "$verify_output" "fake-tool"
+
+# Swift 6.3.3 miscompiles Task.sleep(for:) and crashed 1.0.8 at runtime, so a release build has
+# to refuse an old toolchain rather than quietly shipping the miscompiled binary.
+gate_output_file="$fixture_root/toolchain-gate-output"
+
+if FAKE_SWIFT_VERSION="6.3" run_package_capture \
+  "$gate_output_file" "$fake_bin" "$fake_swift_bin_dir" "$fake_swift_marker"; then
+  fail "build_and_run --package accepted a Swift 6.3 toolchain"
+fi
+gate_output="$(<"$gate_output_file")"
+assert_contains "$gate_output" "release builds need Swift 6.4 or newer, found 6.3"
+assert_contains "$gate_output" "miscompiles Task.sleep(for:)"
+
+if FAKE_SWIFT_VERSION="5.9" run_package_capture \
+  "$gate_output_file" "$fake_bin" "$fake_swift_bin_dir" "$fake_swift_marker"; then
+  fail "build_and_run --package accepted a Swift 5.9 toolchain"
+fi
+
+if ! FAKE_SWIFT_VERSION="7.0" run_package_capture \
+  "$gate_output_file" "$fake_bin" "$fake_swift_bin_dir" "$fake_swift_marker"; then
+  gate_output="$(<"$gate_output_file")"
+  /usr/bin/printf '%s\n' "$gate_output" >&2
+  fail "build_and_run --package rejected a Swift 7.0 toolchain"
+fi
 
 /usr/bin/printf 'test_build_and_run passed\n'

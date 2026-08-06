@@ -151,6 +151,52 @@ run_from_root() {
   ' "$ROOT_DIR" "$@"
 }
 
+# Swift 6.3.3 miscompiles the clock based `Task.sleep(for:)`, which took 1.0.8 down with
+# "freed pointer was not the last allocation" seconds after every connection attempt. Only the
+# release build was affected, and only the shipped binary matters here, so the gate sits on the
+# release path. DEVELOPER_DIR above pins Xcode.app regardless of xcode-select, which is how an
+# old toolchain reached a notarized build in the first place.
+MIN_RELEASE_SWIFT_VERSION="${LITHEPG_MIN_RELEASE_SWIFT_VERSION:-6.4}"
+
+require_release_toolchain() {
+  local reported
+  if ! reported="$(run_from_root swift --version 2>&1)"; then
+    /usr/bin/printf 'build failed: could not determine the Swift version\n' >&2
+    exit 2
+  fi
+
+  local found
+  found="$("$AWK" '
+    match($0, /Apple Swift version [0-9]+\.[0-9]+/) {
+      version = substr($0, RSTART, RLENGTH)
+      sub(/Apple Swift version /, "", version)
+      print version
+      exit
+    }
+  ' <<<"$reported")"
+
+  if [[ -z "$found" ]]; then
+    /usr/bin/printf 'build failed: could not parse the Swift version from:\n%s\n' "$reported" >&2
+    exit 2
+  fi
+
+  local minimum_major="${MIN_RELEASE_SWIFT_VERSION%%.*}"
+  local minimum_minor="${MIN_RELEASE_SWIFT_VERSION##*.}"
+  local found_major="${found%%.*}"
+  local found_minor="${found##*.}"
+
+  if (( found_major < minimum_major )) \
+    || (( found_major == minimum_major && found_minor < minimum_minor )); then
+    /usr/bin/printf 'build failed: release builds need Swift %s or newer, found %s\n' \
+      "$MIN_RELEASE_SWIFT_VERSION" "$found" >&2
+    /usr/bin/printf 'Swift 6.3.3 miscompiles Task.sleep(for:) and crashes the app at runtime.\n' >&2
+    /usr/bin/printf 'Point DEVELOPER_DIR at a newer toolchain, for example:\n' >&2
+    /usr/bin/printf '  DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer %s\n' \
+      "script/build_and_run.sh --package" >&2
+    exit 2
+  fi
+}
+
 LATEST_TAG="$(git -C "$ROOT_DIR" describe --tags --abbrev=0 2>/dev/null || true)"
 TAG_VERSION="${LATEST_TAG#v}"
 TAG_VERSION="${TAG_VERSION%%-*}"
@@ -177,6 +223,7 @@ case "$MODE" in
 esac
 
 if [[ "$BUILD_CONFIG" == "release" ]]; then
+  require_release_toolchain
   RELEASE_SCRATCH_DIR="$("$MKTEMP" -d /private/tmp/lithepg-release-build.XXXXXX)"
   run_from_root swift build --scratch-path "$RELEASE_SCRATCH_DIR" -c release --product "$APP_NAME"
   BUILD_BINARY="$(run_from_root swift build --scratch-path "$RELEASE_SCRATCH_DIR" -c release --show-bin-path)/$APP_NAME"
