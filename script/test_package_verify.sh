@@ -3323,4 +3323,78 @@ assert_contains "$helper_output" "too many arguments"
 assert_not_contains "$helper_output" "Package verified:"
 assert_not_contains "$helper_output" "$extra_arg_sentinel"
 
+# Swift back-deployment compatibility shims must ride inside the bundle (issue #13). Build a
+# stub carrying the same @rpath install name the real libswiftCompatibilitySpan.dylib uses,
+# then exercise all three gate branches: referenced-but-unembedded, embedded-without-rpath,
+# and correctly embedded.
+compat_shim_stub="$fixture_root/libswiftCompatibilitySpan.dylib"
+/usr/bin/xcrun clang -dynamiclib \
+  -install_name "@rpath/libswiftCompatibilitySpan.dylib" \
+  -o "$compat_shim_stub" -x c - <<'C'
+int lithepg_compat_span_stub(void) { return 0; }
+C
+
+link_compat_shim_executable() {
+  # Replace the bundle executable with one that links the stub shim through @rpath.
+  # Pass "with-rpath" to add the @executable_path/../Frameworks search path.
+  local app_bundle="$1"
+  local rpath_mode="$2"
+  local -a rpath_args=()
+  if [[ "$rpath_mode" == "with-rpath" ]]; then
+    rpath_args=(-Wl,-rpath,@executable_path/../Frameworks)
+  fi
+  # The dylib input precedes -x c so the linker treats it as a library, not C source.
+  /usr/bin/xcrun clang "$compat_shim_stub" ${rpath_args[@]+"${rpath_args[@]}"} \
+    -o "$app_bundle/Contents/MacOS/LithePGApp" -x c - <<'C'
+extern int lithepg_compat_span_stub(void);
+int main(void) { return lithepg_compat_span_stub(); }
+C
+  /bin/chmod 755 "$app_bundle/Contents/MacOS/LithePGApp"
+}
+
+embed_compat_shim() {
+  local app_bundle="$1"
+  /bin/mkdir -p "$app_bundle/Contents/Frameworks"
+  /bin/chmod 755 "$app_bundle/Contents/Frameworks"
+  /bin/cp "$compat_shim_stub" "$app_bundle/Contents/Frameworks/libswiftCompatibilitySpan.dylib"
+  /bin/chmod 755 "$app_bundle/Contents/Frameworks/libswiftCompatibilitySpan.dylib"
+}
+
+compat_missing_bundle="$fixture_root/compat-shim-missing/LithePG.app"
+make_minimal_app_bundle "$compat_missing_bundle"
+link_compat_shim_executable "$compat_missing_bundle" "with-rpath"
+if run_helper_capture "$output_file" "$compat_missing_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier accepted a bundle missing its embedded Swift compatibility shim"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: Swift compatibility shim not embedded in bundle: libswiftCompatibilitySpan.dylib"
+assert_not_contains "$helper_output" "Package verified:"
+
+compat_norpath_bundle="$fixture_root/compat-shim-norpath/LithePG.app"
+make_minimal_app_bundle "$compat_norpath_bundle"
+link_compat_shim_executable "$compat_norpath_bundle" "no-rpath"
+embed_compat_shim "$compat_norpath_bundle"
+if run_helper_capture "$output_file" "$compat_norpath_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier accepted a bundle whose executable lacks the Frameworks rpath"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "package verification failed: app executable links a Swift compatibility shim without an @executable_path/../Frameworks rpath"
+assert_not_contains "$helper_output" "Package verified:"
+
+compat_embedded_bundle="$fixture_root/compat-shim-embedded/LithePG.app"
+make_minimal_app_bundle "$compat_embedded_bundle"
+link_compat_shim_executable "$compat_embedded_bundle" "with-rpath"
+embed_compat_shim "$compat_embedded_bundle"
+if ! run_helper_capture "$output_file" "$compat_embedded_bundle"; then
+  helper_output="$(<"$output_file")"
+  printf '%s\n' "$helper_output" >&2
+  fail "package verifier rejected a bundle that correctly embeds its Swift compatibility shim"
+fi
+helper_output="$(<"$output_file")"
+assert_contains "$helper_output" "Package verified: LithePG.app"
+
 printf 'test_package_verify passed\n'

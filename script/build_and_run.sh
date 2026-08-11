@@ -63,8 +63,10 @@ CHMOD=/bin/chmod
 CODESIGN=/usr/bin/codesign
 CP=/bin/cp
 DITTO=/usr/bin/ditto
+INSTALL_NAME_TOOL=/usr/bin/install_name_tool
 MKDIR=/bin/mkdir
 MKTEMP=/usr/bin/mktemp
+OTOOL=/usr/bin/otool
 PERL=/usr/bin/perl
 OPEN="${LITHEPG_BUILD_AND_RUN_OPEN:-/usr/bin/open}"
 PGREP="${LITHEPG_BUILD_AND_RUN_PGREP:-/usr/bin/pgrep}"
@@ -118,6 +120,7 @@ DIST_DIR="$ROOT_DIR/dist"
 APP_BUNDLE="$DIST_DIR/$BUNDLE_NAME.app"
 APP_CONTENTS="$APP_BUNDLE/Contents"
 APP_MACOS="$APP_CONTENTS/MacOS"
+APP_FRAMEWORKS="$APP_CONTENTS/Frameworks"
 APP_BINARY="$APP_MACOS/$APP_NAME"
 APP_RESOURCES="$APP_CONTENTS/Resources"
 INFO_PLIST="$APP_CONTENTS/Info.plist"
@@ -280,6 +283,66 @@ fi
 PLIST
 "$CHMOD" 644 "$INFO_PLIST"
 
+# Swift back-deployment compatibility shims (libswiftCompatibility*.dylib, such as the
+# libswiftCompatibilitySpan.dylib that arrived with the Span type in the 6.2+ toolchain)
+# are referenced through @rpath but are absent from the dyld shared cache on macOS 14. The
+# 6.4 release toolchain links them dynamically instead of statically back-deploying them,
+# so an unbundled build aborts at launch on Sonoma with a DYLD "Library not loaded" crash.
+# Copy each shim into Contents/Frameworks and point an @executable_path rpath at it so dyld
+# resolves the reference inside the bundle on every supported macOS.
+# See https://github.com/omarpr/lithepg/issues/13.
+embed_release_runtime_libs() {
+  local -a compat_refs=()
+  local ref
+  while IFS= read -r ref; do
+    [[ -n "$ref" ]] && compat_refs+=("$ref")
+  done < <("$OTOOL" -L "$APP_BINARY" \
+    | "$AWK" 'match($1, /^@rpath\/libswiftCompatibility[^ ]*\.dylib$/) { print $1 }')
+
+  [[ "${#compat_refs[@]}" -gt 0 ]] || return 0
+
+  # Resolve the binary's own LC_RPATH search dirs. The linker baked the toolchain lib dir
+  # in here, which is exactly where the shim lives on the build machine.
+  local -a search_dirs=()
+  local dir
+  while IFS= read -r dir; do
+    [[ -n "$dir" ]] || continue
+    dir="${dir/#@loader_path/$APP_MACOS}"
+    dir="${dir/#@executable_path/$APP_MACOS}"
+    search_dirs+=("$dir")
+  done < <("$OTOOL" -l "$APP_BINARY" | "$AWK" '
+    $1 == "cmd" && $2 == "LC_RPATH" { want = 1; next }
+    want && $1 == "path" { $1 = ""; sub(/^ /, ""); sub(/ \(offset [0-9]+\)$/, ""); print; want = 0 }
+  ')
+
+  "$MKDIR" -p "$APP_FRAMEWORKS"
+  "$CHMOD" 755 "$APP_FRAMEWORKS"
+
+  local base found
+  for ref in "${compat_refs[@]}"; do
+    base="${ref##*/}"
+    found=""
+    if [[ "${#search_dirs[@]}" -gt 0 ]]; then
+      for dir in "${search_dirs[@]}"; do
+        if [[ -f "$dir/$base" ]]; then
+          found="$dir/$base"
+          break
+        fi
+      done
+    fi
+    if [[ -z "$found" ]]; then
+      /usr/bin/printf 'build failed: could not locate %s in the linker rpaths to embed it\n' "$base" >&2
+      exit 2
+    fi
+    "$CP" "$found" "$APP_FRAMEWORKS/$base"
+    "$CHMOD" 755 "$APP_FRAMEWORKS/$base"
+    "$INSTALL_NAME_TOOL" -id "@rpath/$base" "$APP_FRAMEWORKS/$base"
+  done
+
+  # Make @rpath resolve inside the bundle. A pre-existing rpath makes this a no-op.
+  "$INSTALL_NAME_TOOL" -add_rpath "@executable_path/../Frameworks" "$APP_BINARY" 2>/dev/null || true
+}
+
 sign_release_bundle() {
   local identity="${LITHEPG_CODESIGN_IDENTITY:--}"
   # Prefer an existing persistent local dev identity over ad-hoc signing so
@@ -290,13 +353,33 @@ sign_release_bundle() {
     && /usr/bin/security find-identity -v -p codesigning 2>/dev/null | grep -q "LithePG Local Dev"; then
     identity="LithePG Local Dev"
   fi
+
+  local use_timestamp=0
+  if [[ "$identity" != "-" && "$identity" != "LithePG Local Dev" ]]; then
+    use_timestamp=1
+  fi
+
+  # Sign nested runtime libraries before the outer bundle so the strict/deep verify below
+  # accepts them. They get the hardened runtime but not the app entitlements.
+  if [[ -d "$APP_FRAMEWORKS" ]]; then
+    local dylib
+    for dylib in "$APP_FRAMEWORKS"/*.dylib; do
+      [[ -e "$dylib" ]] || continue
+      local -a dylib_args=(--force --options runtime --sign "$identity")
+      if [[ "$use_timestamp" == "1" ]]; then
+        dylib_args+=(--timestamp)
+      fi
+      "$CODESIGN" "${dylib_args[@]}" "$dylib"
+    done
+  fi
+
   local -a sign_args=(
     --force
     --options runtime
     --entitlements "$ENTITLEMENTS"
     --sign "$identity"
   )
-  if [[ "$identity" != "-" && "$identity" != "LithePG Local Dev" ]]; then
+  if [[ "$use_timestamp" == "1" ]]; then
     sign_args+=(--timestamp)
   fi
   "$CODESIGN" "${sign_args[@]}" "$APP_BUNDLE"
@@ -311,6 +394,7 @@ notarize_release_bundle() {
 }
 
 if [[ "$BUILD_CONFIG" == "release" ]]; then
+  embed_release_runtime_libs
   sign_release_bundle
   notarize_release_bundle
 fi

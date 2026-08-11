@@ -132,6 +132,25 @@ fi
 if /usr/bin/strings -a "$APP_BINARY" | /usr/bin/grep -Eq '/Users/[^/]+/'; then
   fail "app executable contains a local user path"
 fi
+# Swift back-deployment compatibility shims must ride inside the bundle. When the release
+# toolchain links them via @rpath (issue #13) an unbundled copy aborts at launch on macOS
+# 14 with a DYLD "Library not loaded" crash. Require every referenced shim to be embedded
+# under Contents/Frameworks and reachable through an @executable_path rpath.
+compat_shim_refs="$(/usr/bin/otool -L "$APP_BINARY" 2>/dev/null | /usr/bin/awk 'match($1, /^@rpath\/libswiftCompatibility[^ ]*\.dylib$/) { print $1 }')"
+if [[ -n "$compat_shim_refs" ]]; then
+  if ! /usr/bin/otool -l "$APP_BINARY" 2>/dev/null | /usr/bin/awk '
+    $1 == "cmd" && $2 == "LC_RPATH" { want = 1; next }
+    want && $1 == "path" { print; want = 0 }
+  ' | /usr/bin/grep -Fq "@executable_path/../Frameworks "; then
+    fail "app executable links a Swift compatibility shim without an @executable_path/../Frameworks rpath"
+  fi
+  while IFS= read -r shim_ref; do
+    [[ -n "$shim_ref" ]] || continue
+    shim_base="${shim_ref##*/}"
+    embedded_shim="$CONTENTS_DIR/Frameworks/$shim_base"
+    [[ -f "$embedded_shim" && ! -L "$embedded_shim" ]] || fail "Swift compatibility shim not embedded in bundle: $shim_base"
+  done <<<"$compat_shim_refs"
+fi
 [[ -f "$INFO_PLIST" && ! -L "$INFO_PLIST" ]] || fail "Info.plist must be a regular file"
 info_plist_mode="$(/usr/bin/stat -f%p "$INFO_PLIST")"
 if (( (8#$info_plist_mode & 07022) != 0 )); then
