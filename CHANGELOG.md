@@ -6,6 +6,12 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ## [Unreleased]
 
+## [v1.0.10] — 2026-08-11
+
+### Changes since `v1.0.9`
+
+- fix(release): bundle Swift compatibility shims into the app (`3d7a52a`)
+
 ## [v1.0.9] — 2026-08-06
 
 ### Changes since `v1.0.8`
@@ -192,6 +198,7 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 - `SELECT 1` succeeded over plain loopback, TLS verify-full, and SSH-tunneled paths.
 - Dependency inspection showed no `libpq` linkage and no LithePG-authored C shims.
 
+[v1.0.10]: https://github.com/omarpr/lithepg/compare/v1.0.9...v1.0.10
 [v1.0.9]: https://github.com/omarpr/lithepg/compare/v1.0.8...v1.0.9
 [v1.0.8]: https://github.com/omarpr/lithepg/compare/v1.0.7-preview.1...v1.0.8
 [v1.0.3]: https://github.com/omarpr/lithepg/compare/v1.0.0...v1.0.3

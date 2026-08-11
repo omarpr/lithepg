@@ -3,8 +3,8 @@
 # visible unsigned-build warning to the copy published in the external tap.
 
 cask "lithepg" do
-  version "1.0.9"
-  sha256 "3138663bedee273b7d4139d19ba9b7054e59774fdcc2aa0b4fe901dc7eb4b70a"
+  version "1.0.10"
+  sha256 "1b6d87feaa72cece24cdf2c87bafd24a208a9ac5d6e95dec07fc1481d0dc676f"
 
   url "https://github.com/omarpr/lithepg/releases/download/v#{version}/LithePG-#{version}.zip",
       verified: "github.com/omarpr/lithepg/"

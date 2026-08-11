@@ -3,7 +3,7 @@
 [![CI](https://github.com/omarpr/lithepg/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/omarpr/lithepg/actions/workflows/ci.yml?query=branch%3Amain)
 
 <!-- release-download:start -->
-**Cask release:** [`v1.0.9`](https://github.com/omarpr/lithepg/releases/tag/v1.0.9) · [Download `LithePG-1.0.9.zip`](https://github.com/omarpr/lithepg/releases/download/v1.0.9/LithePG-1.0.9.zip) · Signed and notarized release
+**Cask release:** [`v1.0.10`](https://github.com/omarpr/lithepg/releases/tag/v1.0.10) · [Download `LithePG-1.0.10.zip`](https://github.com/omarpr/lithepg/releases/download/v1.0.10/LithePG-1.0.10.zip) · Signed and notarized release
 
 Install: `brew install --cask omarpr/tap/lithepg`
 <!-- release-download:end -->
