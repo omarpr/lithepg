@@ -64,6 +64,37 @@ struct PostgresConnectorTests {
         try await connector.shutdown()
     }
 
+    @Test("every connection asks the server for UTF-8 text")
+    func connectionConfigurationRequestsUTF8() throws {
+        let config = ConnectionConfig(
+            host: "db.example.test",
+            database: "app",
+            username: "alice",
+            password: "",
+            tlsMode: .disable
+        )
+        let pgConfig = try PostgresConnector.connectionConfiguration(
+            for: config,
+            host: config.host,
+            port: config.port
+        )
+        let parameters = pgConfig.options.additionalStartupParameters
+        #expect(parameters.contains { $0.0 == "client_encoding" && $0.1 == "UTF8" })
+    }
+
+    @Test(
+        "the session reports UTF8 as its client encoding",
+        .enabled(if: plainURL != nil)
+    )
+    func liveClientEncodingIsUTF8() async throws {
+        let config = try ConnectionConfig(url: Self.plainURL!)
+        let connector = PostgresConnector()
+        try await connector.open(config: config)
+        let result = try await connector.execute("SHOW client_encoding")
+        #expect(result.rows.first?.cells.first == .text("UTF8"))
+        try await connector.shutdown()
+    }
+
     @Test(
         "opens a persistent connection and runs two queries on it",
         .enabled(if: plainURL != nil)

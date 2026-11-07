@@ -68,4 +68,20 @@ struct RenderCellTests {
     let rendered = PostgresConnector.renderCell(cell(buffer, type: .timestamptz))
     #expect(rendered == .text("<1 bytes>"))
   }
+
+  @Test("UTF-8 text keeps accents")
+  func utf8TextKeepsAccents() {
+    var buffer = ByteBuffer()
+    buffer.writeString("José Muñoz ¿qué?")
+    #expect(PostgresConnector.renderCell(cell(buffer, type: .text)) == .text("José Muñoz ¿qué?"))
+  }
+
+  @Test("text that is not UTF-8 falls back to Latin-1 instead of replacement characters")
+  func nonUTF8TextFallsBackToLatin1() {
+    // SQL_ASCII databases pass stored bytes through untouched; these are Latin-1 bytes.
+    var buffer = ByteBuffer()
+    buffer.writeBytes([0x4A, 0x6F, 0x73, 0xE9, 0x20, 0x4D, 0x75, 0xF1, 0x6F, 0x7A])
+    #expect(PostgresConnector.renderCell(cell(buffer, type: .text)) == .text("José Muñoz"))
+    #expect(PostgresConnector.renderCell(cell(buffer, type: .varchar)) == .text("José Muñoz"))
+  }
 }

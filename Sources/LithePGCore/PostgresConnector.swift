@@ -33,13 +33,10 @@ public actor PostgresConnector {
     public func open(config: ConnectionConfig) async throws {
         guard held == nil else { throw ExecuteError.alreadyConnected }
         let (effectiveHost, effectivePort, tunnel) = try await resolveTransport(config: config)
-        let pgConfig = PostgresConnection.Configuration(
+        let pgConfig = try Self.connectionConfiguration(
+            for: config,
             host: effectiveHost,
-            port: effectivePort,
-            username: config.username,
-            password: config.password,
-            database: config.database,
-            tls: try Self.makeTLS(for: config)
+            port: effectivePort
         )
 
         do {
@@ -118,13 +115,10 @@ public actor PostgresConnector {
         // the tunnel terminates at 127.0.0.1 and SNI for the original hostname would
         // mismatch. Library callers that set both will get a TLS handshake failure
         // here — preferable to the earlier silent downgrade, which hid the conflict.
-        let pgConfig = PostgresConnection.Configuration(
+        let pgConfig = try Self.connectionConfiguration(
+            for: config,
             host: effectiveHost,
-            port: effectivePort,
-            username: config.username,
-            password: config.password,
-            database: config.database,
-            tls: try Self.makeTLS(for: config)
+            port: effectivePort
         )
 
         let connection: PostgresConnection
@@ -174,7 +168,9 @@ public actor PostgresConnector {
         guard cell.bytes != nil else { return .null }
 
         switch cell.dataType {
-        case .text, .varchar, .bpchar, .name, .unknown, .json, .jsonb:
+        case .text, .varchar, .bpchar, .name, .unknown, .json:
+            if let value = decodeText(cell) { return .text(value) }
+        case .jsonb:
             if let value = try? cell.decode(String.self) { return .text(value) }
         case .int2:
             if let value = try? cell.decode(Int16.self) { return .text(String(value)) }
@@ -216,6 +212,18 @@ public actor PostgresConnector {
         return .text("<\(cell.bytes?.readableBytes ?? 0) bytes>")
     }
 
+    /// Text bytes as UTF-8, or as Latin-1 when they are not valid UTF-8. A SQL_ASCII database
+    /// performs no conversion, so it can hand back legacy single-byte text even though the
+    /// session asked for UTF-8. Latin-1 maps every byte, so this never invents `�`.
+    private static func decodeText(_ cell: PostgresCell) -> String? {
+        guard let bytes = cell.bytes, cell.format == .binary || cell.format == .text else {
+            return nil
+        }
+        let view = bytes.readableBytesView
+        if let utf8 = String(bytes: view, encoding: .utf8) { return utf8 }
+        return String(bytes: view, encoding: .isoLatin1)
+    }
+
     // MARK: - Helpers
 
     private func resolveTransport(
@@ -232,6 +240,28 @@ public actor PostgresConnector {
             remotePort: config.port
         )
         return ("127.0.0.1", tunnel.localPort, tunnel)
+    }
+
+    /// Builds the PostgresNIO configuration shared by every connection path.
+    ///
+    /// Always asks for UTF-8. Without it the server sends text in the database's own encoding,
+    /// so a LATIN1 or WIN1252 database shows accents as replacement characters, and text sent
+    /// from LithePG is stored with the wrong bytes.
+    static func connectionConfiguration(
+        for config: ConnectionConfig,
+        host: String,
+        port: Int
+    ) throws -> PostgresConnection.Configuration {
+        var pgConfig = PostgresConnection.Configuration(
+            host: host,
+            port: port,
+            username: config.username,
+            password: config.password,
+            database: config.database,
+            tls: try makeTLS(for: config)
+        )
+        pgConfig.options.additionalStartupParameters.append(("client_encoding", "UTF8"))
+        return pgConfig
     }
 
     // Internal and static rather than private so the mode mapping is directly testable.
