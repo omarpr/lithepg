@@ -749,6 +749,64 @@ struct AppStateTests {
     #expect(s.lastResult?.rows.first?.cells.first == .text("42"))
   }
 
+  @Test("runs the statement under the caret, or the selection when there is one")
+  func executableSQLFollowsCaretAndSelection() {
+    let s = AppState()
+    s.editorText = "SELECT 1;\nSELECT 'two';\n\nSELECT 3;"
+    let text = s.editorText as NSString
+
+    s.updateEditorSelection(NSRange(location: text.range(of: "'two'").location, length: 0))
+    #expect(s.executableSQL == "SELECT 'two';")
+
+    s.updateEditorSelection(NSRange(location: 2, length: 0))
+    #expect(s.executableSQL == "SELECT 1;")
+
+    s.updateEditorSelection(text.range(of: "SELECT 3"))
+    #expect(s.executableSQL == "SELECT 3")
+
+    // A selection that is only whitespace falls back to the caret's statement.
+    s.updateEditorSelection(NSRange(location: text.range(of: "\n\n").location, length: 2))
+    #expect(s.executableSQL == "SELECT 'two';")
+  }
+
+  @Test("without a known caret the last statement runs, and stale ranges are clamped")
+  func executableSQLWithoutCaret() {
+    let s = AppState()
+    s.editorText = "SELECT 1;\nSELECT 2;"
+    #expect(s.executableSQL == "SELECT 2;")
+
+    s.updateEditorSelection(NSRange(location: 500, length: 20))
+    #expect(s.executableSQL == "SELECT 2;")
+  }
+
+  @Test("each query tab keeps its own caret")
+  func caretIsPerTab() {
+    let s = AppState()
+    s.editorText = "SELECT 1;\nSELECT 2;"
+    s.updateEditorSelection(NSRange(location: 0, length: 0))
+    s.newQueryTab()
+    s.editorText = "SELECT 'a';\nSELECT 'b';"
+    s.updateEditorSelection(NSRange(location: 0, length: 0))
+    #expect(s.executableSQL == "SELECT 'a';")
+    s.selectPreviousQueryTab()
+    #expect(s.executableSQL == "SELECT 1;")
+  }
+
+  @Test(
+    "running with several statements executes only the one under the caret",
+    .enabled(if: appStateLivePostgresURL != nil))
+  func liveRunsStatementUnderCaret() async throws {
+    let s = AppState()
+    await s.connect(url: appStateLivePostgresURL!)
+    defer { Task { await s.disconnect() } }
+    s.editorText = "SELECT 1 AS first;\nSELECT 2 AS second;"
+    s.updateEditorSelection(
+      NSRange(location: (s.editorText as NSString).range(of: "second").location, length: 0))
+    await s.runCurrentQuery()
+    #expect(s.lastError == nil)
+    #expect(s.lastResult?.columns.first?.name == "second")
+  }
+
   @Test("computed UI state tracks connection and runnable query state")
   func computedUIState() {
     let s = AppState()

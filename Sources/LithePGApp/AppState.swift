@@ -106,6 +106,44 @@ public final class AppState {
     return connectionLabel.map { "LithePG · \($0)" } ?? "LithePG"
   }
 
+  /// The SQL Run and Explain send: the selected text when it holds any SQL, otherwise the
+  /// statement under the caret. PostgreSQL rejects several statements in one extended-protocol
+  /// query, so sending the whole editor fails as soon as it holds more than one.
+  public var executableSQL: String {
+    let text = editorText
+    let length = (text as NSString).length
+    let selection = selectedQueryTabID.flatMap { editorSelections[$0] }
+    let caret: Int
+    if let selection {
+      let location = min(max(selection.location, 0), length)
+      let upper = min(location + max(selection.length, 0), length)
+      if upper > location {
+        let selected = (text as NSString).substring(with: NSRange(location: location, length: upper - location))
+          .trimmingCharacters(in: .whitespacesAndNewlines)
+        if !selected.isEmpty { return selected }
+      }
+      caret = location
+    } else {
+      // Before the editor reports a caret, behave as if it sat at the end of the text.
+      caret = length
+    }
+    return SQLStatementSplitter.statement(at: caret, in: text)?.text
+      ?? text.trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+
+  /// Called by the editor on every caret or selection change. Kept out of observation so
+  /// moving the caret never re-renders the workspace.
+  public func updateEditorSelection(_ range: NSRange) {
+    guard let selectedQueryTabID else { return }
+    editorSelections[selectedQueryTabID] = range
+  }
+
+  /// The selection to restore when a tab is shown again.
+  public var editorSelection: NSRange? {
+    selectedQueryTabID.flatMap { editorSelections[$0] }
+  }
+
+  @ObservationIgnored private var editorSelections: [QueryTab.ID: NSRange] = [:]
   @ObservationIgnored private var connector: PostgresConnector?
   /// Waits for the held connection to close so a drop is reported while the app is idle.
   @ObservationIgnored private var connectionMonitor: Task<Void, Never>?
@@ -721,6 +759,7 @@ public final class AppState {
       let index = queryTabs.firstIndex(where: { $0.id == id })
     else { return }
     let removingSelected = queryTabs[index].id == selectedQueryTabID
+    editorSelections[id] = nil
     queryTabs.remove(at: index)
     if removingSelected {
       let replacementIndex = min(index, queryTabs.count - 1)
@@ -771,7 +810,7 @@ public final class AppState {
       clearActiveQuery(if: runID)
       return
     }
-    let sql = editorText.trimmingCharacters(in: .whitespacesAndNewlines)
+    let sql = executableSQL
     guard !sql.isEmpty else {
       setError("Enter a SQL query first.")
       clearActiveQuery(if: runID)
@@ -812,11 +851,11 @@ public final class AppState {
   public private(set) var lastQueryPlanIsAnalyze = false
   public private(set) var isExplaining = false
 
-  /// Runs EXPLAIN (FORMAT JSON) on the editor's SQL and parses the plan.
+  /// Runs EXPLAIN (FORMAT JSON) on the statement under the caret and parses the plan.
   /// With `analyze` the statement is EXPLAIN (ANALYZE, BUFFERS, ...) which
   /// actually executes the query; callers surface that in the UI copy.
   public func runExplain(analyze: Bool) async {
-    let sql = editorText.trimmingCharacters(in: .whitespacesAndNewlines)
+    let sql = executableSQL
     guard !sql.isEmpty else {
       setError("Enter a SQL query first.")
       return

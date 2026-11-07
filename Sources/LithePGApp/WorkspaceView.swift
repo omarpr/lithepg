@@ -40,7 +40,11 @@ struct WorkspaceView: View {
         VStack(spacing: 0) {
           tabBar
           Divider()
-          EditorView(text: $state.editorText)
+          EditorView(
+            text: $state.editorText,
+            selection: state.editorSelection,
+            onSelectionChange: { state.updateEditorSelection($0) }
+          )
             .frame(minHeight: 200)
           Divider()
           ErrorBanner(
@@ -418,7 +422,7 @@ struct WorkspaceView: View {
     case .connecting:
       return "Wait for the connection attempt to finish"
     case .connected:
-      return "Run the current query"
+      return "Run the statement under the cursor, or the selected SQL"
     }
   }
 
