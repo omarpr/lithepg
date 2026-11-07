@@ -6,6 +6,27 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ## [Unreleased]
 
+### Added
+
+- With several statements in the editor, Run and Explain now execute only the statement under the cursor, or the selected SQL when there is a selection. The statement that will run gets a light tint. Semicolons inside strings, comments and `$$` function bodies do not split a statement. Each query tab remembers its own cursor.
+
+### Fixed
+
+- A connection dropped by the server or network (an idle timeout, a Neon suspend, a restart) no longer leaves every query stuck on Running until the app is restarted. LithePG notices the drop right away, shows "Connection lost" in the header with a Reconnect button and keeps your results, schema and editor text.
+- Reconnect now works for saved connections, not only for connections opened from a URL.
+- Accented and other non-ASCII text (José, Muñoz, ¿qué?) no longer shows as replacement characters on databases that use LATIN1, WIN1252 or another non-UTF-8 encoding. LithePG now always asks the server for UTF-8, which also stops text written from LithePG being stored with the wrong bytes on those databases. SQL_ASCII databases, which do no conversion, fall back to Latin-1 for text that is not valid UTF-8.
+- The results grid sits flush against its pane instead of leaving a gap above the header and left of the row numbers.
+- The SQL editor no longer re-highlights the whole document on unrelated interface updates, which made longer scripts lag.
+
+### Security
+
+- Updated swift-nio-ssl to 2.37.6 for GHSA-xfxg-9975-pc2j (critical: an out-of-bounds read when checking certificate names, reachable from a TLS client) and swift-crypto to 5.1.1 for GHSA-8q93-f6xh-4f6f (critical: a double free when RSA public key parsing fails). swift-nio and postgres-nio also moved to their latest patch releases.
+- Updated the website build tooling (vite, postcss and source-map-js) to clear its open advisories. The website is not part of the app.
+
+### Changed
+
+- Release changelog preparation now turns these Unreleased notes into the release section and lists the commit subjects below them.
+
 ## [v1.0.10] — 2026-08-11
 
 ### Changes since `v1.0.9`

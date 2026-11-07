@@ -106,11 +106,26 @@ git -C "$REPOSITORY" log \
 
   my $section_pattern = qr/^## \[v\Q$version\E\](?:\s|$)/m;
   if ($contents !~ $section_pattern) {
-    my $section = "## [v$version] — $date\n\n"
-      . "### Changes since `$previous_tag`\n\n"
-      . join("\n", @changes) . "\n";
-    my $unreleased_count = ($contents =~ s/^## \[Unreleased\]\s*$/## [Unreleased]\n\n$section/m);
-    die "expected exactly one Unreleased section\n" unless $unreleased_count == 1;
+    my @unreleased = ($contents =~ /^## \[Unreleased\][ \t]*$/mg);
+    die "expected exactly one Unreleased section\n" unless @unreleased == 1;
+
+    # Curated notes written under Unreleased become the release notes, with the commit
+    # subjects kept below them for reference. Unreleased is left empty for the next cycle.
+    $contents =~ /^## \[Unreleased\][ \t]*\n(.*?)(?=^## \[|^\[v[^\]]+\]:|\z)/ms
+      or die "could not read the Unreleased section\n";
+    my $notes = $1;
+    $notes =~ s/^\s+|\s+$//g;
+
+    my $section = "## [v$version] — $date\n\n";
+    if (length $notes) {
+      $section .= "$notes\n\n### Commits since `$previous_tag`\n\n";
+    } else {
+      $section .= "### Changes since `$previous_tag`\n\n";
+    }
+    $section .= join("\n", @changes) . "\n";
+
+    $contents =~ s/^## \[Unreleased\][ \t]*\n.*?(?=^## \[|^\[v[^\]]+\]:|\z)/## [Unreleased]\n\n$section\n/ms
+      or die "could not replace the Unreleased section\n";
   }
 
   my $link = "[v$version]: https://github.com/$repository/compare/$previous_tag...v$version";

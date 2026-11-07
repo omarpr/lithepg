@@ -56,4 +56,31 @@ assert_contains "$prepared" '- fix: parse the Team ID from standard input (`'
 assert_contains "$prepared" "[v1.0.8]: https://github.com/example/lithepg/compare/v1.0.7-preview.1...v1.0.8"
 [[ "$(printf '%s\n' "$prepared" | grep -c '^## \[v1\.0\.8\]')" -eq 1 ]] || fail "release section count was not one"
 
+# Curated Unreleased notes become the release notes, ahead of the commit subjects.
+cat >"$REPOSITORY/CHANGELOG.md" <<'CHANGELOG'
+# Changelog
+
+## [Unreleased]
+
+### Fixed
+
+- Accented text now displays correctly on LATIN1 databases.
+
+## [v1.0.3] — 2026-07-20
+
+- Earlier release.
+
+[v1.0.3]: https://example.invalid/v1.0.3
+CHANGELOG
+git -C "$REPOSITORY" add -- CHANGELOG.md
+git -C "$REPOSITORY" commit -q -m "docs: note the encoding fix"
+CURATED_OUTPUT="$FIXTURE_DIR/CHANGELOG-1.0.8-curated.md"
+LITHEPG_RELEASE_DATE=2026-08-05 LITHEPG_GITHUB_REPOSITORY=example/lithepg \
+  "$HELPER" 1.0.8 "$CURATED_OUTPUT" "$REPOSITORY" >/dev/null
+curated="$(<"$CURATED_OUTPUT")"
+assert_contains "$curated" $'## [Unreleased]\n\n## [v1.0.8] — 2026-08-05\n\n### Fixed\n\n- Accented text now displays correctly on LATIN1 databases.\n\n### Commits since `v1.0.7-preview.1`'
+assert_contains "$curated" '- docs: note the encoding fix (`'
+[[ "$(printf '%s\n' "$curated" | grep -c 'Accented text now displays')" -eq 1 ]] || fail "curated notes were duplicated"
+[[ "$(printf '%s\n' "$curated" | grep -c '^## \[v1\.0\.3\]')" -eq 1 ]] || fail "earlier release section was lost"
+
 printf 'test_prepare_release_changelog passed\n'
