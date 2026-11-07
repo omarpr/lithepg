@@ -88,7 +88,7 @@ struct ResultsTablePresentationTests {
 
     @Test("column widths fill available result space until they reach the minimum")
     func columnWidthsFillAvailableSpace() {
-        #expect(ResultsTablePresentation.columnWidths(availableWidth: 900, columnCount: 2) == [418, 418])
+        #expect(ResultsTablePresentation.columnWidths(availableWidth: 900, columnCount: 2) == [428, 428])
         #expect(ResultsTablePresentation.tableTotalWidth(availableWidth: 901, columnCount: 3) == 901)
         #expect(ResultsTablePresentation.columnWidths(availableWidth: 260, columnCount: 4) == Array(repeating: ResultsTablePresentation.minimumColumnWidth, count: 4))
         #expect(ResultsTablePresentation.columnWidths(availableWidth: 900, columnCount: 0) == [])
@@ -101,7 +101,7 @@ struct ResultsTablePresentationTests {
                 availableWidth: 900,
                 columnCount: 2,
                 overrides: [0: 260]
-            ) == [260, 418]
+            ) == [260, 428]
         )
         #expect(
             ResultsTablePresentation.resizedColumnWidth(

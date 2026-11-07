@@ -636,7 +636,8 @@ enum ResultsTablePresentation {
     static let indexColumnWidth: CGFloat = 44
     static let minimumColumnWidth: CGFloat = 126
     static let minimumResizableColumnWidth: CGFloat = 72
-    static let tablePadding: CGFloat = 10
+    /// The grid sits flush against the pane edges, like a native table view.
+    static let tablePadding: CGFloat = 0
     static let headerRowHeight: CGFloat = 32
     static let bodyRowHeight: CGFloat = 30
 
