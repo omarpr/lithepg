@@ -14,6 +14,7 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ### Fixed
 
+- Numeric values keep their scale in results: a `numeric(10,2)` value of 9480.00 now shows as `9480.00` instead of `9480`, and `NaN` and `Infinity` display correctly. Values match PostgreSQL's own text output.
 - Saving in the cell editor used to change only the value on screen, which looked like an edit that then vanished on refresh. Saving now writes to the database after confirmation, and cells that cannot be written are clearly read-only.
 - A connection dropped by the server or network (an idle timeout, a Neon suspend, a restart) no longer leaves every query stuck on Running until the app is restarted. LithePG notices the drop right away, shows "Connection lost" in the header with a Reconnect button and keeps your results, schema and editor text.
 - Reconnect now works for saved connections, not only for connections opened from a URL.
