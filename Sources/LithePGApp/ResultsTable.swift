@@ -3,13 +3,22 @@ import SwiftUI
 import UniformTypeIdentifiers
 import LithePGCore
 
+/// What the grid needs to write a cell back to the database. Nil makes the grid read-only.
+struct ResultEditingActions {
+    var editability: (_ column: Int) async -> ResultEditability
+    var preview: (_ row: Int, _ column: Int, _ newValue: String?) -> Result<String, ResultEditError>
+    /// Returns nil on success, otherwise a message to show in the editor.
+    var save: (_ row: Int, _ column: Int, _ newValue: String?) async -> String?
+    var isProduction: Bool
+}
+
 struct ResultsTable: View {
     let result: QueryResult?
+    var editing: ResultEditingActions?
     @State private var copiedAtLeastOnce = false
     @State private var page = 1
     @State private var selectedCell: ResultsTablePresentation.CellAddress?
     @State private var editingSession: ResultsTablePresentation.CellEditorSession?
-    @State private var localCellEdits: [ResultsTablePresentation.CellAddress: String] = [:]
     @State private var columnWidthOverrides: [Int: CGFloat] = [:]
     @State private var columnResizeStart: ColumnResizeStart?
 
@@ -19,7 +28,7 @@ struct ResultsTable: View {
     }
 
     var body: some View {
-        let renderedResult = renderedResult
+        let renderedResult = result
         VStack(spacing: 0) {
             actionBar(for: renderedResult)
             Divider()
@@ -32,12 +41,13 @@ struct ResultsTable: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .onChange(of: result) { _, _ in
+        .onChange(of: result) { old, new in
+            // A saved cell changes the result in place; keep the page, widths and selection.
+            guard !ResultsTablePresentation.isCellEdit(from: old, to: new) else { return }
             page = 1
             copiedAtLeastOnce = false
             selectedCell = nil
             editingSession = nil
-            localCellEdits.removeAll()
             columnWidthOverrides.removeAll()
             columnResizeStart = nil
         }
@@ -48,11 +58,8 @@ struct ResultsTable: View {
         .sheet(item: $editingSession) { session in
             ResultCellEditorSheet(
                 session: session,
-                onCancel: { editingSession = nil },
-                onSave: { value in
-                    localCellEdits[session.address] = value
-                    editingSession = nil
-                },
+                editing: editing,
+                onClose: { editingSession = nil },
                 onCopy: { value in
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(value, forType: .string)
@@ -60,19 +67,6 @@ struct ResultsTable: View {
                 }
             )
         }
-    }
-
-    private var renderedResult: QueryResult? {
-        guard var renderedResult = result else { return nil }
-        for (address, value) in localCellEdits {
-            guard let updated = ResultsTablePresentation.replacingCell(
-                in: renderedResult,
-                at: address,
-                with: value
-            ) else { continue }
-            renderedResult = updated
-        }
-        return renderedResult
     }
 
     @ViewBuilder
@@ -440,10 +434,15 @@ struct ResultsTable: View {
             .accessibilityAddTraits(.isButton)
             .accessibilityLabel(isNull ? "NULL" : value)
             .accessibilityHint("Click to select, double-click to view and edit")
+            // Double-click is a pointer gesture; VoiceOver needs a named action to reach the editor.
+            .accessibilityAction(named: "View and edit") {
+                selectedCell = address
+                beginEditing(address, in: result)
+            }
     }
 
     private var selectedCellCopyItems: [String] {
-        guard let result = renderedResult, let selectedCell,
+        guard let result, let selectedCell,
             let text = ResultsTablePresentation.cellText(for: result, at: selectedCell)
         else { return [] }
         return [text]
@@ -543,91 +542,258 @@ struct ResultsTable: View {
     }
 }
 
-/// A self-contained editor session ensures the value is available on the first
-/// rendered frame. Save updates the displayed result through the parent callback;
-/// it deliberately never constructs or executes database mutation SQL.
+/// Views a cell and, when its column traces back to a table with a primary key, writes a new
+/// value to the database. Saving always shows the exact UPDATE first and runs only after an
+/// explicit confirmation. Read-only cells say why they cannot be edited.
 private struct ResultCellEditorSheet: View {
     let session: ResultsTablePresentation.CellEditorSession
-    let onCancel: () -> Void
-    let onSave: (String) -> Void
+    let editing: ResultEditingActions?
+    let onClose: () -> Void
     let onCopy: (String) -> Void
 
+    private enum Phase: Equatable {
+        case checking
+        case readOnly(String)
+        case editing(table: String)
+        case confirming(table: String, sql: String)
+        case saving(table: String, sql: String)
+    }
+
     @State private var text: String
+    @State private var setNull: Bool
+    @State private var phase: Phase = .checking
+    @State private var errorMessage: String?
     @FocusState private var editorFocused: Bool
 
     init(
         session: ResultsTablePresentation.CellEditorSession,
-        onCancel: @escaping () -> Void,
-        onSave: @escaping (String) -> Void,
+        editing: ResultEditingActions?,
+        onClose: @escaping () -> Void,
         onCopy: @escaping (String) -> Void
     ) {
         self.session = session
-        self.onCancel = onCancel
-        self.onSave = onSave
+        self.editing = editing
+        self.onClose = onClose
         self.onCopy = onCopy
         _text = State(initialValue: session.initialText)
+        _setNull = State(initialValue: session.wasNull)
     }
 
-    private var hasChanges: Bool { text != session.initialText }
+    private var newValue: String? { setNull ? nil : text }
+    private var hasChanges: Bool { setNull != session.wasNull || (!setNull && text != session.initialText) }
+    private var isEditable: Bool {
+        if case .editing = phase { return true }
+        return false
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                Text(session.columnName)
-                    .font(.headline)
-                if session.wasNull {
-                    Text("NULL")
-                        .font(.caption.bold())
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.secondary.opacity(0.15), in: Capsule())
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                Text("Row \(session.rowNumber)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Button(action: onCancel) {
-                    Image(systemName: "xmark")
-                }
-                .buttonStyle(.plain)
-                .buttonAffordance("Close without saving")
-                .accessibilityLabel("Close cell editor")
-                .accessibilityIdentifier("close-cell-editor")
+            header
+            switch phase {
+            case .confirming(let table, let sql), .saving(let table, let sql):
+                confirmation(table: table, sql: sql)
+            default:
+                valueEditor
             }
+            if let errorMessage {
+                Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+                    .font(.callout)
+                    .foregroundStyle(.red)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("cell-edit-error")
+            }
+            Divider()
+            footer
+        }
+        .padding(16)
+        .frame(width: 520)
+        .task { await checkEditability() }
+    }
 
-            TextEditor(text: $text)
-                .font(.callout.monospaced())
-                .frame(height: 140)
-                .focused($editorFocused)
-                .accessibilityIdentifier("cell-editor")
-
-            Text("Save updates this displayed result only. It never runs SQL or writes to PostgreSQL.")
+    private var header: some View {
+        HStack(spacing: 8) {
+            Text(session.columnName)
+                .font(.headline)
+            if session.wasNull {
+                Text("NULL")
+                    .font(.caption.bold())
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.secondary.opacity(0.15), in: Capsule())
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Text("Row \(session.rowNumber)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            Button(action: onClose) {
+                Image(systemName: "xmark")
+            }
+            .buttonStyle(.plain)
+            .buttonAffordance("Close without saving")
+            .accessibilityLabel("Close cell editor")
+            .accessibilityIdentifier("close-cell-editor")
+        }
+    }
 
-            Divider()
+    @ViewBuilder
+    private var valueEditor: some View {
+        TextEditor(text: $text)
+            .font(.callout.monospaced())
+            .frame(height: 140)
+            .focused($editorFocused)
+            .disabled(!isEditable || setNull)
+            .opacity(setNull ? 0.45 : 1)
+            .accessibilityIdentifier("cell-editor")
 
+        switch phase {
+        case .checking:
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                Text("Checking whether this column can be edited…")
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        case .readOnly(let reason):
+            Label(reason, systemImage: "lock")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("cell-read-only-reason")
+        case .editing(let table):
             HStack {
-                Button("Reset") { text = session.initialText }
-                    .buttonAffordance("Restore the original cell value")
-                    .disabled(!hasChanges)
+                Toggle("Set to NULL", isOn: $setNull)
+                    .toggleStyle(.checkbox)
+                    .accessibilityIdentifier("cell-set-null")
+                Spacer()
+                Text("Saves to \(table). You review the SQL before it runs.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        default:
+            EmptyView()
+        }
+    }
+
+    private func confirmation(table: String, sql: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Update this row in \(table)?")
+                .font(.title3.weight(.semibold))
+            if editing?.isProduction == true {
+                Label(
+                    "This is a production connection. The change is written immediately.",
+                    systemImage: "exclamationmark.triangle.fill"
+                )
+                .font(.callout.bold())
+                .foregroundStyle(.red)
+                .accessibilityIdentifier("cell-edit-production-warning")
+            }
+            ScrollView {
+                Text(sql)
+                    .font(.callout.monospaced())
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(10)
+            }
+            .frame(height: 150)
+            .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+            .accessibilityIdentifier("cell-edit-sql-preview")
+            Text("Only the row with this primary key changes. If the row was changed since you loaded it, nothing is written.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    @ViewBuilder
+    private var footer: some View {
+        HStack {
+            switch phase {
+            case .confirming(let table, _), .saving(let table, _):
+                Button("Back") {
+                    errorMessage = nil
+                    phase = .editing(table: table)
+                }
+                .disabled(isSaving)
+                Spacer()
+                if isSaving {
+                    ProgressView().controlSize(.small)
+                }
+                Button("Cancel", action: onClose)
+                    .keyboardShortcut(.cancelAction)
+                    .disabled(isSaving)
+                Button(editing?.isProduction == true ? "Update Production Row" : "Update Row") {
+                    Task { await save() }
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(isSaving)
+                .buttonAffordance("Run the UPDATE shown above")
+                .accessibilityIdentifier("confirm-cell-edit")
+            default:
+                Button("Reset") {
+                    text = session.initialText
+                    setNull = session.wasNull
+                    errorMessage = nil
+                }
+                .buttonAffordance("Restore the original cell value")
+                .disabled(!hasChanges)
                 Button("Copy") { onCopy(text) }
                     .buttonAffordance("Copy this cell value")
                 Spacer()
-                Button("Cancel", action: onCancel)
+                Button(isEditable ? "Cancel" : "Close", action: onClose)
                     .keyboardShortcut(.cancelAction)
                     .buttonAffordance("Close without saving")
-                Button("Save") { onSave(text) }
-                    .keyboardShortcut(.defaultAction)
-                    .buttonAffordance("Save the edited cell value")
-                    .disabled(!hasChanges)
-                    .accessibilityIdentifier("save-cell-edit")
+                if isEditable {
+                    Button("Save…") { reviewChange() }
+                        .keyboardShortcut(.defaultAction)
+                        .buttonAffordance("Review the SQL that saves this value")
+                        .disabled(!hasChanges)
+                        .accessibilityIdentifier("save-cell-edit")
+                }
             }
         }
-        .padding(16)
-        .frame(width: 440)
-        .onAppear { editorFocused = true }
+    }
+
+    private var isSaving: Bool {
+        if case .saving = phase { return true }
+        return false
+    }
+
+    private func checkEditability() async {
+        guard let editing else {
+            phase = .readOnly("Connect to a database to edit results.")
+            return
+        }
+        switch await editing.editability(session.address.column) {
+        case .readOnly(let reason):
+            phase = .readOnly(reason)
+        case .editable(let target):
+            phase = .editing(table: target.table)
+            editorFocused = true
+        }
+    }
+
+    private func reviewChange() {
+        guard let editing, case .editing(let table) = phase else { return }
+        switch editing.preview(session.address.row, session.address.column, newValue) {
+        case .success(let sql):
+            errorMessage = nil
+            phase = .confirming(table: table, sql: sql)
+        case .failure(let error):
+            errorMessage = error.description
+        }
+    }
+
+    private func save() async {
+        guard let editing, case .confirming(let table, let sql) = phase else { return }
+        phase = .saving(table: table, sql: sql)
+        if let message = await editing.save(session.address.row, session.address.column, newValue) {
+            errorMessage = message
+            phase = .editing(table: table)
+        } else {
+            onClose()
+        }
     }
 }
 
@@ -839,28 +1005,12 @@ enum ResultsTablePresentation {
 
     /// Returns a new result with one local text edit applied. QueryResult is a
     /// value type, so the source result remains unchanged and no SQL is issued.
-    static func replacingCell(
-        in result: QueryResult,
-        at address: CellAddress,
-        with text: String
-    ) -> QueryResult? {
-        guard result.rows.indices.contains(address.row) else { return nil }
-        var rows = result.rows
-        let sourceRow = rows[address.row]
-        guard sourceRow.cells.indices.contains(address.column) else { return nil }
-
-        var cells = sourceRow.cells
-        cells[address.column] = .text(text)
-        rows[address.row] = .init(id: sourceRow.id, cells: cells)
-
-        return QueryResult(
-            columns: result.columns,
-            rows: rows,
-            rowCount: result.rowCount,
-            elapsed: result.elapsed,
-            status: result.status,
-            truncated: result.truncated
-        )
+    /// True when `new` is `old` with cell values changed in place, as after saving an edit,
+    /// rather than the result of another run.
+    static func isCellEdit(from old: QueryResult?, to new: QueryResult?) -> Bool {
+        guard let old, let new else { return false }
+        return old.columns == new.columns && old.rowCount == new.rowCount
+            && old.elapsed == new.elapsed && old.status == new.status && old.rows.count == new.rows.count
     }
 
     /// The raw text of a cell for copying: NULL copies as an empty string.

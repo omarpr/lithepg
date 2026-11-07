@@ -979,6 +979,83 @@ struct AppStateTests {
   }
 
   @Test(
+    "editing a result cell writes it to the table after review",
+    .enabled(if: appStateLivePostgresURL != nil))
+  func liveEditsResultCell() async throws {
+    let s = AppState()
+    await s.connect(url: appStateLivePostgresURL!)
+    defer { Task { await s.disconnect() } }
+    s.editorText = "CREATE TEMP TABLE lithepg_app_edit (id int PRIMARY KEY, name text)"
+    await s.runCurrentQuery()
+    s.editorText = "INSERT INTO lithepg_app_edit VALUES (1, 'Ana'), (2, 'Luis')"
+    await s.runCurrentQuery()
+    s.editorText = "SELECT id, name, upper(name) AS loud FROM lithepg_app_edit ORDER BY id"
+    await s.runCurrentQuery()
+    #expect(s.lastError == nil)
+
+    guard case .editable(let target) = await s.editability(forColumn: 1) else {
+      Issue.record("name should be editable")
+      return
+    }
+    #expect(target.table == "lithepg_app_edit")
+    guard case .readOnly = await s.editability(forColumn: 2) else {
+      Issue.record("a computed column must be read-only")
+      return
+    }
+
+    let preview = try s.cellUpdatePreview(row: 0, column: 1, newValue: "Ana María").get()
+    #expect(preview.contains("SET \"name\" = 'Ana María'::text"))
+    #expect(await s.saveCell(row: 0, column: 1, newValue: "Ana María") == nil)
+    #expect(s.lastResult?.rows[0].cells[1] == .text("Ana María"))
+    // The cache follows the edited result, so the next edit needs no new lookup.
+    guard case .editable = await s.editability(forColumn: 1) else {
+      Issue.record("still editable after a save")
+      return
+    }
+
+    // Writing NULL is a separate choice from writing an empty string.
+    #expect(await s.saveCell(row: 1, column: 1, newValue: nil) == nil)
+    #expect(s.lastResult?.rows[1].cells[1] == .null)
+
+    s.editorText = "SELECT name FROM lithepg_app_edit ORDER BY id"
+    await s.runCurrentQuery()
+    #expect(s.lastResult?.rows.map { $0.cells[0] } == [.text("Ana María"), .null])
+    guard case .readOnly(let reason) = await s.editability(forColumn: 0) else {
+      Issue.record("without the key the column is read-only")
+      return
+    }
+    #expect(reason.contains("primary key (id)"))
+  }
+
+  @Test(
+    "a stale edit is refused instead of overwriting another change",
+    .enabled(if: appStateLivePostgresURL != nil))
+  func liveStaleEditIsRefused() async throws {
+    let s = AppState()
+    await s.connect(url: appStateLivePostgresURL!)
+    defer { Task { await s.disconnect() } }
+    s.editorText = "CREATE TABLE IF NOT EXISTS lithepg_app_stale (id int PRIMARY KEY, name text)"
+    await s.runCurrentQuery()
+    s.editorText = "TRUNCATE lithepg_app_stale"
+    await s.runCurrentQuery()
+    s.editorText = "INSERT INTO lithepg_app_stale VALUES (1, 'Ana')"
+    await s.runCurrentQuery()
+    s.editorText = "SELECT id, name FROM lithepg_app_stale"
+    await s.runCurrentQuery()
+    _ = await s.editability(forColumn: 1)
+
+    let other = PostgresConnector()
+    try await other.open(config: try ConnectionConfig(url: appStateLivePostgresURL!))
+    _ = try await other.execute("UPDATE lithepg_app_stale SET name = 'Changed' WHERE id = 1")
+    try await other.shutdown()
+
+    #expect(await s.saveCell(row: 0, column: 1, newValue: "Mine") == ResultEditError.rowChanged.description)
+    #expect(s.lastResult?.rows[0].cells[1] == .text("Ana"))
+    s.editorText = "DROP TABLE lithepg_app_stale"
+    await s.runCurrentQuery()
+  }
+
+  @Test(
     "non-connection errors do not offer reconnect", .enabled(if: appStateLivePostgresURL != nil))
   func syntaxErrorDoesNotOfferReconnect() async throws {
     let s = AppState()

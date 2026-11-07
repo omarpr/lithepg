@@ -93,6 +93,45 @@ public actor PostgresConnector {
         try? await closeFuture.get()
     }
 
+    /// Where each column of a query's result comes from, without returning any rows.
+    ///
+    /// Only PostgresNIO's async row sequence exposes the RowDescription table OID and
+    /// attribute number, and it does not expose the command tag `execute` needs, so this is a
+    /// separate call. `sql` is wrapped as `SELECT * FROM (sql) LIMIT 0`: PostgreSQL resolves
+    /// column origins through the subquery, and LIMIT 0 stops the executor before any row is
+    /// produced. Statements that cannot be a subquery (anything but a query) fail here.
+    public func describeResultColumns(of sql: String) async throws -> [ResultColumnSource] {
+        guard let current = held else { throw ExecuteError.notConnected }
+        guard !current.connection.isClosed else { throw ExecuteError.connectionLost }
+        let body = ResultEditing.trimmedStatement(sql)
+        let probe = PostgresQuery(unsafeSQL: "SELECT * FROM (\n\(body)\n) AS lithepg_edit_probe LIMIT 0")
+        let connection = current.connection
+        let logger = self.logger
+        let outcome = connection.eventLoop.makePromise(of: [ResultColumnSource].self)
+        Task {
+            do {
+                let rows = try await connection.query(probe, logger: logger)
+                let sources = rows.columns.map {
+                    ResultColumnSource(
+                        name: $0.name,
+                        tableOID: UInt32(bitPattern: $0.tableOID),
+                        attributeNumber: Int($0.columnAttributeNumber),
+                        typeOID: $0.dataType.rawValue
+                    )
+                }
+                for try await _ in rows {}  // drain the (empty) stream so the connection is free
+                outcome.succeed(sources)
+            } catch {
+                outcome.fail(error)
+            }
+        }
+        // Same guard as execute: a drop mid-call would otherwise leave this pending forever.
+        connection.closeFuture.whenComplete { _ in
+            outcome.fail(ExecuteError.connectionLost)
+        }
+        return try await outcome.futureResult.get()
+    }
+
     public func execute(_ query: PostgresQuery) async throws -> QueryResult {
         guard let current = held else { throw ExecuteError.notConnected }
         // PostgresNIO (through 1.33.2) never completes a query sent on a channel the server

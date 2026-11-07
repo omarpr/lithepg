@@ -353,30 +353,19 @@ struct ResultsTableCellSelectionTests {
     )
   }
 
-  @Test("saving a cell edit returns a locally updated result without mutating the source")
-  func applyCellEdit() throws {
-    let address = ResultsTablePresentation.CellAddress(row: 0, column: 1)
-    let edited = try #require(
-      ResultsTablePresentation.replacingCell(
-        in: result,
-        at: address,
-        with: "saved locally"
-      )
-    )
+  @Test("a saved cell edit is told apart from a new query result")
+  func recognizesCellEdits() {
+    var rows = result.rows
+    rows[0] = .init(id: rows[0].id, cells: rows[0].cells.map { _ in .text("saved") })
+    let edited = QueryResult(
+      columns: result.columns, rows: rows, rowCount: result.rowCount,
+      elapsed: result.elapsed, status: result.status, truncated: result.truncated)
+    #expect(ResultsTablePresentation.isCellEdit(from: result, to: edited))
 
-    #expect(ResultsTablePresentation.cellText(for: edited, at: address) == "saved locally")
-    #expect(ResultsTablePresentation.cellText(for: result, at: address) == "hello\tworld")
-    #expect(edited.columns == result.columns)
-    #expect(edited.rowCount == result.rowCount)
-    #expect(edited.elapsed == result.elapsed)
-    #expect(edited.status == result.status)
-    #expect(edited.truncated == result.truncated)
-    #expect(
-      ResultsTablePresentation.replacingCell(
-        in: result,
-        at: .init(row: 8, column: 0),
-        with: "nope"
-      ) == nil
-    )
+    let rerun = QueryResult(
+      columns: result.columns, rows: rows, rowCount: result.rowCount,
+      elapsed: result.elapsed + .milliseconds(1), status: result.status, truncated: result.truncated)
+    #expect(!ResultsTablePresentation.isCellEdit(from: result, to: rerun))
+    #expect(!ResultsTablePresentation.isCellEdit(from: nil, to: result))
   }
 }

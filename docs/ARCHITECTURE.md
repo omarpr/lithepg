@@ -44,12 +44,15 @@ High-level module boundaries and data flow for LithePG. Implementation details l
 - `PostgresConnector` owns the live Postgres connection lifecycle, query execution, TLS configuration, SSH tunnel handoff and result materialization.
 - `SchemaIntrospector`, `SchemaIndex` and the production `OnDeviceAIQueryService` provide local schema awareness and Apple on-device SQL drafting.
 - `ResultExporter` serializes already-fetched results to CSV, JSON or Markdown without network calls or SQL execution.
+- `ResultEditing` writes an edited result cell back to its table. It traces result columns to their source table and attribute with `PostgresConnector.describeResultColumns` (the original query wrapped as `SELECT * FROM (...) LIMIT 0`, so no rows are produced), reads the primary key and column types from the catalog, and builds one parameterized `UPDATE` that matches the full primary key and, where the displayed value round-trips exactly, the original value. Computed columns, views, generated and identity columns, tables without a primary key and results missing the key stay read-only.
+- `SQLStatementSplitter` and `SQLCompletionIndex` give the editor statement-at-caret execution and schema-aware autocomplete without any server round trip.
 - All public I/O APIs are `async`; shared mutable services are `actor`s where needed.
 
 ### Driver
 - `PostgresNIO` is the connection path. LithePG does not link `libpq` and does not carry app-authored C shims.
 - Exposes typed `QueryResult` values to the app and caps materialized rows at the UI safety limit.
 - Owns TLS configuration and the effective host/port after optional SSH tunnel resolution.
+- Always requests `client_encoding=UTF8`. PostgresNIO (through 1.33.2) never completes a query sent on a channel the server already closed, so the connector checks for a closed channel before each query and fails pending work when the channel closes; `AppState` watches the close future to report a lost connection while idle.
 
 ### Persistence
 - Saved connection metadata and opt-in query history are local JSON files under Application Support, written with restrictive POSIX permissions and file-protection options.
@@ -66,6 +69,7 @@ High-level module boundaries and data flow for LithePG. Implementation details l
 - **No network calls from the AI layer.** Inference is local-only.
 - **UI never imports `PostgresNIO` directly.** Services mediate.
 - **Services never import SwiftUI.** Keeps them testable and reusable.
+- **The app never writes data the user did not confirm.** Result edits show the exact `UPDATE` and run only after an explicit confirmation; AI drafts are never run automatically.
 
 ## Concurrency Model
 - `async/await` end-to-end.

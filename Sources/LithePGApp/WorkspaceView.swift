@@ -58,7 +58,15 @@ struct WorkspaceView: View {
               ? {
                 Task { await state.retryWithEncryptionOnly() }
               } : nil)
-          ResultsTable(result: state.lastResult)
+          ResultsTable(
+            result: state.lastResult,
+            editing: ResultEditingActions(
+              editability: { await state.editability(forColumn: $0) },
+              preview: { state.cellUpdatePreview(row: $0, column: $1, newValue: $2) },
+              save: { await state.saveCell(row: $0, column: $1, newValue: $2) },
+              isProduction: state.activeConnectionEnvironment?.isProduction == true
+            )
+          )
             .frame(minHeight: 320, maxHeight: .infinity)
             .layoutPriority(1)
         }

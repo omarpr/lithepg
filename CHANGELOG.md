@@ -8,11 +8,13 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ### Added
 
+- Edit query results in place. Double-click a cell (or use the View and edit action in VoiceOver), change the value or set it to NULL, and review the exact UPDATE before it runs; production connections get an extra warning. The change is written with a single UPDATE that matches the row by its full primary key, and the grid then shows the value PostgreSQL stored. Cells that cannot be written say why: columns computed by the query, views, generated and identity columns, tables without a primary key, or results that leave the key out. If the row changed since the results loaded, nothing is written and LithePG says so instead of overwriting the other change.
 - SQL autocomplete in the editor. Suggestions appear under the cursor after two letters, or right after a `.`, and Esc opens them on demand. They cover SQL keywords (matching the case you type, so `sele` offers `select` and `SELE` offers `SELECT`), common functions, schemas, tables, views and columns. Columns come from the tables the current statement names, `alias.` narrows the list to that table, and each column shows its type. Up and Down move through the list, Tab or Return inserts the suggestion and Esc closes it. Names that need quoting are inserted quoted.
 - With several statements in the editor, Run and Explain now execute only the statement under the cursor, or the selected SQL when there is a selection. The statement that will run gets a light tint. Semicolons inside strings, comments and `$$` function bodies do not split a statement. Each query tab remembers its own cursor.
 
 ### Fixed
 
+- Saving in the cell editor used to change only the value on screen, which looked like an edit that then vanished on refresh. Saving now writes to the database after confirmation, and cells that cannot be written are clearly read-only.
 - A connection dropped by the server or network (an idle timeout, a Neon suspend, a restart) no longer leaves every query stuck on Running until the app is restarted. LithePG notices the drop right away, shows "Connection lost" in the header with a Reconnect button and keeps your results, schema and editor text.
 - Reconnect now works for saved connections, not only for connections opened from a URL.
 - Accented and other non-ASCII text (José, Muñoz, ¿qué?) no longer shows as replacement characters on databases that use LATIN1, WIN1252 or another non-UTF-8 encoding. LithePG now always asks the server for UTF-8, which also stops text written from LithePG being stored with the wrong bytes on those databases. SQL_ASCII databases, which do no conversion, fall back to Latin-1 for text that is not valid UTF-8.

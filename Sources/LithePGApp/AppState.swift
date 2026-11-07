@@ -151,6 +151,119 @@ public final class AppState {
   }
 
   @ObservationIgnored private var editorSelections: [QueryTab.ID: NSRange] = [:]
+  /// Per tab: the result whose columns were checked for editing, and what was found.
+  @ObservationIgnored private var editabilityCache: [QueryTab.ID: (result: QueryResult, columns: [ResultEditability])] = [:]
+
+  // MARK: - Editing results
+
+  /// Whether a column of the current tab's result can be written back, and if not, why.
+  /// The first call per result asks the server where the columns come from; later calls
+  /// are answered from the cache.
+  public func editability(forColumn column: Int) async -> ResultEditability {
+    guard let tab = selectedQueryTab, let result = tab.lastResult, let sql = tab.lastResultSQL else {
+      return .readOnly(reason: "Run the query again to edit its results.")
+    }
+    guard let connector, let label = connectionLabel, label == tab.lastResultConnectionLabel else {
+      return .readOnly(reason: "Connect to the database these results came from to edit them.")
+    }
+    guard ResultEditing.isQueryStatement(sql) else {
+      return .readOnly(reason: "Only the results of a query can be edited.")
+    }
+    if let cached = editabilityCache[tab.id], cached.result == result {
+      return cached.columns.indices.contains(column)
+        ? cached.columns[column] : .readOnly(reason: "This column is not part of the result.")
+    }
+    do {
+      let sources = try await connector.describeResultColumns(of: sql)
+      guard sources.count == result.columns.count else {
+        return .readOnly(reason: "The query now returns different columns. Run it again to edit.")
+      }
+      let tables = try await ResultEditing.loadTables(for: sources, using: connector)
+      let columns = ResultEditing.editability(sources: sources, tables: tables)
+      editabilityCache[tab.id] = (result, columns)
+      return columns.indices.contains(column)
+        ? columns[column] : .readOnly(reason: "This column is not part of the result.")
+    } catch {
+      guard let message = failureMessage(for: error, from: connector) else {
+        return .readOnly(reason: "The connection was lost. Reconnect to edit.")
+      }
+      return .readOnly(reason: "Could not check whether this column can be edited: \(message)")
+    }
+  }
+
+  /// The UPDATE that saving would run, with values written in for reading.
+  public func cellUpdatePreview(row: Int, column: Int, newValue: String?) -> Result<String, ResultEditError> {
+    switch cachedTarget(row: row, column: column) {
+    case .failure(let error):
+      return .failure(error)
+    case .success(let (target, resultRow)):
+      do {
+        return .success(try ResultEditing.makeUpdate(target: target, row: resultRow, newValue: newValue).preview)
+      } catch let error as ResultEditError {
+        return .failure(error)
+      } catch {
+        return .failure(.notEditable(ErrorRedaction.redactCredentials(in: error)))
+      }
+    }
+  }
+
+  /// Writes one cell back to its table. Returns nil on success, otherwise a message for the
+  /// editor. On success the grid shows the value the database stored.
+  public func saveCell(row: Int, column: Int, newValue: String?) async -> String? {
+    guard !isRunning else { return "Wait for the running query to finish, then save." }
+    guard let connector else { return "Connect to the database these results came from to edit them." }
+    guard let tabID = selectedQueryTabID else { return "No query tab is selected." }
+    let target: ResultEditTarget
+    let resultRow: QueryResult.Row
+    switch cachedTarget(row: row, column: column) {
+    case .failure(let error): return error.description
+    case .success(let pair): (target, resultRow) = pair
+    }
+    do {
+      let update = try ResultEditing.makeUpdate(target: target, row: resultRow, newValue: newValue)
+      let written = try await connector.executeBound(update.query)
+      guard let stored = written.rows.first?.cells.first else {
+        return ResultEditError.rowChanged.description
+      }
+      replaceCell(in: tabID, row: row, column: column, with: stored)
+      await appendQueryHistory(sql: update.preview, result: written)
+      return nil
+    } catch let error as ResultEditError {
+      return error.description
+    } catch {
+      return failureMessage(for: error, from: connector) ?? "The connection was lost. Reconnect and try again."
+    }
+  }
+
+  private func cachedTarget(row: Int, column: Int) -> Result<(ResultEditTarget, QueryResult.Row), ResultEditError> {
+    guard let tab = selectedQueryTab, let result = tab.lastResult,
+      let cached = editabilityCache[tab.id], cached.result == result,
+      cached.columns.indices.contains(column), result.rows.indices.contains(row)
+    else { return .failure(.notEditable("Run the query again to edit its results.")) }
+    switch cached.columns[column] {
+    case .readOnly(let reason): return .failure(.notEditable(reason))
+    case .editable(let target): return .success((target, result.rows[row]))
+    }
+  }
+
+  /// Puts the stored value into the tab's result, keeping the editability cache valid for it.
+  private func replaceCell(in tabID: QueryTab.ID, row: Int, column: Int, with cell: QueryResult.Cell) {
+    guard let index = queryTabs.firstIndex(where: { $0.id == tabID }),
+      let result = queryTabs[index].lastResult, result.rows.indices.contains(row),
+      result.rows[row].cells.indices.contains(column)
+    else { return }
+    var rows = result.rows
+    var cells = rows[row].cells
+    cells[column] = cell
+    rows[row] = QueryResult.Row(id: rows[row].id, cells: cells)
+    let updated = QueryResult(
+      columns: result.columns, rows: rows, rowCount: result.rowCount,
+      elapsed: result.elapsed, status: result.status, truncated: result.truncated)
+    queryTabs[index].lastResult = updated
+    if let cached = editabilityCache[tabID], cached.result == result {
+      editabilityCache[tabID] = (updated, cached.columns)
+    }
+  }
   @ObservationIgnored private var connector: PostgresConnector?
   /// Waits for the held connection to close so a drop is reported while the app is idle.
   @ObservationIgnored private var connectionMonitor: Task<Void, Never>?
@@ -832,6 +945,10 @@ public final class AppState {
       try Task.checkCancellation()
       if activeQueryRunID == runID {
         setResult(result, for: queryTabID)
+        if let index = queryTabs.firstIndex(where: { $0.id == queryTabID }) {
+          queryTabs[index].lastResultSQL = sql
+          queryTabs[index].lastResultConnectionLabel = connectionLabel
+        }
         await appendQueryHistory(sql: sql, result: result)
       }
     } catch is CancellationError {
