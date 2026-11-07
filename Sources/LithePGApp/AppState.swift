@@ -36,7 +36,14 @@ public final class AppState {
   /// True only after a verify-full attempt failed certificate verification. Drives the
   /// "Retry with encryption only" action, which is never taken without an explicit click.
   public var tlsStepDownAvailable: Bool = false
-  public var schema: DatabaseSchema?
+  public var schema: DatabaseSchema? {
+    didSet {
+      guard schema != oldValue else { return }
+      completionIndex = SQLCompletionIndex(schema: schema)
+    }
+  }
+  /// Autocomplete vocabulary for the editor, rebuilt only when the schema changes.
+  public private(set) var completionIndex = SQLCompletionIndex(schema: nil)
   public var schemaError: String?
   public var isLoadingSchema: Bool = false
   public var isRunning: Bool = false

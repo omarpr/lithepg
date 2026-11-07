@@ -43,7 +43,8 @@ struct WorkspaceView: View {
           EditorView(
             text: $state.editorText,
             selection: state.editorSelection,
-            onSelectionChange: { state.updateEditorSelection($0) }
+            onSelectionChange: { state.updateEditorSelection($0) },
+            completionIndex: state.completionIndex
           )
             .frame(minHeight: 200)
           Divider()

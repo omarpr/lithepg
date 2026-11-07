@@ -8,6 +8,7 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ### Added
 
+- SQL autocomplete in the editor. Suggestions appear under the cursor after two letters, or right after a `.`, and Esc opens them on demand. They cover SQL keywords (matching the case you type, so `sele` offers `select` and `SELE` offers `SELECT`), common functions, schemas, tables, views and columns. Columns come from the tables the current statement names, `alias.` narrows the list to that table, and each column shows its type. Up and Down move through the list, Tab or Return inserts the suggestion and Esc closes it. Names that need quoting are inserted quoted.
 - With several statements in the editor, Run and Explain now execute only the statement under the cursor, or the selected SQL when there is a selection. The statement that will run gets a light tint. Semicolons inside strings, comments and `$$` function bodies do not split a statement. Each query tab remembers its own cursor.
 
 ### Fixed

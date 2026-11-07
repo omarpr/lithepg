@@ -8,9 +8,15 @@ struct EditorView: NSViewRepresentable {
     var selection: NSRange?
     /// Reports every caret and selection change, in UTF-16 offsets.
     var onSelectionChange: (NSRange) -> Void = { _ in }
+    /// Keywords plus the loaded schema's tables and columns for autocomplete.
+    var completionIndex = SQLCompletionIndex(schema: nil)
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(text: $text, onSelectionChange: onSelectionChange)
+        Coordinator(text: $text, onSelectionChange: onSelectionChange, completionIndex: completionIndex)
+    }
+
+    static func dismantleNSView(_ scrollView: NSScrollView, coordinator: Coordinator) {
+        coordinator.tearDown()
     }
 
     func makeNSView(context: Context) -> NSScrollView {
@@ -42,6 +48,7 @@ struct EditorView: NSViewRepresentable {
 
         scrollView.documentView = textView
         context.coordinator.restore(selection, in: textView)
+        context.coordinator.observeDismissals(of: textView, in: scrollView)
         return scrollView
     }
 
@@ -49,10 +56,12 @@ struct EditorView: NSViewRepresentable {
         guard let textView = scrollView.documentView as? NSTextView else { return }
         context.coordinator.text = $text
         context.coordinator.onSelectionChange = onSelectionChange
+        context.coordinator.completionIndex = completionIndex
         // Re-highlight only when the text really changed (a tab switch, a history entry, an AI
         // draft). SwiftUI calls this for unrelated state such as the running flag, and a full
         // re-highlight on each of those made the editor lag on longer scripts.
         if textView.string != text {
+            context.coordinator.popup.hide()
             textView.string = text
             SQLSyntaxHighlighter.apply(to: textView)
             context.coordinator.restore(selection, in: textView)
@@ -63,22 +72,182 @@ struct EditorView: NSViewRepresentable {
     final class Coordinator: NSObject, NSTextViewDelegate {
         var text: Binding<String>
         var onSelectionChange: (NSRange) -> Void
+        var completionIndex: SQLCompletionIndex
+        let popup = CompletionPopup()
+        /// What the pending edit inserts, captured before the text changes. Nil outside an edit.
+        private var pendingInsertion: String?
+        /// Opened with Esc rather than by typing, so it stays open even with no partial word.
+        private var openedManually = false
+        private var observers: [NSObjectProtocol] = []
 
-        init(text: Binding<String>, onSelectionChange: @escaping (NSRange) -> Void) {
+        init(
+            text: Binding<String>,
+            onSelectionChange: @escaping (NSRange) -> Void,
+            completionIndex: SQLCompletionIndex
+        ) {
             self.text = text
             self.onSelectionChange = onSelectionChange
+            self.completionIndex = completionIndex
+        }
+
+        func textView(
+            _ textView: NSTextView,
+            shouldChangeTextIn affectedCharRange: NSRange,
+            replacementString: String?
+        ) -> Bool {
+            pendingInsertion = replacementString ?? ""
+            return true
         }
 
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             text.wrappedValue = textView.string
             SQLSyntaxHighlighter.apply(to: textView)
+            let inserted = pendingInsertion ?? ""
+            pendingInsertion = nil
             selectionDidChange(in: textView)
+            updateCompletions(in: textView, afterInserting: inserted)
         }
 
         func textViewDidChangeSelection(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             selectionDidChange(in: textView)
+            // Edits report through textDidChange; this path is a click or an arrow key.
+            guard pendingInsertion == nil, popup.isVisible else { return }
+            let selection = textView.selectedRange()
+            guard selection.length == 0,
+                let current = popup.result,
+                let fresh = completionIndex.complete(in: textView.string, at: selection.location),
+                fresh.replacementRange.location == current.replacementRange.location
+            else {
+                hideCompletions()
+                return
+            }
+            popup.show(fresh, in: textView)
+        }
+
+        func textDidEndEditing(_ notification: Notification) {
+            hideCompletions()
+        }
+
+        func textView(_ textView: NSTextView, doCommandBy selector: Selector) -> Bool {
+            if popup.isVisible {
+                switch selector {
+                case #selector(NSResponder.moveUp(_:)):
+                    popup.moveSelection(by: -1)
+                    return true
+                case #selector(NSResponder.moveDown(_:)):
+                    popup.moveSelection(by: 1)
+                    return true
+                case #selector(NSResponder.pageUp(_:)), #selector(NSResponder.scrollPageUp(_:)):
+                    popup.moveSelection(by: -CompletionPopup.maxVisibleRows)
+                    return true
+                case #selector(NSResponder.pageDown(_:)), #selector(NSResponder.scrollPageDown(_:)):
+                    popup.moveSelection(by: CompletionPopup.maxVisibleRows)
+                    return true
+                case #selector(NSResponder.insertNewline(_:)), #selector(NSResponder.insertTab(_:)):
+                    guard let item = popup.selectedCompletion, let result = popup.result else { return false }
+                    // A word typed out in full stays as typed, and Return still starts a new line.
+                    if item.insertText.lowercased() == result.partial.lowercased() {
+                        hideCompletions()
+                        return false
+                    }
+                    accept(item, in: textView)
+                    return true
+                case #selector(NSResponder.cancelOperation(_:)), #selector(NSTextView.complete(_:)):
+                    hideCompletions()
+                    return true
+                default:
+                    return false
+                }
+            }
+            // Esc (and Option-Esc) open the list on demand, the standard macOS completion keys.
+            if selector == #selector(NSResponder.cancelOperation(_:))
+                || selector == #selector(NSTextView.complete(_:))
+            {
+                let caret = textView.selectedRange()
+                guard caret.length == 0,
+                    let result = completionIndex.complete(in: textView.string, at: caret.location)
+                else { return true }
+                openedManually = true
+                popup.onAccept = { [weak self, weak textView] item in
+                    guard let self, let textView else { return }
+                    self.accept(item, in: textView)
+                }
+                popup.show(result, in: textView)
+                return true
+            }
+            return false
+        }
+
+        /// Opens the list after an identifier character once two are typed, or right after a
+        /// `.`; keeps an open list in step with typing and deleting; closes it otherwise.
+        private func updateCompletions(in textView: NSTextView, afterInserting inserted: String) {
+            let caret = textView.selectedRange()
+            let typedTrigger = SQLCompletionIndex.triggersCompletion(inserted)
+            guard caret.length == 0, popup.isVisible || typedTrigger,
+                let result = completionIndex.complete(in: textView.string, at: caret.location)
+            else {
+                hideCompletions()
+                return
+            }
+            let afterDot = result.replacementRange.location > 0
+                && (textView.string as NSString).character(at: result.replacementRange.location - 1) == 0x2E
+            let longEnough = result.partial.utf16.count >= 2 || afterDot
+            guard longEnough || (popup.isVisible && openedManually) else {
+                hideCompletions()
+                return
+            }
+            popup.onAccept = { [weak self, weak textView] item in
+                guard let self, let textView else { return }
+                self.accept(item, in: textView)
+            }
+            popup.show(result, in: textView)
+        }
+
+        private func accept(_ item: SQLCompletion, in textView: NSTextView) {
+            guard let range = popup.result?.replacementRange else { return }
+            hideCompletions()
+            textView.insertText(item.insertText, replacementRange: range)
+        }
+
+        private func hideCompletions() {
+            openedManually = false
+            popup.hide()
+        }
+
+        /// Scrolling, switching windows or apps, and leaving the editor all close the list.
+        func observeDismissals(of textView: NSTextView, in scrollView: NSScrollView) {
+            scrollView.contentView.postsBoundsChangedNotifications = true
+            let center = NotificationCenter.default
+            observers.append(
+                center.addObserver(
+                    forName: NSView.boundsDidChangeNotification,
+                    object: scrollView.contentView,
+                    queue: .main
+                ) { [weak self] _ in
+                    MainActor.assumeIsolated { self?.hideCompletions() }
+                })
+            observers.append(
+                center.addObserver(
+                    forName: NSWindow.didResignKeyNotification,
+                    object: nil,
+                    queue: .main
+                ) { [weak self, weak textView] note in
+                    let resigned = (note.object as AnyObject?).map(ObjectIdentifier.init)
+                    MainActor.assumeIsolated {
+                        guard let resigned,
+                            resigned == textView?.window.map(ObjectIdentifier.init)
+                        else { return }
+                        self?.hideCompletions()
+                    }
+                })
+        }
+
+        func tearDown() {
+            hideCompletions()
+            observers.forEach(NotificationCenter.default.removeObserver)
+            observers.removeAll()
         }
 
         /// Puts the caret back where it was for this tab, or at the end for text it has not

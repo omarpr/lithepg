@@ -769,6 +769,21 @@ struct AppStateTests {
     #expect(s.executableSQL == "SELECT 'two';")
   }
 
+  @Test("autocomplete follows the loaded schema")
+  func completionIndexFollowsSchema() {
+    let s = AppState()
+    let sql = "SELECT * FROM cus"
+    #expect(s.completionIndex.complete(in: sql, at: (sql as NSString).length) == nil)
+
+    s.schema = dogfoodSchema
+    let names = s.completionIndex.complete(in: sql, at: (sql as NSString).length)?
+      .completions.map(\.insertText) ?? []
+    #expect(names.contains("lithepg_demo.customers"))
+
+    s.markDisconnected()
+    #expect(s.completionIndex.complete(in: sql, at: (sql as NSString).length) == nil)
+  }
+
   @Test("without a known caret the last statement runs, and stale ranges are clamped")
   func executableSQLWithoutCaret() {
     let s = AppState()
