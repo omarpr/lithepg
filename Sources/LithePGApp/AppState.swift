@@ -30,6 +30,9 @@ public final class AppState {
     }
   }
   public var lastError: String?
+  /// Set when the server or network dropped the session, as opposed to a deliberate disconnect.
+  /// Holds the label of the lost connection so the header can say what was lost.
+  public private(set) var lostConnectionLabel: String?
   /// True only after a verify-full attempt failed certificate verification. Drives the
   /// "Retry with encryption only" action, which is never taken without an explicit click.
   public var tlsStepDownAvailable: Bool = false
@@ -84,7 +87,12 @@ public final class AppState {
 
   public var canReconnectFromLastError: Bool {
     guard lastConnectionRequest != nil, let lastError else { return false }
-    return Self.isConnectionLevelError(lastError)
+    return lostConnectionLabel != nil || Self.isConnectionLevelError(lastError)
+  }
+
+  /// True when the last session was lost and can be restored with one click.
+  public var canReconnectLostConnection: Bool {
+    lostConnectionLabel != nil && lastConnectionRequest != nil
   }
 
   public var activeConnectionEnvironment: ConnectionEnvironment? {
@@ -99,6 +107,8 @@ public final class AppState {
   }
 
   @ObservationIgnored private var connector: PostgresConnector?
+  /// Waits for the held connection to close so a drop is reported while the app is idle.
+  @ObservationIgnored private var connectionMonitor: Task<Void, Never>?
   @ObservationIgnored private var queryTask: Task<Void, Never>?
   @ObservationIgnored private var activeQueryRunID: UUID?
   @ObservationIgnored private var lastConnectionRequest: ConnectionRequest?
@@ -400,7 +410,7 @@ public final class AppState {
       await open(
         config: config,
         label: metadata.connectionLabel,
-        lastRequest: nil,
+        lastRequest: .init(source: .saved(id: id), tlsMode: nil, tlsCAPath: nil, sshTarget: nil),
         savedConnection: metadata
       )
     } catch {
@@ -500,12 +510,64 @@ public final class AppState {
     queryTask?.cancel()
     queryTask = nil
     activeQueryRunID = nil
-    if let connector {
-      await connector.close()
-      try? await connector.shutdown()
+    // Detach before closing so the close monitor sees a deliberate disconnect, not a loss.
+    let closing = detachConnector()
+    if let closing {
+      await closing.close()
+      try? await closing.shutdown()
     }
-    connector = nil
     markDisconnected()
+  }
+
+  private func detachConnector() -> PostgresConnector? {
+    connectionMonitor?.cancel()
+    connectionMonitor = nil
+    let detached = connector
+    connector = nil
+    return detached
+  }
+
+  private func monitorConnection(_ watched: PostgresConnector) {
+    connectionMonitor?.cancel()
+    connectionMonitor = Task { [weak self] in
+      await watched.waitUntilClosed()
+      guard !Task.isCancelled else { return }
+      self?.handleConnectionLost(of: watched)
+    }
+  }
+
+  /// Moves a session the server or network dropped into the lost state. Results, schema and
+  /// editor text stay so the user can reconnect and carry on. A no-op for any connector that
+  /// is no longer current, which covers deliberate disconnects and replaced connections.
+  private func handleConnectionLost(of lost: PostgresConnector) {
+    guard connector === lost else { return }
+    let label = connectionLabel
+    _ = detachConnector()
+    Task { try? await lost.shutdown() }
+    queryTask?.cancel()
+    queryTask = nil
+    activeQueryRunID = nil
+    isRunning = false
+    isLoadingSchema = false
+    isExplaining = false
+    connectionState = .disconnected
+    activeSavedConnection = nil
+    lostConnectionLabel = label ?? "the database"
+    setError(Self.connectionLostMessage(label: lostConnectionLabel!))
+  }
+
+  static func connectionLostMessage(label: String) -> String {
+    "Lost the connection to \(label). Reconnect to keep working."
+  }
+
+  /// Routes an execution failure: a lost connection becomes the lost state, anything else is
+  /// returned as a redacted message for the caller to show.
+  private func failureMessage(for error: any Error, from failed: PostgresConnector) -> String? {
+    if ConnectionLoss.isConnectionLoss(error) {
+      handleConnectionLost(of: failed)
+      return nil
+    }
+    return ErrorRedaction.redactCredentials(in: error)
   }
 
   private func open(
@@ -514,10 +576,9 @@ public final class AppState {
     lastRequest: ConnectionRequest?,
     savedConnection: SavedConnectionMetadata?
   ) async {
-    if let activeConnector = connector {
+    if let activeConnector = detachConnector() {
       await activeConnector.close()
       try? await activeConnector.shutdown()
-      connector = nil
     }
     markConnecting()
     do {
@@ -531,6 +592,7 @@ public final class AppState {
         try await connector.open(config: config)
       }
       self.connector = connector
+      monitorConnection(connector)
       lastConnectionRequest = lastRequest
       activeSavedConnection = savedConnection
       tlsStepDownAvailable = false
@@ -543,7 +605,9 @@ public final class AppState {
     } catch {
       connectionState = .disconnected
       activeSavedConnection = nil
-      if let lastRequest, Self.shouldOfferTLSStepDown(mode: config.tlsMode, error: error) {
+      if let lastRequest, lastRequest.allowsTLSStepDown,
+        Self.shouldOfferTLSStepDown(mode: config.tlsMode, error: error)
+      {
         // Keep the request so the retry can replay it. It is only retained here because a
         // step down is on offer; an ordinary failure leaves any earlier request untouched.
         lastConnectionRequest = lastRequest
@@ -573,6 +637,9 @@ public final class AppState {
     guard tlsStepDownAvailable, let request = lastConnectionRequest else { return }
     tlsStepDownAvailable = false
     switch request.source {
+    case .saved:
+      // Never offered for saved connections; the saved TLS mode is edited in the editor.
+      return
     case .url(let url):
       await connect(url: url, tlsMode: .require, tlsCAPath: nil, sshTarget: request.sshTarget)
     case .fields(let host, let port, let database, let username, let password):
@@ -596,7 +663,9 @@ public final class AppState {
       schema = try await SchemaIntrospector.loadSchema(using: connector)
       schemaError = nil
     } catch {
-      schemaError = ErrorRedaction.redactCredentials(in: error)
+      if let message = failureMessage(for: error, from: connector) {
+        schemaError = message
+      }
     }
   }
 
@@ -725,7 +794,7 @@ public final class AppState {
       }
     } catch {
       if activeQueryRunID == runID {
-        let message = ErrorRedaction.redactCredentials(in: error)
+        guard let message = failureMessage(for: error, from: connector) else { return }
         setError(message)
         await appendQueryHistory(
           sql: sql,
@@ -766,7 +835,9 @@ public final class AppState {
       clearError()
     } catch {
       lastQueryPlan = nil
-      setError(ErrorRedaction.redactCredentials(in: error))
+      if let message = failureMessage(for: error, from: connector) {
+        setError(message)
+      }
     }
   }
 
@@ -776,6 +847,7 @@ public final class AppState {
 
   public func markConnecting() {
     connectionState = .connecting
+    lostConnectionLabel = nil
     schema = nil
     schemaError = nil
     isLoadingSchema = false
@@ -784,11 +856,13 @@ public final class AppState {
 
   public func markConnected(label: String) {
     connectionState = .connected(label: label)
+    lostConnectionLabel = nil
     lastError = nil
   }
 
   public func markDisconnected() {
     connectionState = .disconnected
+    lostConnectionLabel = nil
     activeQueryRunID = nil
     queryTask = nil
     lastResult = nil
@@ -831,6 +905,8 @@ public final class AppState {
     }
     await disconnect()
     switch request.source {
+    case .saved(let id):
+      await connectSavedConnection(id: id)
     case .url(let url):
       await connect(
         url: url, tlsMode: request.tlsMode, tlsCAPath: request.tlsCAPath,
@@ -1220,6 +1296,7 @@ public final class AppState {
       "network is unreachable",
       "timed out",
       "timeout",
+      "connection to the server was lost",
     ].contains { lowercased.contains($0) }
   }
 
@@ -1249,6 +1326,8 @@ public final class AppState {
   private enum ConnectionSource {
     case url(String)
     case fields(host: String, port: Int, database: String, username: String, password: String)
+    /// Reconnects through the saved metadata and Keychain, so nothing secret is kept here.
+    case saved(id: SavedConnectionMetadata.ID)
   }
 
   private struct ConnectionRequest {
@@ -1256,6 +1335,11 @@ public final class AppState {
     let tlsMode: ConnectionConfig.TLSMode?
     let tlsCAPath: String?
     let sshTarget: String?
+
+    var allowsTLSStepDown: Bool {
+      if case .saved = source { return false }
+      return true
+    }
   }
 
   private enum ConnectParseError: Error, CustomStringConvertible {

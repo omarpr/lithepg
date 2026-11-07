@@ -340,7 +340,16 @@ struct WorkspaceView: View {
           .accessibilityIdentifier("connection-status")
       }
       Spacer()
-      if state.connectionState == .disconnected {
+      if state.canReconnectLostConnection {
+        Button {
+          Task { await state.reconnect() }
+        } label: {
+          Label("Reconnect", systemImage: "arrow.clockwise")
+        }
+        .buttonStyle(.borderedProminent)
+        .buttonAffordance("Reconnect to the database whose connection was lost")
+        .accessibilityIdentifier("reconnect-from-header-button")
+      } else if state.connectionState == .disconnected {
         Button {
           showingConnectionForm = true
         } label: {
@@ -380,7 +389,12 @@ struct WorkspaceView: View {
 
   private var statusText: String {
     switch state.connectionState {
-    case .disconnected: "Disconnected"
+    case .disconnected:
+      if let lost = state.lostConnectionLabel {
+        "Connection lost · \(lost)"
+      } else {
+        "Disconnected"
+      }
     case .connecting: "Connecting…"
     case .connected(let label):
       if let active = state.activeSavedConnection {

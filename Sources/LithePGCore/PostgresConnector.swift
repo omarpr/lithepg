@@ -11,9 +11,19 @@ public actor PostgresConnector {
     private var isShutdown = false
     private var held: (connection: PostgresConnection, tunnel: SSHTunnel?)?
 
-    public enum ExecuteError: Error, Equatable {
+    public enum ExecuteError: Error, Equatable, CustomStringConvertible {
         case notConnected
         case alreadyConnected
+        /// The server or network closed the connection. Reconnecting is the only way forward.
+        case connectionLost
+
+        public var description: String {
+            switch self {
+            case .notConnected: "Not connected"
+            case .alreadyConnected: "Already connected"
+            case .connectionLost: "The connection to the server was lost."
+            }
+        }
     }
 
     public init() {
@@ -70,18 +80,43 @@ public actor PostgresConnector {
         try await execute(query)
     }
 
+    /// False once the server or network has closed the held connection.
+    public var isConnectionAlive: Bool {
+        guard let held else { return false }
+        return !held.connection.isClosed
+    }
+
+    /// Returns once the held connection closes, for whatever reason. Returns at once when
+    /// nothing is held. Lets the app notice a dropped connection before the next query.
+    public func waitUntilClosed() async {
+        guard let closeFuture = held?.connection.closeFuture else { return }
+        try? await closeFuture.get()
+    }
+
     public func execute(_ query: PostgresQuery) async throws -> QueryResult {
         guard let current = held else { throw ExecuteError.notConnected }
+        // PostgresNIO (through 1.33.2) never completes a query sent on a channel the server
+        // already closed, so asking would hang the caller forever. Check first.
+        guard !current.connection.isClosed else { throw ExecuteError.connectionLost }
         let start = ContinuousClock.now
         let cap = 10_000
         let accumulator = QueryAccumulator(cap: cap)
 
-        let metadata = try await current.connection.query(
+        let queryFuture = current.connection.query(
             query,
             logger: logger
         ) { row in
             accumulator.append(row)
-        }.get()
+        }
+        // Close the remaining window: a drop between the check above and the write leaves the
+        // query pending forever, so the close itself fails it. A promise ignores every
+        // completion after the first, so whichever side lands second is a no-op.
+        let outcome = current.connection.eventLoop.makePromise(of: PostgresQueryMetadata.self)
+        queryFuture.cascade(to: outcome)
+        current.connection.closeFuture.whenComplete { _ in
+            outcome.fail(ExecuteError.connectionLost)
+        }
+        let metadata = try await outcome.futureResult.get()
         let snapshot = accumulator.snapshot()
 
         let status: QueryResult.Status

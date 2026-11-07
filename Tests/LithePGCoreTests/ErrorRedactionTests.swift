@@ -93,4 +93,20 @@ struct ErrorRedactionTests {
             ) == "PostgreSQL rejected the request. · SQLSTATE 42P10"
         )
     }
+
+    @Test("connection-level SQLSTATEs count as a lost connection")
+    func connectionLossSQLStates() {
+        #expect(ConnectionLoss.isConnectionLoss(sqlState: "57P01"))
+        #expect(ConnectionLoss.isConnectionLoss(sqlState: "08006"))
+        #expect(!ConnectionLoss.isConnectionLoss(sqlState: "42601"))
+        #expect(!ConnectionLoss.isConnectionLoss(sqlState: nil))
+    }
+
+    @Test("a lost connection reads plainly and is recognized")
+    func lostConnectionMessage() {
+        let error = PostgresConnector.ExecuteError.connectionLost
+        #expect(ConnectionLoss.isConnectionLoss(error))
+        #expect(ErrorRedaction.redactCredentials(in: error) == "The connection to the server was lost.")
+        #expect(!ConnectionLoss.isConnectionLoss(PostgresConnector.ExecuteError.notConnected))
+    }
 }

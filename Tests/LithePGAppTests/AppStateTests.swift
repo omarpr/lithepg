@@ -818,6 +818,93 @@ struct AppStateTests {
     #expect(s.schema != nil)
   }
 
+  /// Terminates the AppState's own backend session from a second connection, the way an
+  /// idle timeout, a Neon suspend or a server restart would. Only that pid, so live tests
+  /// running in parallel keep their sessions.
+  private func dropSession(of s: AppState) async throws {
+    let savedText = s.editorText
+    s.editorText = "SELECT pg_backend_pid()"
+    await s.runCurrentQuery()
+    s.editorText = savedText
+    guard case .text(let pid) = s.lastResult?.rows.first?.cells.first else {
+      Issue.record("expected a backend pid")
+      return
+    }
+    let killer = PostgresConnector()
+    try await killer.open(config: try ConnectionConfig(url: appStateLivePostgresURL!))
+    _ = try await killer.execute("SELECT pg_terminate_backend(\(pid))")
+    try await killer.shutdown()
+  }
+
+  private func waitUntil(_ condition: @MainActor () -> Bool) async {
+    for _ in 0..<100 where !condition() {
+      try? await Task.sleep(nanoseconds: 50_000_000)
+    }
+  }
+
+  @Test(
+    "a dropped connection is reported without running a query and keeps the results",
+    .enabled(if: appStateLivePostgresURL != nil))
+  func liveDroppedConnectionIsReported() async throws {
+    let s = AppState()
+    await s.connect(url: appStateLivePostgresURL!)
+    defer { Task { await s.disconnect() } }
+    try await dropSession(of: s)
+    let resultBeforeDrop = try #require(s.lastResult)
+    await waitUntil { s.lostConnectionLabel != nil }
+
+    #expect(s.isConnected == false)
+    #expect(s.lostConnectionLabel != nil)
+    #expect(s.lastError?.contains("Lost the connection") == true)
+    #expect(s.canReconnectFromLastError == true)
+    #expect(s.lastResult == resultBeforeDrop)
+    #expect(s.schema != nil)
+
+    await s.reconnect()
+    #expect(s.isConnected == true)
+    #expect(s.lostConnectionLabel == nil)
+    #expect(s.lastError == nil)
+  }
+
+  @Test(
+    "a saved connection can reconnect after the server drops it",
+    .enabled(if: appStateLivePostgresURL != nil))
+  func liveSavedConnectionReconnectsAfterDrop() async throws {
+    let s = AppState(
+      savedConnectionStore: InMemorySavedConnectionStore(),
+      credentialStore: InMemoryCredentialStore(),
+      queryHistoryStore: InMemoryQueryHistoryStore()
+    )
+    let metadata = try #require(
+      await s.saveConnection(name: "Drop smoke", url: appStateLivePostgresURL!))
+    await s.connectSavedConnection(id: metadata.id)
+    defer { Task { await s.disconnect() } }
+    #expect(s.isConnected == true)
+
+    try await dropSession(of: s)
+    await waitUntil { s.lostConnectionLabel != nil }
+    #expect(s.canReconnectFromLastError == true)
+
+    await s.reconnect()
+    #expect(s.isConnected == true)
+    #expect(s.activeSavedConnection?.id == metadata.id)
+    s.editorText = "SELECT 1 AS back"
+    await s.runCurrentQuery()
+    #expect(s.lastResult?.rows.first?.cells.first == .text("1"))
+  }
+
+  @Test(
+    "a deliberate disconnect is not reported as a lost connection",
+    .enabled(if: appStateLivePostgresURL != nil))
+  func liveDisconnectIsNotALoss() async throws {
+    let s = AppState()
+    await s.connect(url: appStateLivePostgresURL!)
+    await s.disconnect()
+    try? await Task.sleep(nanoseconds: 200_000_000)
+    #expect(s.lostConnectionLabel == nil)
+    #expect(s.lastError == nil)
+  }
+
   @Test(
     "non-connection errors do not offer reconnect", .enabled(if: appStateLivePostgresURL != nil))
   func syntaxErrorDoesNotOfferReconnect() async throws {

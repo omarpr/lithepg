@@ -96,6 +96,39 @@ struct PostgresConnectorTests {
     }
 
     @Test(
+        "a connection the server dropped fails fast instead of hanging",
+        .enabled(if: plainURL != nil)
+    )
+    func liveDroppedConnectionFailsFast() async throws {
+        let config = try ConnectionConfig(url: Self.plainURL!)
+        let connector = PostgresConnector()
+        try await connector.open(config: config)
+        let killer = PostgresConnector()
+        try await killer.open(config: config)
+
+        let pidResult = try await connector.execute("SELECT pg_backend_pid()")
+        guard case .text(let pid) = pidResult.rows.first?.cells.first else {
+            Issue.record("expected a backend pid")
+            return
+        }
+        _ = try await killer.execute("SELECT pg_terminate_backend(\(pid))")
+
+        // The close watcher must notice the drop on its own, without a query.
+        try await withDeadline(.seconds(5)) { await connector.waitUntilClosed() }
+        #expect(await connector.isConnectionAlive == false)
+
+        // PostgresNIO never answers a query sent on a closed channel; the connector must.
+        await #expect(throws: PostgresConnector.ExecuteError.connectionLost) {
+            _ = try await withDeadline(.seconds(5)) {
+                try await connector.execute("SELECT 1")
+            }
+        }
+
+        try await killer.shutdown()
+        try await connector.shutdown()
+    }
+
+    @Test(
         "opens a persistent connection and runs two queries on it",
         .enabled(if: plainURL != nil)
     )
