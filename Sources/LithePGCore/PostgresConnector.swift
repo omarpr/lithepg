@@ -278,12 +278,73 @@ public actor PostgresConnector {
                 return .text(value.uuidString.lowercased())
             }
         case .numeric:
-            if let value = try? cell.decode(Decimal.self) { return .text("\(value)") }
+            if let value = formatNumeric(cell) { return .text(value) }
         default:
             if let value = try? cell.decode(String.self) { return .text(value) }
         }
 
         return .text("<\(cell.bytes?.readableBytes ?? 0) bytes>")
+    }
+
+    /// Formats a numeric the way PostgreSQL prints it, keeping the column's scale.
+    ///
+    /// Decoding to `Decimal` dropped trailing zeros (`9480.00` showed as `9480`), and
+    /// PostgresNIO's own formatter never pads the fraction out to the scale and does not
+    /// handle NaN or Infinity. The binary layout is ndigits, weight, sign and display scale
+    /// (each 16 bits), then `ndigits` base-10000 digits, the first worth 10000^weight.
+    static func formatNumeric(_ cell: PostgresCell) -> String? {
+        guard var buffer = cell.bytes else { return nil }
+        if cell.format == .text {
+            return buffer.readString(length: buffer.readableBytes)
+        }
+        guard let count = buffer.readInteger(as: Int16.self),
+            let weight = buffer.readInteger(as: Int16.self),
+            let sign = buffer.readInteger(as: UInt16.self),
+            let scale = buffer.readInteger(as: UInt16.self),
+            count >= 0
+        else { return nil }
+        switch sign {
+        case 0xC000: return "NaN"
+        case 0xD000: return "Infinity"
+        case 0xF000: return "-Infinity"
+        case 0x0000, 0x4000: break
+        default: return nil
+        }
+        var digits: [Int] = []
+        digits.reserveCapacity(Int(count))
+        for _ in 0..<count {
+            guard let digit = buffer.readInteger(as: Int16.self), (0..<10_000).contains(digit) else {
+                return nil
+            }
+            digits.append(Int(digit))
+        }
+        func digit(at index: Int) -> Int {
+            digits.indices.contains(index) ? digits[index] : 0
+        }
+        func padded(_ value: Int) -> String {
+            let text = String(value)
+            return String(repeating: "0", count: 4 - text.count) + text
+        }
+
+        var integer = ""
+        if weight < 0 {
+            integer = "0"
+        } else {
+            for index in 0...Int(weight) {
+                integer += index == 0 ? String(digit(at: index)) : padded(digit(at: index))
+            }
+        }
+        var fraction = ""
+        var index = Int(weight) + 1
+        while fraction.count < Int(scale) {
+            fraction += padded(digit(at: index))
+            index += 1
+        }
+        fraction = String(fraction.prefix(Int(scale)))
+
+        let isZero = digits.allSatisfy { $0 == 0 }
+        let negative = sign == 0x4000 && !isZero
+        return (negative ? "-" : "") + integer + (fraction.isEmpty ? "" : "." + fraction)
     }
 
     /// Text bytes as UTF-8, or as Latin-1 when they are not valid UTF-8. A SQL_ASCII database

@@ -84,4 +84,33 @@ struct RenderCellTests {
     #expect(PostgresConnector.renderCell(cell(buffer, type: .text)) == .text("José Muñoz"))
     #expect(PostgresConnector.renderCell(cell(buffer, type: .varchar)) == .text("José Muñoz"))
   }
+
+  /// PostgreSQL's binary numeric: ndigits, weight, sign, dscale, then base-10000 digits.
+  private func numeric(weight: Int16, sign: UInt16 = 0, scale: UInt16, digits: [Int16]) -> ByteBuffer {
+    var buffer = ByteBuffer()
+    buffer.writeInteger(Int16(digits.count))
+    buffer.writeInteger(weight)
+    buffer.writeInteger(sign)
+    buffer.writeInteger(scale)
+    for digit in digits { buffer.writeInteger(digit) }
+    return buffer
+  }
+
+  @Test("numeric keeps the column's scale, trailing zeros included")
+  func numericKeepsScale() {
+    func render(_ buffer: ByteBuffer) -> QueryResult.Cell {
+      PostgresConnector.renderCell(cell(buffer, type: .numeric))
+    }
+    #expect(render(numeric(weight: 0, scale: 2, digits: [9480])) == .text("9480.00"))
+    #expect(render(numeric(weight: 0, scale: 2, digits: [4165, 5000])) == .text("4165.50"))
+    #expect(render(numeric(weight: -1, scale: 2, digits: [500])) == .text("0.05"))
+    #expect(render(numeric(weight: 1, sign: 0x4000, scale: 1, digits: [1234, 5678, 9000])) == .text("-12345678.9"))
+    #expect(render(numeric(weight: 1, scale: 0, digits: [10])) == .text("100000"))
+    #expect(render(numeric(weight: 0, scale: 3, digits: [])) == .text("0.000"))
+    #expect(render(numeric(weight: -2, scale: 6, digits: [1200])) == .text("0.000012"))
+    #expect(render(numeric(weight: -2, scale: 8, digits: [12])) == .text("0.00000012"))
+    #expect(render(numeric(weight: 0, sign: 0xC000, scale: 0, digits: [])) == .text("NaN"))
+    #expect(render(numeric(weight: 0, sign: 0xD000, scale: 0, digits: [])) == .text("Infinity"))
+    #expect(render(numeric(weight: 0, sign: 0xF000, scale: 0, digits: [])) == .text("-Infinity"))
+  }
 }

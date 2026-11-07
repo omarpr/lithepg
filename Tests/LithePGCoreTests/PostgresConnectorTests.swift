@@ -96,6 +96,26 @@ struct PostgresConnectorTests {
     }
 
     @Test(
+        "numeric values display exactly as PostgreSQL formats them",
+        .enabled(if: plainURL != nil)
+    )
+    func liveNumericMatchesPostgres() async throws {
+        let config = try ConnectionConfig(url: Self.plainURL!)
+        let connector = PostgresConnector()
+        try await connector.open(config: config)
+        let values = [
+            "9480.00::numeric(10,2)", "4165.5::numeric(10,2)", "0::numeric(5,3)", "-0.000120::numeric",
+            "123456789012345678901234567890.123456789::numeric", "'NaN'::numeric", "1e20::numeric",
+        ]
+        let list = values.joined(separator: ", ")
+        let binary = try await connector.execute("SELECT \(list)")
+        let text = try await connector.execute(
+            "SELECT " + values.map { "(\($0))::text" }.joined(separator: ", "))
+        #expect(binary.rows.first?.cells == text.rows.first?.cells)
+        try await connector.shutdown()
+    }
+
+    @Test(
         "a connection the server dropped fails fast instead of hanging",
         .enabled(if: plainURL != nil)
     )
