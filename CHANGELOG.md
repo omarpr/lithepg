@@ -28,7 +28,7 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ### Changed
 
-- The website describes autocomplete, running the statement under the cursor and one-click reconnect, links to this changelog, and no longer claims a local drafting fallback that was removed in v1.0.3. Build-from-source instructions now state the Swift 6.4 requirement for packaged builds, and the hero install command no longer gets cut off on wide screens.
+- The website describes autocomplete, running the statement under the cursor and one-click reconnect, links to this changelog, and no longer claims a local drafting fallback that was removed in v1.0.3. Build-from-source instructions now state the Swift 6.4 requirement for packaged builds, and the hero install command no longer gets cut off on wide screens. The hero shows a new screenshot of the current build.
 - Release changelog preparation now turns these Unreleased notes into the release section and lists the commit subjects below them.
 
 ## [v1.0.10] — 2026-08-11
