@@ -70,7 +70,7 @@ source = "\n".join(
 required_copy = [
     "brew install --cask omarpr/tap/lithepg",
     "https://github.com/omarpr/lithepg",
-    "Latest source tag",
+    "blob/main/CHANGELOG.md",
     "Install the latest release",
     "Build the latest tagged source",
     "Live on the tap",
@@ -78,6 +78,12 @@ required_copy = [
 for value in required_copy:
     if value not in source:
         raise SystemExit(f"required page copy is missing: {value}")
+
+# Claims the app no longer makes: the deterministic drafting fallback was removed in
+# v1.0.3, and packaged source builds need Swift 6.4.
+for stale_claim in ("safe local fallback", "Swift 6.2"):
+    if stale_claim in source:
+        raise SystemExit(f"outdated claim remains in the webapp: {stale_claim}")
 
 for stale_version in ("v1.0.0", "Build v1", "git checkout v1"):
     if stale_version in source:

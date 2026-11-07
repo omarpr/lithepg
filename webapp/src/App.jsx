@@ -18,6 +18,7 @@ import TerminalRoundedIcon from "@mui/icons-material/TerminalRounded";
 const installCommand = "brew install --cask omarpr/tap/lithepg";
 const repositoryURL = "https://github.com/omarpr/lithepg";
 const sourceTagsURL = `${repositoryURL}/tags`;
+const changelogURL = `${repositoryURL}/blob/main/CHANGELOG.md`;
 
 function CopyInstallButton({ compact = false }) {
   const [state, setState] = useState("idle");
@@ -78,7 +79,7 @@ function ProductPreview() {
         <img
           className="product-screenshot"
           src="/assets/lithepg-app-snapshot.png"
-          alt="LithePG showing its connection navigator, schema browser, SQL editor and query results"
+          alt="LithePG with a two-statement script in the editor, the autocomplete list offering a table's columns, query results and the schema browser"
         />
       </div>
       <div className="stage-shadow" aria-hidden="true" />
@@ -90,19 +91,19 @@ const features = [
   {
     number: "01",
     title: "Connections that stay organized",
-    copy: "Move between databases from the left navigator and keep every password in the macOS Keychain.",
+    copy: "Move between databases from the left navigator, import your Neon projects with one scan and keep every password in the macOS Keychain. If a connection drops, one click brings it back.",
     icon: <StorageRoundedIcon />,
   },
   {
     number: "02",
     title: "Query without friction",
-    copy: "Syntax highlighting, renameable tabs, history, cancellation and keyboard-first execution.",
+    copy: "Autocomplete for keywords, tables and columns as you type. Run the statement under the cursor straight from a longer script, with highlighting, tabs and history close at hand.",
     icon: <TerminalRoundedIcon />,
   },
   {
     number: "03",
     title: "Ask locally, review always",
-    copy: "Draft schema-aware SQL with Apple's on-device model when available and a safe local fallback. The draft never runs automatically.",
+    copy: "Describe what you need in plain English and get schema-aware SQL from Apple's on-device model on Macs with Apple Intelligence. The draft never runs automatically.",
     icon: <AutoAwesomeRoundedIcon />,
   },
   {
@@ -169,10 +170,11 @@ function App() {
               <Button
                 className="button button-primary"
                 component="a"
-                href={sourceTagsURL}
+                href={changelogURL}
+                rel="noreferrer"
                 endIcon={<ArrowForwardRoundedIcon />}
               >
-                Latest source tag
+                What is new
               </Button>
               <Button className="button button-secondary" component="a" href={repositoryURL} rel="noreferrer">
                 View source
@@ -211,7 +213,7 @@ function App() {
           <div className="privacy-orbit" aria-hidden="true"><i /><i /><i /></div>
           <div className="privacy-copy">
             <p className="kicker">Local means local</p>
-            <h2>Your database is not<br />training material.</h2>
+            <h2>Your database is not training material.</h2>
             <p>
               LithePG does not send prompts, schemas, credentials, query history or results to a cloud AI service.
               Saved passwords live in Keychain. Generated SQL stays on your Mac until you decide to run it.
@@ -245,7 +247,7 @@ function App() {
             <InstallCommand />
             <p className="availability-note is-live"><span />Live on the tap. Prefer to build it yourself? The latest tagged source is below.</p>
             <div className="source-install">
-              <div><strong>Build the latest tagged source</strong><small>Requires macOS 14+ and Xcode / Swift 6.2.</small></div>
+              <div><strong>Build the latest tagged source</strong><small>Requires macOS 14+ and Xcode with Swift 6.4 or newer.</small></div>
               <pre><code>{`git clone https://github.com/omarpr/lithepg.git\ncd lithepg\ngit checkout "$(git describe --tags --abbrev=0)"\n./script/rebuild_and_install.sh`}</code></pre>
             </div>
           </div>
@@ -275,6 +277,7 @@ function App() {
         </a>
         <p>Lean PostgreSQL for macOS.</p>
         <div>
+          <a href={changelogURL} rel="noreferrer">Changelog</a>
           <a href={sourceTagsURL}>Source tags</a>
           <a href={repositoryURL} rel="noreferrer">GitHub</a>
           <a href={`${repositoryURL}/blob/main/LICENSE`} rel="noreferrer">MIT License</a>

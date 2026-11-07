@@ -146,7 +146,8 @@ button {
   position: relative;
   display: grid;
   min-height: 850px;
-  grid-template-columns: minmax(330px, 0.78fr) minmax(620px, 1.52fr);
+  /* The copy column needs room for the full install command beside its Copy button. */
+  grid-template-columns: minmax(420px, 0.95fr) minmax(520px, 1.4fr);
   align-items: center;
   gap: clamp(42px, 6vw, 100px);
   padding: 150px clamp(24px, 5.4vw, 98px) 96px;
@@ -224,6 +225,12 @@ button {
 
 .hero-title-line {
   display: block;
+  text-wrap: balance;
+}
+
+/* Let headlines break where they balance instead of stranding a single word. */
+h2 {
+  text-wrap: balance;
 }
 
 .hero-title-accent {

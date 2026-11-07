@@ -52,7 +52,7 @@ The cask pins an exact tag, release archive and SHA-256. New releases use versio
 
 ### Build from source
 
-Requirements: macOS 14+ and an Xcode/Swift 6.2 toolchain.
+Requirements: macOS 14+ and an Xcode toolchain with Swift 6.2 or newer for development builds. Packaged builds (`./script/build_and_run.sh --package` and `./script/rebuild_and_install.sh`) need Swift 6.4 or newer, because Swift 6.3.3 miscompiles code the app relies on.
 
 ```sh
 git clone https://github.com/omarpr/lithepg.git
