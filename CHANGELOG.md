@@ -6,6 +6,8 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ## [Unreleased]
 
+## [v1.0.11] — 2026-11-07
+
 ### Added
 
 - Edit query results in place. Double-click a cell (or use the View and edit action in VoiceOver), change the value or set it to NULL, and review the exact UPDATE before it runs; production connections get an extra warning. The change is written with a single UPDATE that matches the row by its full primary key, and the grid then shows the value PostgreSQL stored. Cells that cannot be written say why: columns computed by the query, views, generated and identity columns, tables without a primary key, or results that leave the key out. If the row changed since the results loaded, nothing is written and LithePG says so instead of overwriting the other change.
@@ -31,6 +33,23 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 - The website describes autocomplete, running the statement under the cursor and one-click reconnect, links to this changelog, and no longer claims a local drafting fallback that was removed in v1.0.3. Build-from-source instructions now state the Swift 6.4 requirement for packaged builds, and the hero install command no longer gets cut off on wide screens. The hero shows a new screenshot of the current build.
 - Release changelog preparation now turns these Unreleased notes into the release section and lists the commit subjects below them.
+
+### Commits since `v1.0.10`
+
+- chore(deps): pick up security fixes in swift-nio-ssl and swift-crypto (`cac9f49`)
+- fix(ui): sit the results grid flush against the pane (`6b5850d`)
+- fix(core): always ask the server for UTF-8 text (`a0c6a0d`)
+- fix: report dropped connections and let saved connections reconnect (`6f4a66a`)
+- feat(editor): run the statement under the cursor (`d18f6a6`)
+- chore(webapp): update vite, postcss and source-map-js for open advisories (`254f5d5`)
+- docs(changelog): describe the unreleased fixes and carry curated notes into releases (`bf223d1`)
+- feat(editor): autocomplete keywords, tables and columns (`66ae5e4`)
+- docs(webapp): refresh feature copy and fix the hero layout (`766dd53`)
+- feat(results): write edited cells back to the database after confirmation (`2485d1e`)
+- docs(webapp): show the current build in the hero screenshot (`e08dea0`)
+- fix(core): show numeric values with their full scale (`0b15919`)
+- docs(changelog): note the numeric display fix (`47fe4d5`)
+- docs(webapp): retake the hero screenshot (`e53c755`)
 
 ## [v1.0.10] — 2026-08-11
 
@@ -224,6 +243,7 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 - `SELECT 1` succeeded over plain loopback, TLS verify-full, and SSH-tunneled paths.
 - Dependency inspection showed no `libpq` linkage and no LithePG-authored C shims.
 
+[v1.0.11]: https://github.com/omarpr/lithepg/compare/v1.0.10...v1.0.11
 [v1.0.10]: https://github.com/omarpr/lithepg/compare/v1.0.9...v1.0.10
 [v1.0.9]: https://github.com/omarpr/lithepg/compare/v1.0.8...v1.0.9
 [v1.0.8]: https://github.com/omarpr/lithepg/compare/v1.0.7-preview.1...v1.0.8
