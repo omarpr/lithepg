@@ -635,7 +635,7 @@ struct ResultsTable: View {
 /// Views a cell and, when its column traces back to a table with a primary key, writes a new
 /// value to the database. Saving always shows the exact UPDATE first and runs only after an
 /// explicit confirmation. Read-only cells say why they cannot be edited.
-private struct ResultCellEditorSheet: View {
+struct ResultCellEditorSheet: View {
     let session: ResultsTablePresentation.CellEditorSession
     let editing: ResultEditingActions?
     let onClose: () -> Void
@@ -729,6 +729,27 @@ private struct ResultCellEditorSheet: View {
 
     @ViewBuilder
     private var valueEditor: some View {
+        if case .readOnly(let reason) = phase {
+            // Shown first and in full, so a cell that cannot be saved never looks like a
+            // broken editor.
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "lock.fill")
+                    .foregroundStyle(.orange)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Read-only")
+                        .font(.callout.weight(.semibold))
+                    Text(reason)
+                        .font(.callout)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .textSelection(.enabled)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(10)
+            .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("cell-read-only-reason")
+        }
         TextEditor(text: $text)
             .font(.callout.monospaced())
             .frame(height: 140)
@@ -745,12 +766,8 @@ private struct ResultCellEditorSheet: View {
             }
             .font(.caption)
             .foregroundStyle(.secondary)
-        case .readOnly(let reason):
-            Label(reason, systemImage: "lock")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityIdentifier("cell-read-only-reason")
+        case .readOnly:
+            EmptyView()
         case .editing(let table):
             HStack {
                 Toggle("Set to NULL", isOn: $setNull)
