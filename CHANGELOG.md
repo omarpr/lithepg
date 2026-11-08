@@ -6,6 +6,8 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ## [Unreleased]
 
+## [v1.0.12] — 2026-11-08
+
 ### Added
 
 - Filter results: click the filter icon (or press ⌘F) and type to show only rows containing that text in any column, ignoring case and accents, across every page. The bar shows how many rows match, and copy and export use the filtered rows. Esc or the clear button brings everything back.
@@ -26,6 +28,18 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 - Scanning works with a sign-in saved by older Neon CLI versions in `~/.config/neonctl`. Neon CLI 8 tried to refresh it through the missing `~/.config/neon` folder and failed with "ENOENT ... .refresh-*.lock".
 - Scanning works when LithePG is opened from the Dock and the Neon CLI was installed with npm, nvm or Volta. The CLI now runs with its own Node.js on the PATH, and LithePG also looks for it in those install folders.
 - A Neon CLI that writes a lot of error output no longer hangs the scan.
+
+### Commits since `v1.0.11`
+
+- fix(neon): explain scan failures and survive Dock launches (`d0c2ace`)
+- chore: add a Makefile with make release (`e69267d`)
+- feat(neon): show scan errors in a dialog with a copyable fix (`9ca0a5a`)
+- docs(readme): use the current website screenshot (`72a2137`)
+- feat(settings): let users change keyboard shortcuts (`d354fbe`)
+- docs(readme): bring the feature list up to date (`c867d1e`)
+- feat(ui): working results filter and a clearer toolbar (`d7478c1`)
+- feat(results): label the Filter, Copy and Export controls (`5551a16`)
+- fix(results): make read-only cells explain themselves up front (`95f1fc8`)
 
 ## [v1.0.11] — 2026-11-07
 
@@ -264,6 +278,7 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 - `SELECT 1` succeeded over plain loopback, TLS verify-full, and SSH-tunneled paths.
 - Dependency inspection showed no `libpq` linkage and no LithePG-authored C shims.
 
+[v1.0.12]: https://github.com/omarpr/lithepg/compare/v1.0.11...v1.0.12
 [v1.0.11]: https://github.com/omarpr/lithepg/compare/v1.0.10...v1.0.11
 [v1.0.10]: https://github.com/omarpr/lithepg/compare/v1.0.9...v1.0.10
 [v1.0.9]: https://github.com/omarpr/lithepg/compare/v1.0.8...v1.0.9
