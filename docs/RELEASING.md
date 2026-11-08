@@ -88,6 +88,28 @@ the official Homebrew new-cask audit. It cannot be submitted to
 replace the production signed/notarized workflow. Publish the eventual
 notarized build under the stable tag rather than replacing preview bytes.
 
+## Routine release: `make release`
+
+On a Mac that has released LithePG before, run:
+
+```sh
+make release
+```
+
+It runs `script/release_local.sh`, a wrapper that Git ignores because it holds this Mac's
+Apple Team ID and notary profile name. The wrapper sets the three publication approvals,
+asks you to type `release` to confirm, then runs `script/release_cask_notarized.sh`, which
+prompts for the version and performs every step described below. Calling
+`release_cask_notarized.sh` directly fails with "missing required LITHEPG_APPLE_TEAM_ID"
+unless the variables in the next section are exported first.
+
+A fresh clone has no wrapper, and `make release` says so. Copy the file from a Mac that
+has it, or export the variables below and run `script/release_cask_notarized.sh` instead.
+
+Notes written under `## [Unreleased]` in `CHANGELOG.md` become the release notes, so add
+them as user-visible changes land. Other entry points live in the `Makefile`
+(`make test`, `make app`, `make install`, `make web-deploy` and more).
+
 ## Organization signed + notarized Homebrew release
 
 Use `script/release_cask_notarized.sh` as the stable counterpart to the cask

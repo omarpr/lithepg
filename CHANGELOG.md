@@ -6,6 +6,10 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ## [Unreleased]
 
+### Changed
+
+- A `Makefile` gives the common tasks short names: `make test`, `make run`, `make app`, `make install`, `make web-deploy` and `make release`, which runs the local release wrapper.
+
 ### Fixed
 
 - Scan Neon CLI explains failures and what to do next instead of showing raw CLI errors. An expired or missing Neon sign-in, Node.js not found, no network, rate limiting and a CLI that never finishes (now stopped after 60 seconds) each get a plain message, and these stop the scan rather than being counted as skipped resources.
