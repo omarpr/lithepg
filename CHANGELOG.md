@@ -14,7 +14,7 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 ### Changed
 
 - The toolbar no longer repeats the tab bar's new-tab and close-tab buttons; ⌘T and ⌘W still work. Run is a labeled accent button, and the other toolbar icons show full contrast when usable, so they no longer look disabled.
-- The results bar drops the "Table" label, which did nothing, and keeps its controls together at the right. The copy icon turns back from a checkmark a moment after copying instead of staying checked.
+- The results bar drops the "Table" label, which did nothing, and keeps its controls together at the right. Filter, Copy and Export now have text labels, Copy and Export show an arrow for their format menus, and Copy reads "Copied" with a checkmark for a moment after copying instead of staying checked.
 - The README lists what LithePG does today, grouped by connections, writing SQL, results and the schema, and no longer describes releases as unnotarized previews.
 - A `Makefile` gives the common tasks short names: `make test`, `make run`, `make app`, `make install`, `make web-deploy` and `make release`, which runs the local release wrapper.
 

@@ -243,13 +243,15 @@ struct ResultsTable: View {
                 toggleFilter()
             } label: {
                 Label(
-                    showingFilter ? "Hide filter" : "Filter rows",
+                    "Filter",
                     systemImage: filterText.isEmpty
                         ? "line.3.horizontal.decrease.circle"
                         : "line.3.horizontal.decrease.circle.fill"
                 )
-                .labelStyle(.iconOnly)
+                .labelStyle(.titleAndIcon)
+                .barControlStyle(enabled: self.result?.status == .rows)
             }
+            .accessibilityLabel(showingFilter ? "Hide filter" : "Filter rows")
             .keyboardShortcut("f", modifiers: [.command])
             .buttonAffordance(
                 showingFilter ? "Hide the filter and show every row" : "Show only rows containing some text (⌘F)"
@@ -267,16 +269,19 @@ struct ResultsTable: View {
                     .disabled(!ResultsTablePresentation.canExport(result))
             } label: {
                 Label(
-                    copiedAtLeastOnce ? "Results copied" : "Copy results",
+                    copiedAtLeastOnce ? "Copied" : "Copy",
                     systemImage: copiedAtLeastOnce ? "checkmark" : "doc.on.doc"
                 )
-                .labelStyle(.iconOnly)
+                .labelStyle(.titleAndIcon)
+                .barControlStyle(enabled: result != nil)
             } primaryAction: {
                 copy(result)
             }
-            .menuIndicator(.hidden)
-            // Borderless menus stretch to fill an HStack; keep the icons grouped at the right.
+            // The arrow hints that holding offers CSV, JSON, Markdown and SQL inserts.
+            .menuIndicator(.visible)
+            // Borderless menus stretch to fill an HStack; keep the controls grouped at the right.
             .fixedSize()
+            .accessibilityLabel(copiedAtLeastOnce ? "Results copied" : "Copy results")
             .buttonAffordance("Copy the rows shown. Click to copy TSV or pick CSV, JSON or Markdown")
             .disabled(result == nil)
 
@@ -287,11 +292,13 @@ struct ResultsTable: View {
                 Button("Markdown (.md)") { export(result, as: .markdown) }
                 Button("SQL inserts (.sql)") { export(result, as: .sqlInsert) }
             } label: {
-                Label("Export results", systemImage: "arrow.down.to.line")
-                    .labelStyle(.iconOnly)
+                Label("Export", systemImage: "arrow.down.to.line")
+                    .labelStyle(.titleAndIcon)
+                    .barControlStyle(enabled: ResultsTablePresentation.canExport(result))
             }
-            .menuIndicator(.hidden)
+            .menuIndicator(.visible)
             .fixedSize()
+            .accessibilityLabel("Export results")
             .buttonAffordance("Export the rows shown to CSV, TSV, JSON, Markdown or SQL inserts")
             .disabled(!ResultsTablePresentation.canExport(result))
         }
@@ -1203,5 +1210,13 @@ enum ResultsTablePresentation {
 
     private static func formattedCount(_ count: Int) -> String {
         count.formatted(.number)
+    }
+}
+
+private extension View {
+    /// Buttons and menus in the results bar otherwise render in different grays. One style:
+    /// full contrast when usable, clearly dimmed when not.
+    func barControlStyle(enabled: Bool) -> some View {
+        foregroundStyle(enabled ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
     }
 }
