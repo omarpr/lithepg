@@ -80,7 +80,11 @@ struct WorkspaceView: View {
           state.startQuery()
         } label: {
           Label(state.isRunning ? "Running" : "Run", systemImage: "play.fill")
+            .labelStyle(.titleAndIcon)
         }
+        // The main action reads as a real button: accent colored when it can run and plainly
+        // dimmed when it cannot, instead of a small gray triangle that always looked disabled.
+        .buttonStyle(.borderedProminent)
         .accessibilityIdentifier("run-query-button")
         .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .runQuery))
         .buttonAffordance(runQueryHelp)
@@ -94,30 +98,10 @@ struct WorkspaceView: View {
         .disabled(!state.isRunning)
 
         Button {
-          state.newQueryTab()
-        } label: {
-          Label("New Query Tab", systemImage: "plus")
-        }
-        .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .newTab))
-        .buttonAffordance("Open a new query tab")
-
-        Button {
-          state.closeSelectedQueryTab()
-        } label: {
-          Label("Close Query Tab", systemImage: "xmark")
-        }
-        .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .closeTab))
-        .buttonAffordance(
-          state.queryTabs.count <= 1
-            ? "At least one query tab must remain open"
-            : "Close the current query tab"
-        )
-        .disabled(state.queryTabs.count <= 1)
-
-        Button {
           state.selectPreviousQueryTab()
         } label: {
           Label("Previous Query Tab", systemImage: "chevron.left")
+            .toolbarIconStyle(enabled: state.queryTabs.count > 1)
         }
         .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .previousTab))
         .buttonAffordance(
@@ -131,6 +115,7 @@ struct WorkspaceView: View {
           state.selectNextQueryTab()
         } label: {
           Label("Next Query Tab", systemImage: "chevron.right")
+            .toolbarIconStyle(enabled: state.queryTabs.count > 1)
         }
         .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .nextTab))
         .buttonAffordance(
@@ -144,6 +129,7 @@ struct WorkspaceView: View {
           showingAskQuery.toggle()
         } label: {
           Label("Ask", systemImage: "wand.and.stars")
+            .toolbarIconStyle(enabled: !state.isDraftingSQL)
         }
         .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .askInEnglish))
         .buttonAffordance(
@@ -176,6 +162,7 @@ struct WorkspaceView: View {
           .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .explainAnalyze))
         } label: {
           Label("Explain", systemImage: "list.bullet.indent")
+            .toolbarIconStyle(enabled: state.canRunQuery && !state.isExplaining)
         }
         .buttonAffordance(explainHelp)
         .disabled(!state.canRunQuery || state.isExplaining)
@@ -190,6 +177,7 @@ struct WorkspaceView: View {
           showingSchemaGraph = true
         } label: {
           Label("Graph", systemImage: "point.3.connected.trianglepath.dotted")
+            .toolbarIconStyle(enabled: state.schema != nil)
         }
         .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .schemaGraph))
         .buttonAffordance(
@@ -209,6 +197,7 @@ struct WorkspaceView: View {
           showingQueryHistory.toggle()
         } label: {
           Label("Query History", systemImage: "clock.arrow.circlepath")
+            .toolbarIconStyle(enabled: true)
         }
         .popover(isPresented: $showingQueryHistory) {
           QueryHistoryView(state: state)
@@ -320,8 +309,20 @@ struct WorkspaceView: View {
           .labelStyle(.iconOnly)
       }
       .buttonStyle(.borderless)
+      .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .newTab))
       .buttonAffordance("New query tab")
       .accessibilityIdentifier("new-query-tab-button")
+      .background {
+        // Close-tab has no visible button of its own (each tab has its ×), so its shortcut
+        // lives on this invisible one. Window shortcuts run before the menu bar, so ⌘W
+        // closes the query tab rather than the window while more than one tab is open.
+        Button("Close Query Tab") { state.closeSelectedQueryTab() }
+          .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .closeTab))
+          .disabled(state.queryTabs.count <= 1)
+          .opacity(0)
+          .frame(width: 0, height: 0)
+          .accessibilityHidden(true)
+      }
 
       Spacer()
     }
@@ -453,5 +454,13 @@ struct WorkspaceView: View {
     case .custom: .blue
     case nil: .secondary
     }
+  }
+}
+
+private extension View {
+  /// Toolbar icons render in a muted gray by default, which made usable commands look
+  /// disabled. Usable icons get full label contrast; unusable ones stay clearly dimmed.
+  func toolbarIconStyle(enabled: Bool) -> some View {
+    foregroundStyle(enabled ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
   }
 }

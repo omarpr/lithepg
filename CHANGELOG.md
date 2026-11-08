@@ -8,10 +8,13 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ### Added
 
+- Filter results: click the filter icon (or press ⌘F) and type to show only rows containing that text in any column, ignoring case and accents, across every page. The bar shows how many rows match, and copy and export use the filtered rows. Esc or the clear button brings everything back.
 - Keyboard shortcuts can be changed in **Settings → Keyboard**. Click a command's shortcut and press the new keys; Delete removes it, Esc cancels and each row (or Restore Defaults) brings back the default. Shortcuts must include ⌘ or ⌃ so typing is never affected, and ones used by macOS or text editing (such as ⌘C or ⌘Q) or already taken by another command are refused with the reason. Settings now has General and Keyboard tabs.
 
 ### Changed
 
+- The toolbar no longer repeats the tab bar's new-tab and close-tab buttons; ⌘T and ⌘W still work. Run is a labeled accent button, and the other toolbar icons show full contrast when usable, so they no longer look disabled.
+- The results bar drops the "Table" label, which did nothing, and keeps its controls together at the right. The copy icon turns back from a checkmark a moment after copying instead of staying checked.
 - The README lists what LithePG does today, grouped by connections, writing SQL, results and the schema, and no longer describes releases as unnotarized previews.
 - A `Makefile` gives the common tasks short names: `make test`, `make run`, `make app`, `make install`, `make web-deploy` and `make release`, which runs the local release wrapper.
 

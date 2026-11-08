@@ -21,6 +21,11 @@ struct ResultsTable: View {
     @State private var editingSession: ResultsTablePresentation.CellEditorSession?
     @State private var columnWidthOverrides: [Int: CGFloat] = [:]
     @State private var columnResizeStart: ColumnResizeStart?
+    @State private var filterText = ""
+    @State private var showingFilter = false
+    @FocusState private var filterFocused: Bool
+    /// Bumped on every copy so only the latest one turns the copy icon back.
+    @State private var copyFeedbackGeneration = 0
 
     private struct ColumnResizeStart {
         let columnIndex: Int
@@ -28,7 +33,9 @@ struct ResultsTable: View {
     }
 
     var body: some View {
-        let renderedResult = result
+        // The grid, counts, copy and export all work on the rows the filter leaves; cell
+        // lookups (selection, copy cell, editing) use the full result by original row number.
+        let renderedResult = result.map { ResultsTablePresentation.filtered($0, matching: filterText) }
         VStack(spacing: 0) {
             actionBar(for: renderedResult)
             Divider()
@@ -46,6 +53,8 @@ struct ResultsTable: View {
             guard !ResultsTablePresentation.isCellEdit(from: old, to: new) else { return }
             page = 1
             copiedAtLeastOnce = false
+            filterText = ""
+            showingFilter = false
             selectedCell = nil
             editingSession = nil
             columnWidthOverrides.removeAll()
@@ -63,7 +72,7 @@ struct ResultsTable: View {
                 onCopy: { value in
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(value, forType: .string)
-                    copiedAtLeastOnce = true
+                    markCopied()
                 }
             )
         }
@@ -111,8 +120,10 @@ struct ResultsTable: View {
                             }
                             .frame(width: tableBodyWidth, alignment: .leading)
 
-                            ForEach(visibleRows, id: \.element.id) { pageRowIndex, row in
-                                let rowIndex = ResultsTablePresentation.absoluteRowNumber(pageRowIndex: pageRowIndex, page: page) - 1
+                            ForEach(visibleRows, id: \.element.id) { _, row in
+                                // A row's id is its position in the full result, so numbering,
+                                // selection and edits stay right while a filter hides rows.
+                                let rowIndex = row.id
                                 HStack(spacing: 0) {
                                     indexCell(String(rowIndex + 1), isHeader: false)
                                         .accessibilityIdentifier("result-row-index-\(rowIndex)")
@@ -122,7 +133,7 @@ struct ResultsTable: View {
                                             isNull: cellValue == .null,
                                             width: columnWidths[columnIndex],
                                             address: .init(row: rowIndex, column: columnIndex),
-                                            in: result
+                                            in: self.result ?? result
                                         )
                                         .accessibilityIdentifier("result-cell-\(rowIndex)-\(columnIndex)")
                                     }
@@ -224,16 +235,27 @@ struct ResultsTable: View {
 
             Spacer()
 
-            Label("Table", systemImage: "tablecells")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Button {} label: {
-                Label("Filter results", systemImage: "line.3.horizontal.decrease")
-                    .labelStyle(.iconOnly)
+            if showingFilter {
+                filterField(total: self.result?.rows.count ?? 0, shown: result?.rows.count ?? 0)
             }
-            .buttonAffordance("Filtering results is not available yet")
-            .disabled(true)
+
+            Button {
+                toggleFilter()
+            } label: {
+                Label(
+                    showingFilter ? "Hide filter" : "Filter rows",
+                    systemImage: filterText.isEmpty
+                        ? "line.3.horizontal.decrease.circle"
+                        : "line.3.horizontal.decrease.circle.fill"
+                )
+                .labelStyle(.iconOnly)
+            }
+            .keyboardShortcut("f", modifiers: [.command])
+            .buttonAffordance(
+                showingFilter ? "Hide the filter and show every row" : "Show only rows containing some text (⌘F)"
+            )
+            .disabled(self.result?.status != .rows)
+            .accessibilityIdentifier("filter-results-button")
 
             Menu {
                 Button("Copy (TSV)") { copy(result) }
@@ -253,7 +275,9 @@ struct ResultsTable: View {
                 copy(result)
             }
             .menuIndicator(.hidden)
-            .buttonAffordance("Copy results. Click to copy TSV or pick CSV, JSON or Markdown")
+            // Borderless menus stretch to fill an HStack; keep the icons grouped at the right.
+            .fixedSize()
+            .buttonAffordance("Copy the rows shown. Click to copy TSV or pick CSV, JSON or Markdown")
             .disabled(result == nil)
 
             Menu {
@@ -267,13 +291,72 @@ struct ResultsTable: View {
                     .labelStyle(.iconOnly)
             }
             .menuIndicator(.hidden)
-            .buttonAffordance("Export results to CSV, TSV, JSON, Markdown or SQL inserts")
+            .fixedSize()
+            .buttonAffordance("Export the rows shown to CSV, TSV, JSON, Markdown or SQL inserts")
             .disabled(!ResultsTablePresentation.canExport(result))
         }
         .buttonStyle(.borderless)
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(.bar)
+    }
+
+    private func filterField(total: Int, shown: Int) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+            TextField("Filter rows", text: $filterText)
+                .textFieldStyle(.plain)
+                .frame(width: 180)
+                .focused($filterFocused)
+                .onSubmit { filterFocused = false }
+                .onExitCommand { toggleFilter() }
+                .onChange(of: filterText) { _, _ in page = 1 }
+                .accessibilityIdentifier("filter-results-field")
+            if !filterText.isEmpty {
+                Text("\(shown) of \(total)")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .fixedSize()
+                    .accessibilityIdentifier("filter-results-count")
+                Button {
+                    filterText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonAffordance("Clear the filter")
+                .accessibilityLabel("Clear filter")
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background(.quaternary, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+        // Never squeeze the field into wrapping; the status text on the left gives way instead.
+        .fixedSize()
+    }
+
+    private func toggleFilter() {
+        if showingFilter {
+            showingFilter = false
+            filterText = ""
+            filterFocused = false
+        } else {
+            showingFilter = true
+            filterFocused = true
+        }
+    }
+
+    /// Shows the copied checkmark briefly, then the copy icon again.
+    private func markCopied() {
+        copiedAtLeastOnce = true
+        copyFeedbackGeneration += 1
+        let generation = copyFeedbackGeneration
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            if copyFeedbackGeneration == generation { copiedAtLeastOnce = false }
+        }
     }
 
     private func paginationBar(for result: QueryResult, page: Int) -> some View {
@@ -460,14 +543,14 @@ struct ResultsTable: View {
         guard let text = ResultsTablePresentation.cellText(for: result, at: address) else { return }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
-        copiedAtLeastOnce = true
+        markCopied()
     }
 
     private func copyRow(_ rowIndex: Int, in result: QueryResult) {
         guard let text = ResultsTablePresentation.rowText(for: result, rowIndex: rowIndex) else { return }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
-        copiedAtLeastOnce = true
+        markCopied()
     }
 
     private func indexCell(_ value: String, isHeader: Bool) -> some View {
@@ -505,7 +588,7 @@ struct ResultsTable: View {
         guard let result else { return }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(ResultsTablePresentation.copyText(for: result), forType: .string)
-        copiedAtLeastOnce = true
+        markCopied()
     }
 
     private func copyAs(_ result: QueryResult?, format: ResultExporter.Format) {
@@ -515,7 +598,7 @@ struct ResultsTable: View {
             ResultsTablePresentation.clipboardContent(for: result, as: format),
             forType: .string
         )
-        copiedAtLeastOnce = true
+        markCopied()
     }
 
     private func export(_ result: QueryResult?, as format: ResultExporter.Format) {
@@ -1005,6 +1088,22 @@ enum ResultsTablePresentation {
 
     /// Returns a new result with one local text edit applied. QueryResult is a
     /// value type, so the source result remains unchanged and no SQL is issued.
+    /// The rows with a cell containing `query`, ignoring case and accents ("jose" finds
+    /// "José"). Rows keep their ids, which are their positions in the full result.
+    static func filtered(_ result: QueryResult, matching query: String) -> QueryResult {
+        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !needle.isEmpty, result.status == .rows else { return result }
+        let rows = result.rows.filter { row in
+            row.cells.contains { cell in
+                guard case .text(let value) = cell else { return false }
+                return value.range(of: needle, options: [.caseInsensitive, .diacriticInsensitive]) != nil
+            }
+        }
+        return QueryResult(
+            columns: result.columns, rows: rows, rowCount: rows.count,
+            elapsed: result.elapsed, status: result.status, truncated: result.truncated)
+    }
+
     /// True when `new` is `old` with cell values changed in place, as after saving an edit,
     /// rather than the result of another run.
     static func isCellEdit(from old: QueryResult?, to new: QueryResult?) -> Bool {

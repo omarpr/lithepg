@@ -368,4 +368,25 @@ struct ResultsTableCellSelectionTests {
     #expect(!ResultsTablePresentation.isCellEdit(from: result, to: rerun))
     #expect(!ResultsTablePresentation.isCellEdit(from: nil, to: result))
   }
+
+  @Test("the row filter matches any cell, ignoring case and accents, and keeps row numbers")
+  func filtersRows() {
+    let source = QueryResult(
+      columns: [.init(name: "name", typeName: "text"), .init(name: "city", typeName: "text")],
+      rows: [
+        .init(id: 0, cells: [.text("José Muñoz"), .text("San Juan")]),
+        .init(id: 1, cells: [.text("Ana"), .null]),
+        .init(id: 2, cells: [.text("Luis"), .text("Cádiz")]),
+      ],
+      rowCount: 3, elapsed: .milliseconds(5), status: .rows, truncated: false)
+
+    let jose = ResultsTablePresentation.filtered(source, matching: "jose")
+    #expect(jose.rows.map(\.id) == [0])
+    #expect(jose.rowCount == 1)
+    #expect(ResultsTablePresentation.filtered(source, matching: "CADIZ").rows.map(\.id) == [2])
+    #expect(ResultsTablePresentation.filtered(source, matching: "zzz").rows.isEmpty)
+    #expect(ResultsTablePresentation.filtered(source, matching: "  ") == source)
+    // NULL is not text, so it never matches the word "null".
+    #expect(ResultsTablePresentation.filtered(source, matching: "null").rows.isEmpty)
+  }
 }
