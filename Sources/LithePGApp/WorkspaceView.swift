@@ -82,14 +82,14 @@ struct WorkspaceView: View {
           Label(state.isRunning ? "Running" : "Run", systemImage: "play.fill")
         }
         .accessibilityIdentifier("run-query-button")
-        .keyboardShortcut(.return, modifiers: [.command])
+        .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .runQuery))
         .buttonAffordance(runQueryHelp)
         .disabled(!state.canRunQuery)
 
         Button("Cancel") {
           state.cancelQuery()
         }
-        .keyboardShortcut(".", modifiers: [.command])
+        .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .cancelQuery))
         .buttonAffordance("Cancel the running query")
         .disabled(!state.isRunning)
 
@@ -98,7 +98,7 @@ struct WorkspaceView: View {
         } label: {
           Label("New Query Tab", systemImage: "plus")
         }
-        .keyboardShortcut("t", modifiers: [.command])
+        .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .newTab))
         .buttonAffordance("Open a new query tab")
 
         Button {
@@ -106,7 +106,7 @@ struct WorkspaceView: View {
         } label: {
           Label("Close Query Tab", systemImage: "xmark")
         }
-        .keyboardShortcut("w", modifiers: [.command])
+        .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .closeTab))
         .buttonAffordance(
           state.queryTabs.count <= 1
             ? "At least one query tab must remain open"
@@ -119,7 +119,7 @@ struct WorkspaceView: View {
         } label: {
           Label("Previous Query Tab", systemImage: "chevron.left")
         }
-        .keyboardShortcut("[", modifiers: [.command, .shift])
+        .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .previousTab))
         .buttonAffordance(
           state.queryTabs.count <= 1
             ? "Open another query tab to navigate between tabs"
@@ -132,7 +132,7 @@ struct WorkspaceView: View {
         } label: {
           Label("Next Query Tab", systemImage: "chevron.right")
         }
-        .keyboardShortcut("]", modifiers: [.command, .shift])
+        .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .nextTab))
         .buttonAffordance(
           state.queryTabs.count <= 1
             ? "Open another query tab to navigate between tabs"
@@ -145,7 +145,7 @@ struct WorkspaceView: View {
         } label: {
           Label("Ask", systemImage: "wand.and.stars")
         }
-        .keyboardShortcut("k", modifiers: [.command, .shift])
+        .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .askInEnglish))
         .buttonAffordance(
           state.isDraftingSQL
             ? "A local SQL draft is already in progress"
@@ -166,14 +166,14 @@ struct WorkspaceView: View {
               showingPlanTree = state.lastQueryPlan != nil
             }
           }
-          .keyboardShortcut("e", modifiers: [.command])
+          .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .explain))
           Button("Explain Analyze (runs the query)") {
             Task {
               await state.runExplain(analyze: true)
               showingPlanTree = state.lastQueryPlan != nil
             }
           }
-          .keyboardShortcut("e", modifiers: [.command, .shift])
+          .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .explainAnalyze))
         } label: {
           Label("Explain", systemImage: "list.bullet.indent")
         }
@@ -191,7 +191,7 @@ struct WorkspaceView: View {
         } label: {
           Label("Graph", systemImage: "point.3.connected.trianglepath.dotted")
         }
-        .keyboardShortcut("g", modifiers: [.command, .shift])
+        .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .schemaGraph))
         .buttonAffordance(
           state.schema == nil
             ? "Connect and refresh the schema to enable the schema graph"

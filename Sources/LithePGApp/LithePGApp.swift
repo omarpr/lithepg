@@ -127,6 +127,17 @@ struct LithePGSettingsView: View {
     @Bindable var state: AppState
 
     var body: some View {
+        TabView {
+            general
+                .tabItem { Label("General", systemImage: "gearshape") }
+            KeyboardSettingsView(bindings: state.keyBindings)
+                .tabItem { Label("Keyboard", systemImage: "keyboard") }
+        }
+        .frame(width: 520)
+        .frame(minHeight: 420)
+    }
+
+    private var general: some View {
         Form {
             Section("Appearance") {
                 Picker("Theme", selection: $state.appearancePreference) {
@@ -151,7 +162,6 @@ struct LithePGSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 460)
         .padding(.vertical, 10)
     }
 }

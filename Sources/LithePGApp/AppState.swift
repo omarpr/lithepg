@@ -280,6 +280,8 @@ public final class AppState {
   @ObservationIgnored private let connectionTester: any ConnectionTesting
   @ObservationIgnored private let neonScanner: any NeonCLIScanning
   @ObservationIgnored private let appearanceDefaults: UserDefaults
+  /// Shortcuts for toolbar commands, editable in Settings > Keyboard.
+  public let keyBindings: KeyBindings
   @ObservationIgnored private var isRestoringAppearancePreference = false
   @ObservationIgnored private var isRestoringLaunchBehaviorPreference = false
 
@@ -299,6 +301,7 @@ public final class AppState {
     self.connectionTester = connectionTester
     self.neonScanner = neonScanner
     self.appearanceDefaults = appearanceDefaults
+    self.keyBindings = KeyBindings(defaults: appearanceDefaults)
     neonCLIAvailability = neonScanner.availability()
     isRestoringAppearancePreference = true
     appearancePreference = AppearancePreference(defaults: appearanceDefaults)
