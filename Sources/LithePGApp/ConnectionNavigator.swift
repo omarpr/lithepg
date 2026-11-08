@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct ConnectionNavigator: View {
@@ -197,10 +198,14 @@ struct ConnectionNavigator: View {
 
 struct NeonScannerButton: View {
   @Bindable var state: AppState
+  /// The button appears in the sidebar and in the Connect sheet; only the one that started
+  /// the scan shows its error, so the dialog never opens twice.
+  @State private var startedScan = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       Button {
+        startedScan = true
         Task { await state.scanAndImportNeonConnections() }
       } label: {
         Label(
@@ -225,13 +230,33 @@ struct NeonScannerButton: View {
           .fixedSize(horizontal: false, vertical: true)
           .accessibilityIdentifier("neon-scan-message")
       }
-      if let error = state.neonScanError {
-        Text(error)
-          .font(.caption2)
-          .foregroundStyle(.red)
-          .fixedSize(horizontal: false, vertical: true)
-          .accessibilityIdentifier("neon-scan-error")
+    }
+    .alert(
+      "Could not scan Neon",
+      isPresented: Binding(
+        get: { startedScan && state.neonScanError != nil },
+        set: { presented in
+          if !presented {
+            startedScan = false
+            state.dismissNeonScanError()
+          }
+        }
+      ),
+      presenting: state.neonScanError
+    ) { _ in
+      if let command = state.neonScanSuggestedCommand {
+        Button("Copy “\(command)”") {
+          NSPasteboard.general.clearContents()
+          NSPasteboard.general.setString(command, forType: .string)
+        }
+        .accessibilityIdentifier("neon-scan-copy-command")
       }
+      Button("OK", role: .cancel) {}
+        .keyboardShortcut(.defaultAction)
+        .accessibilityIdentifier("neon-scan-error-ok")
+    } message: { error in
+      Text(error)
+        .accessibilityIdentifier("neon-scan-error")
     }
   }
 }

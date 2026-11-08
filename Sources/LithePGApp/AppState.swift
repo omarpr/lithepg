@@ -57,6 +57,8 @@ public final class AppState {
   public var isScanningNeon: Bool = false
   public var neonScanMessage: String?
   public var neonScanError: String?
+  /// A Terminal command that fixes `neonScanError`, offered as a copy button in its dialog.
+  public var neonScanSuggestedCommand: String?
   public var queryHistoryEnabled: Bool = false
   public var queryHistory: [QueryHistoryEntry] = []
   public var persistenceError: String?
@@ -409,6 +411,11 @@ public final class AppState {
     neonCLIAvailability.isAvailable && !isScanningNeon
   }
 
+  public func dismissNeonScanError() {
+    neonScanError = nil
+    neonScanSuggestedCommand = nil
+  }
+
   public func refreshNeonCLIAvailability() {
     neonCLIAvailability = neonScanner.availability()
   }
@@ -417,13 +424,15 @@ public final class AppState {
     refreshNeonCLIAvailability()
     guard neonCLIAvailability.isAvailable else {
       neonScanMessage = nil
-      neonScanError = "Install Neon CLI to scan your Neon databases."
+      neonScanError = "Install the Neon CLI to scan your Neon databases."
+      neonScanSuggestedCommand = "brew install neonctl"
       return
     }
 
     isScanningNeon = true
     neonScanMessage = nil
     neonScanError = nil
+    neonScanSuggestedCommand = nil
     defer { isScanningNeon = false }
 
     do {
@@ -477,6 +486,7 @@ public final class AppState {
       )
     } catch {
       neonScanError = Self.neonScanErrorMessage(error)
+      neonScanSuggestedCommand = (error as? NeonCLIScannerError)?.suggestedCommand
     }
   }
 

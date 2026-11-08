@@ -12,6 +12,7 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ### Fixed
 
+- Neon scan errors open in a dialog with OK and a button that copies the fix, such as the sign-in command, instead of red text that could spill over the sidebar. The sign-in advice names the command the installed CLI recommends (`neon login` in Neon CLI 8).
 - Scan Neon CLI explains failures and what to do next instead of showing raw CLI errors. An expired or missing Neon sign-in, Node.js not found, no network, rate limiting and a CLI that never finishes (now stopped after 60 seconds) each get a plain message, and these stop the scan rather than being counted as skipped resources.
 - Scanning works with a sign-in saved by older Neon CLI versions in `~/.config/neonctl`. Neon CLI 8 tried to refresh it through the missing `~/.config/neon` folder and failed with "ENOENT ... .refresh-*.lock".
 - Scanning works when LithePG is opened from the Dock and the Neon CLI was installed with npm, nvm or Volta. The CLI now runs with its own Node.js on the PATH, and LithePG also looks for it in those install folders.

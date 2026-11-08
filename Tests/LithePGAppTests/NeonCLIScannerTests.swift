@@ -78,9 +78,10 @@ struct NeonCLIScannerTests {
 
     #expect(
       state.neonScanError
-        == "Neon CLI did not return usable JSON. Run `neon auth` in Terminal, confirm your account, then try again."
+        == "The Neon CLI did not return usable data. Run “neon login” in Terminal, confirm your account, then scan again."
     )
     #expect(state.neonScanError?.contains("DecodingError") == false)
+    #expect(state.neonScanSuggestedCommand == "neon login")
   }
 
   @Test("app state imports only Neon endpoints that are not already saved")

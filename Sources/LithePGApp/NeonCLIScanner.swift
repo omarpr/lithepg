@@ -443,9 +443,10 @@ public enum NeonCLIScannerError: Error, Sendable, Equatable, LocalizedError {
   case notInstalled
   case launchFailed
   case nodeMissing
-  case notSignedIn
-  case sessionExpired
-  case configFolderUnusable(path: String)
+  /// `signIn` is the command the CLI itself recommends, such as `neon login --profile DEFAULT`.
+  case notSignedIn(signIn: String)
+  case sessionExpired(signIn: String)
+  case configFolderUnusable(path: String, signIn: String)
   case offline
   case rateLimited
   case timedOut(seconds: Int)
@@ -456,29 +457,43 @@ public enum NeonCLIScannerError: Error, Sendable, Equatable, LocalizedError {
   public var errorDescription: String? {
     switch self {
     case .notInstalled:
-      "Neon CLI is not installed."
+      "The Neon CLI is not installed."
     case .launchFailed:
-      "LithePG could not launch the installed Neon CLI."
+      "LithePG could not start the installed Neon CLI."
     case .nodeMissing:
-      "The Neon CLI needs Node.js, and LithePG could not find it. Install Node.js (for example with `brew install node`), then scan again."
-    case .notSignedIn:
-      "The Neon CLI is not signed in. Run `neon auth` in Terminal, then scan again."
-    case .sessionExpired:
-      "Your Neon CLI sign-in has expired. Run `neon auth` in Terminal to sign in again, then scan again."
-    case .configFolderUnusable(let path):
-      "The Neon CLI could not use its settings folder (\(path)). Run `neon auth` in Terminal to set it up again, then scan again."
+      "The Neon CLI needs Node.js, and LithePG could not find it. Install Node.js, for example with “brew install node”, then scan again."
+    case .notSignedIn(let signIn):
+      "The Neon CLI is not signed in. Run “\(signIn)” in Terminal, then scan again."
+    case .sessionExpired(let signIn):
+      "Your Neon CLI sign-in has expired. Run “\(signIn)” in Terminal to sign in again, then scan again."
+    case .configFolderUnusable(let path, let signIn):
+      "The Neon CLI could not use its settings folder (\(path)). Run “\(signIn)” in Terminal to set it up again, then scan again."
     case .offline:
       "LithePG could not reach Neon. Check your internet connection, then scan again."
     case .rateLimited:
       "Neon is limiting requests right now. Wait a minute, then scan again."
     case .timedOut(let seconds):
-      "The Neon CLI did not finish within \(seconds) seconds. If it is waiting for a sign-in, run `neon auth` in Terminal first, then scan again."
+      "The Neon CLI did not finish within \(seconds) seconds. If it is waiting for a sign-in, run “neon login” in Terminal first, then scan again."
     case .commandFailed(let message):
       "The Neon CLI reported an error: \(message)"
     case .invalidResponse:
-      "Neon CLI did not return usable JSON. Run `neon auth` in Terminal, confirm your account, then try again."
+      "The Neon CLI did not return usable data. Run “neon login” in Terminal, confirm your account, then scan again."
     case .outputTooLarge:
-      "Neon CLI returned more data than LithePG can safely import."
+      "The Neon CLI returned more data than LithePG can safely import."
+    }
+  }
+
+  /// A Terminal command that fixes the problem, offered as a copy button.
+  public var suggestedCommand: String? {
+    switch self {
+    case .notSignedIn(let signIn), .sessionExpired(let signIn), .configFolderUnusable(_, let signIn):
+      signIn
+    case .nodeMissing:
+      "brew install node"
+    case .timedOut, .invalidResponse:
+      "neon login"
+    default:
+      nil
     }
   }
 
@@ -503,14 +518,18 @@ public enum NeonCLIScannerError: Error, Sendable, Equatable, LocalizedError {
     if has("env: node", "env: 'node'", "node: no such file", "command not found: node") || status == 127 {
       return .nodeMissing
     }
+    let signIn = Self.signInCommand(in: errorOutput)
     if has("invalid_grant", "rejected the stored session", "refresh token", "session expired", "token has expired") {
-      return .sessionExpired
+      return .sessionExpired(signIn: signIn)
     }
     if has("enoent", "eacces", "eperm"), has(".config/neon") {
-      return .configFolderUnusable(path: Self.configFolder(in: errorOutput) ?? "~/.config/neon")
+      return .configFolderUnusable(
+        path: Self.configFolder(in: errorOutput) ?? "~/.config/neon", signIn: signIn)
     }
-    if has("not authenticated", "unauthorized", "401", "no credentials", "please authenticate", "neon auth") {
-      return .notSignedIn
+    if has("not authenticated", "unauthorized", "401", "no credentials", "please authenticate",
+      "neon auth", "neon login", "sign in again")
+    {
+      return .notSignedIn(signIn: signIn)
     }
     if has("enotfound", "econnrefused", "etimedout", "eai_again", "econnreset", "fetch failed", "socket hang up", "network") {
       return .offline
@@ -527,6 +546,17 @@ public enum NeonCLIScannerError: Error, Sendable, Equatable, LocalizedError {
       return .commandFailed("it exited with status \(status) without saying why.")
     }
     return .commandFailed(line.count > 240 ? String(line.prefix(240)) + "…" : line)
+  }
+
+  /// The sign-in command the CLI recommends ("Run `neon login --profile DEFAULT` to sign in
+  /// again"), so the advice matches the installed version. Falls back to `neon login`, the
+  /// command in Neon CLI 8 (`neon auth` remains an alias).
+  static func signInCommand(in output: String) -> String {
+    guard let regex = try? NSRegularExpression(pattern: #"(?i)run\s+`((?:neon|neonctl)\b[^`]*)`"#),
+      let match = regex.firstMatch(in: output, range: NSRange(output.startIndex..., in: output)),
+      let range = Range(match.range(at: 1), in: output)
+    else { return "neon login" }
+    return String(output[range]).trimmingCharacters(in: .whitespaces)
   }
 
   /// The settings folder named in a file error, with the home folder shortened to `~`.

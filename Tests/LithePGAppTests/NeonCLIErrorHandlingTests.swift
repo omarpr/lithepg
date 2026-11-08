@@ -11,14 +11,19 @@ struct NeonCLIErrorHandlingTests {
       NeonCLIScannerError.classify(errorOutput: text, status: status)
     }
     #expect(classify("env: node: No such file or directory", status: 127) == .nodeMissing)
+    // The exact output Neon CLI 8 printed for an expired session, recommended command included.
     #expect(
       classify(
-        "ERROR: The Neon authorization server rejected the stored session: invalid_grant: The provided authorization grant is invalid"
-      ) == .sessionExpired)
+        """
+        ERROR: The Neon authorization server rejected the stored session: invalid_grant: The provided authorization grant is invalid
+        ERROR: Run `neon login --profile DEFAULT` to sign in again.
+        """
+      ) == .sessionExpired(signIn: "neon login --profile DEFAULT"))
+    #expect(classify("ERROR: invalid_grant") == .sessionExpired(signIn: "neon login"))
     #expect(
       classify("ERROR: ENOENT: no such file or directory, open '\(NSHomeDirectory())/.config/neon/.refresh-1082c642b8613821.lock'")
-        == .configFolderUnusable(path: "~/.config/neon"))
-    #expect(classify("Error: Unauthorized (401). Please run neon auth") == .notSignedIn)
+        == .configFolderUnusable(path: "~/.config/neon", signIn: "neon login"))
+    #expect(classify("Error: Unauthorized (401). Please run neon auth") == .notSignedIn(signIn: "neon login"))
     #expect(classify("FetchError: request failed, reason: getaddrinfo ENOTFOUND console.neon.tech") == .offline)
     #expect(classify("ERROR: Too Many Requests (429)") == .rateLimited)
     #expect(classify("ERROR: project not found\nstack trace...") == .commandFailed("project not found"))
@@ -27,7 +32,10 @@ struct NeonCLIErrorHandlingTests {
 
   @Test("messages say what to do and avoid raw CLI output")
   func messagesAreActionable() {
-    #expect(NeonCLIScannerError.sessionExpired.errorDescription?.contains("neon auth") == true)
+    let expired = NeonCLIScannerError.sessionExpired(signIn: "neon login --profile DEFAULT")
+    #expect(expired.errorDescription == "Your Neon CLI sign-in has expired. Run “neon login --profile DEFAULT” in Terminal to sign in again, then scan again.")
+    #expect(expired.suggestedCommand == "neon login --profile DEFAULT")
+    #expect(NeonCLIScannerError.offline.suggestedCommand == nil)
     #expect(NeonCLIScannerError.nodeMissing.errorDescription?.contains("Node.js") == true)
     #expect(NeonCLIScannerError.offline.stopsScan)
     #expect(!NeonCLIScannerError.invalidResponse.stopsScan)
@@ -113,7 +121,7 @@ struct NeonCLIErrorHandlingTests {
       commandRunner: ExpiringSessionRunner(),
       globalArguments: ["--config-dir", "/tmp/legacy"]
     )
-    await #expect(throws: NeonCLIScannerError.sessionExpired) {
+    await #expect(throws: NeonCLIScannerError.sessionExpired(signIn: "neon login")) {
       _ = try await scanner.scan()
     }
   }
@@ -139,6 +147,6 @@ private struct ExpiringSessionRunner: NeonCLICommandRunning {
     if arguments.starts(with: ["projects", "list"]) {
       return Data(#"[{"id":"project-one","name":"Analytics"}]"#.utf8)
     }
-    throw NeonCLIScannerError.sessionExpired
+    throw NeonCLIScannerError.sessionExpired(signIn: "neon login")
   }
 }
