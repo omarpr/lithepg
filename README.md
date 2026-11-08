@@ -10,7 +10,7 @@ Install: `brew install --cask omarpr/tap/lithepg`
 
 Website: [www.lithepg.app](https://www.lithepg.app)
 
-LithePG is a lean, Mac-native PostgreSQL client with local-first AI. It is pure Swift on `postgres-nio` (no `libpq`), has a ~12.5 MiB stripped release executable and never sends prompts or database contents to an AI service.
+LithePG is a lean, Mac-native PostgreSQL client with local-first AI. It is pure Swift on `postgres-nio` (no `libpq`), has a ~15 MiB stripped release executable and never sends prompts or database contents to an AI service.
 
 ![LithePG with a two-statement script in the editor, the statement that runs highlighted, its results and the schema browser](docs/assets/lithepg-app-snapshot.png)
 
@@ -18,29 +18,49 @@ LithePG is a lean, Mac-native PostgreSQL client with local-first AI. It is pure 
 
 ## What you get
 
-- A native macOS app for testing and opening Postgres connections, writing SQL and viewing results.
-- Saved connections with passwords in the macOS Keychain, never on disk.
-- A left-side connection navigator plus schema sidebar, query tabs and history.
-- Optional Neon CLI scanning imports missing project/branch databases when the user-installed CLI is available; otherwise the action stays disabled.
-- Result copy and export as CSV, TSV, JSON, Markdown or SQL inserts.
-- One-click table preview: the sidebar's select action inserts and runs `SELECT * ... LIMIT 100`.
-- Clickable cells: select and `⌘C`, right-click to copy cell or row, double-click to view and edit a value locally.
-- EXPLAIN and EXPLAIN ANALYZE (`⌘E` / `⇧⌘E`) with an indented plan tree that flags the costliest node.
-- A schema graph (`⇧⌘G`): tables as nodes, foreign keys as edges, columns and types in an inspector.
-- Ask in English drafting that inserts SQL for review and never auto-runs it.
+**Connections**
+
+- Saved connections with passwords in the macOS Keychain, never on disk, tagged Development, Staging, Production or a custom environment. Production connections show a warning banner.
 - Pasted connection strings just work, including Neon URLs, quoted strings and `psql` command copies.
-- Light, dark and system appearance.
+- TLS modes matching `sslmode` (disable, prefer, require, verify-full) with an optional pinned CA, and SSH tunnels through a bastion.
+- Text always arrives as UTF-8, so accents and other non-ASCII text display correctly even on LATIN1 or WIN1252 databases.
+- A dropped connection is noticed right away: the header says "Connection lost" and one click reconnects, keeping your results and editor text.
+- Optional Neon CLI scanning imports Neon project and branch databases you have not saved yet, with plain explanations (and a copyable fix) when the CLI needs a sign-in or Node.js.
+
+**Writing SQL**
+
+- Autocomplete for keywords, functions, tables and columns as you type, with columns from the tables your statement names and `alias.` narrowing to one table.
+- With several statements in the editor, Run executes the one under the cursor (or the selection), and that statement is highlighted.
+- Query tabs you can rename, syntax highlighting and opt-in query history.
+- Ask in English drafting with Apple's on-device model, which inserts SQL for review and never runs it.
+
+**Results**
+
+- A results grid with resizable columns, pages of 100 rows and numeric values shown exactly as PostgreSQL formats them.
+- Edit cells in place: double-click, change the value or set NULL, review the exact `UPDATE`, then confirm. It matches the row by primary key and refuses to overwrite a row someone else changed.
+- Copy a cell with `⌘C`, right-click to copy a cell or row, and export results as CSV, TSV, JSON, Markdown or SQL inserts.
+- One-click table preview: the sidebar's select action inserts and runs `SELECT * ... LIMIT 100`.
+
+**Understanding the database**
+
+- A schema sidebar with tables, views, columns, types and primary keys.
+- EXPLAIN and EXPLAIN ANALYZE with an indented plan tree that flags the costliest node.
+- A schema graph: tables as nodes, foreign keys as edges, columns and types in an inspector.
+
+**The app**
+
+- Light, dark and system appearance, and keyboard shortcuts you can change in Settings.
 - A CLI smoke utility (`lithepg`) for plain TCP, TLS and SSH-tunneled checks.
 
 ## Status
 
-The source is released under MIT and the project-owned Homebrew tap currently carries an explicitly unnotarized preview. The preview is ad-hoc signed, so macOS requires manual approval in **System Settings → Privacy & Security** after the first blocked launch. A stable public binary still requires Apple Developer ID signing and notarization. Release history lives in [`CHANGELOG.md`](CHANGELOG.md).
+The source is released under MIT. Releases are signed with a Developer ID, notarized by Apple and published to GitHub Releases and the project-owned Homebrew tap. Release history lives in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Install
 
 ### GitHub release archive
 
-Starting with the next release, each release publishes a versioned `LithePG-<version>.zip` plus a matching `.zip.sha256` file. Download both from [Releases](https://github.com/omarpr/lithepg/releases), run `shasum -a 256 -c LithePG-<version>.zip.sha256`, unzip, and move `LithePG.app` to `/Applications`. Earlier previews use the generic `LithePG.app.zip` asset shown in the managed release block above.
+Each release publishes a versioned `LithePG-<version>.zip` plus a matching `.zip.sha256` file. Download both from [Releases](https://github.com/omarpr/lithepg/releases), run `shasum -a 256 -c LithePG-<version>.zip.sha256`, unzip and move `LithePG.app` to `/Applications`.
 
 ### Homebrew cask
 
@@ -106,7 +126,9 @@ A connection attempt is abandoned after 15 seconds, adjustable with `--timeout <
 
 ## App shortcuts
 
-- `⌘↩` run the active query tab
+These are the defaults. Change or remove any of them in **Settings → Keyboard**.
+
+- `⌘↩` run the statement under the cursor (or the selection)
 - `⌘.` cancel the running query
 - `⌘T` / `⌘W` open / close a query tab
 - `⇧⌘[` / `⇧⌘]` previous / next query tab
@@ -114,15 +136,21 @@ A connection attempt is abandoned after 15 seconds, adjustable with `--timeout <
 - `⌘E` / `⇧⌘E` Explain / Explain Analyze
 - `⇧⌘G` schema graph
 
+In the editor, `Esc` opens the autocomplete list; `↑` `↓` move through it, `Tab` or `↩` inserts and `Esc` closes it.
+
 ## Developer commands
 
 ```sh
-swift build
-swift test                                # add LITHEPG_KEYCHAIN_TESTS=1 for the real-keychain suite
-./script/build_and_run.sh --package
-./script/rebuild_and_install.sh --no-open
-./script/package_verify.sh dist/LithePG.app
+make build        # swift build
+make test         # swift test; add LITHEPG_KEYCHAIN_TESTS=1 for the real-keychain suite
+make run          # build the debug app and open it
+make app          # release bundle in dist/LithePG.app, verified
+make install      # rebuild, verify and install to /Applications
+make release      # signed, notarized release (see docs/RELEASING.md)
+make web-test     # build and check the website
 ```
+
+Each target wraps a script in `script/`, which you can also run directly.
 
 Live Postgres, TLS, SSH and Neon integration tests are gated on env vars (`POSTGRES_TEST_URL` and friends) and auto-skip without them.
 
@@ -132,14 +160,14 @@ See [`CORE_TECHNOLOGIES.md`](CORE_TECHNOLOGIES.md) for what the app is built on 
 
 ## Project layout
 
-- `Sources/LithePGCore/` — connector, schema introspection, AI drafting, export, shared logic.
-- `Sources/LithePGApp/` — SwiftUI app, app state, persistence, Keychain store.
-- `Sources/LithePGAppMain/` — thin executable launcher for packaging.
-- `Sources/lithepg/` — CLI smoke utility.
-- `Tests/` — Swift Testing suites; integration tests env-gated.
-- `script/` — package, release and focused test helpers.
-- `webapp/` — Vite + React promotional site and Fly.io deployment configuration for `www.lithepg.app`.
-- `docs/` — architecture, tech stack, security and release documentation.
+- `Sources/LithePGCore/`: connector, schema introspection, AI drafting, export, shared logic.
+- `Sources/LithePGApp/`: SwiftUI app, app state, persistence, Keychain store.
+- `Sources/LithePGAppMain/`: thin executable launcher for packaging.
+- `Sources/lithepg/`: CLI smoke utility.
+- `Tests/`: Swift Testing suites; integration tests env-gated.
+- `script/`: package, release and focused test helpers.
+- `webapp/`: Vite + React promotional site and Fly.io deployment configuration for `www.lithepg.app`.
+- `docs/`: architecture, tech stack, security and release documentation.
 
 ## Contributors
 

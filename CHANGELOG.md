@@ -6,8 +6,13 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ## [Unreleased]
 
+### Added
+
+- Keyboard shortcuts can be changed in **Settings → Keyboard**. Click a command's shortcut and press the new keys; Delete removes it, Esc cancels and each row (or Restore Defaults) brings back the default. Shortcuts must include ⌘ or ⌃ so typing is never affected, and ones used by macOS or text editing (such as ⌘C or ⌘Q) or already taken by another command are refused with the reason. Settings now has General and Keyboard tabs.
+
 ### Changed
 
+- The README lists what LithePG does today, grouped by connections, writing SQL, results and the schema, and no longer describes releases as unnotarized previews.
 - A `Makefile` gives the common tasks short names: `make test`, `make run`, `make app`, `make install`, `make web-deploy` and `make release`, which runs the local release wrapper.
 
 ### Fixed
