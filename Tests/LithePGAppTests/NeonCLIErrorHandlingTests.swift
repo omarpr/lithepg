@@ -78,7 +78,7 @@ struct NeonCLIErrorHandlingTests {
     #expect(path.suffix(2) == ["/usr/bin", "/bin"])
   }
 
-  @Test("a CLI that never finishes is stopped and explained")
+  @Test("a CLI that never finishes is stopped and explained", .timeLimit(.minutes(1)))
   func timesOut() async throws {
     let root = try temporaryDirectory()
     defer { try? FileManager.default.removeItem(at: root) }
@@ -91,7 +91,7 @@ struct NeonCLIErrorHandlingTests {
     #expect(ContinuousClock.now - started < .seconds(10))
   }
 
-  @Test("a CLI that writes a lot of error output fails instead of hanging")
+  @Test("a CLI that writes a lot of error output fails instead of hanging", .timeLimit(.minutes(1)))
   func largeErrorOutputDoesNotDeadlock() async throws {
     let root = try temporaryDirectory()
     defer { try? FileManager.default.removeItem(at: root) }
@@ -103,7 +103,46 @@ struct NeonCLIErrorHandlingTests {
     }
   }
 
-  @Test("a missing Node.js is reported as such")
+  // Regression: the runner used to block a Swift concurrency thread until the CLI exited. With
+  // more CLIs than pool threads every other task froze, which hung the whole CI test process.
+  @Test("CLIs that are still running leave other tasks free to run", .timeLimit(.minutes(1)))
+  func runningCLIsDoNotStarveOtherTasks() async throws {
+    let root = try temporaryDirectory()
+    defer { try? FileManager.default.removeItem(at: root) }
+    let script = root.appendingPathComponent("neon")
+    let marker = root.appendingPathComponent("go")
+    // Each CLI waits until a task in this process creates the marker file.
+    try executableScript("#!/bin/sh\nwhile [ ! -f \"$1\" ]; do sleep 0.05; done\n", at: script)
+    let count = ProcessInfo.processInfo.activeProcessorCount + 2
+    try await withThrowingTaskGroup(of: Data.self) { group in
+      for _ in 0..<count {
+        group.addTask {
+          try await FoundationNeonCLICommandRunner(timeout: 10).run(executableURL: script, arguments: [marker.path])
+        }
+      }
+      try await Task.sleep(nanoseconds: 200_000_000)
+      try Data().write(to: marker)
+      for try await _ in group {}
+    }
+  }
+
+  @Test("cancelling a scan stops the CLI", .timeLimit(.minutes(1)))
+  func cancellationStopsTheCLI() async throws {
+    let root = try temporaryDirectory()
+    defer { try? FileManager.default.removeItem(at: root) }
+    let script = root.appendingPathComponent("neon")
+    try executableScript("#!/bin/sh\nexec sleep 30\n", at: script)
+    let started = ContinuousClock.now
+    let run = Task {
+      try await FoundationNeonCLICommandRunner(timeout: 60).run(executableURL: script, arguments: [])
+    }
+    try await Task.sleep(nanoseconds: 200_000_000)
+    run.cancel()
+    await #expect(throws: CancellationError.self) { _ = try await run.value }
+    #expect(ContinuousClock.now - started < .seconds(10))
+  }
+
+  @Test("a missing Node.js is reported as such", .timeLimit(.minutes(1)))
   func missingNode() async throws {
     let root = try temporaryDirectory()
     defer { try? FileManager.default.removeItem(at: root) }

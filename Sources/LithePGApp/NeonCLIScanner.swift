@@ -346,21 +346,9 @@ public struct FoundationNeonCLICommandRunner: NeonCLICommandRunning, Sendable {
   }
 
   public func run(executableURL: URL, arguments: [String]) async throws -> Data {
-    let timeout = self.timeout
-    return try await Task.detached(priority: .userInitiated) {
-      try Self.runBlocking(executableURL: executableURL, arguments: arguments, timeout: timeout)
-    }.value
-  }
-
-  /// Runs the CLI to completion on the calling thread; `run` keeps it off the caller's executor.
-  private static func runBlocking(executableURL: URL, arguments: [String], timeout: TimeInterval) throws -> Data {
     let process = Process()
-    let standardOutput = Pipe()
-    let standardError = Pipe()
     process.executableURL = executableURL
     process.arguments = arguments
-    process.standardOutput = standardOutput
-    process.standardError = standardError
     var environment = ProcessInfo.processInfo.environment
     environment["CI"] = "1"
     environment["NO_COLOR"] = "1"
@@ -368,44 +356,14 @@ public struct FoundationNeonCLICommandRunner: NeonCLICommandRunning, Sendable {
       for: executableURL, inherited: environment["PATH"], fileManager: .default)
     process.environment = environment
 
-    do {
-      try process.run()
-    } catch {
-      throw NeonCLIScannerError.launchFailed
+    let invocation = CLIInvocation(process: process, timeout: timeout)
+    return try await withTaskCancellationHandler {
+      try await withCheckedThrowingContinuation { continuation in
+        invocation.start(continuation)
+      }
+    } onCancel: {
+      invocation.cancel()
     }
-
-    // Read standard error while standard output drains: reading them one after the other
-    // deadlocks once the CLI fills the error pipe's buffer.
-    let errorReader = DispatchGroup()
-    let errorBox = DataBox()
-    errorReader.enter()
-    DispatchQueue.global(qos: .userInitiated).async {
-      errorBox.data = standardError.fileHandleForReading.readDataToEndOfFile()
-      errorReader.leave()
-    }
-    // A CLI waiting on an interactive sign-in would otherwise hold the scan forever.
-    let timedOut = DataBox()
-    let watchdog = DispatchWorkItem {
-      guard process.isRunning else { return }
-      timedOut.flag = true
-      process.terminate()
-    }
-    DispatchQueue.global().asyncAfter(deadline: .now() + timeout, execute: watchdog)
-
-    let output = standardOutput.fileHandleForReading.readDataToEndOfFile()
-    errorReader.wait()
-    process.waitUntilExit()
-    watchdog.cancel()
-
-    if timedOut.flag { throw NeonCLIScannerError.timedOut(seconds: Int(timeout)) }
-    guard process.terminationStatus == 0 else {
-      let rawMessage = String(data: errorBox.data.prefix(8_192), encoding: .utf8) ?? ""
-      throw NeonCLIScannerError.classify(
-        errorOutput: ErrorRedaction.redactCredentials(in: rawMessage),
-        status: process.terminationStatus
-      )
-    }
-    return output
   }
 
   /// The PATH the CLI runs with. The Neon CLI is a Node.js program started through
@@ -432,11 +390,156 @@ public struct FoundationNeonCLICommandRunner: NeonCLICommandRunning, Sendable {
   }
 }
 
-/// Mutable storage shared with the reader and watchdog queues; each field has one writer and
-/// is read only after that writer finished (DispatchGroup wait or process exit).
-private final class DataBox: @unchecked Sendable {
-  var data = Data()
-  var flag = false
+/// One run of the Neon CLI, driven entirely by callbacks so that no thread waits on it.
+///
+/// An earlier version blocked a Swift concurrency thread until the CLI exited, waiting on a
+/// reader it had queued at user-initiated priority. Once every pool thread was blocked that way,
+/// macOS never started the readers, so nothing ever finished. On a three-core CI runner three
+/// scans were enough to freeze the whole test process.
+///
+/// Both pipes are read as data arrives, because reading them one after the other deadlocks once
+/// the CLI fills a pipe's buffer. The run settles once the CLI exited and both pipes reached end
+/// of file, when the deadline passes or when the calling task is cancelled, whichever comes first.
+private final class CLIInvocation: @unchecked Sendable {
+  /// How long to wait for the pipes to close after the CLI exits. A process the CLI left behind
+  /// can keep them open long after it is gone.
+  private static let drainGrace: TimeInterval = 2
+
+  private let process: Process
+  private let timeout: TimeInterval
+  private let standardOutput = Pipe()
+  private let standardError = Pipe()
+
+  private let lock = NSLock()
+  private var continuation: CheckedContinuation<Data, any Error>?
+  private var output = Data()
+  private var errorOutput = Data()
+  private var outputClosed = false
+  private var errorClosed = false
+  private var exited = false
+  private var settled = false
+
+  init(process: Process, timeout: TimeInterval) {
+    self.process = process
+    self.timeout = timeout
+  }
+
+  func start(_ continuation: CheckedContinuation<Data, any Error>) {
+    lock.lock()
+    guard !settled else {
+      lock.unlock()
+      continuation.resume(throwing: CancellationError())
+      return
+    }
+    self.continuation = continuation
+    lock.unlock()
+
+    process.standardOutput = standardOutput
+    process.standardError = standardError
+    standardOutput.fileHandleForReading.readabilityHandler = { [self] handle in
+      received(handle.availableData, onErrorStream: false)
+    }
+    standardError.fileHandleForReading.readabilityHandler = { [self] handle in
+      received(handle.availableData, onErrorStream: true)
+    }
+    process.terminationHandler = { [self] _ in exitedNow() }
+
+    do {
+      try process.run()
+    } catch {
+      settle(.failure(NeonCLIScannerError.launchFailed))
+      return
+    }
+    // Cancellation can land while the CLI is starting, before there was anything to stop.
+    if isSettled, process.isRunning { process.terminate() }
+
+    // A CLI waiting on an interactive sign-in would otherwise hold the scan forever.
+    DispatchQueue.global().asyncAfter(deadline: .now() + timeout) { [self] in
+      stop(because: NeonCLIScannerError.timedOut(seconds: Int(timeout)))
+    }
+  }
+
+  func cancel() {
+    stop(because: CancellationError())
+  }
+
+  private var isSettled: Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    return settled
+  }
+
+  private func stop(because error: any Error) {
+    guard settle(.failure(error)) else { return }
+    if process.isRunning { process.terminate() }
+  }
+
+  private func received(_ chunk: Data, onErrorStream: Bool) {
+    lock.lock()
+    if chunk.isEmpty {
+      if onErrorStream { errorClosed = true } else { outputClosed = true }
+    } else if onErrorStream {
+      errorOutput.append(chunk)
+    } else {
+      output.append(chunk)
+    }
+    lock.unlock()
+    if chunk.isEmpty {
+      (onErrorStream ? standardError : standardOutput).fileHandleForReading.readabilityHandler = nil
+      finishIfDone()
+    }
+  }
+
+  private func exitedNow() {
+    lock.lock()
+    exited = true
+    lock.unlock()
+    finishIfDone()
+    DispatchQueue.global().asyncAfter(deadline: .now() + Self.drainGrace) { [self] in
+      finishIfDone(evenWithOpenPipes: true)
+    }
+  }
+
+  private func finishIfDone(evenWithOpenPipes: Bool = false) {
+    lock.lock()
+    guard exited, evenWithOpenPipes || (outputClosed && errorClosed), !settled else {
+      lock.unlock()
+      return
+    }
+    let output = self.output
+    let errorOutput = self.errorOutput
+    lock.unlock()
+
+    let status = process.terminationStatus
+    guard status == 0 else {
+      let rawMessage = String(data: errorOutput.prefix(8_192), encoding: .utf8) ?? ""
+      settle(.failure(NeonCLIScannerError.classify(
+        errorOutput: ErrorRedaction.redactCredentials(in: rawMessage),
+        status: status
+      )))
+      return
+    }
+    settle(.success(output))
+  }
+
+  /// Resumes the caller once. Returns true when this call settled the run.
+  @discardableResult
+  private func settle(_ result: Result<Data, any Error>) -> Bool {
+    lock.lock()
+    guard !settled else {
+      lock.unlock()
+      return false
+    }
+    settled = true
+    let continuation = self.continuation
+    self.continuation = nil
+    lock.unlock()
+
+    standardOutput.fileHandleForReading.readabilityHandler = nil
+    standardError.fileHandleForReading.readabilityHandler = nil
+    continuation?.resume(with: result)
+    return true
+  }
 }
 
 public enum NeonCLIScannerError: Error, Sendable, Equatable, LocalizedError {

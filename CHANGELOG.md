@@ -6,6 +6,10 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ## [Unreleased]
 
+### Fixed
+
+- Scan Neon CLI no longer holds a thread while each CLI command runs. When several ran at once, everything else LithePG was doing could freeze for good, which is what hung the CI test run. A cancelled scan now also stops the CLI it was waiting on.
+
 ## [v1.0.12] — 2026-11-08
 
 ### Added
