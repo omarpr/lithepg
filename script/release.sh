@@ -343,7 +343,7 @@ gh release edit "$TAG" --repo "$LITHEPG_GITHUB_REPOSITORY" --draft=false --lates
 /bin/cp "$CASK_PATH" "$TAP_DIR/Casks/lithepg.rb"
 (
   cd "$TAP_DIR"
-  brew style --cask Casks/lithepg.rb
+  brew style --cask "$LITHEPG_HOMEBREW_TAP/lithepg"
   brew audit --online --strict --cask "$LITHEPG_HOMEBREW_TAP/lithepg"
 )
 git -C "$TAP_DIR" add -- Casks/lithepg.rb

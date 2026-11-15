@@ -235,7 +235,7 @@ Use that approved local digest for `LITHEPG_RELEASE_ZIP_SHA256`, the final GitHu
 7. Confirm the cask installs `app "LithePG.app"`.
 8. Confirm the `zap trash:` stanza includes both local cleanup paths: `~/Library/Application Support/LithePG` and `~/Library/Preferences/dev.omarpr.lithepg.plist`.
 9. Run `ruby -c packaging/homebrew/lithepg.rb` for template syntax.
-10. If Omar has provided the external tap target, copy the cask into that tap and run Homebrew checks there, for example `brew style --cask Casks/lithepg.rb` and `brew audit --cask --new --strict Casks/lithepg.rb`.
+10. If Omar has provided the external tap target, copy the cask into that tap and run Homebrew checks there, for example `brew style --cask <tap>/lithepg` and `brew audit --cask --new --strict <tap>/lithepg`. Homebrew 7 rejects cask file paths, so use the tap and cask name.
 
 Stop before pushing to or creating any external Homebrew tap. Omar must explicitly provide the tap target and publication instructions; do not infer them from the main repository or from the cask token.
 

@@ -310,7 +310,7 @@ gh release edit "$TAG" \
 (
   cd "$TAP_DIR"
   /usr/bin/ruby -c Casks/lithepg.rb >/dev/null
-  brew style --cask Casks/lithepg.rb
+  brew style --cask "$LITHEPG_HOMEBREW_TAP/lithepg"
 )
 git -C "$TAP_DIR" add -- Casks/lithepg.rb
 git -C "$TAP_DIR" diff --cached --quiet && fail "the Homebrew tap cask did not change"

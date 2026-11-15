@@ -27,6 +27,7 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ### Fixed
 
+- The release scripts check the Homebrew cask by tap and cask name. `brew style --cask Casks/lithepg.rb` is rejected by Homebrew 7 (it no longer loads casks from paths), which stopped `make release` after the GitHub release was published and before the tap was updated.
 - Running a query that returns more than 10,000 rows no longer downloads the whole result. LithePG still shows the first 10,000 rows and "of 10,000+", but PostgreSQL now stops after 10,001 rows, so `SELECT * FROM` a large table finishes quickly instead of streaming every row over the network. Writes, `SELECT INTO`, `FOR UPDATE` and similar locking queries and several statements at once run exactly as typed, and error positions still point at the right place in your SQL.
 - SSH targets with an IPv6 bastion now work when written in brackets, as in `user@[fd00::1]:22`, and an IPv6 database host is forwarded correctly. The app and the `lithepg` CLI now read SSH targets the same way.
 
