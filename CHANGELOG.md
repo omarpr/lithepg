@@ -6,6 +6,10 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ## [Unreleased]
 
+### Added
+
+- The cell editor can format JSON. When a cell holds a JSON object or array, whether the column is `json`, `jsonb` or text, a Format JSON button indents it two spaces per level so it is easier to read and edit, and Compact JSON puts it back on one line. Only the spacing changes: keys stay in order and numbers and strings are kept exactly. It also works on read-only cells, so the formatted value can be copied.
+
 ### Security
 
 - SSH tunnels refuse a user or host that starts with a dash or contains spaces, so a target such as `-oProxyCommand=...@host` can no longer be read by ssh as an option. The host is now passed after `--` and the user with `-l`, the local forward listens only on 127.0.0.1, and ssh never waits on a password prompt it cannot show (keys from ssh-agent still work).

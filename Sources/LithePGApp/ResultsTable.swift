@@ -752,7 +752,7 @@ struct ResultCellEditorSheet: View {
         }
         TextEditor(text: $text)
             .font(.callout.monospaced())
-            .frame(height: 140)
+            .frame(height: text.contains("\n") ? 260 : 140)
             .focused($editorFocused)
             .disabled(!isEditable || setNull)
             .opacity(setNull ? 0.45 : 1)
@@ -847,6 +847,7 @@ struct ResultCellEditorSheet: View {
                 .disabled(!hasChanges)
                 Button("Copy") { onCopy(text) }
                     .buttonAffordance("Copy this cell value")
+                jsonFormatButton
                 Spacer()
                 Button(isEditable ? "Cancel" : "Close", action: onClose)
                     .keyboardShortcut(.cancelAction)
@@ -858,6 +859,23 @@ struct ResultCellEditorSheet: View {
                         .disabled(!hasChanges)
                         .accessibilityIdentifier("save-cell-edit")
                 }
+            }
+        }
+    }
+
+    /// Formats a JSON object or array for reading and editing, and compacts it back. Only
+    /// whitespace changes, so a jsonb value saves as the same value either way.
+    @ViewBuilder
+    private var jsonFormatButton: some View {
+        if !setNull, let pretty = JSONTextFormatter.prettyPrinted(text) {
+            if text == pretty, let compact = JSONTextFormatter.compacted(text) {
+                Button("Compact JSON") { text = compact }
+                    .buttonAffordance("Put this JSON back on one line")
+                    .accessibilityIdentifier("cell-compact-json")
+            } else {
+                Button("Format JSON") { text = pretty }
+                    .buttonAffordance("Indent this JSON so it is easier to read and edit")
+                    .accessibilityIdentifier("cell-format-json")
             }
         }
     }
