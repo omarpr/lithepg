@@ -178,6 +178,32 @@ case "$REMOTE_TAG_STATUS" in
     ;;
 esac
 gh auth status >/dev/null 2>&1 || fail "GitHub CLI is not authenticated"
+
+# Swift 6.3.3 miscompiles the clock based Task.sleep(for:) and shipped a crash in 1.0.8.
+# Release builds use whatever toolchain DEVELOPER_DIR selects, so refuse anything older
+# than the first toolchain known to be clean.
+SWIFT_VERSION_LINE="$(/usr/bin/env DEVELOPER_DIR="$DEVELOPER_DIR" swift --version 2>&1 | /usr/bin/grep -m1 'Swift version')" || \
+  fail "could not read the Swift version from $DEVELOPER_DIR"
+[[ "$SWIFT_VERSION_LINE" =~ Swift\ version\ ([0-9]+)\.([0-9]+) ]] || \
+  fail "could not read the Swift version from: $SWIFT_VERSION_LINE"
+SWIFT_MAJOR="${BASH_REMATCH[1]}"
+SWIFT_MINOR="${BASH_REMATCH[2]}"
+if (( SWIFT_MAJOR < 6 || (SWIFT_MAJOR == 6 && SWIFT_MINOR < 4) )); then
+  fail "release builds need Swift 6.4 or newer; $DEVELOPER_DIR has $SWIFT_MAJOR.$SWIFT_MINOR"
+fi
+
+# Release only a commit that is on origin and passed CI. The release commit made below only
+# changes release metadata, so the code that ships is the code CI tested.
+HEAD_SHA="$(git -C "$ROOT_DIR" rev-parse HEAD)"
+REMOTE_BRANCH_SHA="$(git -C "$ROOT_DIR" ls-remote origin "refs/heads/$LITHEPG_RELEASE_BRANCH" | /usr/bin/cut -f1)"
+[[ "$REMOTE_BRANCH_SHA" == "$HEAD_SHA" ]] || \
+  fail "push $LITHEPG_RELEASE_BRANCH and wait for CI; origin/$LITHEPG_RELEASE_BRANCH is not at $HEAD_SHA"
+CI_RESULT="$(gh run list --repo "$LITHEPG_GITHUB_REPOSITORY" --workflow ci.yml --commit "$HEAD_SHA" \
+  --limit 1 --json status,conclusion --jq 'if length == 0 then "no run" else .[0] | "\(.status) \(.conclusion)" end' 2>/dev/null)" || \
+  fail "could not read the CI result for $HEAD_SHA"
+[[ "$CI_RESULT" == "completed success" ]] || \
+  fail "CI has not passed on $HEAD_SHA (latest run: ${CI_RESULT:-no run}); fix or re-run it before releasing"
+
 if gh release view "$TAG" --repo "$LITHEPG_GITHUB_REPOSITORY" >/dev/null 2>&1; then
   fail "GitHub release already exists: $TAG"
 fi

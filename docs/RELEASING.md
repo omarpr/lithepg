@@ -106,6 +106,14 @@ unless the variables in the next section are exported first.
 A fresh clone has no wrapper, and `make release` says so. Copy the file from a Mac that
 has it, or export the variables below and run `script/release_cask_notarized.sh` instead.
 
+Before it builds anything, `script/release.sh` refuses to continue unless:
+
+- the toolchain selected by `DEVELOPER_DIR` is Swift 6.4 or newer, because Swift 6.3.3
+  miscompiles `Task.sleep(for:)` and shipped a crash in 1.0.8; and
+- `HEAD` is already on `origin/main` and the CI workflow passed on that exact commit. Push,
+  wait for CI and re-run it if it was cancelled. The release commit the script creates only
+  touches release metadata, so the shipped code is the code CI tested.
+
 Notes written under `## [Unreleased]` in `CHANGELOG.md` become the release notes, so add
 them as user-visible changes land. Other entry points live in the `Makefile`
 (`make test`, `make app`, `make install`, `make web-deploy` and more).

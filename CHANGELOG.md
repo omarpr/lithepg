@@ -15,6 +15,8 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 - SECURITY.md now describes TLS as it actually works: verified TLS by default for remote hosts, `require` encrypts without checking the certificate, `prefer` and `allow` can fall back to cleartext and `disable` is accepted for any host with a warning in the connect sheet. It previously said `prefer` and `allow` were rejected and that `require` was verified.
 - The security, architecture and technology docs no longer describe the old deterministic drafter or CoreML model adapter. Ask in English has used only Apple's on-device model for some time, and the unused `DeterministicAIQueryService`, `LocalModelAIQueryService` and `LocalModelRegistry` code (and the `LITHEPG_ENABLE_LOCAL_MODEL` switch) is removed.
 
+- Releases now stop before building unless the toolchain is Swift 6.4 or newer and CI passed on the commit being released. v1.0.12 shipped from a commit whose CI run was cut off by the 20-minute limit, which is now 35 minutes.
+
 ### Fixed
 
 - SSH targets with an IPv6 bastion now work when written in brackets, as in `user@[fd00::1]:22`, and an IPv6 database host is forwarded correctly. The app and the `lithepg` CLI now read SSH targets the same way.

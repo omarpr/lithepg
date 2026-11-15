@@ -113,4 +113,12 @@ assert_contains "$script_contents" 'git -C "$TAP_DIR" add -- Casks/lithepg.rb'
 assert_contains "$script_contents" 'git -C "$TAP_DIR" commit -m "lithepg $VERSION"'
 assert_contains "$script_contents" 'git -C "$TAP_DIR" push origin HEAD'
 
+assert_contains "$script_contents" 'release builds need Swift 6.4 or newer'
+assert_contains "$script_contents" 'gh run list --repo "$LITHEPG_GITHUB_REPOSITORY" --workflow ci.yml --commit "$HEAD_SHA"'
+assert_contains "$script_contents" '[[ "$CI_RESULT" == "completed success" ]]'
+# The toolchain and CI gates must run before anything is built, signed or pushed.
+gate_line="$(/usr/bin/grep -n 'CI has not passed on' "$HELPER" | /usr/bin/cut -d: -f1)"
+test_line="$(/usr/bin/grep -n 'Running Swift tests' "$HELPER" | /usr/bin/cut -d: -f1)"
+(( gate_line < test_line )) || fail "CI gate must run before the release steps"
+
 printf 'test_release passed\n'
