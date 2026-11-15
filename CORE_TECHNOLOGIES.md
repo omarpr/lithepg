@@ -42,11 +42,8 @@ Saved connections and opt in query history are JSON files behind small store pro
 
 ## Local First AI
 
-### Deterministic drafting by default
-Ask in English drafting runs entirely on device. The default engine is deterministic Swift that uses the indexed schema and foreign key metadata to draft single table queries and two table joins. Drafted SQL is inserted into the editor for human review and is never executed automatically.
-
-### CoreML for optional models
-The optional model adapter is built on CoreML because it ships with the macOS SDK, adds zero package dependencies and keeps model artifacts external and user provided. Nothing is bundled and nothing is downloaded. MLX stays on the roadmap for when a concrete model justifies the runtime cost. Privacy receipts are test covered: prompts contain only the user request and schema metadata, never credentials, connection URLs or result rows.
+### Apple's on-device model
+Ask in English drafting runs entirely on device with Apple's system language model through the Foundation Models framework on macOS 26. It ships with macOS, so LithePG adds no package dependency and bundles or downloads no model. Guided generation returns a typed draft, compact schema and foreign key context grounds it, and a local gate admits only one read-only statement. When the model is unavailable, drafting is disabled rather than replaced by a weaker engine. Drafted SQL is inserted into the editor for human review and is never executed automatically. Privacy receipts are test covered: prompts contain only the user request and schema metadata, never credentials, connection URLs or result rows.
 
 ## Build and Distribution
 

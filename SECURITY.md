@@ -17,24 +17,28 @@ LithePG is a local macOS client that connects to user-owned PostgreSQL databases
 - `POSTGRES_URL` and `LITHEPG_STARTUP_URL` are intended for CI and automated testing. Environment variables can be visible to same-user processes and terminal logs; saved connections are the recommended path for regular use.
 
 ## Transport Security
-- Postgres URL `sslmode=` is strictly honored to prevent silent cleartext fallbacks.
-- `require`, `verify-ca` and `verify-full` map to LithePG's verified TLS path. Explicit TLS connections do not fall back to cleartext on handshake failure.
-- To prevent accidental exposure over insecure networks, **ambiguous or opportunistic modes (`allow`, `prefer`) are explicitly rejected** by the client connection manager. LithePG will throw an unsupported error rather than silently dropping down to cleartext. Local or explicit cleartext must use `disable` and is restricted by policy to localhost environments.
-- SSH tunnels use OpenSSH with `StrictHostKeyChecking=yes`; users must pre-trust bastion host keys in `known_hosts` instead of relying on trust-on-first-use.
+- **Verified TLS is the default for remote hosts.** A connection without an `sslmode` uses `verify-full` (certificate chain and hostname checked) for any host that is not loopback, and `disable` for `localhost`, `127.0.0.0/8`, `::1` and `*.localhost`.
+- Postgres URL `sslmode=` values map to four modes, and unknown values are rejected rather than guessed:
+  - `verify-full` and `verify-ca` use verified TLS. `verify-ca` is held to the stricter `verify-full` bar. Verified connections never fall back to cleartext.
+  - `require` always encrypts but does not check the server certificate, as in libpq, so it does not stop an active machine in the middle.
+  - `prefer` and `allow` try TLS without checking the certificate and fall back to cleartext if the server refuses TLS. PostgresNIO has no cleartext-first ordering, so `allow` behaves like `prefer`.
+  - `disable` sends everything, including the password exchange, in cleartext.
+- These weaker modes are only ever used when the URL or the user asks for them. The connect sheet warns when a remote host would use `disable` or `prefer`, and the TLS picker explains that `require` skips certificate checks. Imported Neon connections are saved as `verify-full` even when Neon's URL asks for `require`.
+- A saved connection with an unrecognized TLS label fails to load instead of falling back to a weaker mode.
+- SSH tunnels use OpenSSH with `StrictHostKeyChecking=yes`; users must pre-trust bastion host keys in `known_hosts` instead of relying on trust-on-first-use. The forward listens only on 127.0.0.1, ssh runs in batch mode and SSH users or hosts that start with `-` are refused so they cannot be read as ssh options. In the app, SSH tunnels are available only with TLS off, so traffic between the bastion and the database is not encrypted by LithePG.
 
 ## Local Data at Rest
 - Saved connection metadata and opt-in query history are stored as local JSON files under Application Support.
 - Query history is opt-in and can be cleared at any time.
 - Credentials and query results are not written to LithePG-owned JSON files.
-- Release bundles use Hardened Runtime. While pre-1.0 versions remain unsandboxed to seamlessly execute native OpenSSH and a user-installed Neon CLI, the project actively tracks a long-term architecture migration toward App Sandboxing via user-selected file entitlements and decoupled helper architectures. Public distribution requires Developer ID signing and notarization.
+- Release bundles are signed with a Developer ID, use Hardened Runtime and are notarized by Apple. LithePG is not sandboxed, because it runs the system OpenSSH and a user-installed Neon CLI. Moving to the App Sandbox with helper processes remains a long-term goal.
 - Neon discovery runs only after the user presses Scan. It invokes the installed CLI with JSON output, color disabled and Neon analytics disabled. CLI-generated URLs stay in process memory long enough to split metadata from passwords; passwords are sent to Keychain and are never logged or persisted in JSON.
 - Test connection uses the entered credentials only for a temporary `SELECT 1` probe. It closes the temporary connection immediately, saves no metadata or password and redacts credentials from reported failures.
 
 ## AI & Privacy
-- **All inference is intended to run on-device.** v0.5's first adapter scaffold uses CoreML because it is provided by the macOS SDK and adds no package dependency; MLX remains a future measured option.
-- The built-in deterministic NL2SQL service supports a documented read-only subset: relation listing, counts, projected columns, ordering, limits and known foreign-key joins. Unsupported requests are labeled as such instead of being presented as model failures.
-- `LocalModelAIQueryService` remains a gated scaffold. The adapter can validate an external CoreML artifact but model-specific NL2SQL inference mapping is not implemented.
-- Model artifacts are separate from the app binary, are expected under LithePG's Application Support model directory by default, and are never downloaded by the app.
+- **All inference runs on-device.** Ask in English uses only Apple's `SystemLanguageModel.default` through the Foundation Models framework on macOS 26 with Apple Intelligence. When that model is unavailable, drafting is disabled with recovery guidance and no other drafter is substituted.
+- LithePG bundles no model and downloads none. macOS manages the system model.
+- A local gate admits only a single `SELECT` or `WITH` statement and rejects mutation, DDL, locking clauses, `SELECT INTO` and multiple statements. It is a keyword check, so a draft can still call a side-effecting function (for example `pg_terminate_backend`); review drafts before running them, especially on Production connections.
 - No prompts, schemas, query text or results are transmitted to any external service.
 - AI context construction is intentionally narrow: it may include the natural-language request and schema metadata, but it excludes raw connection URLs and query result rows and redacts credential-shaped substrings before any model adapter receives context.
 - Generated SQL is a draft for user review. LithePG inserts drafts into the editor but does not execute them automatically.

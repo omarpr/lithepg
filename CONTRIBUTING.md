@@ -26,7 +26,7 @@ A change that breaks one of these will not merge:
 - **Pure app code.** No `libpq` and no app-authored C shims. PostgresNIO is the
   connection path; its accepted TLS dependency boundary is documented in
   `docs/TECH_STACK.md`.
-- **Local-first AI.** Inference runs on-device (CoreML/MLX). No user data leaves
+- **Local-first AI.** Inference runs on-device with Apple's system model. No user data leaves
   the machine: not prompts, schemas, results, credentials or history. No bundled
   model artifacts.
 - **Lean.** Binary-size and startup-time budgets are real targets (see

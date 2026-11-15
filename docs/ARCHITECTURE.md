@@ -26,8 +26,8 @@ High-level module boundaries and data flow for LithePG. Implementation details l
         │
 ┌───────▼──────────────────────────────────────┐
 │  Inference (local)                           │
-│  Deterministic draft service; optional       │
-│  user-provided CoreML artifacts              │
+│  Apple on-device system model through        │
+│  Foundation Models (macOS 26)                │
 └──────────────────────────────────────────────┘
 ```
 
@@ -61,7 +61,7 @@ High-level module boundaries and data flow for LithePG. Implementation details l
 
 ### Inference
 - Default SQL drafting exclusively uses Apple's lightweight `SystemLanguageModel.default` on supported macOS 26 Macs, with guided output, bounded schema retrieval and a read-only SQL safety gate. It makes no network AI calls.
-- Ask in English is disabled with recovery guidance when Apple's model is unavailable; no alternate drafter is substituted. The deterministic service remains test/reference code only. A separate CoreML artifact-validation scaffold remains disabled by default for user-provided experiments.
+- Ask in English is disabled with recovery guidance when Apple's model is unavailable; no alternate drafter is substituted.
 - Schema awareness uses local metadata/indexing; vector storage remains a future optimization.
 
 ## Key Invariants
@@ -78,5 +78,5 @@ High-level module boundaries and data flow for LithePG. Implementation details l
 
 ## Testing Strategy
 - **Unit tests:** Core models/services, app-state workflow, persistence stores, presentation helpers, exporter behavior and redaction.
-- **Integration tests:** Real PostgreSQL/TLS/SSH/model-artifact paths are env-gated and auto-skip when prerequisites are absent.
+- **Integration tests:** Real PostgreSQL, TLS, SSH, Keychain and Neon paths are env-gated and auto-skip when prerequisites are absent.
 - **UI tests:** Minimal smoke coverage; most behavior is covered through view model and presentation-helper tests.
