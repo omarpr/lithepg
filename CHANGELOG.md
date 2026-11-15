@@ -6,6 +6,8 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ## [Unreleased]
 
+## [v1.0.13] — 2026-11-15
+
 ### Added
 
 - The cell editor can format JSON. When a cell holds a JSON object or array, whether the column is `json`, `jsonb` or text, a Format JSON button indents it two spaces per level so it is easier to read and edit, and Compact JSON puts it back on one line. Only the spacing changes: keys stay in order and numbers and strings are kept exactly. It also works on read-only cells, so the formatted value can be copied.
@@ -30,6 +32,18 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 - The results footer now reports a table's real size. Clicking a table in the sidebar loads its first 100 rows and then counts the whole table, so the footer reads "Rows 1–100 of 48,210 (first 100 loaded)" instead of "of 100". Results cut short by the 10,000-row cap now read "of 10,000+".
 - Scan Neon CLI no longer holds a thread while each CLI command runs. When several ran at once, everything else LithePG was doing could freeze for good, which is what hung the CI test run. A cancelled scan now also stops the CLI it was waiting on.
+
+### Commits since `v1.0.12`
+
+- fix(neon): run the CLI without blocking a concurrency thread (`c92601c`)
+- fix(results): report the table's real row count in the footer (`bc13a0d`)
+- fix(ssh): refuse option-like targets and pass the host after -- (`abe8dcb`)
+- docs(security): describe TLS and AI as they work, drop dead AI scaffolds (`277012b`)
+- ci(release): require Swift 6.4+ and green CI on the released commit (`cc81b0d`)
+- fix(core): stop large queries on the server at the row cap (`ce740f3`)
+- feat(results): format and compact JSON in the cell editor (`41f6bd9`)
+- feat(results): color JSON in the cell editor (`ea167f1`)
+- feat(ui): polish toolbar, sidebar and connect sheet spacing (`d30b98d`)
 
 ## [v1.0.12] — 2026-11-08
 
@@ -303,6 +317,7 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 - `SELECT 1` succeeded over plain loopback, TLS verify-full, and SSH-tunneled paths.
 - Dependency inspection showed no `libpq` linkage and no LithePG-authored C shims.
 
+[v1.0.13]: https://github.com/omarpr/lithepg/compare/v1.0.12...v1.0.13
 [v1.0.12]: https://github.com/omarpr/lithepg/compare/v1.0.11...v1.0.12
 [v1.0.11]: https://github.com/omarpr/lithepg/compare/v1.0.10...v1.0.11
 [v1.0.10]: https://github.com/omarpr/lithepg/compare/v1.0.9...v1.0.10
