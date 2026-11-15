@@ -70,8 +70,24 @@ public actor PostgresConnector {
         await current.tunnel?.close()
     }
 
+    /// Most rows a result keeps. Rows past it are counted but not stored, and the result
+    /// reports itself as truncated.
+    public static let rowCap = 10_000
+
+    /// Runs SQL typed by the user. A plain read-only query is sent with an outer LIMIT one past
+    /// the row cap (see `QueryRowBound`), so the server stops early and truncation is still
+    /// detected; everything else runs as written.
     public func execute(_ sql: String) async throws -> QueryResult {
-        try await execute(PostgresQuery(unsafeSQL: sql))
+        guard let bounded = QueryRowBound.bounded(sql, limit: Self.rowCap + 1) else {
+            return try await execute(PostgresQuery(unsafeSQL: sql))
+        }
+        do {
+            return try await execute(PostgresQuery(unsafeSQL: bounded.sql))
+        } catch let error as PSQLError where error.serverInfo?[.position] != nil {
+            // Only errors that point into the SQL need translating. Everything else, such as a
+            // lost connection, keeps its own type so callers still recognize it.
+            throw BoundedQueryError(underlying: error, positionShift: bounded.positionShift, sql: sql)
+        }
     }
 
     /// Executes a pre-built Postgres query so internal features can use PostgresNIO's
@@ -138,7 +154,7 @@ public actor PostgresConnector {
         // already closed, so asking would hang the caller forever. Check first.
         guard !current.connection.isClosed else { throw ExecuteError.connectionLost }
         let start = ContinuousClock.now
-        let cap = 10_000
+        let cap = Self.rowCap
         let accumulator = QueryAccumulator(cap: cap)
 
         let queryFuture = current.connection.query(

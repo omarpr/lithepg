@@ -19,6 +19,7 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ### Fixed
 
+- Running a query that returns more than 10,000 rows no longer downloads the whole result. LithePG still shows the first 10,000 rows and "of 10,000+", but PostgreSQL now stops after 10,001 rows, so `SELECT * FROM` a large table finishes quickly instead of streaming every row over the network. Writes, `SELECT INTO`, `FOR UPDATE` and similar locking queries and several statements at once run exactly as typed, and error positions still point at the right place in your SQL.
 - SSH targets with an IPv6 bastion now work when written in brackets, as in `user@[fd00::1]:22`, and an IPv6 database host is forwarded correctly. The app and the `lithepg` CLI now read SSH targets the same way.
 
 - The results footer now reports a table's real size. Clicking a table in the sidebar loads its first 100 rows and then counts the whole table, so the footer reads "Rows 1–100 of 48,210 (first 100 loaded)" instead of "of 100". Results cut short by the 10,000-row cap now read "of 10,000+".

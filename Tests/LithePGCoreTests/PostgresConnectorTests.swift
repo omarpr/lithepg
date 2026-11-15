@@ -116,6 +116,47 @@ struct PostgresConnectorTests {
     }
 
     @Test(
+        "a large query stops on the server after the row cap",
+        .enabled(if: plainURL != nil)
+    )
+    func liveLargeQueryStopsAtCap() async throws {
+        let connector = PostgresConnector()
+        try await connector.open(config: try ConnectionConfig(url: Self.plainURL!))
+        _ = try await connector.execute("CREATE TEMPORARY SEQUENCE lithepg_rows_produced")
+
+        // nextval runs once per row the server produces, so it counts how far the scan went.
+        let result = try await connector.execute(
+            "SELECT nextval('lithepg_rows_produced') FROM generate_series(1, 50000)")
+        #expect(result.rows.count == PostgresConnector.rowCap)
+        #expect(result.truncated)
+        let produced = try await connector.execute("SELECT last_value FROM lithepg_rows_produced")
+        guard case .text(let text) = produced.rows.first?.cells.first, let count = Int(text) else {
+            Issue.record("expected the sequence value")
+            return
+        }
+        #expect(count == PostgresConnector.rowCap + 1)
+        try await connector.shutdown()
+    }
+
+    @Test(
+        "an error in a bounded query reports the position in the user's SQL",
+        .enabled(if: plainURL != nil)
+    )
+    func liveBoundedErrorPosition() async throws {
+        let connector = PostgresConnector()
+        try await connector.open(config: try ConnectionConfig(url: Self.plainURL!))
+        do {
+            _ = try await connector.execute("SELECT no_such_column FROM (VALUES (1)) AS v")
+            Issue.record("expected the query to fail")
+        } catch {
+            let message = ErrorRedaction.redactCredentials(in: error)
+            #expect(message.contains("SQLSTATE 42703"))
+            #expect(message.contains("Position 8"))
+        }
+        try await connector.shutdown()
+    }
+
+    @Test(
         "a connection the server dropped fails fast instead of hanging",
         .enabled(if: plainURL != nil)
     )

@@ -5,7 +5,15 @@ public enum ErrorRedaction {
     /// Extracts a minimal, actionable PostgreSQL diagnostic when available, then scrubs credentials.
     public static func redactCredentials(in error: Error) -> String {
         let raw: String
-        if let postgresError = error as? PSQLError {
+        if let bounded = error as? BoundedQueryError, let serverInfo = bounded.underlying.serverInfo {
+            raw = postgresServerMessage(
+                message: serverInfo[.message],
+                sqlState: serverInfo[.sqlState],
+                position: serverInfo[.position].flatMap {
+                    QueryRowBound.userPosition($0, shift: bounded.positionShift, in: bounded.sql)
+                }
+            )
+        } else if let postgresError = error as? PSQLError {
             raw = postgresMessage(postgresError)
         } else {
             raw = String(describing: error)

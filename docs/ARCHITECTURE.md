@@ -50,7 +50,7 @@ High-level module boundaries and data flow for LithePG. Implementation details l
 
 ### Driver
 - `PostgresNIO` is the connection path. LithePG does not link `libpq` and does not carry app-authored C shims.
-- Exposes typed `QueryResult` values to the app and caps materialized rows at the UI safety limit.
+- Exposes typed `QueryResult` values to the app and keeps at most 10,000 rows. `QueryRowBound` sends a plain read-only query as `SELECT * FROM (query) LIMIT 10001`, so the server stops after one row past the cap instead of streaming the whole result; writes, data-modifying `WITH`, `SELECT INTO`, locking clauses and multi-statement text run as written. Server error positions are mapped back onto the user's SQL.
 - Owns TLS configuration and the effective host/port after optional SSH tunnel resolution.
 - Always requests `client_encoding=UTF8`. PostgresNIO (through 1.33.2) never completes a query sent on a channel the server already closed, so the connector checks for a closed channel before each query and fails pending work when the channel closes; `AppState` watches the close future to report a lost connection while idle.
 
