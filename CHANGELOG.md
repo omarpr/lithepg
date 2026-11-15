@@ -17,6 +17,7 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ### Changed
 
+- The window has a UI polish pass. Toolbar commands show an icon and label as separate chips with a gap between them, Stop and Disconnect appear only when they apply and the results bar waits for results. The sidebar uses one shared inset, shows connections in a scrolling list with a filter box in place of pages and reveals the edit button on hover. The connect sheet has wider margins, a footer that stays visible, outlined fields and an Advanced section for encryption and SSH. The header says No connection when nothing is connected and the version badge is gone.
 - SECURITY.md now describes TLS as it actually works: verified TLS by default for remote hosts, `require` encrypts without checking the certificate, `prefer` and `allow` can fall back to cleartext and `disable` is accepted for any host with a warning in the connect sheet. It previously said `prefer` and `allow` were rejected and that `require` was verified.
 - The security, architecture and technology docs no longer describe the old deterministic drafter or CoreML model adapter. Ask in English has used only Apple's on-device model for some time, and the unused `DeterministicAIQueryService`, `LocalModelAIQueryService` and `LocalModelRegistry` code (and the `LITHEPG_ENABLE_LOCAL_MODEL` switch) is removed.
 

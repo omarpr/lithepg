@@ -37,8 +37,11 @@ struct ResultsTable: View {
         // lookups (selection, copy cell, editing) use the full result by original row number.
         let renderedResult = result.map { ResultsTablePresentation.filtered($0, matching: filterText) }
         VStack(spacing: 0) {
-            actionBar(for: renderedResult)
-            Divider()
+            // Nothing to filter, copy or export yet, so the bar stays out of the way.
+            if renderedResult != nil {
+                actionBar(for: renderedResult)
+                Divider()
+            }
             Group {
                 if let result = renderedResult {
                     content(for: result, page: normalizedPage(for: result))
@@ -177,7 +180,7 @@ struct ResultsTable: View {
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, UIMetrics.inset)
                     .padding(.vertical, 7)
                     .background(.bar)
                 }
@@ -220,7 +223,7 @@ struct ResultsTable: View {
                     .font(.headline.monospacedDigit())
                     .foregroundStyle(.primary)
                     .frame(minWidth: 28, alignment: .trailing)
-                Text(ResultsTablePresentation.secondaryStatus(for: result, page: page))
+                Text(actionBarSecondaryStatus(for: result, page: page))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Text(ResultsTablePresentation.commandStatus(for: result))
@@ -303,9 +306,28 @@ struct ResultsTable: View {
             .disabled(!ResultsTablePresentation.canExport(result))
         }
         .buttonStyle(.borderless)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, UIMetrics.inset)
+        .padding(.vertical, UIMetrics.headerVertical)
         .background(.bar)
+    }
+
+    private func actionBarSecondaryStatus(for result: QueryResult, page: Int) -> String {
+        switch result.status {
+        case .rows:
+            guard result.rowCount <= ResultsTablePresentation.pageSize else {
+                return ResultsTablePresentation.secondaryStatus(for: result, page: page)
+            }
+            return elapsedOnlyStatus(for: result, page: page)
+        case .empty:
+            return elapsedOnlyStatus(for: result, page: page)
+        default:
+            return ResultsTablePresentation.secondaryStatus(for: result, page: page)
+        }
+    }
+
+    private func elapsedOnlyStatus(for result: QueryResult, page: Int) -> String {
+        let status = ResultsTablePresentation.secondaryStatus(for: result, page: page)
+        return status.split(separator: "·").last?.trimmingCharacters(in: .whitespaces) ?? status
     }
 
     private func filterField(total: Int, shown: Int) -> some View {
@@ -393,8 +415,8 @@ struct ResultsTable: View {
             .disabled(!ResultsTablePresentation.canGoNext(result, page: page))
         }
         .buttonStyle(.borderless)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 7)
+        .padding(.horizontal, UIMetrics.inset)
+        .padding(.vertical, 8)
         .background(.bar)
     }
 

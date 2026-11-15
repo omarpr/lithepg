@@ -7,7 +7,8 @@ struct ConnectionNavigator: View {
   @State private var pendingDelete: SavedConnectionMetadata?
   @State private var editingConnection: SavedConnectionMetadata?
   @State private var connectionsExpanded = true
-  @State private var connectionsPage = 0
+  @State private var searchText = ""
+  @State private var hoveredConnectionID: UUID?
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
@@ -15,20 +16,11 @@ struct ConnectionNavigator: View {
       if connectionsExpanded {
         Divider()
         connectionList
-        if SavedConnectionPagination.pageCount(itemCount: state.savedConnections.count) > 1 {
-          SavedConnectionPager(
-            page: $connectionsPage,
-            itemCount: state.savedConnections.count,
-            accessibilityPrefix: "navigator-connections"
-          )
-          .padding(.horizontal, 10)
-          .padding(.bottom, 14)
-        }
       }
       Divider()
       NeonScannerButton(state: state)
-        .padding(.horizontal, 10)
-        .padding(.top, 14)
+        .padding(.horizontal, UIMetrics.inset)
+        .padding(.top, UIMetrics.headerVertical)
         .padding(.bottom, 10)
     }
     .frame(
@@ -38,12 +30,6 @@ struct ConnectionNavigator: View {
       alignment: .top
     )
     .accessibilityIdentifier("connection-navigator")
-    .onChange(of: state.savedConnections.count) { _, count in
-      connectionsPage = SavedConnectionPagination.normalizedPage(
-        connectionsPage,
-        itemCount: count
-      )
-    }
     .confirmationDialog(
       "Delete saved connection?",
       isPresented: Binding(
@@ -103,8 +89,8 @@ struct ConnectionNavigator: View {
       .buttonAffordance(connectionsExpanded ? "Collapse connections" : "Expand connections")
       .accessibilityIdentifier("toggle-connections-list-button")
     }
-    .padding(.horizontal, 14)
-    .padding(.vertical, 10)
+    .padding(.horizontal, UIMetrics.inset)
+    .padding(.vertical, UIMetrics.headerVertical)
   }
 
   @ViewBuilder
@@ -126,18 +112,54 @@ struct ConnectionNavigator: View {
         .buttonAffordance("Add your first database connection")
         .accessibilityIdentifier("add-first-connection-button")
       }
-      .padding(12)
+      .padding(UIMetrics.inset)
       .frame(maxWidth: .infinity, alignment: .leading)
     } else {
-      LazyVStack(alignment: .leading, spacing: 4) {
-        ForEach(
-          SavedConnectionPagination.page(of: state.savedConnections, index: connectionsPage)
-        ) { connection in
-          connectionRow(connection)
+      VStack(spacing: 0) {
+        if state.savedConnections.count > 5 {
+          searchField
+        }
+        ScrollView {
+          LazyVStack(alignment: .leading, spacing: 4) {
+            ForEach(visibleConnections) { connection in
+              connectionRow(connection)
+            }
+            if visibleConnections.isEmpty {
+              Text("No connection matches “\(searchText)”")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(8)
+            }
+          }
+          .padding(.horizontal, UIMetrics.inset)
+          .padding(.vertical, 8)
         }
       }
-      .padding(8)
     }
+  }
+
+  private var visibleConnections: [SavedConnectionMetadata] {
+    let query = searchText.trimmingCharacters(in: .whitespaces)
+    guard !query.isEmpty else { return state.savedConnections }
+    return state.savedConnections.filter {
+      $0.name.localizedCaseInsensitiveContains(query)
+        || $0.connectionLabel.localizedCaseInsensitiveContains(query)
+    }
+  }
+
+  private var searchField: some View {
+    HStack(spacing: 6) {
+      Image(systemName: "magnifyingglass")
+        .foregroundStyle(.secondary)
+      TextField("Filter connections", text: $searchText)
+        .textFieldStyle(.plain)
+        .accessibilityIdentifier("connection-search-field")
+    }
+    .padding(.horizontal, 8)
+    .padding(.vertical, 5)
+    .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+    .padding(.horizontal, UIMetrics.inset)
+    .padding(.top, 8)
   }
 
   private func connectionRow(_ connection: SavedConnectionMetadata) -> some View {
@@ -160,12 +182,10 @@ struct ConnectionNavigator: View {
               .lineLimit(1)
           }
           Spacer(minLength: 4)
-          Text(connection.environment.displayName)
-            .font(.caption2)
-            .foregroundStyle(.secondary)
+          EnvironmentCapsule(environment: connection.environment)
         }
-        .padding(.horizontal, 7)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 7)
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
@@ -182,9 +202,11 @@ struct ConnectionNavigator: View {
           .labelStyle(.iconOnly)
       }
       .buttonStyle(.borderless)
+      .revealedOnHover(hoveredConnectionID == connection.id)
       .buttonAffordance("Edit saved connection \(connection.name)")
       .accessibilityIdentifier("edit-saved-connection-\(connection.id.uuidString)")
     }
+    .onHover { hoveredConnectionID = $0 ? connection.id : nil }
     .contextMenu {
       Button("Connect") {
         Task { await state.connectSavedConnection(id: connection.id) }

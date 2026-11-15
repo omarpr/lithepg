@@ -102,6 +102,9 @@ struct RootView: View {
             .task {
                 guard !didRunStartup else { return }
                 didRunStartup = true
+                #if DEBUG
+                DebugWindowSnapshot.scheduleIfRequested()
+                #endif
                 if let startupConfig {
                     await state.runStartupConnection(startupConfig)
                     writeStartupMetricsIfRequested(startupConfig, startedAt: launchStartedAt, state: state)

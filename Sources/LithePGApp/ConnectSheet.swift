@@ -38,8 +38,9 @@ struct ConnectSheet: View {
   @State private var showingCAImporter = false
   @State private var pendingDelete: SavedConnectionMetadata?
   @State private var editingConnection: SavedConnectionMetadata?
-  @State private var savedConnectionsExpanded = true
+  @State private var savedConnectionsExpanded: Bool
   @State private var savedConnectionsPage = 0
+  @State private var showAdvanced = false
   @FocusState private var urlFieldFocused: Bool
 
   init(
@@ -50,6 +51,8 @@ struct ConnectSheet: View {
     self.state = state
     self.closeAction = closeAction
     _saveConnection = State(initialValue: saveByDefault)
+    // Opened over the workspace, the sidebar already lists them; keep the form above the fold.
+    _savedConnectionsExpanded = State(initialValue: closeAction == nil)
   }
 
   private var neonProfile: NeonConnectionProfile? {
@@ -74,6 +77,7 @@ struct ConnectSheet: View {
   }
 
   var body: some View {
+    VStack(spacing: 0) {
     Form {
       Section {
         HStack(spacing: 10) {
@@ -101,108 +105,16 @@ struct ConnectSheet: View {
         }
       }
 
-      if !state.savedConnections.isEmpty {
-        Section {
-          if savedConnectionsExpanded {
-            ForEach(
-              SavedConnectionPagination.page(
-                of: state.savedConnections,
-                index: savedConnectionsPage
-              )
-            ) { connection in
-              HStack(spacing: 8) {
-                VStack(alignment: .leading, spacing: 2) {
-                  Text(connection.name)
-                    .font(.subheadline.bold())
-                  Text(connection.connectionLabel)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                }
-                Spacer()
-                Text(connection.environment.displayName)
-                  .font(.caption2.bold())
-                  .padding(.horizontal, 8)
-                  .padding(.vertical, 4)
-                  .background(environmentColor(connection.environment).opacity(0.16), in: Capsule())
-                  .foregroundStyle(environmentColor(connection.environment))
-                Button("Connect") {
-                  Task {
-                    await state.connectSavedConnection(id: connection.id)
-                    if state.isConnected { closeAction?() }
-                  }
-                }
-                .buttonStyle(.bordered)
-                .buttonAffordance("Connect to \(connection.name)")
+      savedConnectionsSection
 
-                Button {
-                  editingConnection = connection
-                } label: {
-                  Label("Edit saved connection", systemImage: "pencil")
-                    .labelStyle(.iconOnly)
-                }
-                .buttonStyle(.borderless)
-                .buttonAffordance("Edit saved connection \(connection.name)")
-                .accessibilityIdentifier("edit-saved-connection-\(connection.id.uuidString)")
-
-                Button(role: .destructive) {
-                  pendingDelete = connection
-                } label: {
-                  Label("Delete saved connection", systemImage: "trash")
-                    .labelStyle(.iconOnly)
-                }
-                .buttonStyle(.borderless)
-                .buttonAffordance("Delete saved connection \(connection.name)")
-              }
-            }
-
-            SavedConnectionPager(
-              page: $savedConnectionsPage,
-              itemCount: state.savedConnections.count,
-              accessibilityPrefix: "connect-sheet-connections"
-            )
-          }
-        } header: {
-          HStack {
-            Text("Saved connections")
-            Spacer()
-            Button {
-              withAnimation(.easeInOut(duration: 0.15)) {
-                savedConnectionsExpanded.toggle()
-              }
-            } label: {
-              Label(
-                savedConnectionsExpanded ? "Collapse connections" : "Expand connections",
-                systemImage: savedConnectionsExpanded ? "chevron.up" : "chevron.down"
-              )
-              .labelStyle(.iconOnly)
-            }
-            .buttonStyle(.borderless)
-            .buttonAffordance(savedConnectionsExpanded ? "Collapse connections" : "Expand connections")
-            .accessibilityIdentifier("toggle-saved-connections-section-button")
-          }
+      // Over the workspace the sidebar already has this button.
+      if closeAction == nil {
+        Section("Neon") {
+          NeonScannerButton(state: state)
         }
       }
 
-      Section("Neon") {
-        NeonScannerButton(state: state)
-      }
-
-      if !discoveredInstances.isEmpty {
-        Section("Local servers") {
-          ForEach(discoveredInstances) { instance in
-            HStack {
-              Label(instance.label, systemImage: "desktopcomputer")
-              Spacer()
-              Button("Connect") {
-                Task { await connectDiscovered(instance) }
-              }
-              .buttonStyle(.bordered)
-              .buttonAffordance("Connect to \(instance.label)")
-              .disabled(state.connectionState == .connecting)
-            }
-          }
-        }
-      }
+      localServersSection
 
       Section {
         Picker("Input mode", selection: $inputMode) {
@@ -252,16 +164,7 @@ struct ConnectSheet: View {
             .accessibilityIdentifier("neon-connection-hint")
           }
         } else {
-          TextField(ConnectSheetPresentation.requiredFieldLabel("Host"), text: $fieldHost)
-            .accessibilityIdentifier("field-host")
-          TextField("Port", text: $fieldPort)
-            .accessibilityIdentifier("field-port")
-          TextField(ConnectSheetPresentation.requiredFieldLabel("Database"), text: $fieldDatabase)
-            .accessibilityIdentifier("field-database")
-          TextField(ConnectSheetPresentation.requiredFieldLabel("Username"), text: $fieldUsername)
-            .accessibilityIdentifier("field-username")
-          SecureField("Password", text: $fieldPassword)
-            .accessibilityIdentifier("field-password")
+          detailFields
         }
 
         Text("* Required")
@@ -270,57 +173,7 @@ struct ConnectSheet: View {
           .accessibilityIdentifier("required-fields-legend")
       }
 
-      Section {
-        Picker("Encryption", selection: $tlsMode) {
-          ForEach(ConnectSheetPresentation.tlsModeOrder, id: \.self) { mode in
-            Text(ConnectSheetPresentation.tlsModeTitle(mode)).tag(mode)
-          }
-        }
-        .pickerStyle(.inline)
-        .accessibilityIdentifier("picker-tls-mode")
-        .controlAffordance("Choose how much the connection to the server is protected")
-        .onChange(of: tlsMode) { _, mode in
-          if mode != .disable { useSSH = false }
-        }
-
-        Text(ConnectSheetPresentation.tlsModeCaption(tlsMode))
-          .font(.caption)
-          .foregroundStyle(.secondary)
-          .accessibilityIdentifier("tls-mode-caption")
-
-        if let encryptionWarning {
-          Label(encryptionWarning, systemImage: "exclamationmark.triangle.fill")
-            .font(.caption)
-            .foregroundStyle(.orange)
-        }
-        if ConnectSheetPresentation.showsCACertificateField(mode: tlsMode) {
-          HStack {
-            TextField("CA certificate path", text: $tlsCAPath)
-            Button("Choose…") {
-              showingCAImporter = true
-            }
-            .buttonAffordance("Choose a CA certificate file")
-          }
-        }
-
-        Toggle("Use an SSH tunnel", isOn: $useSSH)
-          .controlAffordance(
-            tlsMode == .disable
-              ? "Connect through an SSH tunnel"
-              : "Set encryption to Off before enabling an SSH tunnel"
-          )
-          .disabled(tlsMode != .disable)
-          .onChange(of: useSSH) { _, enabled in
-            if enabled { tlsMode = .disable }
-          }
-        if useSSH && tlsMode == .disable {
-          TextField(
-            ConnectSheetPresentation.requiredFieldLabel("SSH target"),
-            text: $sshTarget,
-            prompt: Text("user@host[:port]")
-          )
-        }
-      }
+      encryptionSection
 
       Section {
         Toggle("Save this connection", isOn: $saveConnection)
@@ -368,20 +221,15 @@ struct ConnectSheet: View {
         }
       }
 
-      Section {
-        HStack {
-          dismissButton
-          Spacer()
-          testConnectionButton
-          if state.isTestingConnection {
-            cancelTestButton
-          }
-          primaryActionButton
-        }
-      }
     }
     .formStyle(.grouped)
-    .frame(width: 560)
+    .textFieldStyle(.roundedBorder)
+    .contentMargins(.horizontal, 20, for: .scrollContent)
+    .contentMargins(.vertical, 12, for: .scrollContent)
+    footer
+    }
+    .frame(width: 600)
+    .frame(minHeight: 420, idealHeight: 680)
     .onChange(of: testInputSignature) { _, _ in
       state.clearConnectionTestResult()
     }
@@ -435,6 +283,203 @@ struct ConnectSheet: View {
 
   // Extracted from `body`: with every button inline, adding one more view pushed this Form
   // past what the SwiftUI type-checker will solve in reasonable time.
+
+  @ViewBuilder private var savedConnectionsSection: some View {
+      if !state.savedConnections.isEmpty {
+        Section {
+          if savedConnectionsExpanded {
+            ForEach(
+              SavedConnectionPagination.page(
+                of: state.savedConnections,
+                index: savedConnectionsPage
+              )
+            ) { connection in
+              HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                  Text(connection.name)
+                    .font(.subheadline.bold())
+                  Text(connection.connectionLabel)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+                Spacer()
+                EnvironmentCapsule(environment: connection.environment)
+                Button("Connect") {
+                  Task {
+                    await state.connectSavedConnection(id: connection.id)
+                    if state.isConnected { closeAction?() }
+                  }
+                }
+                .buttonStyle(.bordered)
+                .buttonAffordance("Connect to \(connection.name)")
+
+                Button {
+                  editingConnection = connection
+                } label: {
+                  Label("Edit saved connection", systemImage: "pencil")
+                    .labelStyle(.iconOnly)
+                }
+                .buttonStyle(.borderless)
+                .buttonAffordance("Edit saved connection \(connection.name)")
+                .accessibilityIdentifier("edit-saved-connection-\(connection.id.uuidString)")
+
+                Button(role: .destructive) {
+                  pendingDelete = connection
+                } label: {
+                  Label("Delete saved connection", systemImage: "trash")
+                    .labelStyle(.iconOnly)
+                }
+                .buttonStyle(.borderless)
+                .buttonAffordance("Delete saved connection \(connection.name)")
+              }
+            }
+
+            SavedConnectionPager(
+              page: $savedConnectionsPage,
+              itemCount: state.savedConnections.count,
+              accessibilityPrefix: "connect-sheet-connections"
+            )
+          } else {
+            Text("\(state.savedConnections.count) saved, shown in the sidebar")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+          }
+        } header: {
+          HStack {
+            Text("Saved connections")
+            Spacer()
+            Button {
+              withAnimation(.easeInOut(duration: 0.15)) {
+                savedConnectionsExpanded.toggle()
+              }
+            } label: {
+              Label(
+                savedConnectionsExpanded ? "Collapse connections" : "Expand connections",
+                systemImage: savedConnectionsExpanded ? "chevron.up" : "chevron.down"
+              )
+              .labelStyle(.iconOnly)
+            }
+            .buttonStyle(.borderless)
+            .buttonAffordance(savedConnectionsExpanded ? "Collapse connections" : "Expand connections")
+            .accessibilityIdentifier("toggle-saved-connections-section-button")
+          }
+        }
+      }
+
+  }
+
+  @ViewBuilder private var localServersSection: some View {
+      if !discoveredInstances.isEmpty {
+        Section("Local servers") {
+          ForEach(discoveredInstances) { instance in
+            HStack {
+              Label(instance.label, systemImage: "desktopcomputer")
+              Spacer()
+              Button("Connect") {
+                Task { await connectDiscovered(instance) }
+              }
+              .buttonStyle(.bordered)
+              .buttonAffordance("Connect to \(instance.label)")
+              .disabled(state.connectionState == .connecting)
+            }
+          }
+        }
+      }
+
+  }
+
+  @ViewBuilder private var encryptionSection: some View {
+    Section {
+      DisclosureGroup(isExpanded: $showAdvanced) {
+            Picker("Encryption", selection: $tlsMode) {
+              ForEach(ConnectSheetPresentation.tlsModeOrder, id: \.self) { mode in
+                Text(ConnectSheetPresentation.tlsModeTitle(mode)).tag(mode)
+              }
+            }
+            .pickerStyle(.inline)
+            .accessibilityIdentifier("picker-tls-mode")
+            .controlAffordance("Choose how much the connection to the server is protected")
+            .onChange(of: tlsMode) { _, mode in
+              if mode != .disable { useSSH = false }
+            }
+
+            Text(ConnectSheetPresentation.tlsModeCaption(tlsMode))
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .accessibilityIdentifier("tls-mode-caption")
+
+            if ConnectSheetPresentation.showsCACertificateField(mode: tlsMode) {
+              HStack {
+                TextField("CA certificate path", text: $tlsCAPath)
+                Button("Choose…") {
+                  showingCAImporter = true
+                }
+                .buttonAffordance("Choose a CA certificate file")
+              }
+            }
+
+            Toggle("Use an SSH tunnel", isOn: $useSSH)
+              .controlAffordance(
+                tlsMode == .disable
+                  ? "Connect through an SSH tunnel"
+                  : "Set encryption to Off before enabling an SSH tunnel"
+              )
+              .disabled(tlsMode != .disable)
+              .onChange(of: useSSH) { _, enabled in
+                if enabled { tlsMode = .disable }
+              }
+            if useSSH && tlsMode == .disable {
+              TextField(
+                ConnectSheetPresentation.requiredFieldLabel("SSH target"),
+                text: $sshTarget,
+                prompt: Text("user@host[:port]")
+              )
+            }
+      } label: {
+        HStack {
+          Text("Advanced")
+          Spacer()
+          Text(useSSH ? "SSH tunnel" : "Encryption: \(ConnectSheetPresentation.tlsModeTitle(tlsMode))")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+      }
+        if let encryptionWarning {
+          Label(encryptionWarning, systemImage: "exclamationmark.triangle.fill")
+            .font(.caption)
+            .foregroundStyle(.orange)
+        }
+    }
+  }
+
+  @ViewBuilder private var detailFields: some View {
+          TextField(ConnectSheetPresentation.requiredFieldLabel("Host"), text: $fieldHost, prompt: Text("localhost"))
+            .accessibilityIdentifier("field-host")
+          TextField("Port", text: $fieldPort)
+            .accessibilityIdentifier("field-port")
+          TextField(ConnectSheetPresentation.requiredFieldLabel("Database"), text: $fieldDatabase, prompt: Text("postgres"))
+            .accessibilityIdentifier("field-database")
+          TextField(ConnectSheetPresentation.requiredFieldLabel("Username"), text: $fieldUsername, prompt: Text("postgres"))
+            .accessibilityIdentifier("field-username")
+          SecureField("Password", text: $fieldPassword)
+            .accessibilityIdentifier("field-password")
+  }
+
+  /// Pinned below the scrolling form so Connect never scrolls out of a short window.
+  private var footer: some View {
+    VStack(spacing: 0) {
+      Divider()
+      HStack {
+        dismissButton
+        Spacer()
+        testConnectionButton
+        if state.isTestingConnection { cancelTestButton }
+        primaryActionButton
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 14)
+    }
+  }
 
   @ViewBuilder private var dismissButton: some View {
     if let closeAction {

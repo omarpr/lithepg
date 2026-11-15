@@ -21,7 +21,7 @@ struct SchemaSidebar: View {
             Divider()
             content
         }
-        .frame(minWidth: 220, idealWidth: 260, maxWidth: 320)
+        .frame(minWidth: 260, idealWidth: 300, maxWidth: 360)
         .accessibilityIdentifier("schema-sidebar")
     }
 
@@ -49,20 +49,29 @@ struct SchemaSidebar: View {
             .disabled(!presentation.canRefresh)
             .accessibilityIdentifier("refresh-schema-button")
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.horizontal, UIMetrics.inset)
+        .padding(.vertical, UIMetrics.headerVertical)
     }
 
     @ViewBuilder
     private var content: some View {
         if let message = presentation.message {
-            ContentUnavailableView {
-                Label(messageTitle(for: message), systemImage: presentation.isError ? "exclamationmark.triangle" : "sidebar.leading")
-            } description: {
+            // Compact on purpose: the large system empty state outweighed the rest of the sidebar.
+            VStack(spacing: 6) {
+                Image(systemName: presentation.isError ? "exclamationmark.triangle" : "sidebar.leading")
+                    .font(.title3)
+                    .foregroundStyle(presentation.isError ? .orange : .secondary)
+                Text(messageTitle(for: message))
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
                 Text(messageDetail(for: message))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(12)
+            .padding(UIMetrics.inset)
         } else if let schema = state.schema {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 6) {
@@ -70,7 +79,7 @@ struct SchemaSidebar: View {
                         schemaSection(databaseSchema)
                     }
                 }
-                .padding(10)
+                .padding(UIMetrics.inset)
             }
         }
     }
@@ -150,7 +159,7 @@ struct SchemaSidebar: View {
             }
             .font(.callout)
         }
-        .padding(.leading, 14)
+        .padding(.leading, UIMetrics.inset)
     }
 
     private func columnRow(_ column: DatabaseSchema.Column) -> some View {

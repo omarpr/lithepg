@@ -2,17 +2,6 @@ import LithePGCore
 import SwiftUI
 
 struct WorkspaceView: View {
-  /// Badge fallback when no connection environment is active: the bundle's
-  /// marketing version for packaged builds, "dev" for bare-executable runs.
-  static func versionBadgeLabel(
-    marketingVersion: String? =
-      Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
-  ) -> String {
-    guard let marketingVersion, !marketingVersion.isEmpty else { return "dev" }
-    return "v\(marketingVersion)"
-  }
-
-
   @Bindable var state: AppState
   @State private var showingQueryHistory = false
   @State private var showingAskQuery = false
@@ -32,7 +21,7 @@ struct WorkspaceView: View {
         Divider()
         SchemaSidebar(state: state)
       }
-      .frame(minWidth: 240, idealWidth: 280, maxWidth: 340)
+      .frame(minWidth: 260, idealWidth: 300, maxWidth: 360)
       VStack(spacing: 0) {
         header
         productionWarning
@@ -46,7 +35,7 @@ struct WorkspaceView: View {
             onSelectionChange: { state.updateEditorSelection($0) },
             completionIndex: state.completionIndex
           )
-            .frame(minHeight: 200)
+          .frame(minHeight: 200)
           Divider()
           ErrorBanner(
             message: state.lastError,
@@ -67,84 +56,47 @@ struct WorkspaceView: View {
               isProduction: state.activeConnectionEnvironment?.isProduction == true
             )
           )
-            .frame(minHeight: 320, maxHeight: .infinity)
-            .layoutPriority(1)
+          .frame(minHeight: 320, maxHeight: .infinity)
+          .layoutPriority(1)
         }
         .frame(maxHeight: .infinity)
       }
       .frame(minWidth: 640)
     }
     .toolbar {
+      // Three groups, like Xcode: run, inspect, browse. Then disconnect on its own.
       ToolbarItemGroup {
         Button {
           state.startQuery()
         } label: {
           Label(state.isRunning ? "Running" : "Run", systemImage: "play.fill")
-            .labelStyle(.titleAndIcon)
+            .labelStyle(ToolbarCommandLabelStyle(prominent: true))
         }
-        // The main action reads as a real button: accent colored when it can run and plainly
-        // dimmed when it cannot, instead of a small gray triangle that always looked disabled.
-        .buttonStyle(.borderedProminent)
+        // The main action is an accent colored chip when it can run and plainly dimmed when not.
+        .buttonStyle(.plain)
         .accessibilityIdentifier("run-query-button")
         .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .runQuery))
         .buttonAffordance(runQueryHelp)
         .disabled(!state.canRunQuery)
 
-        Button("Cancel") {
-          state.cancelQuery()
+        // Stop only exists while a query runs; a permanently dim button was noise.
+        if state.isRunning {
+          Button {
+            state.cancelQuery()
+          } label: {
+            Label("Stop", systemImage: "stop.fill")
+              .labelStyle(ToolbarCommandLabelStyle())
+              .toolbarIconStyle(enabled: state.isRunning)
+          }
+          .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .cancelQuery))
+          .buttonAffordance("Cancel the running query")
+          .disabled(!state.isRunning)
+          .buttonStyle(.plain)
+          .accessibilityIdentifier("cancel-query-button")
         }
-        .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .cancelQuery))
-        .buttonAffordance("Cancel the running query")
-        .disabled(!state.isRunning)
+      }
 
-        Button {
-          state.selectPreviousQueryTab()
-        } label: {
-          Label("Previous Query Tab", systemImage: "chevron.left")
-            .toolbarIconStyle(enabled: state.queryTabs.count > 1)
-        }
-        .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .previousTab))
-        .buttonAffordance(
-          state.queryTabs.count <= 1
-            ? "Open another query tab to navigate between tabs"
-            : "Select the previous query tab"
-        )
-        .disabled(state.queryTabs.count <= 1)
-
-        Button {
-          state.selectNextQueryTab()
-        } label: {
-          Label("Next Query Tab", systemImage: "chevron.right")
-            .toolbarIconStyle(enabled: state.queryTabs.count > 1)
-        }
-        .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .nextTab))
-        .buttonAffordance(
-          state.queryTabs.count <= 1
-            ? "Open another query tab to navigate between tabs"
-            : "Select the next query tab"
-        )
-        .disabled(state.queryTabs.count <= 1)
-
-        Button {
-          showingAskQuery.toggle()
-        } label: {
-          Label("Ask", systemImage: "wand.and.stars")
-            .toolbarIconStyle(enabled: !state.isDraftingSQL)
-        }
-        .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .askInEnglish))
-        .buttonAffordance(
-          state.isDraftingSQL
-            ? "A local SQL draft is already in progress"
-            : state.schema == nil
-            ? "Connect and refresh the schema to enable AI drafting"
-            : "Ask in English"
-        )
-        .disabled(state.isDraftingSQL)
-        .accessibilityIdentifier("ask-query-button")
-        .popover(isPresented: $showingAskQuery) {
-          AskQueryView(state: state)
-        }
-
+      ToolbarItemGroup {
         Menu {
           Button("Explain (plan only)") {
             Task {
@@ -162,8 +114,12 @@ struct WorkspaceView: View {
           .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .explainAnalyze))
         } label: {
           Label("Explain", systemImage: "list.bullet.indent")
+            .labelStyle(ToolbarCommandLabelStyle())
             .toolbarIconStyle(enabled: state.canRunQuery && !state.isExplaining)
         }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
         .buttonAffordance(explainHelp)
         .disabled(!state.canRunQuery || state.isExplaining)
         .accessibilityIdentifier("explain-menu")
@@ -174,11 +130,37 @@ struct WorkspaceView: View {
         }
 
         Button {
+          showingAskQuery.toggle()
+        } label: {
+          Label("Ask", systemImage: "wand.and.stars")
+            .labelStyle(ToolbarCommandLabelStyle())
+            .toolbarIconStyle(enabled: !state.isDraftingSQL)
+        }
+        .buttonStyle(.plain)
+        .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .askInEnglish))
+        .buttonAffordance(
+          state.isDraftingSQL
+            ? "A local SQL draft is already in progress"
+            : state.schema == nil
+              ? "Connect and refresh the schema to enable AI drafting"
+              : "Ask in English"
+        )
+        .disabled(state.isDraftingSQL)
+        .accessibilityIdentifier("ask-query-button")
+        .popover(isPresented: $showingAskQuery) {
+          AskQueryView(state: state)
+        }
+      }
+
+      ToolbarItemGroup {
+        Button {
           showingSchemaGraph = true
         } label: {
           Label("Graph", systemImage: "point.3.connected.trianglepath.dotted")
+            .labelStyle(ToolbarCommandLabelStyle())
             .toolbarIconStyle(enabled: state.schema != nil)
         }
+        .buttonStyle(.plain)
         .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .schemaGraph))
         .buttonAffordance(
           state.schema == nil
@@ -196,25 +178,38 @@ struct WorkspaceView: View {
         Button {
           showingQueryHistory.toggle()
         } label: {
-          Label("Query History", systemImage: "clock.arrow.circlepath")
+          Label("History", systemImage: "clock.arrow.circlepath")
+            .labelStyle(ToolbarCommandLabelStyle())
             .toolbarIconStyle(enabled: true)
         }
+        .buttonStyle(.plain)
         .popover(isPresented: $showingQueryHistory) {
           QueryHistoryView(state: state)
         }
         .buttonAffordance("Show recent query history")
+        .accessibilityLabel("Query History")
+      }
 
-        Button("Disconnect") {
-          Task { await state.disconnect() }
+      ToolbarItemGroup {
+        if isConnectedOrLost {
+          Button {
+            Task { await state.disconnect() }
+          } label: {
+            Label("Disconnect", systemImage: "power")
+              .labelStyle(ToolbarCommandLabelStyle())
+              .toolbarIconStyle(enabled: isConnectedOrLost)
+          }
+          .buttonAffordance(
+            state.connectionState == .connecting
+              ? "Wait for the connection attempt to finish"
+              : state.connectionState == .disconnected
+                ? "No database is connected"
+                : "Disconnect from the current database"
+          )
+          .disabled(!isConnectedOrLost)
+          .buttonStyle(.plain)
+          .accessibilityIdentifier("disconnect-button")
         }
-        .buttonAffordance(
-          state.connectionState == .connecting
-            ? "Wait for the connection attempt to finish"
-            : state.connectionState == .disconnected
-              ? "No database is connected"
-              : "Disconnect from the current database"
-        )
-        .disabled(state.connectionState == .disconnected || state.connectionState == .connecting)
       }
     }
     .onAppear {
@@ -316,17 +311,25 @@ struct WorkspaceView: View {
         // Close-tab has no visible button of its own (each tab has its ×), so its shortcut
         // lives on this invisible one. Window shortcuts run before the menu bar, so ⌘W
         // closes the query tab rather than the window while more than one tab is open.
-        Button("Close Query Tab") { state.closeSelectedQueryTab() }
-          .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .closeTab))
-          .disabled(state.queryTabs.count <= 1)
-          .opacity(0)
-          .frame(width: 0, height: 0)
-          .accessibilityHidden(true)
+        // Previous and next tab moved out of the toolbar, where they sat disabled most of
+        // the time; their shortcuts live here the same way.
+        ZStack {
+          Button("Close Query Tab") { state.closeSelectedQueryTab() }
+            .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .closeTab))
+          Button("Previous Query Tab") { state.selectPreviousQueryTab() }
+            .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .previousTab))
+          Button("Next Query Tab") { state.selectNextQueryTab() }
+            .keyboardShortcut(state.keyBindings.keyboardShortcut(for: .nextTab))
+        }
+        .disabled(state.queryTabs.count <= 1)
+        .opacity(0)
+        .frame(width: 0, height: 0)
+        .accessibilityHidden(true)
       }
 
       Spacer()
     }
-    .padding(.horizontal, 12)
+    .padding(.horizontal, UIMetrics.inset)
     .padding(.vertical, 8)
   }
 
@@ -346,7 +349,7 @@ struct WorkspaceView: View {
         .font(.title2)
         .foregroundStyle(.tint)
       VStack(alignment: .leading, spacing: 2) {
-        Text("LithePG")
+        Text(headerTitle)
           .font(.headline)
         Text(statusText)
           .font(.callout)
@@ -373,14 +376,13 @@ struct WorkspaceView: View {
         .buttonAffordance("Add a connection or connect to a saved database")
         .accessibilityIdentifier("connect-from-workspace-button")
       }
-      Text(state.activeConnectionEnvironment?.displayName ?? Self.versionBadgeLabel())
-        .font(.callout.bold())
-        .foregroundStyle(environmentColor)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .background(environmentColor.opacity(0.14), in: Capsule())
+      // The app version lives in About; here a badge would read like the server's version.
+      if let environment = state.activeConnectionEnvironment {
+        EnvironmentCapsule(environment: environment, long: true)
+      }
     }
-    .padding(14)
+    .padding(.horizontal, UIMetrics.inset)
+    .padding(.vertical, UIMetrics.headerVertical)
   }
 
   private var productionWarning: some View {
@@ -393,11 +395,18 @@ struct WorkspaceView: View {
           Spacer()
         }
         .foregroundStyle(.red)
-        .padding(.horizontal, 14)
+        .padding(.horizontal, UIMetrics.inset)
         .padding(.vertical, 8)
         .background(Color.red.opacity(0.10))
         .accessibilityIdentifier("production-warning-banner")
       }
+    }
+  }
+
+  private var headerTitle: String {
+    switch state.connectionState {
+    case .disconnected: state.lostConnectionLabel == nil ? "No connection" : "LithePG"
+    case .connecting, .connected: "LithePG"
     }
   }
 
@@ -407,7 +416,7 @@ struct WorkspaceView: View {
       if let lost = state.lostConnectionLabel {
         "Connection lost · \(lost)"
       } else {
-        "Disconnected"
+        "Choose a saved connection or add a new one"
       }
     case .connecting: "Connecting…"
     case .connected(let label):
@@ -446,14 +455,8 @@ struct WorkspaceView: View {
     return "Show the query plan; Explain Analyze executes the query for real timings"
   }
 
-  private var environmentColor: Color {
-    switch state.activeConnectionEnvironment {
-    case .development: .green
-    case .staging: .orange
-    case .production: .red
-    case .custom: .blue
-    case nil: .secondary
-    }
+  private var isConnectedOrLost: Bool {
+    !(state.connectionState == .disconnected || state.connectionState == .connecting)
   }
 }
 
