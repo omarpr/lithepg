@@ -1493,7 +1493,7 @@ public final class AppState {
   }
 
   private static func sshTargetLabel(for ssh: ConnectionConfig.SSHConfig) -> String {
-    "\(ssh.user)@\(ssh.host):\(ssh.port)"
+    ssh.targetLabel
   }
 
   private func setPersistenceError(_ error: Error) {
@@ -1525,26 +1525,7 @@ public final class AppState {
   }
 
   private static func parseSSH(_ raw: String) throws -> ConnectionConfig.SSHConfig {
-    let parts = raw.split(separator: "@", maxSplits: 1).map(String.init)
-    guard parts.count == 2, !parts[0].isEmpty else { throw ConnectParseError.invalidSSH }
-    let hostPort = parts[1].split(separator: ":").map(String.init)
-    let host: String
-    let port: Int
-    switch hostPort.count {
-    case 1:
-      host = hostPort[0]
-      port = 22
-    case 2:
-      host = hostPort[0]
-      guard let parsedPort = Int(hostPort[1]), (1...65535).contains(parsedPort) else {
-        throw ConnectParseError.invalidSSH
-      }
-      port = parsedPort
-    default:
-      throw ConnectParseError.invalidSSH
-    }
-    guard !host.isEmpty else { throw ConnectParseError.invalidSSH }
-    return .init(host: host, port: port, user: parts[0])
+    try ConnectionConfig.SSHConfig.parse(raw)
   }
 
   private enum ConnectionSource {
@@ -1564,11 +1545,6 @@ public final class AppState {
       if case .saved = source { return false }
       return true
     }
-  }
-
-  private enum ConnectParseError: Error, CustomStringConvertible {
-    case invalidSSH
-    var description: String { "SSH target must be user@host[:port]" }
   }
 
   private enum PersistenceError: Error, CustomStringConvertible {

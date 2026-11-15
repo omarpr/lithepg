@@ -43,6 +43,43 @@ struct SSHTunnelTests {
         #expect(!arguments.contains("StrictHostKeyChecking=accept-new"))
     }
 
+    @Test("ssh arguments end options before the destination and never prompt")
+    func argumentsSeparateDestination() {
+        let arguments = SSHTunnel.sshArguments(
+            localPort: 15432,
+            remoteHost: "db.internal",
+            remotePort: 5432,
+            sshHost: "bastion.example.com",
+            sshPort: 2222,
+            sshUser: "developer"
+        )
+
+        #expect(Array(arguments.suffix(2)) == ["--", "bastion.example.com"])
+        #expect(arguments.contains("BatchMode=yes"))
+        let user = arguments.firstIndex(of: "-l").map { arguments[$0 + 1] }
+        #expect(user == "developer")
+        #expect(arguments.contains("127.0.0.1:15432:db.internal:5432"))
+    }
+
+    @Test("ssh arguments bracket an IPv6 remote host in the forward")
+    func argumentsBracketIPv6Forward() {
+        let arguments = SSHTunnel.sshArguments(
+            localPort: 15432, remoteHost: "fd00::5", remotePort: 5432,
+            sshHost: "bastion.example.com", sshPort: 22, sshUser: "developer"
+        )
+        #expect(arguments.contains("127.0.0.1:15432:[fd00::5]:5432"))
+    }
+
+    @Test("opening a tunnel refuses values ssh would read as options")
+    func openRefusesOptionLikeValues() async {
+        await #expect(throws: SSHTunnel.TunnelError.unsafeArgument("-oProxyCommand=touch /tmp/x")) {
+            _ = try await SSHTunnel.open(
+                sshHost: "-oProxyCommand=touch /tmp/x", sshPort: 22, sshUser: "developer",
+                remoteHost: "db.internal", remotePort: 5432
+            )
+        }
+    }
+
     /// Strict parser — a malformed SSH_TEST_TARGET should fail loudly rather than
     /// silently falling back to port 22.
     private func parseTarget(_ s: String) throws -> (user: String, host: String, port: Int) {

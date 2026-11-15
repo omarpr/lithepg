@@ -21,6 +21,85 @@ public struct ConnectionConfig: Sendable, Equatable {
             self.port = port
             self.user = user
         }
+
+        public enum ParseError: Error, Equatable, CustomStringConvertible {
+            case invalidFormat
+            case invalidPort(String)
+            case unsafeValue(String)
+
+            public var description: String {
+                switch self {
+                case .invalidFormat:
+                    "SSH target must be user@host[:port], with an IPv6 host in brackets."
+                case .invalidPort(let port):
+                    "SSH port must be a number from 1 to 65535, not \(port)."
+                case .unsafeValue(let value):
+                    "SSH user and host cannot start with a dash or contain spaces: \(value)"
+                }
+            }
+        }
+
+        /// Parses `user@host`, `user@host:port` or `user@[ipv6]:port`.
+        ///
+        /// Values that start with `-` are refused because ssh would read them as options, and
+        /// whitespace or control characters are refused because no real user or host has them.
+        public static func parse(_ raw: String) throws -> SSHConfig {
+            let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let at = trimmed.lastIndex(of: "@") else { throw ParseError.invalidFormat }
+            let user = String(trimmed[..<at])
+            let hostPort = trimmed[trimmed.index(after: at)...]
+            guard !user.isEmpty, !hostPort.isEmpty else { throw ParseError.invalidFormat }
+
+            let host: String
+            var portText: Substring?
+            if hostPort.hasPrefix("[") {
+                guard let close = hostPort.firstIndex(of: "]") else { throw ParseError.invalidFormat }
+                host = String(hostPort[hostPort.index(after: hostPort.startIndex)..<close])
+                let rest = hostPort[hostPort.index(after: close)...]
+                if !rest.isEmpty {
+                    guard rest.hasPrefix(":") else { throw ParseError.invalidFormat }
+                    portText = rest.dropFirst()
+                }
+            } else {
+                let parts = hostPort.split(separator: ":", omittingEmptySubsequences: false)
+                switch parts.count {
+                case 1: host = String(parts[0])
+                case 2:
+                    host = String(parts[0])
+                    portText = parts[1]
+                default:
+                    // An unbracketed IPv6 address cannot be told apart from host:port.
+                    throw ParseError.invalidFormat
+                }
+            }
+            guard !host.isEmpty else { throw ParseError.invalidFormat }
+
+            var port = 22
+            if let portText {
+                guard let parsed = Int(portText), (1...65535).contains(parsed) else {
+                    throw ParseError.invalidPort(String(portText))
+                }
+                port = parsed
+            }
+            for value in [user, host] where !isSafeSSHValue(value) {
+                throw ParseError.unsafeValue(value)
+            }
+            return SSHConfig(host: host, port: port, user: user)
+        }
+
+        /// The target in the form `parse` reads back, bracketing IPv6 hosts.
+        public var targetLabel: String {
+            let shownHost = host.contains(":") ? "[\(host)]" : host
+            return "\(user)@\(shownHost):\(port)"
+        }
+
+        static func isSafeSSHValue(_ value: String) -> Bool {
+            !value.hasPrefix("-")
+                && !value.unicodeScalars.contains {
+                    CharacterSet.whitespacesAndNewlines.contains($0)
+                        || CharacterSet.controlCharacters.contains($0)
+                }
+        }
     }
 
     public enum ParseError: Error, Equatable {

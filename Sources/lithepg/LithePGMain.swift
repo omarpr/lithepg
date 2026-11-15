@@ -157,30 +157,10 @@ private struct Args {
     }
 
     private static func parseSSH(_ raw: String) throws -> ConnectionConfig.SSHConfig {
-        let parts = raw.split(separator: "@", maxSplits: 1).map(String.init)
-        guard parts.count == 2, !parts[0].isEmpty else {
-            throw ParseError.usage("--ssh format: user@host[:port]")
+        do {
+            return try ConnectionConfig.SSHConfig.parse(raw)
+        } catch let error as ConnectionConfig.SSHConfig.ParseError {
+            throw ParseError.usage("--ssh: \(error.description)")
         }
-        let hostPort = parts[1].split(separator: ":").map(String.init)
-        let host: String
-        let port: Int
-        switch hostPort.count {
-        case 1:
-            host = hostPort[0]
-            port = 22
-        case 2:
-            guard let p = Int(hostPort[1]) else {
-                throw ParseError.usage("--ssh port is not an integer: \(hostPort[1])")
-            }
-            host = hostPort[0]
-            port = p
-        default:
-            throw ParseError.usage("--ssh format: user@host[:port]")
-        }
-        guard !host.isEmpty else { throw ParseError.usage("--ssh host is empty") }
-        guard (1...65535).contains(port) else {
-            throw ParseError.usage("--ssh port out of range: \(port)")
-        }
-        return .init(host: host, port: port, user: parts[0])
     }
 }

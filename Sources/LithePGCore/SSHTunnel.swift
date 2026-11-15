@@ -13,6 +13,7 @@ public actor SSHTunnel {
         case sshBinaryNotFound
         case portAllocationFailed
         case tunnelDidNotOpen(underlying: String)
+        case unsafeArgument(String)
     }
 
     public static func open(
@@ -22,6 +23,12 @@ public actor SSHTunnel {
         remoteHost: String,
         remotePort: Int
     ) async throws -> SSHTunnel {
+        // `SSHConfig.parse` already refuses these, but library callers can build a config by
+        // hand, and a value starting with `-` would reach ssh as an option.
+        for value in [sshHost, sshUser, remoteHost]
+        where !ConnectionConfig.SSHConfig.isSafeSSHValue(value) || value.isEmpty {
+            throw TunnelError.unsafeArgument(value)
+        }
         let sshPath = "/usr/bin/ssh"
         guard FileManager.default.isExecutableFile(atPath: sshPath) else {
             throw TunnelError.sshBinaryNotFound
@@ -83,14 +90,23 @@ public actor SSHTunnel {
         sshPort: Int,
         sshUser: String
     ) -> [String] {
-        [
+        // The forward binds 127.0.0.1 explicitly, the address `isPortOpen` probes, so ssh
+        // never listens on another interface. An IPv6 remote host needs brackets in `-L`.
+        let forwardHost = remoteHost.contains(":") ? "[\(remoteHost)]" : remoteHost
+        return [
             "-N",
-            "-L", "\(localPort):\(remoteHost):\(remotePort)",
+            "-L", "127.0.0.1:\(localPort):\(forwardHost):\(remotePort)",
             "-p", String(sshPort),
+            "-l", sshUser,
             "-o", "ExitOnForwardFailure=yes",
             "-o", "StrictHostKeyChecking=yes",
+            // No terminal to answer a password or passphrase prompt, so fail fast instead of
+            // waiting out the open timeout. Keys from ssh-agent still work.
+            "-o", "BatchMode=yes",
             "-o", "ServerAliveInterval=30",
-            "\(sshUser)@\(sshHost)",
+            // Everything after `--` is the destination, so a host can never be read as an option.
+            "--",
+            sshHost,
         ]
     }
 

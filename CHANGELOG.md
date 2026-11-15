@@ -6,7 +6,13 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ## [Unreleased]
 
+### Security
+
+- SSH tunnels refuse a user or host that starts with a dash or contains spaces, so a target such as `-oProxyCommand=...@host` can no longer be read by ssh as an option. The host is now passed after `--` and the user with `-l`, the local forward listens only on 127.0.0.1, and ssh never waits on a password prompt it cannot show (keys from ssh-agent still work).
+
 ### Fixed
+
+- SSH targets with an IPv6 bastion now work when written in brackets, as in `user@[fd00::1]:22`, and an IPv6 database host is forwarded correctly. The app and the `lithepg` CLI now read SSH targets the same way.
 
 - The results footer now reports a table's real size. Clicking a table in the sidebar loads its first 100 rows and then counts the whole table, so the footer reads "Rows 1–100 of 48,210 (first 100 loaded)" instead of "of 100". Results cut short by the 10,000-row cap now read "of 10,000+".
 - Scan Neon CLI no longer holds a thread while each CLI command runs. When several ran at once, everything else LithePG was doing could freeze for good, which is what hung the CI test run. A cancelled scan now also stops the CLI it was waiting on.
