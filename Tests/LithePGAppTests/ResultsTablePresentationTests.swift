@@ -86,6 +86,38 @@ struct ResultsTablePresentationTests {
         #expect(ResultsTablePresentation.secondaryStatus(for: result, page: 2) == "rows 101–200 of 205 · 10 ms")
     }
 
+    @Test("footer reports the counted table total, not just the loaded rows")
+    func footerReportsCountedTotal() {
+        var result = QueryResult(
+            columns: [.init(name: "n", typeName: "int4")],
+            rows: (0..<100).map { .init(id: $0, cells: [.text("\($0)")]) },
+            rowCount: 100,
+            elapsed: .milliseconds(10),
+            status: .rows,
+            truncated: false
+        )
+        #expect(ResultsTablePresentation.pageStatus(for: result, page: 1) == "Rows 1–100 of 100 · Page 1 of 1")
+
+        result.totalRowCount = 48_210
+        #expect(ResultsTablePresentation.pageStatus(for: result, page: 1) == "Rows 1–100 of 48,210 (first 100 loaded) · Page 1 of 1")
+        #expect(ResultsTablePresentation.secondaryStatus(for: result, page: 1) == "100 of 48,210 rows · 10 ms")
+        #expect(ResultsTablePresentation.filtered(result, matching: "7").totalRowCount == nil)
+    }
+
+    @Test("footer marks a capped result as having more rows")
+    func footerMarksCappedResult() {
+        let result = QueryResult(
+            columns: [.init(name: "n", typeName: "int4")],
+            rows: (0..<10_000).map { .init(id: $0, cells: [.text("\($0)")]) },
+            rowCount: 10_000,
+            elapsed: .milliseconds(10),
+            status: .rows,
+            truncated: true
+        )
+        #expect(ResultsTablePresentation.pageStatus(for: result, page: 1) == "Rows 1–100 of 10,000+ · Page 1 of 100")
+        #expect(ResultsTablePresentation.secondaryStatus(for: result, page: 1) == "rows 1–100 of 10,000+ · 10 ms")
+    }
+
     @Test("column widths fill available result space until they reach the minimum")
     func columnWidthsFillAvailableSpace() {
         #expect(ResultsTablePresentation.columnWidths(availableWidth: 900, columnCount: 2) == [428, 428])

@@ -1090,6 +1090,34 @@ struct AppStateTests {
   }
 }
 
+@Suite("AppState sidebar row count")
+@MainActor
+struct AppStateSidebarRowCountTests {
+  let schema = DatabaseSchema(schemas: [
+    .init(name: "public", relations: [
+      .init(schema: "public", name: "customers", kind: .table, columns: []),
+      .init(schema: "public", name: "order\"lines", kind: .table, columns: []),
+    ])
+  ])
+
+  @Test("the sidebar SELECT for a known table gets an exact count query")
+  func sidebarSelectGetsCount() {
+    #expect(
+      AppState.countSQL(forSelect: "SELECT * FROM \"public\".\"customers\" LIMIT 100;", in: schema)
+        == "SELECT count(*) FROM \"public\".\"customers\";")
+    #expect(
+      AppState.countSQL(forSelect: "  SELECT * FROM \"public\".\"order\"\"lines\" LIMIT 100\n", in: schema)
+        == "SELECT count(*) FROM \"public\".\"order\"\"lines\";")
+  }
+
+  @Test("edited or unrelated SQL is not counted")
+  func otherSQLIsNotCounted() {
+    #expect(AppState.countSQL(forSelect: "SELECT * FROM \"public\".\"customers\" LIMIT 50;", in: schema) == nil)
+    #expect(AppState.countSQL(forSelect: "SELECT * FROM \"public\".\"missing\" LIMIT 100;", in: schema) == nil)
+    #expect(AppState.countSQL(forSelect: "SELECT * FROM \"public\".\"customers\" LIMIT 100;", in: nil) == nil)
+  }
+}
+
 @Suite("AppState insert-and-run")
 @MainActor
 struct AppStateInsertAndRunTests {

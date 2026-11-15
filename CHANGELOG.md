@@ -8,6 +8,7 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 
 ### Fixed
 
+- The results footer now reports a table's real size. Clicking a table in the sidebar loads its first 100 rows and then counts the whole table, so the footer reads "Rows 1–100 of 48,210 (first 100 loaded)" instead of "of 100". Results cut short by the 10,000-row cap now read "of 10,000+".
 - Scan Neon CLI no longer holds a thread while each CLI command runs. When several ran at once, everything else LithePG was doing could freeze for good, which is what hung the CI test run. A cancelled scan now also stops the CLI it was waiting on.
 
 ## [v1.0.12] — 2026-11-08

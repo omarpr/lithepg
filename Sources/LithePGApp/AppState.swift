@@ -260,7 +260,8 @@ public final class AppState {
     rows[row] = QueryResult.Row(id: rows[row].id, cells: cells)
     let updated = QueryResult(
       columns: result.columns, rows: rows, rowCount: result.rowCount,
-      elapsed: result.elapsed, status: result.status, truncated: result.truncated)
+      elapsed: result.elapsed, status: result.status, truncated: result.truncated,
+      totalRowCount: result.totalRowCount)
     queryTabs[index].lastResult = updated
     if let cached = editabilityCache[tabID], cached.result == result {
       editabilityCache[tabID] = (updated, cached.columns)
@@ -922,8 +923,35 @@ public final class AppState {
     await runCurrentQuery()
   }
 
+  /// Rows a sidebar table click loads.
+  public static let selectRowLimit = 100
+
   public static func selectSQL(for relation: DatabaseSchema.Relation) -> String {
-    "SELECT * FROM \(quotedIdentifier(relation.schema)).\(quotedIdentifier(relation.name)) LIMIT 100;"
+    "SELECT * FROM \(qualifiedName(relation)) LIMIT \(selectRowLimit);"
+  }
+
+  /// The exact row count query for `sql` when it is the sidebar's SELECT for a relation in
+  /// `schema`, so its result can report the table's total rather than the rows it loaded.
+  public static func countSQL(forSelect sql: String, in schema: DatabaseSchema?) -> String? {
+    guard let schema else { return nil }
+    let statement = trimmedStatement(sql)
+    guard
+      let relation = schema.schemas.lazy.flatMap(\.relations)
+        .first(where: { trimmedStatement(selectSQL(for: $0)) == statement })
+    else { return nil }
+    return "SELECT count(*) FROM \(qualifiedName(relation));"
+  }
+
+  private static func qualifiedName(_ relation: DatabaseSchema.Relation) -> String {
+    "\(quotedIdentifier(relation.schema)).\(quotedIdentifier(relation.name))"
+  }
+
+  private static func trimmedStatement(_ sql: String) -> String {
+    var text = sql.trimmingCharacters(in: .whitespacesAndNewlines)
+    while text.hasSuffix(";") {
+      text = String(text.dropLast()).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    return text
   }
 
   public func runCurrentQuery() async {
@@ -963,6 +991,7 @@ public final class AppState {
           queryTabs[index].lastResultConnectionLabel = connectionLabel
         }
         await appendQueryHistory(sql: sql, result: result)
+        await loadTotalRowCount(for: result, sql: sql, tab: queryTabID, runID: runID, using: connector)
       }
     } catch is CancellationError {
       if activeQueryRunID == runID {
@@ -980,6 +1009,25 @@ public final class AppState {
         )
       }
     }
+  }
+
+  /// After a sidebar table click fills its 100-row limit, counts the whole table so the
+  /// footer can say how many rows it holds. A failed or cancelled count leaves the footer
+  /// reporting the loaded rows, as before.
+  private func loadTotalRowCount(
+    for result: QueryResult, sql: String, tab queryTabID: QueryTab.ID, runID: UUID,
+    using connector: PostgresConnector
+  ) async {
+    guard result.status == .rows, !result.truncated, result.rows.count >= Self.selectRowLimit,
+      let countSQL = Self.countSQL(forSelect: sql, in: schema)
+    else { return }
+    guard let countResult = try? await connector.execute(countSQL),
+      !Task.isCancelled, activeQueryRunID == runID,
+      case .text(let text)? = countResult.rows.first?.cells.first, let total = Int(text),
+      let index = queryTabs.firstIndex(where: { $0.id == queryTabID }),
+      queryTabs[index].lastResult == result
+    else { return }
+    queryTabs[index].lastResult?.totalRowCount = total
   }
 
   /// The most recent parsed query plan, shown by the plan-tree sheet.

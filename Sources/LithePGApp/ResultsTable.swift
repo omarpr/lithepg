@@ -1024,7 +1024,21 @@ enum ResultsTablePresentation {
         let normalizedPage = min(max(page, 1), pageCount(for: result))
         let start = ((normalizedPage - 1) * pageSize) + 1
         let end = min(normalizedPage * pageSize, result.rows.count)
-        return "Rows \(formattedCount(start))–\(formattedCount(end)) of \(formattedCount(result.rows.count)) · Page \(formattedCount(normalizedPage)) of \(formattedCount(pageCount(for: result)))"
+        let pages = "Page \(formattedCount(normalizedPage)) of \(formattedCount(pageCount(for: result)))"
+        let range = "Rows \(formattedCount(start))–\(formattedCount(end)) of \(totalLabel(for: result))"
+        if let total = result.totalRowCount, total > result.rows.count {
+            return "\(range) (first \(formattedCount(result.rows.count)) loaded) · \(pages)"
+        }
+        return "\(range) · \(pages)"
+    }
+
+    /// The total row count to report: the counted total when known, otherwise the loaded
+    /// rows, marked with "+" when the 10,000-row cap cut the result short.
+    static func totalLabel(for result: QueryResult) -> String {
+        if let total = result.totalRowCount, total > result.rows.count {
+            return formattedCount(total)
+        }
+        return result.truncated ? "\(formattedCount(result.rows.count))+" : formattedCount(result.rows.count)
     }
 
     static func visibleRangeStatus(for result: QueryResult, page: Int) -> String {
@@ -1033,9 +1047,12 @@ enum ResultsTablePresentation {
         let start = ((normalizedPage - 1) * pageSize) + 1
         let end = min(normalizedPage * pageSize, result.rows.count)
         if result.rows.count <= pageSize {
+            if let total = result.totalRowCount, total > result.rows.count {
+                return "\(formattedCount(result.rows.count)) of \(formattedCount(total)) rows"
+            }
             return "\(pluralized(result.rowCount, singular: "row"))"
         }
-        return "rows \(formattedCount(start))–\(formattedCount(end)) of \(formattedCount(result.rows.count))"
+        return "rows \(formattedCount(start))–\(formattedCount(end)) of \(totalLabel(for: result))"
     }
 
     static func headerName(for column: QueryResult.Column) -> String {

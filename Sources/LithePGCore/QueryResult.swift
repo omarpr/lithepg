@@ -7,6 +7,9 @@ public struct QueryResult: Sendable, Equatable {
     public let elapsed: Duration
     public let status: Status
     public let truncated: Bool
+    /// The exact number of rows the source holds, when known and larger than what was
+    /// loaded (a sidebar table click loads 100 rows, then counts the table).
+    public var totalRowCount: Int?
 
     public init(
         columns: [Column],
@@ -14,7 +17,8 @@ public struct QueryResult: Sendable, Equatable {
         rowCount: Int,
         elapsed: Duration,
         status: Status,
-        truncated: Bool
+        truncated: Bool,
+        totalRowCount: Int? = nil
     ) {
         self.columns = columns
         self.rows = rows
@@ -22,6 +26,7 @@ public struct QueryResult: Sendable, Equatable {
         self.elapsed = elapsed
         self.status = status
         self.truncated = truncated
+        self.totalRowCount = totalRowCount
     }
 
     public struct Column: Sendable, Equatable {
