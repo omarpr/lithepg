@@ -9,6 +9,7 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 ### Added
 
 - The cell editor can format JSON. When a cell holds a JSON object or array, whether the column is `json`, `jsonb` or text, a Format JSON button indents it two spaces per level so it is easier to read and edit, and Compact JSON puts it back on one line. Only the spacing changes: keys stay in order and numbers and strings are kept exactly. It also works on read-only cells, so the formatted value can be copied.
+- JSON in the cell editor is colored: keys, strings, numbers, `true`/`false`/`null` and punctuation each get their own color, in light and dark mode, and coloring keeps up as you type. Plain text values stay uncolored. Read-only values can now be selected in the editor, not only copied with the button.
 
 ### Security
 

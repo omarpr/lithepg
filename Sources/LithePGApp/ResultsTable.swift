@@ -653,7 +653,6 @@ struct ResultCellEditorSheet: View {
     @State private var setNull: Bool
     @State private var phase: Phase = .checking
     @State private var errorMessage: String?
-    @FocusState private var editorFocused: Bool
 
     init(
         session: ResultsTablePresentation.CellEditorSession,
@@ -750,13 +749,9 @@ struct ResultCellEditorSheet: View {
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier("cell-read-only-reason")
         }
-        TextEditor(text: $text)
-            .font(.callout.monospaced())
+        CellValueEditor(text: $text, isEditable: isEditable, isDimmed: setNull, focusWhenEditable: true)
             .frame(height: text.contains("\n") ? 260 : 140)
-            .focused($editorFocused)
-            .disabled(!isEditable || setNull)
-            .opacity(setNull ? 0.45 : 1)
-            .accessibilityIdentifier("cell-editor")
+            .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
 
         switch phase {
         case .checking:
@@ -895,7 +890,6 @@ struct ResultCellEditorSheet: View {
             phase = .readOnly(reason)
         case .editable(let target):
             phase = .editing(table: target.table)
-            editorFocused = true
         }
     }
 
