@@ -9,13 +9,13 @@ LithePG is a lean, Mac-native PostgreSQL client with local-first AI. See
 
 ## Build and test
 
-- Build: `swift build`
+- Build: `make build`
 - Run the CLI smoke utility: `swift run lithepg --url <postgres-url>` (without
   `--url` the binary launches the app instead)
-- Test: `swift test`
+- Test: `make test`
 - Release build: `swift build -c release`
-- Package the app: `./script/build_and_run.sh --package`
-- Verify a package: `./script/package_verify.sh dist/LithePG.app`
+- Package the app: `make app`
+- Verify a package: `make verify`
 
 Compile and run the relevant tests before reporting implementation work as
 complete. Live Postgres, TLS, SSH, Keychain and model tests are gated by
