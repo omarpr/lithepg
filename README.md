@@ -32,7 +32,7 @@ LithePG is a lean, Mac-native PostgreSQL client with local-first AI. It is pure 
 - Autocomplete for keywords, functions, tables and columns as you type, with columns from the tables your statement names and `alias.` narrowing to one table.
 - With several statements in the editor, Run executes the one under the cursor (or the selection), and that statement is highlighted.
 - Query tabs you can rename, syntax highlighting and opt-in query history.
-- Ask in English drafting with Apple's on-device model, which inserts SQL for review and never runs it.
+- Ask in English drafting with Apple's on-device model by default, or with Ollama or LM Studio running on your Mac. It inserts SQL for review and never runs it.
 
 **Results**
 
@@ -105,7 +105,11 @@ still require Developer ID signing and notarization. See Apple's
 
 ## Local-first AI in plain language
 
-Ask in English (`⇧⌘K`) drafts SQL from your request plus local schema metadata. On macOS 26, when Apple Intelligence is supported, enabled and ready, LithePG uses Apple's lightweight on-device `SystemLanguageModel.default` with guided structured output. It supplies a compact schema and foreign-key context, then admits only one read-only statement through a local safety gate. LithePG does not substitute another model when Apple's model is unavailable; drafting is disabled and the app explains how to restore it. The draft lands in the editor for review and never runs automatically. LithePG makes no cloud AI call and downloads no model artifact; the system model is managed by macOS.
+Ask in English (`⇧⌘K`) drafts SQL from your request plus local schema metadata. On macOS 26, when Apple Intelligence is supported, enabled and ready, LithePG uses Apple's lightweight on-device `SystemLanguageModel.default` with guided structured output. It supplies a compact schema and foreign-key context, then admits only one read-only statement through a local safety gate. Apple's model is the default. When it is unavailable, drafting is disabled and the app explains how to restore it or how to switch provider.
+
+Ollama and LM Studio are opt-in and off by default. Choose one in Settings → AI, pick a model and press Test. LithePG then sends the request and the same compact schema metadata to that server over loopback (`localhost`, `127.0.0.1` or `::1` only, redirects refused). Query results, passwords and connection URLs are never sent, and every reply passes the same read-only safety gate.
+
+The draft lands in the editor for review and never runs automatically. LithePG makes no cloud AI call and downloads no model artifact; the system model is managed by macOS.
 
 ## Neon CLI scanner
 
