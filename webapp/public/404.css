@@ -1,0 +1,16 @@
+:root { color-scheme: dark; }
+body {
+  display: grid;
+  min-height: 100vh;
+  margin: 0;
+  place-items: center;
+  background: #030914;
+  color: #f6f9ff;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  text-align: center;
+}
+img { border-radius: 16px; }
+h1 { margin: 24px 0 8px; font-size: 32px; letter-spacing: -0.03em; }
+p { margin: 0 0 24px; color: #9baac2; }
+a { color: #82b8ff; font-weight: 700; text-decoration: none; }
+a:hover { color: #b8d7ff; }

@@ -1,7 +1,7 @@
 {
   "name": "LithePG",
   "short_name": "LithePG",
-  "description": "A lighter way to work with Postgres on macOS.",
+  "description": "A free, native PostgreSQL client for Mac.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#030914",

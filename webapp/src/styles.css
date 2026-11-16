@@ -13,6 +13,7 @@
   --line: rgba(160, 187, 228, 0.15);
   --card: rgba(12, 29, 56, 0.78);
   --mono: "SFMono-Regular", "Cascadia Code", "Roboto Mono", Consolas, monospace;
+  --faq-mark: #70aeff;
   --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -274,16 +275,6 @@ h2 {
   text-transform: uppercase;
 }
 
-.availability-chip.MuiChip-root {
-  height: 24px;
-  border: 1px solid rgba(236, 174, 74, 0.16);
-  background: rgba(236, 174, 74, 0.11);
-  color: #e7b96c;
-  font-size: 9px;
-  letter-spacing: 0.055em;
-  text-transform: uppercase;
-}
-
 .hero-install .command-row {
   min-height: 68px;
   gap: 10px;
@@ -514,14 +505,6 @@ h2 {
   stroke: none;
 }
 
-.feature-number {
-  position: absolute;
-  top: 32px;
-  right: 32px;
-  color: #486181;
-  font: 11px var(--mono);
-}
-
 .feature-card h3 {
   max-width: 340px;
   margin: 46px 0 12px;
@@ -587,17 +570,8 @@ h2 {
 }
 
 .privacy-list > div {
-  display: grid;
-  grid-template-columns: 48px 1fr;
-  gap: 20px;
   padding: 22px 0;
   border-bottom: 1px solid var(--line);
-}
-
-.privacy-list > div > span {
-  padding-top: 3px;
-  color: #385578;
-  font: 10px var(--mono);
 }
 
 .privacy-list p {
@@ -674,8 +648,11 @@ h2 {
 }
 
 .install-tabs .active { color: #cbd7e9; }
-.install-tabs .availability-chip {
-  margin-left: auto;
+.install-tabs span:last-child { margin-left: auto; font-weight: 600; }
+
+.install-heading code {
+  color: #cfe0ff;
+  font: 0.9em var(--mono);
 }
 
 .command-row {
@@ -745,20 +722,6 @@ h2 {
   line-height: 1.55;
 }
 
-.availability-note span {
-  width: 6px;
-  height: 6px;
-  flex: 0 0 auto;
-  margin-top: 5px;
-  border-radius: 50%;
-  background: #e7b96c;
-}
-
-.availability-note.is-live span {
-  background: #53d593;
-  box-shadow: 0 0 8px rgba(83, 213, 147, 0.6);
-}
-
 .source-install {
   display: grid;
   grid-template-columns: 0.7fr 1.3fr;
@@ -783,6 +746,86 @@ h2 {
   font: 10px/1.7 var(--mono);
   white-space: pre;
 }
+
+.faq-section {
+  display: grid;
+  grid-template-columns: 0.75fr 1.25fr;
+  gap: clamp(60px, 9vw, 140px);
+  background: #050d1b;
+}
+
+.faq-heading h2 {
+  margin: 0;
+  font-size: clamp(42px, 5vw, 65px);
+  font-weight: 720;
+  letter-spacing: -0.052em;
+  line-height: 1.02;
+}
+
+.faq-list {
+  border-top: 1px solid var(--line);
+}
+
+.faq-list details {
+  border-bottom: 1px solid var(--line);
+}
+
+.faq-list summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 0;
+  cursor: pointer;
+  font-size: 17px;
+  font-weight: 680;
+  list-style: none;
+}
+
+.faq-list summary::-webkit-details-marker { display: none; }
+
+.faq-list summary::after {
+  flex: 0 0 auto;
+  color: var(--faq-mark);
+  font-size: 22px;
+  font-weight: 400;
+  content: "+";
+  transition: transform 160ms ease;
+}
+
+.faq-list details[open] summary::after { transform: rotate(45deg); }
+
+.faq-list details p {
+  max-width: 640px;
+  margin: 0 0 24px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.header-actions {
+  display: flex;
+  justify-self: end;
+  align-items: center;
+  gap: 18px;
+}
+
+.theme-toggle {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: #c7d2e3;
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease;
+}
+
+.theme-toggle:hover { border-color: rgba(109, 158, 239, 0.4); color: white; }
+.theme-toggle svg { width: 19px; height: 19px; fill: currentColor; }
 
 .final-cta {
   position: relative;
@@ -853,7 +896,8 @@ footer a:hover { color: #c5d3e7; }
   .product-stage { width: min(100%, 920px); justify-self: center; }
   .app-window { transform: none; }
   .feature-grid { grid-template-columns: repeat(2, 1fr); }
-  .install-section { grid-template-columns: 1fr; }
+  .install-section,
+  .faq-section { grid-template-columns: 1fr; }
   .install-heading { max-width: 700px; }
 }
 
@@ -871,7 +915,8 @@ footer a:hover { color: #c5d3e7; }
   .feature-grid { grid-template-columns: 1fr; }
   .privacy-section { grid-template-columns: 1fr; padding: 100px 24px; }
   .privacy-list { margin-top: 10px; }
-  .install-section { padding: 100px 20px; }
+  .install-section,
+  .faq-section { padding: 100px 20px; }
   .source-install { grid-template-columns: 1fr; }
   footer { grid-template-columns: 1fr; gap: 16px; padding: 30px 24px; text-align: center; }
   footer > * { justify-self: center; }
@@ -892,7 +937,6 @@ footer a:hover { color: #c5d3e7; }
   .app-window { border-radius: 13px; }
   .signal-strip span { padding: 18px 5px; font-size: 10px; }
   .feature-card { min-height: 190px; padding: 26px; }
-  .feature-number { top: 28px; right: 27px; }
   .install-tabs span:nth-child(2) { display: none; }
   .command-row { flex-direction: column; align-items: stretch; padding: 25px; }
   .copy-button { margin-left: 0; }
@@ -902,3 +946,142 @@ footer a:hover { color: #c5d3e7; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition-duration: 0.01ms !important; }
 }
+
+/* Light theme. Dark stays the default; the header toggle sets
+   data-theme="light" on <html> and public/theme-init.js restores it before
+   the first paint. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --ink: #0b1730;
+  --muted: #4a5a73;
+  --line: rgba(20, 45, 95, 0.12);
+  --faq-mark: #2563eb;
+}
+
+[data-theme="light"] body { background: #f6f8fc; }
+[data-theme="light"] .site-header { border-bottom-color: var(--line); background: rgba(255, 255, 255, 0.82); }
+[data-theme="light"] .site-header nav { color: #44546d; }
+[data-theme="light"] .site-header nav a:hover,
+[data-theme="light"] .header-github:hover { color: #0b1730; }
+[data-theme="light"] .header-github,
+[data-theme="light"] .site-header .header-github,
+[data-theme="light"] .theme-toggle { color: #2a3a55; }
+[data-theme="light"] .theme-toggle:hover { border-color: rgba(37, 99, 235, 0.35); color: #0b1730; }
+[data-theme="light"] .brand img { box-shadow: 0 8px 22px rgba(16, 78, 202, 0.18); }
+
+[data-theme="light"] .hero {
+  background:
+    radial-gradient(circle at 76% 37%, rgba(60, 136, 255, 0.16), transparent 30%),
+    radial-gradient(circle at 53% 87%, rgba(114, 72, 244, 0.08), transparent 35%),
+    linear-gradient(145deg, #f9fbff 0%, #eef4ff 50%, #f4f7fd 100%);
+}
+[data-theme="light"] .hero::before {
+  background-image:
+    linear-gradient(rgba(40, 80, 160, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(40, 80, 160, 0.06) 1px, transparent 1px);
+}
+[data-theme="light"] .hero-glow {
+  border-color: rgba(37, 99, 235, 0.12);
+  box-shadow: 0 0 0 90px rgba(37, 99, 235, 0.03), 0 0 0 190px rgba(37, 99, 235, 0.02);
+}
+[data-theme="light"] .eyebrow,
+[data-theme="light"] .kicker { color: #2563eb; }
+[data-theme="light"] .eyebrow-dot { background: #2f9ee8; box-shadow: 0 0 10px rgba(47, 158, 232, 0.6); }
+[data-theme="light"] .hero-title-accent {
+  color: #2f6fe0;
+  background: linear-gradient(110deg, #2f8be0 3%, #3d5ff0 52%, #7a4fe8 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+[data-theme="light"] .hero-lede { color: #3d4d66; }
+[data-theme="light"] .hero-install,
+[data-theme="light"] .install-panel {
+  border-color: rgba(30, 60, 120, 0.14);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 22px 55px rgba(20, 45, 95, 0.1);
+}
+[data-theme="light"] .hero-install-heading { color: #4a5a73; }
+[data-theme="light"] .hero-install-note,
+[data-theme="light"] .hero-meta { color: #66768e; }
+[data-theme="light"] .button-secondary {
+  border-color: rgba(30, 60, 120, 0.2);
+  background: rgba(255, 255, 255, 0.7);
+  color: #1d3a70;
+}
+[data-theme="light"] .button-secondary:hover {
+  border-color: rgba(30, 60, 120, 0.35);
+  background: #ffffff;
+  color: #0b1730;
+}
+[data-theme="light"] .app-window {
+  border-color: rgba(30, 60, 120, 0.18);
+  box-shadow: 0 40px 80px rgba(20, 45, 95, 0.22), 0 0 60px rgba(37, 99, 235, 0.08);
+}
+[data-theme="light"] .stage-shadow { background: rgba(37, 99, 235, 0.16); }
+
+[data-theme="light"] .signal-strip { background: #ffffff; }
+[data-theme="light"] .signal-strip span { color: #5d6d85; }
+[data-theme="light"] .signal-strip b { color: #13223d; }
+
+[data-theme="light"] .features {
+  background:
+    radial-gradient(circle at 7% 22%, rgba(37, 99, 235, 0.07), transparent 25%),
+    linear-gradient(180deg, #f3f6fc, #eef3fb);
+}
+[data-theme="light"] .feature-card {
+  background: linear-gradient(150deg, #ffffff, #f8faff);
+  box-shadow: 0 10px 30px rgba(20, 45, 95, 0.05);
+}
+[data-theme="light"] .feature-card:hover { border-color: rgba(37, 99, 235, 0.3); }
+[data-theme="light"] .feature-icon {
+  border-color: rgba(37, 99, 235, 0.2);
+  background: rgba(37, 99, 235, 0.08);
+  color: #2563eb;
+}
+[data-theme="light"] .feature-card p { color: #4a5a73; }
+
+[data-theme="light"] .privacy-section {
+  background:
+    radial-gradient(circle at 7% 60%, rgba(37, 99, 235, 0.12), transparent 27%),
+    radial-gradient(circle at 90% 28%, rgba(114, 72, 244, 0.07), transparent 31%),
+    #f9fbff;
+}
+[data-theme="light"] .privacy-copy > p:not(.kicker) { color: #44546d; }
+[data-theme="light"] .privacy-copy > a { color: #1f5fd6; }
+[data-theme="light"] .privacy-copy > a:hover { color: #0e3f9e; }
+[data-theme="light"] .privacy-list small { color: #5d6d85; }
+[data-theme="light"] .privacy-orbit,
+[data-theme="light"] .privacy-orbit i { border-color: rgba(37, 99, 235, 0.14); }
+[data-theme="light"] .privacy-orbit i:nth-child(3) { background: rgba(37, 99, 235, 0.16); box-shadow: 0 0 50px rgba(37, 99, 235, 0.35); }
+
+[data-theme="light"] .install-section {
+  background:
+    radial-gradient(circle at 83% 74%, rgba(37, 99, 235, 0.07), transparent 29%),
+    #eef3fb;
+}
+[data-theme="light"] .install-heading code { color: #1d3a70; }
+[data-theme="light"] .install-tabs { color: #6a7a92; }
+[data-theme="light"] .install-tabs .active { color: #13223d; }
+[data-theme="light"] .command-row code { color: #13223d; }
+[data-theme="light"] .command-row code span { color: #2563eb; }
+[data-theme="light"] .copy-button {
+  border-color: rgba(30, 60, 120, 0.16);
+  background: #f1f5fc;
+  color: #3d4d66;
+}
+[data-theme="light"] .copy-button:hover,
+[data-theme="light"] .copy-button.copied { border-color: rgba(37, 99, 235, 0.45); color: #0e3f9e; }
+[data-theme="light"] .availability-note { color: #5d6d85; }
+[data-theme="light"] .source-install { background: #f6f9fe; }
+[data-theme="light"] .source-install small { color: #66768e; }
+[data-theme="light"] .source-install pre { color: #3d4d66; }
+
+[data-theme="light"] .faq-section { background: #f9fbff; }
+
+[data-theme="light"] footer { background: #e9eef7; color: #5d6d85; }
+[data-theme="light"] .footer-brand,
+[data-theme="light"] footer a:hover { color: #13223d; }
+[data-theme="light"] :focus-visible { outline-color: #2563eb; }
+/* The closing band keeps its blue gradient in both themes, so its text stays light. */
+[data-theme="light"] .final-cta { color: #f6f9ff; }
+[data-theme="light"] .final-cta .kicker { color: #afcfff; }

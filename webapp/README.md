@@ -19,7 +19,9 @@ Vite prints the local preview URL. Create and verify the production bundle with:
 npm test
 ```
 
-The generated static site is written to `webapp/dist/`.
+The generated static site is written to `webapp/dist/`. `npm run build` also renders the React page to HTML
+(`scripts/prerender.mjs`), so `dist/index.html` carries the full page text for
+search engines and link previews. The browser then hydrates that markup.
 
 ## Deploy to Fly.io
 

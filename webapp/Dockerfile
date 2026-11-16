@@ -8,6 +8,7 @@ RUN npm ci
 COPY index.html vite.config.js ./
 COPY src/ ./src/
 COPY public/ ./public/
+COPY scripts/ ./scripts/
 RUN npm run build
 
 FROM nginx:alpine

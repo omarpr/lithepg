@@ -22,6 +22,11 @@ required = [
     dist / "site.webmanifest",
     dist / "assets" / "lithepg-icon.png",
     dist / "assets" / "lithepg-app-snapshot.png",
+    dist / "404.html",
+    dist / "404.css",
+    dist / "favicon.png",
+    dist / "apple-touch-icon.png",
+    dist / "theme-init.js",
 ]
 for path in required:
     if not path.is_file() or path.stat().st_size == 0:
@@ -73,7 +78,9 @@ required_copy = [
     "blob/main/CHANGELOG.md",
     "Install the latest release",
     "Build the latest tagged source",
-    "Live on the tap",
+    "brew upgrade --cask lithepg",
+    "FAQPage",
+    "SoftwareApplication",
 ]
 for value in required_copy:
     if value not in source:
@@ -94,8 +101,22 @@ if not parser.has_description:
 if not parser.has_title:
     raise SystemExit("page is missing a title")
 
-scripts = list((dist / "assets").glob("*.js"))
-styles = list((dist / "assets").glob("*.css"))
+# The build prerenders the page, so crawlers get the text without running JavaScript.
+built = index.read_text()
+for value in ("Connections that stay organized", "Is LithePG free?", "brew install --cask omarpr/tap/lithepg"):
+    if value not in built:
+        raise SystemExit(f"prerendered HTML is missing page text: {value}")
+# The CSP blocks inline styles, so the prerender must not emit any.
+if "<style" in built:
+    raise SystemExit("prerendered HTML contains inline <style> tags the CSP would block")
+# Inline scripts are blocked too; only JSON-LD data blocks may be inline.
+import re
+for match in re.finditer(r"<script(?![^>]*\bsrc=)([^>]*)>", built):
+    if "application/ld+json" not in match.group(1):
+        raise SystemExit("built HTML has an inline script the CSP would block")
+
+scripts = list((dist / "static").glob("*.js"))
+styles = list((dist / "static").glob("*.css"))
 if not scripts or not styles:
     raise SystemExit("Vite did not emit JavaScript and CSS assets")
 
