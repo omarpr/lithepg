@@ -1,7 +1,7 @@
 # LithePG developer entry points.
 #
 #   make build    — debug build of every target
-#   make test     — Swift test suites (live Postgres, TLS, SSH and Neon tests skip
+#   make test     — Swift test suites (live Postgres, TLS and SSH tests skip
 #                   unless their environment variables are set)
 #   make run      — build the debug app bundle and open it
 #   make app      — release app bundle → dist/LithePG.app, then verify it

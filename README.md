@@ -72,25 +72,25 @@ The cask pins an exact tag, release archive and SHA-256. New releases use versio
 
 ### Build from source
 
-Requirements: macOS 14+ and an Xcode toolchain with Swift 6.2 or newer for development builds. Packaged builds (`./script/build_and_run.sh --package` and `./script/rebuild_and_install.sh`) need Swift 6.4 or newer, because Swift 6.3.3 miscompiles code the app relies on.
+Requirements: macOS 14+ and an Xcode toolchain with Swift 6.2 or newer for development builds. Packaged builds (`make app` and `make install`) need Swift 6.4 or newer, because Swift 6.3.3 miscompiles code the app relies on.
 
 ```sh
 git clone https://github.com/omarpr/lithepg.git
 cd lithepg
-swift build && swift test
-./script/build_and_run.sh --package
+make build && make test
+make app
 open dist/LithePG.app
 ```
 
 Or rebuild, verify, install to `/Applications`, and launch in one step:
 
 ```sh
-./script/rebuild_and_install.sh
+make install
 ```
 
 The installer validates any existing `LithePG.app` before replacing it and uses
-`sudo` only when `/Applications` is not writable. Pass `--no-open` to install
-without launching.
+`sudo` only when `/Applications` is not writable. To install without launching,
+run `./script/rebuild_and_install.sh --no-open`.
 
 Repeated ad-hoc development builds have a changing code identity, so macOS may
 ask again before releasing an existing LithePG Keychain item. For a stable local
@@ -118,7 +118,7 @@ When `neon` or `neonctl` is installed, the connection navigator can explicitly s
 .build/debug/lithepg --url postgres://user:@127.0.0.1:5432/db --ssh user@bastion.example.com:22
 ```
 
-Plain TCP, TLS, or an SSH tunnel through `/usr/bin/ssh -L`. Pick a TLS mode with `--tls-mode <disable|prefer|require|verify-full>`, matching the PostgreSQL `sslmode` values of the same name. Without the flag the mode comes from the URL `sslmode`, defaulting to `verify-full` for remote hosts and `disable` for loopback.
+Plain TCP, TLS, or an SSH tunnel through `/usr/bin/ssh -L`. Run with `--help` for usage. Without `--url` the binary launches the app instead of running a check. Pick a TLS mode with `--tls-mode <disable|prefer|require|verify-full>`, matching the PostgreSQL `sslmode` values of the same name. Without the flag the mode comes from the URL `sslmode`, defaulting to `verify-full` for remote hosts and `disable` for loopback.
 
 `require` and `prefer` encrypt without checking the server certificate, which suits a self-signed or internal-CA server but gives no protection against an active machine in the middle. `verify-full` checks the certificate chain and hostname, and accepts an optional pinned CA through `--tls-ca`. That flag requires `--tls-mode verify-full`, since nothing else verifies certificates. `--tls-mode verify-full` with `--ssh` is rejected (tunneled TLS needs later SNI work).
 
@@ -145,14 +145,16 @@ make build        # swift build
 make test         # swift test; add LITHEPG_KEYCHAIN_TESTS=1 for the real-keychain suite
 make run          # build the debug app and open it
 make app          # release bundle in dist/LithePG.app, verified
+make verify       # re-run the package checks on dist/LithePG.app
 make install      # rebuild, verify and install to /Applications
 make release      # signed, notarized release (see docs/RELEASING.md)
 make web-test     # build and check the website
+make web-deploy   # deploy the website to Fly.io
 ```
 
-Each target wraps a script in `script/`, which you can also run directly.
+Prefer these targets. Most wrap a helper in `script/`, which you can run directly when you need flags the targets do not pass.
 
-Live Postgres, TLS, SSH and Neon integration tests are gated on env vars (`POSTGRES_TEST_URL` and friends) and auto-skip without them.
+Live Postgres, TLS and SSH integration tests are gated on env vars (`POSTGRES_TEST_URL` and friends) and auto-skip without them.
 
 Running from Xcode: open the package folder (`xed .`), pick the `LithePGApp` scheme and hit run.
 
@@ -164,6 +166,7 @@ See [`CORE_TECHNOLOGIES.md`](CORE_TECHNOLOGIES.md) for what the app is built on 
 - `Sources/LithePGApp/`: SwiftUI app, app state, persistence, Keychain store.
 - `Sources/LithePGAppMain/`: thin executable launcher for packaging.
 - `Sources/lithepg/`: CLI smoke utility.
+- `Sources/LithePGBench/`: `lithepg-bench` query latency benchmark (median, p95, min and max).
 - `Tests/`: Swift Testing suites; integration tests env-gated.
 - `script/`: package, release and focused test helpers.
 - `webapp/`: Vite + React promotional site and Fly.io deployment configuration for `www.lithepg.app`.

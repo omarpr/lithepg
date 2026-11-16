@@ -13,7 +13,7 @@ Connection, query, schema introspection and AI drafting APIs are all async funct
 ## User Interface
 
 ### SwiftUI, Mac first
-The entire UI is SwiftUI. There is no Electron, no web view and no cross platform abstraction layer. A native app starts faster, uses less memory and respects macOS conventions such as appearance, keyboard shortcuts and accessibility for free. The measured connected cold start is under half a second and the shipped binary is around 12 MiB stripped, which no embedded browser runtime can match.
+The entire UI is SwiftUI. There is no Electron, no web view and no cross platform abstraction layer. A native app starts faster, uses less memory and respects macOS conventions such as appearance, keyboard shortcuts and accessibility for free. The measured connected cold start is under half a second and the shipped binary is around 15 MiB stripped, which no embedded browser runtime can match.
 
 ### One deliberate AppKit exception
 The SQL editor uses an AppKit `NSTextView` behind `NSViewRepresentable` because the native text stack outperforms every SwiftUI text editor for large documents and precise syntax highlighting. This is the single documented bridge and it adds no third party editor dependency.
@@ -51,7 +51,7 @@ Ask in English drafting runs entirely on device with Apple's system language mod
 There is no `.xcodeproj`. The whole app builds with `swift build` and tests run with `swift test`, so any contributor with Xcode command line tools can build from a clean checkout. Packaging scripts assemble the app bundle, verify its structure, icon and permissions and enforce the size budget.
 
 ### Hard budgets, measured continuously
-The binary has a 50 MiB hard cap with a 30 MiB stretch goal, currently about 21.6 MiB raw and 12 MiB stripped. Startup, query overhead and size are measured by `LithePGBench` and recorded in dogfood receipts before every milestone. Budgets are enforced by scripts, not by good intentions.
+The binary has a 50 MiB hard cap with a 30 MiB stretch goal, currently about 28.2 MiB raw and 14.8 MiB stripped (Swift 6.4 release build, measured 2026-11-15). Startup, query overhead and size are measured by `LithePGBench` and recorded in dogfood receipts before every milestone. Budgets are enforced by scripts, not by good intentions.
 
 ## Testing
 
