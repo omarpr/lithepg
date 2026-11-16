@@ -9,6 +9,7 @@ LithePG follows [Semantic Versioning](https://semver.org/). The `v1.0.0` tag mar
 ### Changed
 
 - Dependencies refreshed within existing version ranges. Swift: postgres-nio 1.33.3, swift-log 1.17.0, swift-metrics 2.13.0, swift-service-lifecycle 2.13.0, swift-collections 1.6.0, swift-system 1.9.0, swift-asn1 1.7.4, swift-async-algorithms 1.1.5 and swift-atomics 1.3.1. Website: React 19.3.1, MUI 9.5.0, Vite 8.3.8 and @vitejs/plugin-react 6.3.0. swift-collections stays on 1.6.0 because 1.7.x does not compile with the Swift 6.4 toolchain. No known vulnerabilities affect the pinned versions.
+- The website and README describe the newer features: SSH tunnels and verified TLS, the results filter, JSON formatting in the cell editor, custom keyboard shortcuts and the 10,000-row server-side cap.
 
 ## [v1.0.13] — 2026-11-15
 

@@ -91,13 +91,13 @@ const features = [
   {
     number: "01",
     title: "Connections that stay organized",
-    copy: "Move between databases from the left navigator, import your Neon projects with one scan and keep every password in the macOS Keychain. If a connection drops, one click brings it back.",
+    copy: "Find any database from a filterable sidebar, import your Neon projects with one scan and reach private hosts through an SSH tunnel. TLS to remote hosts is verified by default, passwords stay in the macOS Keychain and a dropped connection comes back with one click.",
     icon: <StorageRoundedIcon />,
   },
   {
     number: "02",
     title: "Query without friction",
-    copy: "Autocomplete for keywords, tables and columns as you type. Run the statement under the cursor straight from a longer script, with highlighting, tabs and history close at hand.",
+    copy: "Autocomplete for keywords, tables and columns as you type. Run the statement under the cursor straight from a longer script, with highlighting, tabs, history and keyboard shortcuts you can make your own.",
     icon: <TerminalRoundedIcon />,
   },
   {
@@ -115,7 +115,7 @@ const features = [
   {
     number: "05",
     title: "Results built for reuse",
-    copy: "Copy cells or rows, inspect long values and export CSV, TSV, JSON, Markdown or SQL inserts.",
+    copy: "Filter rows across every page, format JSON in the cell editor, copy cells or rows and export CSV, TSV, JSON, Markdown or SQL inserts. Big queries stop on the server at 10,000 rows instead of downloading everything.",
     icon: <TableChartRoundedIcon />,
   },
   {

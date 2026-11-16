@@ -38,6 +38,8 @@ LithePG is a lean, Mac-native PostgreSQL client with local-first AI. It is pure 
 
 - A results grid with resizable columns, pages of 100 rows and numeric values shown exactly as PostgreSQL formats them.
 - Edit cells in place: double-click, change the value or set NULL, review the exact `UPDATE`, then confirm. It matches the row by primary key and refuses to overwrite a row someone else changed.
+- Filter results across every page with `⌘F`, ignoring case and accents.
+- Format, compact and color JSON in the cell editor, for `json`, `jsonb` and text columns.
 - Copy a cell with `⌘C`, right-click to copy a cell or row, and export results as CSV, TSV, JSON, Markdown or SQL inserts.
 - One-click table preview: the sidebar's select action inserts and runs `SELECT * ... LIMIT 100`.
 
