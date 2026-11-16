@@ -79,7 +79,7 @@ function ProductPreview() {
         <img
           className="product-screenshot"
           src="/assets/lithepg-app-snapshot.png"
-          alt="LithePG with a two-statement script in the editor, the statement that runs highlighted, its results and the schema browser"
+          alt="LithePG with a query on the customers table, its results with accented names and the schema browser"
         />
       </div>
       <div className="stage-shadow" aria-hidden="true" />
